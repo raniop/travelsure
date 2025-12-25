@@ -51,11 +51,6 @@ const HeroSection = () => {
     <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Logo */}
-          <div className="mb-8 animate-fade-in">
-            <img src={logo} alt="TravelSure לוגו" className="h-32 md:h-44 w-auto mx-auto" />
-          </div>
-
           {/* Main Title */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
             TravelSure
