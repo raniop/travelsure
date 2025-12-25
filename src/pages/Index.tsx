@@ -1,5 +1,6 @@
-import { Phone, Mail, MessageCircle, Shield, Clock, Users, Plane, Building2, Home, Car, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Phone, Mail, MessageCircle, Clock, Users, Plane, Building2, Home, Car, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.avif";
 
 const Index = () => {
   return (
@@ -18,18 +19,12 @@ const Index = () => {
 // Header Component
 const Header = () => {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 bg-[hsl(215,60%,12%)]/95 backdrop-blur-sm border-b border-white/10">
+    <header className="fixed top-0 right-0 left-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 100%)' }}>
       <div className="container-wide">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg bg-secondary flex items-center justify-center">
-              <Shield className="w-5 h-5 md:w-6 md:h-6 text-secondary-foreground" />
-            </div>
-            <div className="text-right">
-              <h1 className="text-lg md:text-xl font-bold text-white leading-tight">אופיר ושות׳</h1>
-              <p className="text-[10px] md:text-xs text-white/60">סוכנות לביטוח</p>
-            </div>
+            <img src={logo} alt="אופיר ושות׳ לוגו" className="h-10 md:h-12 w-auto" />
           </div>
 
           {/* Desktop Navigation */}
@@ -50,17 +45,15 @@ const Header = () => {
   );
 };
 
-// Hero Section - Dark gradient with gold accent
+// Hero Section - Teal gradient with orange accent
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #1a2744 0%, #243555 50%, #2d4166 100%)' }}>
+    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 50%, #127070 100%)' }}>
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Shield Icon */}
+          {/* Logo */}
           <div className="mb-8 animate-fade-in">
-            <div className="w-24 h-24 md:w-28 md:h-28 mx-auto rounded-2xl bg-secondary/20 border-2 border-secondary flex items-center justify-center">
-              <Shield className="w-12 h-12 md:w-14 md:h-14 text-secondary" />
-            </div>
+            <img src={logo} alt="אופיר ושות׳ לוגו" className="h-28 md:h-36 w-auto mx-auto" />
           </div>
 
           {/* Main Title */}
@@ -183,7 +176,7 @@ const AboutSection = () => {
   ];
 
   return (
-    <section id="about" className="section-padding hero-gradient pattern-dots">
+    <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 50%, #127070 100%)' }}>
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
@@ -350,19 +343,13 @@ const ContactSection = () => {
 // Footer
 const Footer = () => {
   return (
-    <footer className="hero-gradient text-white py-12">
+    <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 100%)' }}>
       <div className="container-wide">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Logo & About */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                <Shield className="w-5 h-5 text-secondary-foreground" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">אופיר ושות׳</h3>
-                <p className="text-xs text-white/60">סוכנות לביטוח</p>
-              </div>
+              <img src={logo} alt="אופיר ושות׳ לוגו" className="h-12 w-auto" />
             </div>
             <p className="text-white/70 text-sm leading-relaxed">
               סוכנות ביטוח מובילה המתמחה בביטוחי נסיעות לחו״ל עם שירות אישי ומקצועי.
