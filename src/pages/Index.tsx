@@ -53,7 +53,7 @@ const Header = () => {
 // Hero Section - Dark gradient with gold accent
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen hero-gradient pattern-dots flex items-center justify-center pt-20">
+    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #1a2744 0%, #243555 50%, #2d4166 100%)' }}>
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Shield Icon */}
