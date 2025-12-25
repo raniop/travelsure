@@ -19,19 +19,19 @@ const Index = () => {
 // Header Component
 const Header = () => {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 100%)' }}>
+    <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container-wide">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src={logo} alt="אופיר ושות׳ לוגו" className="h-10 md:h-12 w-auto" />
+            <img src={logo} alt="TravelSure לוגו" className="h-10 md:h-12 w-auto" />
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#services" className="text-white/80 hover:text-secondary transition-colors font-medium">שירותים</a>
-            <a href="#about" className="text-white/80 hover:text-secondary transition-colors font-medium">אודות</a>
-            <a href="#contact" className="text-white/80 hover:text-secondary transition-colors font-medium">צור קשר</a>
+            <a href="#services" className="text-foreground hover:text-primary transition-colors font-medium">שירותים</a>
+            <a href="#about" className="text-foreground hover:text-primary transition-colors font-medium">אודות</a>
+            <a href="#contact" className="text-foreground hover:text-primary transition-colors font-medium">צור קשר</a>
           </nav>
 
           {/* CTA Button */}
@@ -45,24 +45,24 @@ const Header = () => {
   );
 };
 
-// Hero Section - Teal gradient with orange accent
+// Hero Section - Clean gradient with logo colors
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 50%, #127070 100%)' }}>
+    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Logo */}
           <div className="mb-8 animate-fade-in">
-            <img src={logo} alt="אופיר ושות׳ לוגו" className="h-28 md:h-36 w-auto mx-auto" />
+            <img src={logo} alt="TravelSure לוגו" className="h-32 md:h-44 w-auto mx-auto" />
           </div>
 
           {/* Main Title */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            אופיר ושות׳
+            TravelSure
           </h1>
           
-          <h2 className="text-2xl md:text-4xl font-bold text-secondary mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            סוכנות לביטוח
+          <h2 className="text-2xl md:text-4xl font-bold mb-8 animate-fade-in" style={{ animationDelay: '0.2s', color: '#4ade80' }}>
+            ביטוח נסיעות לחו״ל
           </h2>
           
           <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
@@ -72,25 +72,25 @@ const HeroSection = () => {
           {/* Features Row */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-2 text-white/90">
-              <CheckCircle2 className="w-5 h-5 text-secondary" />
+              <CheckCircle2 className="w-5 h-5" style={{ color: '#4ade80' }} />
               <span>ליווי אישי ומקצועי</span>
             </div>
             <div className="flex items-center gap-2 text-white/90">
-              <CheckCircle2 className="w-5 h-5 text-secondary" />
+              <CheckCircle2 className="w-5 h-5" style={{ color: '#4ade80' }} />
               <span>מגוון פתרונות ביטוח</span>
             </div>
             <div className="flex items-center gap-2 text-white/90">
-              <CheckCircle2 className="w-5 h-5 text-secondary" />
+              <CheckCircle2 className="w-5 h-5" style={{ color: '#4ade80' }} />
               <span>שירות 24/7</span>
             </div>
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <Button variant="cta" size="xl" className="text-lg">
+            <Button variant="cta" size="xl" className="text-lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
               קבלו הצעת מחיר
             </Button>
-            <Button variant="ctaOutline" size="xl" className="text-lg border-white/30 text-white hover:bg-white/10">
+            <Button variant="ctaOutline" size="xl" className="text-lg border-white/40 text-white hover:bg-white/10">
               למידע נוסף
             </Button>
           </div>
@@ -100,7 +100,7 @@ const HeroSection = () => {
       {/* Scroll indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
         <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-          <div className="w-1 h-2 rounded-full bg-secondary"></div>
+          <div className="w-1 h-2 rounded-full" style={{ background: '#4ade80' }}></div>
         </div>
       </div>
     </section>
@@ -176,22 +176,22 @@ const AboutSection = () => {
   ];
 
   return (
-    <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 50%, #127070 100%)' }}>
+    <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
-            <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">אודותינו</span>
+            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#4ade80' }}>אודותינו</span>
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
               מחויבים להגנה
-              <span className="text-secondary block mt-2">שלכם ושל משפחתכם</span>
+              <span className="block mt-2" style={{ color: '#4ade80' }}>שלכם ושל משפחתכם</span>
             </h2>
             <p className="text-white/80 text-lg leading-relaxed mb-6">
-              סוכנות אופיר ושות׳ היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.
+              TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.
             </p>
             <p className="text-white/80 text-lg leading-relaxed mb-8">
               אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.
             </p>
-            <Button variant="cta" size="lg">
+            <Button variant="cta" size="lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
               <Phone className="w-5 h-5" />
               דברו איתנו
             </Button>
@@ -203,7 +203,7 @@ const AboutSection = () => {
                 key={index}
                 className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 text-center border border-white/10"
               >
-                <div className="text-4xl md:text-5xl font-black text-secondary mb-2">{stat.value}</div>
+                <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#4ade80' }}>{stat.value}</div>
                 <div className="text-white/80 font-medium">{stat.label}</div>
               </div>
             ))}
@@ -343,13 +343,13 @@ const ContactSection = () => {
 // Footer
 const Footer = () => {
   return (
-    <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #0d4a4a 0%, #0f5555 100%)' }}>
+    <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 100%)' }}>
       <div className="container-wide">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Logo & About */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <img src={logo} alt="אופיר ושות׳ לוגו" className="h-12 w-auto" />
+              <img src={logo} alt="TravelSure לוגו" className="h-12 w-auto" />
             </div>
             <p className="text-white/70 text-sm leading-relaxed">
               סוכנות ביטוח מובילה המתמחה בביטוחי נסיעות לחו״ל עם שירות אישי ומקצועי.
@@ -360,10 +360,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold mb-4">קישורים מהירים</h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li><a href="#services" className="hover:text-secondary transition-colors">שירותים</a></li>
-              <li><a href="#about" className="hover:text-secondary transition-colors">אודות</a></li>
-              <li><a href="#extensions" className="hover:text-secondary transition-colors">הרחבות</a></li>
-              <li><a href="#contact" className="hover:text-secondary transition-colors">צור קשר</a></li>
+              <li><a href="#services" className="hover:text-white transition-colors">שירותים</a></li>
+              <li><a href="#about" className="hover:text-white transition-colors">אודות</a></li>
+              <li><a href="#extensions" className="hover:text-white transition-colors">הרחבות</a></li>
+              <li><a href="#contact" className="hover:text-white transition-colors">צור קשר</a></li>
             </ul>
           </div>
 
@@ -379,7 +379,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-white/10 pt-8 text-center text-sm text-white/50">
-          <p>© {new Date().getFullYear()} אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
+          <p>© {new Date().getFullYear()} TravelSure - אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
         </div>
       </div>
     </footer>
