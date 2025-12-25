@@ -1,5 +1,6 @@
 import { Phone, Mail, MessageCircle, Clock, Users, Plane, Building2, Home, Car, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import logo from "@/assets/logo.avif";
 
 const Index = () => {
@@ -82,11 +83,11 @@ const HeroSection = () => {
 
           {/* CTA Button */}
           <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <a href="https://www.ophirbit.co.il/aff/?aid=468" target="_blank" rel="noopener noreferrer">
+            <Link to="/purchase">
               <Button variant="cta" size="xl" className="text-lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
                 לרכישת ביטוח נסיעות לחו״ל
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </div>
