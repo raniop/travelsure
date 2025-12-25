@@ -2,6 +2,7 @@ import { Phone, Mail, MessageCircle, Clock, Users, Plane, Building2, Home, Car, 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "@/hooks/useScrollAnimation";
+import ContactForm from "@/components/ContactForm";
 import logo from "@/assets/logo.avif";
 
 const Index = () => {
@@ -269,31 +270,10 @@ const ExtensionsSection = () => {
 
 // Contact Section
 const ContactSection = () => {
-  const contactMethods = [
-    {
-      icon: Phone,
-      title: "טלפון",
-      value: "073-2721111",
-      href: "tel:+972732721111"
-    },
-    {
-      icon: MessageCircle,
-      title: "וואטסאפ",
-      value: "052-3333603",
-      href: "https://wa.me/+972523333603"
-    },
-    {
-      icon: Mail,
-      title: "אימייל",
-      value: "ophir@ophirins.co.il",
-      href: "mailto:ophir@ophirins.co.il"
-    }
-  ];
-
   return (
     <section id="contact" className="section-padding bg-background">
       <div className="container-wide">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <AnimatedSection className="text-center mb-12 md:mb-16">
             <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">צרו קשר</span>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">נשמח לעמוד לשירותכם</h2>
@@ -302,53 +282,63 @@ const ContactSection = () => {
             </p>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {contactMethods.map((method, index) => (
-              <AnimatedSection 
-                key={index}
-                delay={index * 100}
-                animation="scale-up"
-              >
-                <a
-                  href={method.href}
-                  className="flex flex-col items-center p-8 bg-card rounded-2xl border border-border hover:border-secondary hover:shadow-xl transition-all group h-full"
-                >
-                  <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4 group-hover:bg-secondary transition-colors">
-                    <method.icon className="w-7 h-7 text-secondary group-hover:text-secondary-foreground transition-colors" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">{method.title}</h3>
-                  <p className="text-secondary font-semibold text-lg">{method.value}</p>
-                </a>
-              </AnimatedSection>
-            ))}
-          </div>
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Contact Form */}
+            <AnimatedSection animation="fade-right">
+              <div className="bg-card rounded-2xl p-8 border border-border">
+                <h3 className="text-2xl font-bold text-foreground mb-6">השאירו פרטים ונחזור אליכם</h3>
+                <ContactForm />
+              </div>
+            </AnimatedSection>
 
-          <AnimatedSection animation="fade-up" delay={300}>
-            <div className="bg-muted rounded-2xl p-8 text-center">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-                    <Clock className="w-6 h-6 text-secondary" />
+            {/* Contact Info */}
+            <AnimatedSection animation="fade-left" delay={200}>
+              <div className="space-y-6">
+                <div className="bg-muted rounded-2xl p-8">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="text-center">
+                      <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-6 h-6 text-secondary" />
+                      </div>
+                      <h4 className="font-bold text-foreground mb-2">בארץ</h4>
+                      <p className="text-muted-foreground text-sm">
+                        א׳-ה׳ 08:00-18:00<br />
+                        ו׳ וערבי חג 08:00-13:00
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-6 h-6 text-secondary" />
+                      </div>
+                      <h4 className="font-bold text-foreground mb-2">בחו״ל</h4>
+                      <p className="text-muted-foreground text-sm">
+                        זמינים 24/7<br />
+                        בעברית ובאנגלית
+                      </p>
+                    </div>
                   </div>
-                  <h4 className="font-bold text-foreground mb-2">בארץ</h4>
-                  <p className="text-muted-foreground">
-                    א׳-ה׳ 08:00-18:00<br />
-                    ו׳ וערבי חג 08:00-13:00
-                  </p>
                 </div>
-                <div>
-                  <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-6 h-6 text-secondary" />
+
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                  <p className="text-muted-foreground mb-4">או צרו קשר ישירות:</p>
+                  <div className="space-y-3">
+                    <a href="tel:+972732721111" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
+                      <Phone className="w-5 h-5 text-secondary" />
+                      073-2721111
+                    </a>
+                    <a href="https://wa.me/+972523333603" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
+                      <MessageCircle className="w-5 h-5 text-secondary" />
+                      052-3333603 (וואטסאפ)
+                    </a>
+                    <a href="mailto:ophir@ophirins.co.il" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
+                      <Mail className="w-5 h-5 text-secondary" />
+                      ophir@ophirins.co.il
+                    </a>
                   </div>
-                  <h4 className="font-bold text-foreground mb-2">בחו״ל</h4>
-                  <p className="text-muted-foreground">
-                    זמינים 24/7<br />
-                    בעברית ובאנגלית
-                  </p>
                 </div>
               </div>
-            </div>
-          </AnimatedSection>
+            </AnimatedSection>
+          </div>
         </div>
       </div>
     </section>
