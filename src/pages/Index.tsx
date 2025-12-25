@@ -33,6 +33,7 @@ const Header = () => {
           <nav className="hidden md:flex items-center gap-8">
             <a href="#services" className="text-foreground hover:text-primary transition-colors font-medium">שירותים</a>
             <a href="#about" className="text-foreground hover:text-primary transition-colors font-medium">אודות</a>
+            <Link to="/faq" className="text-foreground hover:text-primary transition-colors font-medium">שאלות נפוצות</Link>
             <a href="#contact" className="text-foreground hover:text-primary transition-colors font-medium">צור קשר</a>
           </nav>
 
