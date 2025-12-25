@@ -82,9 +82,11 @@ const HeroSection = () => {
 
           {/* CTA Button */}
           <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <Button variant="cta" size="xl" className="text-lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
-              קבלו הצעת מחיר
-            </Button>
+            <a href="https://www.ophirbit.co.il/aff/?aid=468" target="_blank" rel="noopener noreferrer">
+              <Button variant="cta" size="xl" className="text-lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
+                לרכישת ביטוח נסיעות לחו״ל
+              </Button>
+            </a>
           </div>
         </div>
       </div>
