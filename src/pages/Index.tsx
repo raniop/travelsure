@@ -94,8 +94,8 @@ const HeroSection = () => {
 
       {/* Scroll indicator */}
       <div className="absolute bottom-8 inset-x-0 flex justify-center animate-bounce">
-        <div className="w-8 h-12 rounded-full border-2 border-white/50 flex items-start justify-center p-2">
-          <div className="w-1.5 h-3 rounded-full bg-white animate-pulse"></div>
+        <div className="w-10 h-10 rounded-full border-2 border-white/50 flex items-center justify-center">
+          <ArrowLeft className="w-5 h-5 text-white rotate-[-90deg]" />
         </div>
       </div>
     </section>
