@@ -50,73 +50,66 @@ const Header = () => {
   );
 };
 
-// Hero Section - Clean like PassportCard
+// Hero Section - Clean minimal design
 const HeroSection = () => {
   return (
-    <section className="pt-20 md:pt-24">
+    <section className="pt-28 md:pt-32 pb-12 md:pb-20 bg-background">
       <div className="container-wide">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center min-h-[calc(100vh-5rem)]">
-          {/* Text Content */}
-          <div className="text-center lg:text-right order-2 lg:order-1 py-8 lg:py-0">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-primary leading-tight mb-6 animate-fade-in">
-              נסיעה בראש שקט
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              ביטוח נסיעות עם סוכן אישי מנוסה וצמוד
-            </p>
-            <p className="text-base md:text-lg text-muted-foreground mb-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              מבית אופיר ושות׳ סוכנות לביטוח
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in" style={{ animationDelay: "0.3s" }}>
-              <Button variant="cta" size="xl">
-                <ArrowLeft className="w-5 h-5" />
-                לרכישת ביטוח נסיעות לחו״ל
-              </Button>
-              <Button variant="ctaOutline" size="xl">
-                צור קשר
-              </Button>
-            </div>
-
-            <p className="text-sm text-muted-foreground mt-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-              כיסוי רפואי עד 5 מיליון דולר • שירות 24/7 • סוכן אישי צמוד
-            </p>
-          </div>
-
-          {/* Hero Image */}
-          <div className="order-1 lg:order-2 relative animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Image - Left side on desktop */}
+          <div className="order-1 lg:order-1 relative">
+            <div className="relative rounded-3xl overflow-hidden shadow-xl">
               <img 
-                src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=600&fit=crop" 
-                alt="נוסעים מאושרים בחופשה"
-                className="w-full h-[300px] md:h-[400px] lg:h-[500px] object-cover"
+                src="https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=800&h=700&fit=crop" 
+                alt="ציוד נסיעות על מפה - מצלמה, יומן, תיק"
+                className="w-full h-[350px] md:h-[450px] lg:h-[550px] object-cover"
               />
               {/* Floating Card */}
-              <div className="absolute bottom-4 right-4 left-4 md:bottom-8 md:right-8 md:left-auto md:w-72 bg-background/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-border">
+              <div className="absolute bottom-6 right-6 left-6 md:left-auto md:w-64 bg-background/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-border">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
                     <Shield className="w-5 h-5 text-secondary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">כיסוי מקיף</p>
+                    <p className="font-bold text-foreground">כיסוי מקיף</p>
                     <p className="text-sm text-muted-foreground">עד 5 מיליון דולר</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <span className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded-full">הוצאות רפואיות</span>
-                  <span className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded-full">פינוי</span>
-                  <span className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded-full">חילוץ</span>
+                <div className="flex gap-2 flex-wrap">
+                  <span className="text-xs bg-accent text-accent-foreground px-3 py-1 rounded-full font-medium">הוצאות רפואיות</span>
+                  <span className="text-xs bg-accent text-accent-foreground px-3 py-1 rounded-full font-medium">פינוי</span>
+                  <span className="text-xs bg-accent text-accent-foreground px-3 py-1 rounded-full font-medium">חילוץ</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Scroll Indicator */}
-        <div className="hidden lg:flex justify-center pb-8">
-          <a href="#how-it-works" className="animate-bounce">
-            <ChevronDown className="w-8 h-8 text-muted-foreground" />
-          </a>
+          {/* Text Content - Right side on desktop */}
+          <div className="text-center lg:text-right order-2 lg:order-2">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-primary leading-tight mb-6">
+              נסיעה בראש שקט
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-3">
+              ביטוח נסיעות עם סוכן אישי מנוסה וצמוד
+            </p>
+            <p className="text-lg md:text-xl text-muted-foreground mb-10">
+              מבית אופיר ושות׳ סוכנות לביטוח
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+              <Button variant="cta" size="xl" className="text-lg">
+                <ArrowLeft className="w-5 h-5" />
+                לרכישת ביטוח נסיעות לחו״ל
+              </Button>
+              <Button variant="ctaOutline" size="xl" className="text-lg">
+                צור קשר
+              </Button>
+            </div>
+
+            <p className="text-base text-muted-foreground">
+              כיסוי רפואי עד 5 מיליון דולר • שירות 24/7 • סוכן אישי צמוד
+            </p>
+          </div>
         </div>
       </div>
     </section>
