@@ -80,13 +80,10 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          {/* CTA Button */}
+          <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
             <Button variant="cta" size="xl" className="text-lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
               קבלו הצעת מחיר
-            </Button>
-            <Button variant="ctaOutline" size="xl" className="text-lg border-white/40 text-white hover:bg-white/10">
-              למידע נוסף
             </Button>
           </div>
         </div>
@@ -94,7 +91,7 @@ const HeroSection = () => {
 
       {/* Scroll indicator */}
       <div className="absolute bottom-8 inset-x-0 flex justify-center animate-bounce">
-        <div className="w-10 h-10 rounded-full border-2 border-white/50 flex items-center justify-center">
+        <div className="w-8 h-12 rounded-full border-2 border-white/50 flex items-center justify-center">
           <ArrowLeft className="w-5 h-5 text-white rotate-[-90deg]" />
         </div>
       </div>
