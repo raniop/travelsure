@@ -1,6 +1,7 @@
 import { Phone, Mail, MessageCircle, Clock, Users, Plane, Building2, Home, Car, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { AnimatedSection } from "@/hooks/useScrollAnimation";
 import logo from "@/assets/logo.avif";
 
 const Index = () => {
@@ -130,30 +131,33 @@ const ServicesSection = () => {
   return (
     <section id="services" className="section-padding bg-background">
       <div className="container-wide">
-        <div className="text-center mb-12 md:mb-16">
+        <AnimatedSection className="text-center mb-12 md:mb-16">
           <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">השירותים שלנו</span>
           <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">פתרונות ביטוח מקיפים</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             אנו מציעים מגוון רחב של שירותי ביטוח, כולם עם ליווי אישי ומקצועי
           </p>
-        </div>
+        </AnimatedSection>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service, index) => (
-            <div 
+            <AnimatedSection 
               key={index}
-              className="group p-8 rounded-2xl bg-card border border-border hover:border-secondary/50 hover:shadow-xl transition-all duration-300"
+              delay={index * 100}
+              animation="scale-up"
             >
-              <div className="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:scale-110 transition-all duration-300">
-                <service.icon className="w-8 h-8 text-secondary group-hover:text-secondary-foreground transition-colors" />
+              <div className="group p-8 rounded-2xl bg-card border border-border hover:border-secondary/50 hover:shadow-xl transition-all duration-300 h-full">
+                <div className="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:scale-110 transition-all duration-300">
+                  <service.icon className="w-8 h-8 text-secondary group-hover:text-secondary-foreground transition-colors" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
+                <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
+                <a href="#contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
+                  למידע נוסף
+                  <ArrowLeft className="w-4 h-4" />
+                </a>
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
-              <a href="#contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
-                למידע נוסף
-                <ArrowLeft className="w-4 h-4" />
-              </a>
-            </div>
+            </AnimatedSection>
           ))}
         </div>
       </div>
@@ -174,7 +178,7 @@ const AboutSection = () => {
     <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <div>
+          <AnimatedSection animation="fade-right">
             <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#4ade80' }}>אודותינו</span>
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
               מחויבים להגנה
@@ -190,17 +194,20 @@ const AboutSection = () => {
               <Phone className="w-5 h-5" />
               דברו איתנו
             </Button>
-          </div>
+          </AnimatedSection>
 
           <div className="grid grid-cols-2 gap-4">
             {stats.map((stat, index) => (
-              <div 
+              <AnimatedSection 
                 key={index}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 text-center border border-white/10"
+                delay={index * 100}
+                animation="scale-up"
               >
-                <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#4ade80' }}>{stat.value}</div>
-                <div className="text-white/80 font-medium">{stat.label}</div>
-              </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 text-center border border-white/10">
+                  <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#4ade80' }}>{stat.value}</div>
+                  <div className="text-white/80 font-medium">{stat.label}</div>
+                </div>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -223,32 +230,37 @@ const ExtensionsSection = () => {
   return (
     <section id="extensions" className="section-padding bg-muted/50">
       <div className="container-wide">
-        <div className="text-center mb-12 md:mb-16">
+        <AnimatedSection className="text-center mb-12 md:mb-16">
           <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">ביטוח נסיעות</span>
           <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">הרחבות נוספות</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             התאימו את הביטוח לצרכים שלכם עם מגוון הרחבות
           </p>
-        </div>
+        </AnimatedSection>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {extensions.map((ext, index) => (
-            <div 
+            <AnimatedSection 
               key={index}
-              className="bg-card rounded-xl p-6 border border-border hover:border-secondary/50 hover:shadow-lg transition-all"
+              delay={index * 80}
+              animation="fade-up"
             >
-              <h3 className="font-bold text-lg text-foreground mb-2">{ext.title}</h3>
-              <p className="text-muted-foreground">{ext.description}</p>
-            </div>
+              <div className="bg-card rounded-xl p-6 border border-border hover:border-secondary/50 hover:shadow-lg transition-all h-full">
+                <h3 className="font-bold text-lg text-foreground mb-2">{ext.title}</h3>
+                <p className="text-muted-foreground">{ext.description}</p>
+              </div>
+            </AnimatedSection>
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <Button variant="cta" size="xl">
-            <ArrowLeft className="w-5 h-5" />
-            לרכישת ביטוח נסיעות
-          </Button>
-        </div>
+        <AnimatedSection className="text-center mt-12" delay={500}>
+          <Link to="/purchase">
+            <Button variant="cta" size="xl">
+              <ArrowLeft className="w-5 h-5" />
+              לרכישת ביטוח נסיעות
+            </Button>
+          </Link>
+        </AnimatedSection>
       </div>
     </section>
   );
@@ -281,54 +293,61 @@ const ContactSection = () => {
     <section id="contact" className="section-padding bg-background">
       <div className="container-wide">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12 md:mb-16">
+          <AnimatedSection className="text-center mb-12 md:mb-16">
             <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">צרו קשר</span>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">נשמח לעמוד לשירותכם</h2>
             <p className="text-muted-foreground text-lg">
               נציגנו זמינים עבורכם 24/7 בעברית ובאנגלית
             </p>
-          </div>
+          </AnimatedSection>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             {contactMethods.map((method, index) => (
-              <a
+              <AnimatedSection 
                 key={index}
-                href={method.href}
-                className="flex flex-col items-center p-8 bg-card rounded-2xl border border-border hover:border-secondary hover:shadow-xl transition-all group"
+                delay={index * 100}
+                animation="scale-up"
               >
-                <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4 group-hover:bg-secondary transition-colors">
-                  <method.icon className="w-7 h-7 text-secondary group-hover:text-secondary-foreground transition-colors" />
-                </div>
-                <h3 className="font-bold text-foreground mb-1">{method.title}</h3>
-                <p className="text-secondary font-semibold text-lg">{method.value}</p>
-              </a>
+                <a
+                  href={method.href}
+                  className="flex flex-col items-center p-8 bg-card rounded-2xl border border-border hover:border-secondary hover:shadow-xl transition-all group h-full"
+                >
+                  <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4 group-hover:bg-secondary transition-colors">
+                    <method.icon className="w-7 h-7 text-secondary group-hover:text-secondary-foreground transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-foreground mb-1">{method.title}</h3>
+                  <p className="text-secondary font-semibold text-lg">{method.value}</p>
+                </a>
+              </AnimatedSection>
             ))}
           </div>
 
-          <div className="bg-muted rounded-2xl p-8 text-center">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-                  <Clock className="w-6 h-6 text-secondary" />
+          <AnimatedSection animation="fade-up" delay={300}>
+            <div className="bg-muted rounded-2xl p-8 text-center">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+                    <Clock className="w-6 h-6 text-secondary" />
+                  </div>
+                  <h4 className="font-bold text-foreground mb-2">בארץ</h4>
+                  <p className="text-muted-foreground">
+                    א׳-ה׳ 08:00-18:00<br />
+                    ו׳ וערבי חג 08:00-13:00
+                  </p>
                 </div>
-                <h4 className="font-bold text-foreground mb-2">בארץ</h4>
-                <p className="text-muted-foreground">
-                  א׳-ה׳ 08:00-18:00<br />
-                  ו׳ וערבי חג 08:00-13:00
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-6 h-6 text-secondary" />
+                <div>
+                  <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-6 h-6 text-secondary" />
+                  </div>
+                  <h4 className="font-bold text-foreground mb-2">בחו״ל</h4>
+                  <p className="text-muted-foreground">
+                    זמינים 24/7<br />
+                    בעברית ובאנגלית
+                  </p>
                 </div>
-                <h4 className="font-bold text-foreground mb-2">בחו״ל</h4>
-                <p className="text-muted-foreground">
-                  זמינים 24/7<br />
-                  בעברית ובאנגלית
-                </p>
               </div>
             </div>
-          </div>
+          </AnimatedSection>
         </div>
       </div>
     </section>
