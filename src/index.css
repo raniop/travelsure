@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,82 +6,74 @@
 
 @layer base {
   :root {
-    /* Clean White Background */
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    
-    /* Card & Surface Colors */
+    --foreground: 215 40% 15%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 215 40% 15%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    
-    /* Primary - Deep Navy Blue (from TravelSure) */
-    --primary: 234 62% 26%;
+    --popover-foreground: 215 40% 15%;
+
+    --primary: 215 60% 18%;
     --primary-foreground: 0 0% 100%;
-    
-    /* Secondary - Teal/Turquoise (from TravelSure) */
-    --secondary: 168 76% 42%;
-    --secondary-foreground: 0 0% 100%;
-    
-    /* Accent - Light Teal */
-    --accent: 168 76% 95%;
-    --accent-foreground: 234 62% 26%;
-    
-    /* Muted Colors */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    
-    /* Destructive */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    
-    /* Border & Input */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 168 76% 42%;
-    
-    /* Radius */
+
+    --secondary: 45 90% 55%;
+    --secondary-foreground: 215 60% 18%;
+
+    --muted: 215 20% 95%;
+    --muted-foreground: 215 20% 45%;
+
+    --accent: 215 40% 92%;
+    --accent-foreground: 215 60% 18%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 45 90% 55%;
+
     --radius: 0.75rem;
-    
-    /* Chart Colors */
-    --chart-1: 168 76% 42%;
-    --chart-2: 234 62% 26%;
-    --chart-3: 168 76% 60%;
-    --chart-4: 234 62% 40%;
-    --chart-5: 168 76% 80%;
-    
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 168 76% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 168 76% 95%;
-    --sidebar-accent-foreground: 234 62% 26%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 168 76% 42%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 215 60% 12%;
     --foreground: 0 0% 98%;
-    --card: 222 47% 15%;
+
+    --card: 215 50% 16%;
     --card-foreground: 0 0% 98%;
-    --popover: 222 47% 15%;
+
+    --popover: 215 50% 16%;
     --popover-foreground: 0 0% 98%;
-    --primary: 168 76% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 234 62% 26%;
-    --secondary-foreground: 0 0% 100%;
-    --accent: 222 47% 20%;
-    --accent-foreground: 168 76% 42%;
-    --muted: 222 47% 20%;
-    --muted-foreground: 215 20% 65%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 222 47% 25%;
-    --input: 222 47% 25%;
-    --ring: 168 76% 42%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 215 60% 18%;
+
+    --secondary: 45 90% 55%;
+    --secondary-foreground: 215 60% 18%;
+
+    --muted: 215 40% 22%;
+    --muted-foreground: 215 15% 70%;
+
+    --accent: 215 40% 25%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 30% 25%;
+    --input: 215 30% 25%;
+    --ring: 45 90% 55%;
   }
 }
 
@@ -98,19 +90,25 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Heebo', sans-serif;
   }
+  
+  .font-heebo {
+    font-family: 'Heebo', sans-serif;
+  }
 }
 
 @layer utilities {
-  .text-gradient {
-    @apply bg-gradient-to-l from-primary to-secondary bg-clip-text text-transparent;
-  }
-  
   .section-padding {
-    @apply py-16 md:py-24 lg:py-32;
+    @apply py-16 md:py-24;
   }
-  
   .container-wide {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(215 60% 12%) 0%, hsl(215 55% 18%) 50%, hsl(215 50% 22%) 100%);
+  }
+  .pattern-dots {
+    background-image: radial-gradient(circle, hsl(45 90% 55% / 0.1) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
 
