@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import CookieBanner from "@/components/CookieBanner";
 import logo from "@/assets/logo.avif";
 
 const PrivacyPolicy = () => {
@@ -113,6 +114,7 @@ const PrivacyPolicy = () => {
           <p>© {new Date().getFullYear()} TravelSure - אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
         </div>
       </footer>
+      <CookieBanner />
     </div>
   );
 };

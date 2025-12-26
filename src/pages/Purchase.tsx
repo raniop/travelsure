@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import CookieBanner from "@/components/CookieBanner";
 import logo from "@/assets/logo.avif";
 
 const Purchase = () => {
@@ -32,6 +33,7 @@ const Purchase = () => {
           frameBorder="0"
         />
       </div>
+      <CookieBanner />
     </div>
   );
 };
