@@ -24,8 +24,10 @@ const Header = () => {
   const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const isPurchasePage = location.pathname === "/purchase";
 
   const navLinks = [
+    { href: "/", label: t("nav.home"), isAnchor: false },
     { href: isHomePage ? "#services" : "/#services", label: t("nav.services"), isAnchor: isHomePage },
     { href: isHomePage ? "#about" : "/#about", label: t("nav.about"), isAnchor: isHomePage },
     { href: "/faq", label: t("nav.faq"), isAnchor: false },
@@ -114,17 +116,19 @@ const Header = () => {
 
           {/* Right side - Language & CTA */}
           <div className="flex items-center gap-3">
-            {/* Language Selector */}
-            <Select value={language} onValueChange={(val: "he" | "en") => setLanguage(val)}>
-              <SelectTrigger className="w-[90px] h-9 text-sm bg-background">
-                <Globe className="w-4 h-4 shrink-0" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background">
-                <SelectItem value="he">עברית</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Language Selector - Hidden on Purchase page */}
+            {!isPurchasePage && (
+              <Select value={language} onValueChange={(val: "he" | "en") => setLanguage(val)}>
+                <SelectTrigger className="w-[90px] h-9 text-sm bg-background">
+                  <Globe className="w-4 h-4 shrink-0" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  <SelectItem value="he">עברית</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             {/* CTA Button - Desktop */}
             <Link to="/purchase">
