@@ -447,7 +447,10 @@ const Footer = () => {
 
         <div className="border-t border-white/10 pt-8 text-center text-sm text-white/50 space-y-2">
           <p>© {new Date().getFullYear()} TravelSure - אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
-          <p>המשך שימושך באתר מהווה הסכמה לשימוש זה בהתאם וכמפורט במדיניות הפרטיות.</p>
+          <p>
+            המשך שימושך באתר מהווה הסכמה לשימוש זה בהתאם וכמפורט ב
+            <Link to="/privacy-policy" className="underline hover:text-white transition-colors">מדיניות הפרטיות</Link>.
+          </p>
         </div>
       </div>
     </footer>
