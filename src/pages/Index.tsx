@@ -5,11 +5,14 @@ import { AnimatedSection } from "@/hooks/useScrollAnimation";
 import ContactForm from "@/components/ContactForm";
 import CookieBanner from "@/components/CookieBanner";
 import Header from "@/components/Header";
+import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.avif";
 
 const Index = () => {
+  const { isRTL } = useLanguage();
+  
   return (
-    <div className="min-h-screen font-heebo" dir="rtl">
+    <div className="min-h-screen font-heebo" dir={isRTL ? "rtl" : "ltr"}>
       <Header />
       <HeroSection />
       <ServicesSection />
@@ -84,6 +87,8 @@ const AnimatedBackground = () => {
 
 // Hero Section - Clean gradient with logo colors
 const HeroSection = () => {
+  const { t } = useLanguage();
+  
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f3d3a 0%, #134e4a 30%, #1a6b5f 60%, #22877a 100%)' }}>
       <AnimatedBackground />
@@ -96,26 +101,26 @@ const HeroSection = () => {
           </h1>
           
           <h2 className="text-2xl md:text-4xl font-bold mb-8 animate-fade-in" style={{ animationDelay: '0.2s', color: '#86efac' }}>
-            ביטוח נסיעות לחו״ל
+            {t("hero.subtitle")}
           </h2>
           
           <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            הביטחון שלכם הוא העדיפות שלנו. אנו מספקים פתרונות ביטוח מקיפים ומותאמים אישית לכל לקוח, עם שירות מקצועי וליווי צמוד.
+            {t("hero.description")}
           </p>
 
           {/* Features Row */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
-              <span>ליווי אישי ומקצועי</span>
+              <span>{t("hero.feature1")}</span>
             </div>
             <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
-              <span>מגוון פתרונות ביטוח</span>
+              <span>{t("hero.feature2")}</span>
             </div>
             <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
-              <span>שירות 24/7</span>
+              <span>{t("hero.feature3")}</span>
             </div>
           </div>
 
@@ -123,7 +128,7 @@ const HeroSection = () => {
           <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
             <Link to="/purchase">
               <Button variant="cta" size="xl" className="text-lg shadow-xl hover:shadow-2xl transition-shadow" style={{ background: 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)', color: '#134e4a' }}>
-                לרכישת ביטוח נסיעות לחו״ל
+                {t("hero.cta")}
               </Button>
             </Link>
           </div>
@@ -142,26 +147,28 @@ const HeroSection = () => {
 
 // Services Section
 const ServicesSection = () => {
+  const { t } = useLanguage();
+  
   const services = [
     {
       icon: Plane,
-      title: "ביטוח נסיעות",
-      description: "טיסה בראש שקט עם כיסוי מקיף לחו״ל עד 5 מיליון דולר"
+      title: t("services.travel.title"),
+      description: t("services.travel.desc")
     },
     {
       icon: Car,
-      title: "ביטוח רכב",
-      description: "כיסוי מקיף לרכב שלכם במחירים תחרותיים"
+      title: t("services.car.title"),
+      description: t("services.car.desc")
     },
     {
       icon: Home,
-      title: "ביטוח דירה",
-      description: "הגנה מלאה על הבית ותכולתו"
+      title: t("services.home.title"),
+      description: t("services.home.desc")
     },
     {
       icon: Building2,
-      title: "ביטוח עסקי",
-      description: "פתרונות ביטוח מותאמים לעסקים קטנים וגדולים"
+      title: t("services.business.title"),
+      description: t("services.business.desc")
     }
   ];
 
@@ -169,10 +176,10 @@ const ServicesSection = () => {
     <section id="services" className="section-padding bg-background">
       <div className="container-wide">
         <AnimatedSection className="text-center mb-12 md:mb-16">
-          <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">השירותים שלנו</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">פתרונות ביטוח מקיפים</h2>
+          <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("services.label")}</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("services.title")}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            אנו מציעים מגוון רחב של שירותי ביטוח, כולם עם ליווי אישי ומקצועי
+            {t("services.description")}
           </p>
         </AnimatedSection>
 
@@ -190,7 +197,7 @@ const ServicesSection = () => {
                 <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
                 <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
                 <a href="#contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
-                  למידע נוסף
+                  {t("services.learnMore")}
                   <ArrowLeft className="w-4 h-4" />
                 </a>
               </div>
@@ -204,11 +211,13 @@ const ServicesSection = () => {
 
 // About Section
 const AboutSection = () => {
+  const { t } = useLanguage();
+  
   const stats = [
-    { value: "25+", label: "שנות ניסיון" },
-    { value: "10K+", label: "לקוחות מרוצים" },
-    { value: "24/7", label: "שירות לקוחות" },
-    { value: "$5M", label: "כיסוי מקסימלי" }
+    { value: "25+", label: t("about.stat1") },
+    { value: "10K+", label: t("about.stat2") },
+    { value: "24/7", label: t("about.stat3") },
+    { value: "$5M", label: t("about.stat4") }
   ];
 
   return (
@@ -216,20 +225,20 @@ const AboutSection = () => {
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <AnimatedSection animation="fade-right">
-            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#86efac' }}>אודותינו</span>
+            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#86efac' }}>{t("about.label")}</span>
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-              מחויבים להגנה
-              <span className="block mt-2" style={{ color: '#86efac' }}>שלכם ושל משפחתכם</span>
+              {t("about.title")}
+              <span className="block mt-2" style={{ color: '#86efac' }}>{t("about.titleHighlight")}</span>
             </h2>
             <p className="text-white/80 text-lg leading-relaxed mb-6">
-              TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.
+              {t("about.p1")}
             </p>
             <p className="text-white/80 text-lg leading-relaxed mb-8">
-              אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.
+              {t("about.p2")}
             </p>
             <Button variant="cta" size="lg" style={{ background: '#86efac', color: '#134e4a' }}>
               <Phone className="w-5 h-5" />
-              דברו איתנו
+              {t("about.cta")}
             </Button>
           </AnimatedSection>
 
@@ -255,23 +264,25 @@ const AboutSection = () => {
 
 // Extensions Section
 const ExtensionsSection = () => {
+  const { t } = useLanguage();
+  
   const extensions = [
-    { title: "הריון", description: "כיסוי עד 350 אלף דולר, עד שבוע 32" },
-    { title: "ביטול נסיעה", description: "החזר עד $5,000 במקרה רפואי" },
-    { title: "כבודה", description: "עד $2,250 עבור איבוד או איחור" },
-    { title: "רכב שכור", description: "ביטול השתתפות עצמית בנזק" },
-    { title: "ספורט חורף", description: "הרחבה לסקי וספורט חורף" },
-    { title: "ספורט אתגרי", description: "כיסוי לספורט אקסטרים" }
+    { title: t("extensions.pregnancy"), description: t("extensions.pregnancy.desc") },
+    { title: t("extensions.cancellation"), description: t("extensions.cancellation.desc") },
+    { title: t("extensions.luggage"), description: t("extensions.luggage.desc") },
+    { title: t("extensions.rental"), description: t("extensions.rental.desc") },
+    { title: t("extensions.winter"), description: t("extensions.winter.desc") },
+    { title: t("extensions.extreme"), description: t("extensions.extreme.desc") }
   ];
 
   return (
     <section id="extensions" className="section-padding bg-muted/50">
       <div className="container-wide">
         <AnimatedSection className="text-center mb-12 md:mb-16">
-          <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">ביטוח נסיעות</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">הרחבות נוספות</h2>
+          <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("extensions.label")}</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("extensions.title")}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            התאימו את הביטוח לצרכים שלכם עם מגוון הרחבות
+            {t("extensions.description")}
           </p>
         </AnimatedSection>
 
@@ -294,7 +305,7 @@ const ExtensionsSection = () => {
           <Link to="/purchase">
             <Button variant="cta" size="xl">
               <ArrowLeft className="w-5 h-5" />
-              לרכישת ביטוח נסיעות
+              {t("extensions.cta")}
             </Button>
           </Link>
         </AnimatedSection>
@@ -305,15 +316,17 @@ const ExtensionsSection = () => {
 
 // Contact Section
 const ContactSection = () => {
+  const { t } = useLanguage();
+  
   return (
     <section id="contact" className="section-padding bg-background">
       <div className="container-wide">
         <div className="max-w-5xl mx-auto">
           <AnimatedSection className="text-center mb-12 md:mb-16">
-            <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">צרו קשר</span>
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">נשמח לעמוד לשירותכם</h2>
+            <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("contact.label")}</span>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("contact.title")}</h2>
             <p className="text-muted-foreground text-lg">
-              נציגנו זמינים עבורכם 24/7 בעברית ובאנגלית
+              {t("contact.description")}
             </p>
           </AnimatedSection>
 
@@ -321,7 +334,7 @@ const ContactSection = () => {
             {/* Contact Form */}
             <AnimatedSection animation="fade-right">
               <div className="bg-card rounded-2xl p-8 border border-border">
-                <h3 className="text-2xl font-bold text-foreground mb-6">השאירו פרטים ונחזור אליכם</h3>
+                <h3 className="text-2xl font-bold text-foreground mb-6">{t("contact.formTitle")}</h3>
                 <ContactForm />
               </div>
             </AnimatedSection>
@@ -335,27 +348,27 @@ const ContactSection = () => {
                       <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
                         <Clock className="w-6 h-6 text-secondary" />
                       </div>
-                      <h4 className="font-bold text-foreground mb-2">בארץ</h4>
+                      <h4 className="font-bold text-foreground mb-2">{t("contact.inIsrael")}</h4>
                       <p className="text-muted-foreground text-sm">
-                        א׳-ה׳ 08:00-18:00<br />
-                        ו׳ וערבי חג 08:00-13:00
+                        {t("contact.inIsraelHours")}<br />
+                        {t("contact.inIsraelFriday")}
                       </p>
                     </div>
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
                         <Users className="w-6 h-6 text-secondary" />
                       </div>
-                      <h4 className="font-bold text-foreground mb-2">בחו״ל</h4>
+                      <h4 className="font-bold text-foreground mb-2">{t("contact.abroad")}</h4>
                       <p className="text-muted-foreground text-sm">
-                        זמינים 24/7<br />
-                        בעברית ובאנגלית
+                        {t("contact.abroadHours")}<br />
+                        {t("contact.abroadLang")}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-card rounded-2xl p-6 border border-border">
-                  <p className="text-muted-foreground mb-4">או צרו קשר ישירות:</p>
+                  <p className="text-muted-foreground mb-4">{t("contact.directContact")}</p>
                   <div className="space-y-3">
                     <a href="tel:+972732721111" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
                       <Phone className="w-5 h-5 text-secondary" />
@@ -363,7 +376,7 @@ const ContactSection = () => {
                     </a>
                     <a href="https://wa.me/+972523333603" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
                       <MessageCircle className="w-5 h-5 text-secondary" />
-                      052-3333603 (וואטסאפ)
+                      052-3333603 {t("contact.whatsapp")}
                     </a>
                     <a href="mailto:ophir@ophirins.co.il" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
                       <Mail className="w-5 h-5 text-secondary" />
@@ -382,6 +395,8 @@ const ContactSection = () => {
 
 // Footer
 const Footer = () => {
+  const { t } = useLanguage();
+  
   return (
     <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #134e4a 0%, #1a6b5f 100%)' }}>
       <div className="container-wide">
@@ -389,40 +404,39 @@ const Footer = () => {
           {/* Logo & About */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <img src={logo} alt="TravelSure לוגו" className="h-12 w-auto" />
+              <img src={logo} alt="TravelSure" className="h-12 w-auto" />
             </div>
             <p className="text-white/70 text-sm leading-relaxed">
-              סוכנות ביטוח מובילה המתמחה בביטוחי נסיעות לחו״ל עם שירות אישי ומקצועי.
+              {t("footer.company")}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-bold mb-4">קישורים מהירים</h4>
+            <h4 className="font-bold mb-4">{t("nav.services")}</h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li><a href="#services" className="hover:text-white transition-colors">שירותים</a></li>
-              <li><a href="#about" className="hover:text-white transition-colors">אודות</a></li>
-              <li><a href="#extensions" className="hover:text-white transition-colors">הרחבות</a></li>
-              <li><a href="#contact" className="hover:text-white transition-colors">צור קשר</a></li>
+              <li><a href="#services" className="hover:text-white transition-colors">{t("nav.services")}</a></li>
+              <li><a href="#about" className="hover:text-white transition-colors">{t("nav.about")}</a></li>
+              <li><a href="#extensions" className="hover:text-white transition-colors">{t("extensions.title")}</a></li>
+              <li><a href="#contact" className="hover:text-white transition-colors">{t("nav.contact")}</a></li>
             </ul>
           </div>
 
           {/* Contact Info */}
           <div>
-            <h4 className="font-bold mb-4">פרטי התקשרות</h4>
+            <h4 className="font-bold mb-4">{t("nav.contact")}</h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li>טלפון: 073-2721111</li>
-              <li>וואטסאפ: 052-3333603</li>
+              <li>073-2721111</li>
+              <li>052-3333603 {t("contact.whatsapp")}</li>
               <li>ophir@ophirins.co.il</li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-white/10 pt-8 text-center text-sm text-white/50 space-y-2">
-          <p>© {new Date().getFullYear()} TravelSure - אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
+          <p>© {new Date().getFullYear()} TravelSure - {t("footer.company")}. {t("footer.rights")}</p>
           <p>
-            המשך שימושך באתר מהווה הסכמה לשימוש זה בהתאם וכמפורט ב
-            <Link to="/privacy-policy" className="underline hover:text-white transition-colors">מדיניות הפרטיות</Link>.
+            <Link to="/privacy-policy" className="underline hover:text-white transition-colors">{t("footer.privacy")}</Link>
           </p>
         </div>
       </div>

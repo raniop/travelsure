@@ -16,53 +16,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.avif";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [language, setLanguage] = useState<"he" | "en">("he");
+  const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
   const isHomePage = location.pathname === "/";
 
   const navLinks = [
-    { href: isHomePage ? "#services" : "/#services", label: language === "he" ? "שירותים" : "Services", isAnchor: isHomePage },
-    { href: isHomePage ? "#about" : "/#about", label: language === "he" ? "אודות" : "About", isAnchor: isHomePage },
-    { href: "/faq", label: language === "he" ? "שאלות נפוצות" : "FAQ", isAnchor: false },
-    { href: isHomePage ? "#contact" : "/#contact", label: language === "he" ? "צור קשר" : "Contact", isAnchor: isHomePage },
+    { href: isHomePage ? "#services" : "/#services", label: t("nav.services"), isAnchor: isHomePage },
+    { href: isHomePage ? "#about" : "/#about", label: t("nav.about"), isAnchor: isHomePage },
+    { href: "/faq", label: t("nav.faq"), isAnchor: false },
+    { href: isHomePage ? "#contact" : "/#contact", label: t("nav.contact"), isAnchor: isHomePage },
   ];
-
-  const ctaText = language === "he" ? "רכישת ביטוח נסיעות" : "Purchase Travel Insurance";
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container-wide">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Left side - Language Selector & Mobile Menu */}
-          <div className="flex items-center gap-2">
-            {/* Language Selector */}
-            <Select value={language} onValueChange={(val: "he" | "en") => setLanguage(val)}>
-              <SelectTrigger className="w-[80px] h-9 text-sm">
-                <Globe className="w-4 h-4 ml-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="he">עברית</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Hamburger Menu - Mobile */}
+          {/* Left side - Mobile Menu */}
+          <div className="flex items-center gap-2 md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon">
                   <Menu className="h-6 w-6" />
-                  <span className="sr-only">{language === "he" ? "פתח תפריט" : "Open menu"}</span>
+                  <span className="sr-only">{t("nav.openMenu")}</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side={language === "he" ? "right" : "left"} className="w-[280px] font-heebo" dir={language === "he" ? "rtl" : "ltr"}>
+              <SheetContent side={isRTL ? "right" : "left"} className="w-[280px] font-heebo" dir={isRTL ? "rtl" : "ltr"}>
                 <SheetHeader>
-                  <SheetTitle className={language === "he" ? "text-right" : "text-left"}>
-                    <img src={logo} alt="TravelSure לוגו" className="h-10 w-auto" />
+                  <SheetTitle className={isRTL ? "text-right" : "text-left"}>
+                    <img src={logo} alt="TravelSure" className="h-10 w-auto" />
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-4 mt-8">
@@ -90,7 +76,7 @@ const Header = () => {
                   <Link to="/purchase" onClick={() => setIsOpen(false)} className="mt-4">
                     <Button variant="cta" size="lg" className="w-full">
                       <Plane className="w-4 h-4" />
-                      {ctaText}
+                      {t("nav.purchase")}
                     </Button>
                   </Link>
                 </nav>
@@ -98,41 +84,53 @@ const Header = () => {
             </Sheet>
           </div>
 
+          {/* Left side - Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) =>
+              link.isAnchor ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-foreground hover:text-primary transition-colors font-medium"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className="text-foreground hover:text-primary transition-colors font-medium"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
+          </nav>
+
           {/* Center - Logo */}
           <Link to="/" className="absolute left-1/2 transform -translate-x-1/2">
-            <img src={logo} alt="TravelSure לוגו" className="h-10 md:h-12 w-auto" />
+            <img src={logo} alt="TravelSure" className="h-10 md:h-12 w-auto" />
           </Link>
 
-          {/* Right side - Desktop Navigation & CTA */}
-          <div className="flex items-center gap-6">
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) =>
-                link.isAnchor ? (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className="text-foreground hover:text-primary transition-colors font-medium"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="text-foreground hover:text-primary transition-colors font-medium"
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
-            </nav>
+          {/* Right side - Language & CTA */}
+          <div className="flex items-center gap-3">
+            {/* Language Selector */}
+            <Select value={language} onValueChange={(val: "he" | "en") => setLanguage(val)}>
+              <SelectTrigger className="w-[90px] h-9 text-sm bg-background">
+                <Globe className="w-4 h-4 shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="he">עברית</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* CTA Button - Desktop */}
             <Link to="/purchase">
               <Button variant="cta" size="default" className="hidden sm:flex">
                 <Plane className="w-4 h-4" />
-                {ctaText}
+                {t("nav.purchase")}
               </Button>
             </Link>
           </div>
