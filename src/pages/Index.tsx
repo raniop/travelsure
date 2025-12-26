@@ -49,14 +49,76 @@ const Header = () => {
   );
 };
 
+// Animated Background Component
+const AnimatedBackground = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Animated gradient orbs */}
+      <div 
+        className="absolute w-[600px] h-[600px] rounded-full opacity-30 blur-3xl animate-float-slow"
+        style={{ 
+          background: 'radial-gradient(circle, #4ade80 0%, transparent 70%)',
+          top: '-10%',
+          right: '-10%',
+        }}
+      />
+      <div 
+        className="absolute w-[500px] h-[500px] rounded-full opacity-25 blur-3xl animate-float-medium"
+        style={{ 
+          background: 'radial-gradient(circle, #22d3ee 0%, transparent 70%)',
+          bottom: '10%',
+          left: '-15%',
+        }}
+      />
+      <div 
+        className="absolute w-[400px] h-[400px] rounded-full opacity-20 blur-3xl animate-float-fast"
+        style={{ 
+          background: 'radial-gradient(circle, #86efac 0%, transparent 70%)',
+          top: '40%',
+          right: '20%',
+        }}
+      />
+      <div 
+        className="absolute w-[300px] h-[300px] rounded-full opacity-25 blur-2xl animate-pulse-slow"
+        style={{ 
+          background: 'radial-gradient(circle, #2dd4bf 0%, transparent 70%)',
+          bottom: '20%',
+          right: '10%',
+        }}
+      />
+      
+      {/* Subtle grid pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}
+      />
+      
+      {/* Floating particles */}
+      <div className="absolute w-2 h-2 bg-white/20 rounded-full animate-float-particle-1" style={{ top: '20%', left: '10%' }} />
+      <div className="absolute w-3 h-3 bg-white/15 rounded-full animate-float-particle-2" style={{ top: '60%', left: '80%' }} />
+      <div className="absolute w-2 h-2 bg-white/20 rounded-full animate-float-particle-3" style={{ top: '80%', left: '30%' }} />
+      <div className="absolute w-1.5 h-1.5 bg-white/25 rounded-full animate-float-particle-1" style={{ top: '30%', left: '70%' }} />
+      <div className="absolute w-2.5 h-2.5 bg-white/15 rounded-full animate-float-particle-2" style={{ top: '50%', left: '20%' }} />
+    </div>
+  );
+};
+
 // Hero Section - Clean gradient with logo colors
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #134e4a 0%, #1a6b5f 50%, #22877a 100%)' }}>
+    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f3d3a 0%, #134e4a 30%, #1a6b5f 60%, #22877a 100%)' }}>
+      <AnimatedBackground />
+      
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 animate-fade-in drop-shadow-lg" style={{ animationDelay: '0.1s' }}>
             TravelSure
           </h1>
           
@@ -70,15 +132,15 @@ const HeroSection = () => {
 
           {/* Features Row */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <div className="flex items-center gap-2 text-white/90">
+            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>ליווי אישי ומקצועי</span>
             </div>
-            <div className="flex items-center gap-2 text-white/90">
+            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>מגוון פתרונות ביטוח</span>
             </div>
-            <div className="flex items-center gap-2 text-white/90">
+            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>שירות 24/7</span>
             </div>
@@ -87,7 +149,7 @@ const HeroSection = () => {
           {/* CTA Button */}
           <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
             <Link to="/purchase">
-              <Button variant="cta" size="xl" className="text-lg" style={{ background: '#86efac', color: '#134e4a' }}>
+              <Button variant="cta" size="xl" className="text-lg shadow-xl hover:shadow-2xl transition-shadow" style={{ background: 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)', color: '#134e4a' }}>
                 לרכישת ביטוח נסיעות לחו״ל
               </Button>
             </Link>
@@ -97,7 +159,7 @@ const HeroSection = () => {
 
       {/* Scroll indicator */}
       <div className="absolute bottom-8 inset-x-0 flex justify-center animate-bounce">
-        <div className="w-8 h-12 rounded-full border-2 border-white/50 flex items-center justify-center">
+        <div className="w-8 h-12 rounded-full border-2 border-white/30 backdrop-blur-sm flex items-center justify-center bg-white/5">
           <ArrowLeft className="w-5 h-5 text-white rotate-[-90deg]" />
         </div>
       </div>
