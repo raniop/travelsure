@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { AnimatedSection } from "@/hooks/useScrollAnimation";
 import ContactForm from "@/components/ContactForm";
+import CookieBanner from "@/components/CookieBanner";
 import logo from "@/assets/logo.avif";
 
 const Index = () => {
@@ -15,6 +16,7 @@ const Index = () => {
       <ExtensionsSection />
       <ContactSection />
       <Footer />
+      <CookieBanner />
     </div>
   );
 };
