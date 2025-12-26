@@ -8,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { AnimatedSection } from "@/hooks/useScrollAnimation";
+import CookieBanner from "@/components/CookieBanner";
 import logo from "@/assets/logo.avif";
 
 const FAQ = () => {
@@ -143,6 +144,7 @@ const FAQ = () => {
           </p>
         </div>
       </footer>
+      <CookieBanner />
     </div>
   );
 };

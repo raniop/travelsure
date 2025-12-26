@@ -41,10 +41,12 @@ const Header = () => {
           </nav>
 
           {/* CTA Button */}
-          <Button variant="cta" size="default" className="hidden sm:flex">
-            <Phone className="w-4 h-4" />
-            התקשרו עכשיו
-          </Button>
+          <Link to="/purchase">
+            <Button variant="cta" size="default" className="hidden sm:flex">
+              <Plane className="w-4 h-4" />
+              רכישת ביטוח נסיעות
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
