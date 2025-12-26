@@ -445,8 +445,9 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-8 text-center text-sm text-white/50">
+        <div className="border-t border-white/10 pt-8 text-center text-sm text-white/50 space-y-2">
           <p>© {new Date().getFullYear()} TravelSure - אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
+          <p>המשך שימושך באתר מהווה הסכמה לשימוש זה בהתאם וכמפורט במדיניות הפרטיות.</p>
         </div>
       </div>
     </footer>
