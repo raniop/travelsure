@@ -1,101 +1,81 @@
 import Header from "@/components/Header";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const PrivacyPolicy = () => {
+  const { t, isRTL, language } = useLanguage();
+  
   return (
-    <div className="min-h-screen font-heebo bg-background" dir="rtl">
+    <div className="min-h-screen font-heebo bg-background" dir={isRTL ? "rtl" : "ltr"}>
       <Header />
-
-      {/* Spacer for fixed header */}
       <div className="h-16 md:h-20" />
 
-      {/* Content */}
       <main className="container-wide py-12 md:py-16">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-8">מדיניות פרטיות</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-8">{t("privacy.title")}</h1>
           
           <div className="prose prose-lg max-w-none space-y-6 text-muted-foreground">
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">כללי</h2>
-              <p>
-                אופיר ושות׳ סוכנות לביטוח (להלן: "החברה") מכבדת את פרטיות המשתמשים באתר. 
-                מדיניות פרטיות זו מתארת את האופן בו אנו אוספים, משתמשים ומגנים על המידע שלך.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.general")}</h2>
+              <p>{t("privacy.generalText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">איסוף מידע</h2>
-              <p>
-                אנו אוספים מידע שאתה מספק לנו באופן ישיר, כגון שם, כתובת דוא"ל, מספר טלפון 
-                ופרטים נוספים הנדרשים לצורך מתן שירותי ביטוח. בנוסף, אנו עשויים לאסוף מידע 
-                טכני אודות הגלישה שלך באתר.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.collection")}</h2>
+              <p>{t("privacy.collectionText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">שימוש במידע</h2>
-              <p>המידע שנאסף משמש אותנו למטרות הבאות:</p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.usage")}</h2>
+              <p>{t("privacy.usageText")}</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>מתן שירותי ביטוח ותמיכה</li>
-                <li>יצירת קשר בנוגע לפניות ובקשות</li>
-                <li>שיפור השירותים והאתר שלנו</li>
-                <li>עמידה בדרישות חוקיות ורגולטוריות</li>
+                <li>{t("privacy.usage1")}</li>
+                <li>{t("privacy.usage2")}</li>
+                <li>{t("privacy.usage3")}</li>
+                <li>{t("privacy.usage4")}</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">אבטחת מידע</h2>
-              <p>
-                אנו נוקטים באמצעי אבטחה מתקדמים על מנת להגן על המידע האישי שלך מפני גישה 
-                בלתי מורשית, שימוש לרעה או חשיפה.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.security")}</h2>
+              <p>{t("privacy.securityText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">שיתוף מידע</h2>
-              <p>
-                איננו מוכרים, סוחרים או מעבירים לצדדים שלישיים את המידע האישי שלך, למעט 
-                במקרים הנדרשים לצורך מתן השירותים (כגון חברות ביטוח) או כנדרש על פי חוק.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.sharing")}</h2>
+              <p>{t("privacy.sharingText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">עוגיות (Cookies)</h2>
-              <p>
-                האתר עשוי להשתמש בעוגיות לצורך שיפור חווית המשתמש. באפשרותך לשלוט בהגדרות 
-                העוגיות דרך הדפדפן שלך.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.cookies")}</h2>
+              <p>{t("privacy.cookiesText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">זכויותיך</h2>
-              <p>
-                יש לך זכות לבקש גישה למידע האישי שלך, לתקן אותו או למחוק אותו. לכל בקשה 
-                ניתן לפנות אלינו בפרטי ההתקשרות המופיעים באתר.
-              </p>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.rights")}</h2>
+              <p>{t("privacy.rightsText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">יצירת קשר</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-3">{t("privacy.contactTitle")}</h2>
               <p>
-                לשאלות בנוגע למדיניות הפרטיות, ניתן לפנות אלינו:<br />
-                דוא"ל: ophir@ophirins.co.il<br />
-                טלפון: 073-2721111
+                {t("privacy.contactText")}<br />
+                ophir@ophirins.co.il<br />
+                073-2721111
               </p>
             </section>
 
             <section className="pt-4 border-t border-border">
               <p className="text-sm">
-                מדיניות זו עודכנה לאחרונה בתאריך: {new Date().toLocaleDateString('he-IL')}
+                {t("privacy.lastUpdated")} {new Date().toLocaleDateString(language === "he" ? 'he-IL' : 'en-US')}
               </p>
             </section>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="text-white py-8" style={{ background: 'linear-gradient(135deg, #134e4a 0%, #1a6b5f 100%)' }}>
         <div className="container-wide text-center text-sm text-white/50">
-          <p>© {new Date().getFullYear()} TravelSure - אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
+          <p>© {new Date().getFullYear()} TravelSure - {t("footer.company")}. {t("footer.rights")}</p>
         </div>
       </footer>
     </div>
