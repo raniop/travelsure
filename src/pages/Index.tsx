@@ -52,7 +52,7 @@ const Header = () => {
 // Hero Section - Clean gradient with logo colors
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
+    <section className="relative min-h-screen flex items-center justify-center pt-20" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d4a7c 50%, #3d5a9a 100%)' }}>
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Title */}
@@ -60,7 +60,7 @@ const HeroSection = () => {
             TravelSure
           </h1>
           
-          <h2 className="text-2xl md:text-4xl font-bold mb-8 animate-fade-in" style={{ animationDelay: '0.2s', color: '#4ade80' }}>
+          <h2 className="text-2xl md:text-4xl font-bold mb-8 animate-fade-in" style={{ animationDelay: '0.2s', color: '#60a5fa' }}>
             ביטוח נסיעות לחו״ל
           </h2>
           
@@ -71,15 +71,15 @@ const HeroSection = () => {
           {/* Features Row */}
           <div className="flex flex-wrap items-center justify-center gap-6 mb-10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-2 text-white/90">
-              <CheckCircle2 className="w-5 h-5" style={{ color: '#4ade80' }} />
+              <CheckCircle2 className="w-5 h-5" style={{ color: '#60a5fa' }} />
               <span>ליווי אישי ומקצועי</span>
             </div>
             <div className="flex items-center gap-2 text-white/90">
-              <CheckCircle2 className="w-5 h-5" style={{ color: '#4ade80' }} />
+              <CheckCircle2 className="w-5 h-5" style={{ color: '#60a5fa' }} />
               <span>מגוון פתרונות ביטוח</span>
             </div>
             <div className="flex items-center gap-2 text-white/90">
-              <CheckCircle2 className="w-5 h-5" style={{ color: '#4ade80' }} />
+              <CheckCircle2 className="w-5 h-5" style={{ color: '#60a5fa' }} />
               <span>שירות 24/7</span>
             </div>
           </div>
@@ -87,7 +87,7 @@ const HeroSection = () => {
           {/* CTA Button */}
           <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
             <Link to="/purchase">
-              <Button variant="cta" size="xl" className="text-lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
+              <Button variant="cta" size="xl" className="text-lg" style={{ background: '#60a5fa', color: '#1e3a5f' }}>
                 לרכישת ביטוח נסיעות לחו״ל
               </Button>
             </Link>
@@ -177,14 +177,14 @@ const AboutSection = () => {
   ];
 
   return (
-    <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
+    <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d4a7c 50%, #3d5a9a 100%)' }}>
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <AnimatedSection animation="fade-right">
-            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#4ade80' }}>אודותינו</span>
+            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#60a5fa' }}>אודותינו</span>
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
               מחויבים להגנה
-              <span className="block mt-2" style={{ color: '#4ade80' }}>שלכם ושל משפחתכם</span>
+              <span className="block mt-2" style={{ color: '#60a5fa' }}>שלכם ושל משפחתכם</span>
             </h2>
             <p className="text-white/80 text-lg leading-relaxed mb-6">
               TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.
@@ -192,7 +192,7 @@ const AboutSection = () => {
             <p className="text-white/80 text-lg leading-relaxed mb-8">
               אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.
             </p>
-            <Button variant="cta" size="lg" style={{ background: '#4ade80', color: '#1a5a5a' }}>
+            <Button variant="cta" size="lg" style={{ background: '#60a5fa', color: '#1e3a5f' }}>
               <Phone className="w-5 h-5" />
               דברו איתנו
             </Button>
@@ -206,7 +206,7 @@ const AboutSection = () => {
                 animation="scale-up"
               >
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 text-center border border-white/10">
-                  <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#4ade80' }}>{stat.value}</div>
+                  <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#60a5fa' }}>{stat.value}</div>
                   <div className="text-white/80 font-medium">{stat.label}</div>
                 </div>
               </AnimatedSection>
@@ -348,7 +348,7 @@ const ContactSection = () => {
 // Footer
 const Footer = () => {
   return (
-    <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 100%)' }}>
+    <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d4a7c 100%)' }}>
       <div className="container-wide">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Logo & About */}
