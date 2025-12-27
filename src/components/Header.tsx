@@ -225,7 +225,7 @@ const Header = () => {
 
             {/* CTA Button - Desktop */}
             <Link to="/purchase">
-              <Button variant="cta" size="default" className="hidden sm:flex">
+              <Button variant="cta" size="default" className="hidden sm:flex shadow-[0_8px_30px_rgba(134,239,172,0.4)] hover:shadow-[0_12px_40px_rgba(134,239,172,0.5)] transition-all duration-300 hover:scale-105">
                 {t("nav.purchase")}
                 <ArrowLeft className="w-4 h-4" />
               </Button>
