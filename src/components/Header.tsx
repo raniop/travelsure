@@ -93,23 +93,23 @@ const Header = () => {
           <div className="flex items-center gap-2 md:gap-3">
             {/* Language Toggle - Hidden on Purchase page */}
             {!isPurchasePage && !isSearchOpen && (
-              <div className="flex items-center bg-muted rounded-full px-1 py-1">
+              <div className="flex items-center bg-background border border-border rounded-full px-4 py-2 shadow-sm">
                 <button
                   onClick={() => setLanguage("en")}
-                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                  className={`text-sm font-medium transition-colors ${
                     language === "en"
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   En
                 </button>
-                <span className="text-muted-foreground text-sm">|</span>
+                <span className="text-muted-foreground/50 mx-2">|</span>
                 <button
                   onClick={() => setLanguage("he")}
-                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                  className={`text-sm font-medium transition-colors ${
                     language === "he"
-                      ? "bg-background text-foreground shadow-sm"
+                      ? "text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
