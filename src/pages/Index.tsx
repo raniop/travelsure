@@ -129,7 +129,7 @@ const HeroSection = () => {
             <Link to="/purchase">
               <Button variant="cta" size="xl" className="text-lg shadow-xl hover:shadow-2xl transition-shadow" style={{ background: 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)', color: '#134e4a' }}>
                 {t("hero.cta")}
-                <Plane className="w-5 h-5 text-white animate-bounce" style={{ animationDuration: '2s' }} />
+                <Plane className="w-6 h-6 animate-bounce" style={{ animationDuration: '2s' }} />
               </Button>
             </Link>
           </div>
