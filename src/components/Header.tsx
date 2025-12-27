@@ -81,7 +81,7 @@ const Header = () => {
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container-wide">
-        <div className="flex items-center justify-between h-18 md:h-22">
+        <div className="flex items-center justify-between h-20 md:h-24">
           {/* Left side - Mobile Menu */}
           <div className="flex items-center gap-2 md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
