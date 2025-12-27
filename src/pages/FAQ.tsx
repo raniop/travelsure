@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const FAQ = () => {
   const { t, isRTL } = useLanguage();
+  
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   const faqs = [
     { question: t("faq.q1"), answer: t("faq.a1") },
