@@ -23,34 +23,12 @@ const Header = () => {
   const isPurchasePage = location.pathname === "/purchase";
 
   const navLinks = [
-    { href: "/", label: t("nav.home"), isAnchor: false },
-    { href: "#services", label: t("nav.services"), isAnchor: true, sectionId: "services" },
-    { href: "#about", label: t("nav.about"), isAnchor: true, sectionId: "about" },
-    { href: "/faq", label: t("nav.faq"), isAnchor: false },
-    { href: "#contact", label: t("nav.contact"), isAnchor: true, sectionId: "contact" },
+    { href: "/", label: t("nav.home") },
+    { href: "/services", label: t("nav.services") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/faq", label: t("nav.faq") },
+    { href: "/contact", label: t("nav.contact") },
   ];
-
-  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
-    e.preventDefault();
-    
-    if (!isHomePage) {
-      // Navigate to home page first, then scroll
-      window.location.href = `/#${sectionId}`;
-      return;
-    }
-    
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const headerOffset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-    }
-  };
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
@@ -72,30 +50,16 @@ const Header = () => {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-4 mt-8">
-                  {navLinks.map((link) =>
-                    link.isAnchor && link.sectionId ? (
-                      <a
-                        key={link.href}
-                        href={link.href}
-                        onClick={(e) => {
-                          handleAnchorClick(e, link.sectionId!);
-                          setIsOpen(false);
-                        }}
-                        className="text-foreground hover:text-primary transition-colors font-medium text-lg py-2 border-b border-border"
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        key={link.href}
-                        to={link.href}
-                        onClick={() => setIsOpen(false)}
-                        className="text-foreground hover:text-primary transition-colors font-medium text-lg py-2 border-b border-border"
-                      >
-                        {link.label}
-                      </Link>
-                    )
-                  )}
+                  {navLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      to={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="text-foreground hover:text-primary transition-colors font-medium text-lg py-2 border-b border-border"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
                   <Link to="/purchase" onClick={() => setIsOpen(false)} className="mt-4">
                     <Button variant="cta" size="lg" className="w-full">
                       {t("nav.purchase")}
@@ -109,26 +73,15 @@ const Header = () => {
 
           {/* Left side - Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) =>
-              link.isAnchor && link.sectionId ? (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={(e) => handleAnchorClick(e, link.sectionId!)}
-                  className="text-foreground hover:text-primary transition-colors font-medium cursor-pointer"
-                >
-                  {link.label}
-                </a>
-              ) : (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="text-foreground hover:text-primary transition-colors font-medium"
-                >
-                  {link.label}
-                </Link>
-              )
-            )}
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="text-foreground hover:text-primary transition-colors font-medium"
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
 
           {/* Center - Logo */}
