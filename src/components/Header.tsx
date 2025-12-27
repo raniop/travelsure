@@ -136,8 +136,35 @@ const Header = () => {
             <img src={logo} alt="TravelSure" className="h-10 md:h-12 w-auto" />
           </Link>
 
-          {/* Right side - Search, Language & CTA */}
+          {/* Right side - Language, Search & CTA */}
           <div className="flex items-center gap-2 md:gap-3">
+            {/* Language Toggle - Hidden on Purchase page */}
+            {!isPurchasePage && !isSearchOpen && (
+              <div className="flex items-center bg-muted rounded-full px-1 py-1">
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                    language === "en"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  En
+                </button>
+                <span className="text-muted-foreground text-sm">|</span>
+                <button
+                  onClick={() => setLanguage("he")}
+                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                    language === "he"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  עב
+                </button>
+              </div>
+            )}
+
             {/* Search */}
             {!isPurchasePage && (
               <div className="relative">
@@ -169,33 +196,6 @@ const Header = () => {
                     <Search className="w-4 h-4 text-foreground" />
                   </button>
                 )}
-              </div>
-            )}
-
-            {/* Language Toggle - Hidden on Purchase page */}
-            {!isPurchasePage && !isSearchOpen && (
-              <div className="flex items-center bg-muted rounded-full px-1 py-1">
-                <button
-                  onClick={() => setLanguage("en")}
-                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-                    language === "en"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  En
-                </button>
-                <span className="text-muted-foreground text-sm">|</span>
-                <button
-                  onClick={() => setLanguage("he")}
-                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-                    language === "he"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  עב
-                </button>
               </div>
             )}
 
