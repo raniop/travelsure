@@ -134,7 +134,7 @@ const Header = () => {
 
           {/* Center - Logo */}
           <Link to="/" className="absolute left-1/2 transform -translate-x-1/2">
-            <img src={logo} alt="TravelSure" className="h-12 md:h-14 w-auto" />
+            <img src={logo} alt="TravelSure" className="h-14 md:h-16 w-auto" />
           </Link>
 
           {/* Right side - Language, Search & CTA */}
