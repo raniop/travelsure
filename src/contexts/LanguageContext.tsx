@@ -26,7 +26,7 @@ const translations: Record<Language, Record<string, string>> = {
     "hero.feature1": "ליווי אישי ומקצועי",
     "hero.feature2": "מגוון פתרונות ביטוח",
     "hero.feature3": "שירות 24/7",
-    "hero.cta": "לרכישת ביטוח נסיעות לחו״ל",
+    "hero.cta": "לרכישת ביטוח נסיעות",
 
     // Services
     "services.label": "השירותים שלנו",
