@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Plane, Menu, Globe } from "lucide-react";
+import { Plane, Menu, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,18 +9,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.avif";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
   const isHomePage = location.pathname === "/";
@@ -140,20 +136,67 @@ const Header = () => {
             <img src={logo} alt="TravelSure" className="h-10 md:h-12 w-auto" />
           </Link>
 
-          {/* Right side - Language & CTA */}
-          <div className="flex items-center gap-3">
-            {/* Language Selector - Hidden on Purchase page */}
+          {/* Right side - Search, Language & CTA */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Search */}
             {!isPurchasePage && (
-              <Select value={language} onValueChange={(val: "he" | "en") => setLanguage(val)}>
-                <SelectTrigger className="w-[90px] h-9 text-sm bg-background">
-                  <Globe className="w-4 h-4 shrink-0" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background">
-                  <SelectItem value="he">עברית</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                {isSearchOpen ? (
+                  <div className="flex items-center gap-2 animate-fade-in">
+                    <Input
+                      type="text"
+                      placeholder={isRTL ? "חיפוש..." : "Search..."}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-[140px] md:w-[200px] h-9 text-sm"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className="p-2 rounded-full hover:bg-muted transition-colors"
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                  >
+                    <Search className="w-4 h-4 text-foreground" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Language Toggle - Hidden on Purchase page */}
+            {!isPurchasePage && !isSearchOpen && (
+              <div className="flex items-center bg-muted rounded-full px-1 py-1">
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                    language === "en"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  En
+                </button>
+                <span className="text-muted-foreground text-sm">|</span>
+                <button
+                  onClick={() => setLanguage("he")}
+                  className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                    language === "he"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  עב
+                </button>
+              </div>
             )}
 
             {/* CTA Button - Desktop */}
