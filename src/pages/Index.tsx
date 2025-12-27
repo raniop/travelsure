@@ -127,9 +127,9 @@ const HeroSection = () => {
           {/* CTA Button */}
           <div className="flex justify-center">
             <Link to="/purchase">
-              <Button variant="cta" size="xl" className="text-lg shadow-xl hover:shadow-2xl transition-shadow" style={{ background: 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)', color: '#134e4a' }}>
+              <Button variant="cta" size="xl" className="text-lg shadow-2xl hover:shadow-[0_20px_50px_rgba(134,239,172,0.4)] transition-all duration-300 border-2 border-white/30 hover:scale-105" style={{ background: 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)', color: '#134e4a' }}>
                 {t("hero.cta")}
-                <Plane className="w-6 h-6 animate-bounce" style={{ animationDuration: '2s' }} />
+                <Plane className="w-7 h-7 animate-bounce" style={{ animationDuration: '2s' }} />
               </Button>
             </Link>
           </div>
