@@ -31,15 +31,29 @@ const Header = () => {
     { href: "/contact", label: t("nav.contact") },
   ];
 
-  // Search data - pages and keywords
+  // Search data - pages and keywords with FAQ content
   const searchData = useMemo(() => [
     { href: "/", label: t("nav.home"), keywords: ["בית", "home", "ראשי", "main"] },
     { href: "/services", label: t("nav.services"), keywords: ["שירותים", "services", "ביטוח", "insurance", "נסיעות", "travel", "רכב", "car", "דירה", "home", "עסקי", "business"] },
-    { href: "/about", label: t("nav.about"), keywords: ["אודות", "about", "מי אנחנו", "who we are", "החברה", "company"] },
-    { href: "/faq", label: t("nav.faq"), keywords: ["שאלות", "faq", "תשובות", "answers", "שאלות נפוצות", "frequently asked"] },
-    { href: "/contact", label: t("nav.contact"), keywords: ["צור קשר", "contact", "טלפון", "phone", "מייל", "email", "וואטסאפ", "whatsapp"] },
-    { href: "/purchase", label: t("nav.purchase"), keywords: ["רכישה", "purchase", "קנייה", "buy", "ביטוח נסיעות", "travel insurance"] },
-    { href: "/privacy", label: t("footer.privacy"), keywords: ["פרטיות", "privacy", "מדיניות", "policy"] },
+    { href: "/about", label: t("nav.about"), keywords: ["אודות", "about", "מי אנחנו", "who we are", "החברה", "company", "ניסיון", "experience"] },
+    { href: "/faq", label: t("nav.faq"), keywords: [
+      // General FAQ keywords
+      "שאלות", "faq", "תשובות", "answers", "שאלות נפוצות", "frequently asked",
+      // Coverage keywords
+      "כיסוי", "coverage", "פוליסה", "policy", "הוצאות רפואיות", "medical expenses", "אשפוז", "hospitalization",
+      // Specific topics
+      "ביטול נסיעה", "trip cancellation", "כבודה", "luggage", "פינוי רפואי", "medical evacuation",
+      "מצב רפואי קיים", "pre-existing", "החמרה", "worsening",
+      "ספורט אתגרי", "extreme sports", "ספורט חורף", "winter sports", "סקי", "skiing",
+      "חירום", "emergency", "מוקד", "center", "24/7",
+      "הריון", "pregnancy", "לידה מוקדמת", "premature birth",
+      "מחיר", "price", "עלות", "cost", "הצעת מחיר", "quote",
+      "השתתפות עצמית", "deductible",
+      "תביעה", "claim", "קבלות", "receipts"
+    ] },
+    { href: "/contact", label: t("nav.contact"), keywords: ["צור קשר", "contact", "טלפון", "phone", "מייל", "email", "וואטסאפ", "whatsapp", "073", "054"] },
+    { href: "/purchase", label: t("nav.purchase"), keywords: ["רכישה", "purchase", "קנייה", "buy", "ביטוח נסיעות", "travel insurance", "5 מיליון", "5 million", "הרחבות", "extensions"] },
+    { href: "/privacy", label: t("footer.privacy"), keywords: ["פרטיות", "privacy", "מדיניות", "policy", "עוגיות", "cookies"] },
   ], [t]);
 
   // Filter search results
