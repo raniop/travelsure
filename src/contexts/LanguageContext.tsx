@@ -17,7 +17,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.about": "אודות",
     "nav.faq": "שאלות נפוצות",
     "nav.contact": "צור קשר",
-    "nav.purchase": "רכישת ביטוח נסיעות",
+    "nav.purchase": "לרכישה",
     "nav.openMenu": "פתח תפריט",
 
     // Hero
@@ -153,7 +153,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.about": "About",
     "nav.faq": "FAQ",
     "nav.contact": "Contact",
-    "nav.purchase": "Purchase Insurance",
+    "nav.purchase": "Purchase",
     "nav.openMenu": "Open menu",
 
     // Hero
