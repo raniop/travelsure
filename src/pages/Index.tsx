@@ -1,7 +1,7 @@
 import { Phone, Mail, MessageCircle, Clock, Users, Plane, Building2, Home, Car, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { AnimatedSection } from "@/hooks/useScrollAnimation";
+
 import ContactForm from "@/components/ContactForm";
 import CookieBanner from "@/components/CookieBanner";
 import Header from "@/components/Header";
@@ -90,26 +90,26 @@ const HeroSection = () => {
   const { t } = useLanguage();
   
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f3d3a 0%, #134e4a 30%, #1a6b5f 60%, #22877a 100%)' }}>
+    <section className="relative min-h-screen flex items-center justify-center pt-16 pb-24 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f3d3a 0%, #134e4a 30%, #1a6b5f 60%, #22877a 100%)' }}>
       <AnimatedBackground />
       
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 animate-fade-in drop-shadow-lg" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 drop-shadow-lg">
             TravelSure
           </h1>
           
-          <h2 className="text-2xl md:text-4xl font-bold mb-8 animate-fade-in" style={{ animationDelay: '0.2s', color: '#86efac' }}>
+          <h2 className="text-2xl md:text-4xl font-bold mb-8" style={{ color: '#86efac' }}>
             {t("hero.subtitle")}
           </h2>
           
-          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed">
             {t("hero.description")}
           </p>
 
           {/* Features Row */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mb-10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-10">
             <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>{t("hero.feature1")}</span>
@@ -125,7 +125,7 @@ const HeroSection = () => {
           </div>
 
           {/* CTA Button */}
-          <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          <div className="flex justify-center">
             <Link to="/purchase">
               <Button variant="cta" size="xl" className="text-lg shadow-xl hover:shadow-2xl transition-shadow" style={{ background: 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)', color: '#134e4a' }}>
                 {t("hero.cta")}
@@ -175,33 +175,27 @@ const ServicesSection = () => {
   return (
     <section id="services" className="section-padding bg-background">
       <div className="container-wide">
-        <AnimatedSection className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("services.label")}</span>
           <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("services.title")}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             {t("services.description")}
           </p>
-        </AnimatedSection>
+        </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service, index) => (
-            <AnimatedSection 
-              key={index}
-              delay={index * 100}
-              animation="scale-up"
-            >
-              <div className="group p-8 rounded-2xl bg-card border border-border hover:border-secondary/50 hover:shadow-xl transition-all duration-300 h-full">
-                <div className="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:scale-110 transition-all duration-300">
-                  <service.icon className="w-8 h-8 text-secondary group-hover:text-secondary-foreground transition-colors" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
-                <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
-                <a href="#contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
-                  {t("services.learnMore")}
-                  <ArrowLeft className="w-4 h-4" />
-                </a>
+            <div key={index} className="group p-8 rounded-2xl bg-card border border-border hover:border-secondary/50 hover:shadow-xl transition-all duration-300 h-full">
+              <div className="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:scale-110 transition-all duration-300">
+                <service.icon className="w-8 h-8 text-secondary group-hover:text-secondary-foreground transition-colors" />
               </div>
-            </AnimatedSection>
+              <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
+              <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
+              <a href="#contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
+                {t("services.learnMore")}
+                <ArrowLeft className="w-4 h-4" />
+              </a>
+            </div>
           ))}
         </div>
       </div>
@@ -224,7 +218,7 @@ const AboutSection = () => {
     <section id="about" className="section-padding" style={{ background: 'linear-gradient(135deg, #134e4a 0%, #1a6b5f 50%, #22877a 100%)' }}>
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <AnimatedSection animation="fade-right">
+          <div>
             <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#86efac' }}>{t("about.label")}</span>
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
               {t("about.title")}
@@ -240,20 +234,14 @@ const AboutSection = () => {
               <Phone className="w-5 h-5" />
               {t("about.cta")}
             </Button>
-          </AnimatedSection>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             {stats.map((stat, index) => (
-              <AnimatedSection 
-                key={index}
-                delay={index * 100}
-                animation="scale-up"
-              >
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 text-center border border-white/10">
-                  <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#86efac' }}>{stat.value}</div>
-                  <div className="text-white/80 font-medium">{stat.label}</div>
-                </div>
-              </AnimatedSection>
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 text-center border border-white/10">
+                <div className="text-4xl md:text-5xl font-black mb-2" style={{ color: '#86efac' }}>{stat.value}</div>
+                <div className="text-white/80 font-medium">{stat.label}</div>
+              </div>
             ))}
           </div>
         </div>
@@ -278,37 +266,31 @@ const ExtensionsSection = () => {
   return (
     <section id="extensions" className="section-padding bg-muted/50">
       <div className="container-wide">
-        <AnimatedSection className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("extensions.label")}</span>
           <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("extensions.title")}</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             {t("extensions.description")}
           </p>
-        </AnimatedSection>
+        </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {extensions.map((ext, index) => (
-            <AnimatedSection 
-              key={index}
-              delay={index * 80}
-              animation="fade-up"
-            >
-              <div className="bg-card rounded-xl p-6 border border-border hover:border-secondary/50 hover:shadow-lg transition-all h-full">
-                <h3 className="font-bold text-lg text-foreground mb-2">{ext.title}</h3>
-                <p className="text-muted-foreground">{ext.description}</p>
-              </div>
-            </AnimatedSection>
+            <div key={index} className="bg-card rounded-xl p-6 border border-border hover:border-secondary/50 hover:shadow-lg transition-all h-full">
+              <h3 className="font-bold text-lg text-foreground mb-2">{ext.title}</h3>
+              <p className="text-muted-foreground">{ext.description}</p>
+            </div>
           ))}
         </div>
 
-        <AnimatedSection className="text-center mt-12" delay={500}>
+        <div className="text-center mt-12">
           <Link to="/purchase">
             <Button variant="cta" size="xl">
               <ArrowLeft className="w-5 h-5" />
               {t("extensions.cta")}
             </Button>
           </Link>
-        </AnimatedSection>
+        </div>
       </div>
     </section>
   );
@@ -322,25 +304,25 @@ const ContactSection = () => {
     <section id="contact" className="section-padding bg-background">
       <div className="container-wide">
         <div className="max-w-5xl mx-auto">
-          <AnimatedSection className="text-center mb-12 md:mb-16">
+          <div className="text-center mb-12 md:mb-16">
             <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("contact.label")}</span>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("contact.title")}</h2>
             <p className="text-muted-foreground text-lg">
               {t("contact.description")}
             </p>
-          </AnimatedSection>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <AnimatedSection animation="fade-right">
+            <div>
               <div className="bg-card rounded-2xl p-8 border border-border">
                 <h3 className="text-2xl font-bold text-foreground mb-6">{t("contact.formTitle")}</h3>
                 <ContactForm />
               </div>
-            </AnimatedSection>
+            </div>
 
             {/* Contact Info */}
-            <AnimatedSection animation="fade-left" delay={200}>
+            <div>
               <div className="space-y-6">
                 <div className="bg-muted rounded-2xl p-8">
                   <div className="grid grid-cols-2 gap-6">
@@ -385,7 +367,7 @@ const ContactSection = () => {
                   </div>
                 </div>
               </div>
-            </AnimatedSection>
+            </div>
           </div>
         </div>
       </div>
