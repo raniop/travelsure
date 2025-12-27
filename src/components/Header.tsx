@@ -81,7 +81,7 @@ const Header = () => {
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container-wide">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex items-center justify-between h-24 md:h-28">
           {/* Left side - Mobile Menu */}
           <div className="flex items-center gap-2 md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -134,7 +134,7 @@ const Header = () => {
 
           {/* Center - Logo */}
           <Link to="/" className="absolute left-1/2 transform -translate-x-1/2">
-            <img src={logo} alt="TravelSure" className="h-14 md:h-16 w-auto" />
+            <img src={logo} alt="TravelSure" className="h-20 md:h-24 w-auto max-h-none" />
           </Link>
 
           {/* Right side - Language, Search & CTA */}
