@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomePage = location.pathname === "/";
   const isPurchasePage = location.pathname === "/purchase";
 
@@ -29,6 +30,39 @@ const Header = () => {
     { href: "/faq", label: t("nav.faq") },
     { href: "/contact", label: t("nav.contact") },
   ];
+
+  // Search data - pages and keywords
+  const searchData = useMemo(() => [
+    { href: "/", label: t("nav.home"), keywords: ["בית", "home", "ראשי", "main"] },
+    { href: "/services", label: t("nav.services"), keywords: ["שירותים", "services", "ביטוח", "insurance", "נסיעות", "travel", "רכב", "car", "דירה", "home", "עסקי", "business"] },
+    { href: "/about", label: t("nav.about"), keywords: ["אודות", "about", "מי אנחנו", "who we are", "החברה", "company"] },
+    { href: "/faq", label: t("nav.faq"), keywords: ["שאלות", "faq", "תשובות", "answers", "שאלות נפוצות", "frequently asked"] },
+    { href: "/contact", label: t("nav.contact"), keywords: ["צור קשר", "contact", "טלפון", "phone", "מייל", "email", "וואטסאפ", "whatsapp"] },
+    { href: "/purchase", label: t("nav.purchase"), keywords: ["רכישה", "purchase", "קנייה", "buy", "ביטוח נסיעות", "travel insurance"] },
+    { href: "/privacy", label: t("footer.privacy"), keywords: ["פרטיות", "privacy", "מדיניות", "policy"] },
+  ], [t]);
+
+  // Filter search results
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return searchData.filter(item => 
+      item.label.toLowerCase().includes(query) ||
+      item.keywords.some(keyword => keyword.toLowerCase().includes(query))
+    );
+  }, [searchQuery, searchData]);
+
+  const handleSearchSelect = (href: string) => {
+    navigate(href);
+    setSearchQuery("");
+    setIsSearchOpen(false);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && searchResults.length > 0) {
+      handleSearchSelect(searchResults[0].href);
+    }
+  };
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
@@ -122,24 +156,47 @@ const Header = () => {
             {!isPurchasePage && (
               <div className="relative">
                 {isSearchOpen ? (
-                  <div className="flex items-center gap-2 animate-fade-in">
-                    <Input
-                      type="text"
-                      placeholder={isRTL ? "חיפוש..." : "Search..."}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-[140px] md:w-[200px] h-9 text-sm"
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => {
-                        setIsSearchOpen(false);
-                        setSearchQuery("");
-                      }}
-                      className="p-2 rounded-full hover:bg-muted transition-colors"
-                    >
-                      <X className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                  <div className="relative animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        placeholder={isRTL ? "חיפוש..." : "Search..."}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        className="w-[140px] md:w-[200px] h-9 text-sm"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          setSearchQuery("");
+                        }}
+                        className="p-2 rounded-full hover:bg-muted transition-colors"
+                      >
+                        <X className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                    {/* Search Results Dropdown */}
+                    {searchQuery.trim() && (
+                      <div className="absolute top-full mt-2 w-full bg-background border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                        {searchResults.length > 0 ? (
+                          searchResults.map((result) => (
+                            <button
+                              key={result.href}
+                              onClick={() => handleSearchSelect(result.href)}
+                              className="w-full px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors text-right"
+                            >
+                              {result.label}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                            {isRTL ? "לא נמצאו תוצאות" : "No results found"}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <button
