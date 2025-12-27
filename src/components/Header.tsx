@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Plane, Menu, Search, X } from "lucide-react";
+import { ArrowLeft, Menu, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -98,8 +98,8 @@ const Header = () => {
                   )}
                   <Link to="/purchase" onClick={() => setIsOpen(false)} className="mt-4">
                     <Button variant="cta" size="lg" className="w-full">
-                      <Plane className="w-4 h-4" />
                       {t("nav.purchase")}
+                      <ArrowLeft className="w-4 h-4" />
                     </Button>
                   </Link>
                 </nav>
@@ -202,8 +202,8 @@ const Header = () => {
             {/* CTA Button - Desktop */}
             <Link to="/purchase">
               <Button variant="cta" size="default" className="hidden sm:flex">
-                <Plane className="w-4 h-4" />
                 {t("nav.purchase")}
+                <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
           </div>
