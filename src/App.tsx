@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import AccessibilityMenu from "@/components/AccessibilityMenu";
 import Index from "./pages/Index";
 import Purchase from "./pages/Purchase";
 import FAQ from "./pages/FAQ";
@@ -21,6 +22,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <AccessibilityMenu />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
