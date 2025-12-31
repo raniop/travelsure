@@ -41,7 +41,7 @@ const HomeInsurance = () => {
               הגנה מלאה על הבית שלכם ותכולתו. שקט נפשי מוחלט עם ביטוח דירה מקיף ומותאם אישית.
             </p>
             <Link to="/contact">
-              <Button variant="cta" size="xl" className="shadow-lg" style={{ background: '#c4b5fd', color: '#5b21b6' }}>
+              <Button variant="cta" size="xl" className="shadow-lg bg-white text-purple-700 hover:bg-white/90 font-bold">
                 קבלו הצעת מחיר
                 <Home className="w-5 h-5" />
               </Button>
