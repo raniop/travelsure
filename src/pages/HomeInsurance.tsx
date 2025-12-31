@@ -132,7 +132,7 @@ const HomeInsurance = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/contact">
-                <Button variant="cta" size="xl" style={{ background: '#c4b5fd', color: '#5b21b6' }}>
+                <Button variant="cta" size="xl" className="bg-white text-purple-700 hover:bg-white/90 font-bold">
                   קבלו הצעת מחיר
                 </Button>
               </Link>
