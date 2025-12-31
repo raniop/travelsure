@@ -1,4 +1,4 @@
-import { Home, Shield, Clock, Phone, CheckCircle2, Droplets, Flame, Lock, Zap, Sofa } from "lucide-react";
+import { Home, Shield, Clock, Phone, CheckCircle2, Droplets, Flame, Lock, Sofa, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -14,7 +14,6 @@ const HomeInsurance = () => {
     { icon: Droplets, title: "נזקי מים", desc: "כיסוי לנזקי צנרת, הצפות ונזילות" },
     { icon: Flame, title: "שריפה ופיצוץ", desc: "כיסוי מלא לנזקי שריפה, פיצוץ ועשן" },
     { icon: Lock, title: "גניבה ופריצה", desc: "פיצוי על גניבה ופריצה כולל נזק למנעולים" },
-    { icon: Zap, title: "נזקי חשמל", desc: "כיסוי לנזקי ברק, קצר חשמלי והפסקות חשמל" },
   ];
 
   const additionalCoverages = [
@@ -47,6 +46,25 @@ const HomeInsurance = () => {
                 <Home className="w-5 h-5" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* What is Home Insurance Section */}
+      <section className="section-padding bg-muted/30">
+        <div className="container-wide">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-secondary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">מהו ביטוח דירה?</h2>
+            </div>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              ביטוח דירה הוא פוליסה המעניקה הגנה כלכלית על הנכס שלכם - הן על המבנה עצמו והן על תכולת הבית. 
+              הביטוח מכסה נזקים שונים כגון שריפה, נזקי מים, פריצה וגניבה, ומספק לכם שקט נפשי ורשת ביטחון כלכלית במקרה של אירוע בלתי צפוי.
+              חשוב לדעת: ביטוח דירה סטנדרטי אינו מכסה נזקי חשמל - לכיסוי זה יש לרכוש הרחבה ייעודית.
+            </p>
           </div>
         </div>
       </section>

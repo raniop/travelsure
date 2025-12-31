@@ -1,4 +1,4 @@
-import { Building2, Shield, Clock, Phone, CheckCircle2, Users, FileText, Briefcase, TrendingUp, Lock } from "lucide-react";
+import { Building2, Shield, Clock, Phone, CheckCircle2, Users, FileText, Briefcase, TrendingUp, Lock, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -47,6 +47,25 @@ const BusinessInsurance = () => {
                 <Building2 className="w-5 h-5" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* What is Business Insurance Section */}
+      <section className="section-padding bg-muted/30">
+        <div className="container-wide">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-secondary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">מהו ביטוח עסקים?</h2>
+            </div>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              ביטוח עסקים הוא מארז פוליסות המיועד להגן על העסק שלכם מפני סיכונים שונים. 
+              הביטוח כולל הגנה על הרכוש הפיזי של העסק, כיסוי לאחריות מקצועית ואחריות כלפי צד שלישי, 
+              ביטוח אובדן הכנסות במקרה של נזק, וכיסוי לתביעות עובדים. כל עסק זקוק לחבילת ביטוח מותאמת לפעילותו הייחודית.
+            </p>
           </div>
         </div>
       </section>
