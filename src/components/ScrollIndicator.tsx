@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 
 const ScrollIndicator = () => {
   const [activeSection, setActiveSection] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
 
-  // Define section IDs that exist in the page
   const sections = [
     { id: "hero", label: "בית" },
     { id: "services", label: "שירותים" },
@@ -14,10 +12,6 @@ const ScrollIndicator = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsVisible(scrollTop > 100);
-
-      // Find which section is currently in view
       let currentSection = 0;
       
       sections.forEach((section, index) => {
@@ -47,8 +41,6 @@ const ScrollIndicator = () => {
       element.scrollIntoView({ behavior: "smooth" });
     }
   };
-
-  if (!isVisible) return null;
 
   return (
     <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col items-center">
