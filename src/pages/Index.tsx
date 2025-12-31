@@ -216,13 +216,11 @@ const ServicesSection = () => {
 
 // About Section
 const AboutSection = () => {
-  const { t } = useLanguage();
-  
   const stats = [
-    { value: "25+", label: t("about.stat1") },
-    { value: "10K+", label: t("about.stat2") },
-    { value: "24/7", label: t("about.stat3") },
-    { value: "$5M", label: t("about.stat4") }
+    { value: "1977", label: "שנת הקמה" },
+    { value: "18+", label: "עובדים מקצועיים" },
+    { value: "450+", label: "סוכנויות נסיעות" },
+    { value: "24/7", label: "שירות לקוחות" }
   ];
 
   return (
@@ -230,21 +228,20 @@ const AboutSection = () => {
       <div className="container-wide">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
-            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#86efac' }}>{t("about.label")}</span>
+            <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#86efac' }}>אודותינו</span>
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-              {t("about.title")}
-              <span className="block mt-2" style={{ color: '#86efac' }}>{t("about.titleHighlight")}</span>
+              אופיר ושות׳
+              <span className="block mt-2" style={{ color: '#86efac' }}>סוכנות לביטוח</span>
             </h2>
             <p className="text-white/80 text-lg leading-relaxed mb-6">
-              {t("about.p1")}
+              סוכנות אופיר ושות׳ הוקמה בשנת 1977 ומנוהלת ע״י מר אלי אופיר ומר הדר גלעד. הסוכנות רכשה לה מוניטין רב בקרב חברות הביטוח והלקוחות, הן מבחינה מקצועית והן מבחינת המהימנות והמוסריות.
             </p>
             <p className="text-white/80 text-lg leading-relaxed mb-8">
-              {t("about.p2")}
+              לסוכנות התמחות מיוחדת בביטוחי נסיעות לחו״ל והיא משמשת הזרוע השיווקית הבלעדית של חברת הראל בקרב כ-450 סוכנויות נסיעות בכל רחבי הארץ.
             </p>
-            <Link to="/contact">
+            <Link to="/about">
               <Button variant="hero" size="lg">
-                <Phone className="w-5 h-5" />
-                {t("about.cta")}
+                קראו עוד עלינו
               </Button>
             </Link>
           </div>
