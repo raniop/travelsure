@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Menu, Search, X } from "lucide-react";
+import { ArrowLeft, Menu, Search, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -11,15 +11,22 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isServicesOpen, setIsServicesOpen] = useState(false);
   const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === "/";
   const isPurchasePage = location.pathname === "/purchase";
 
+  const serviceLinks = [
+    { href: "/services/travel", label: t("services.travel.title") },
+    { href: "/services/car", label: t("services.car.title") },
+    { href: "/services/home", label: t("services.home.title") },
+    { href: "/services/business", label: t("services.business.title") },
+  ];
+
   const navLinks = [
     { href: "/", label: t("nav.home") },
-    { href: "/services", label: t("nav.services") },
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
     { href: "/contact", label: t("nav.contact") },
@@ -189,7 +196,40 @@ const Header = () => {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-4 mt-8">
-                  {navLinks.map((link) => (
+                  <Link
+                    to="/"
+                    onClick={() => setIsOpen(false)}
+                    className="text-foreground hover:text-primary transition-colors font-medium text-lg py-2 border-b border-border"
+                  >
+                    {t("nav.home")}
+                  </Link>
+                  
+                  {/* Services Dropdown for Mobile */}
+                  <div className="border-b border-border">
+                    <button
+                      onClick={() => setIsServicesOpen(!isServicesOpen)}
+                      className="flex items-center justify-between w-full text-foreground hover:text-primary transition-colors font-medium text-lg py-2"
+                    >
+                      {t("nav.services")}
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isServicesOpen && (
+                      <div className="flex flex-col gap-2 pb-3 pr-4">
+                        {serviceLinks.map((service) => (
+                          <Link
+                            key={service.href}
+                            to={service.href}
+                            onClick={() => setIsOpen(false)}
+                            className="text-muted-foreground hover:text-primary transition-colors text-base py-1"
+                          >
+                            {service.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {navLinks.filter(link => link.href !== "/").map((link) => (
                     <Link
                       key={link.href}
                       to={link.href}
@@ -212,7 +252,41 @@ const Header = () => {
 
           {/* Left side - Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
+            <Link
+              to="/"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t("nav.home")}
+            </Link>
+            
+            {/* Services Dropdown for Desktop */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsServicesOpen(true)}
+              onMouseLeave={() => setIsServicesOpen(false)}
+            >
+              <button className="flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium">
+                {t("nav.services")}
+                <ChevronDown className={`w-4 h-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isServicesOpen && (
+                <div className="absolute top-full pt-2 right-0 z-50">
+                  <div className="bg-background border border-border rounded-lg shadow-lg py-2 min-w-[180px]">
+                    {serviceLinks.map((service) => (
+                      <Link
+                        key={service.href}
+                        to={service.href}
+                        className="block px-4 py-2 text-foreground hover:bg-muted hover:text-primary transition-colors"
+                      >
+                        {service.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {navLinks.filter(link => link.href !== "/").map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
