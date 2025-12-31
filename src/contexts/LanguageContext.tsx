@@ -13,7 +13,7 @@ const translations: Record<Language, Record<string, string>> = {
   he: {
     // Header
     "nav.home": "בית",
-    "nav.services": "השירותים שלנו",
+    "nav.services": "שירותים",
     "nav.about": "אודות",
     "nav.faq": "שאלות נפוצות",
     "nav.contact": "צור קשר",
@@ -39,7 +39,7 @@ const translations: Record<Language, Record<string, string>> = {
     "services.car.desc": "כיסוי מקיף לרכב שלכם במחירים תחרותיים",
     "services.home.title": "ביטוח דירה",
     "services.home.desc": "הגנה מלאה על הבית ותכולתו",
-    "services.business.title": "ביטוח עסקי",
+    "services.business.title": "ביטוח עסקים",
     "services.business.desc": "פתרונות ביטוח מותאמים לעסקים קטנים וגדולים",
     "services.learnMore": "למידע נוסף",
 
@@ -48,7 +48,7 @@ const translations: Record<Language, Record<string, string>> = {
     "about.title": "מחויבים להגנה",
     "about.titleHighlight": "שלכם ושל משפחתכם",
     "about.p1":
-      "אופיר ושות' היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
+      "TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
     "about.p2":
       "אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.",
     "about.cta": "דברו איתנו",

@@ -1,20 +1,8 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Menu, Search, X, Plane, Car, Home, Building2, ChevronDown } from "lucide-react";
+import { ArrowLeft, Menu, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.avif";
@@ -31,50 +19,137 @@ const Header = () => {
 
   const navLinks = [
     { href: "/", label: t("nav.home") },
+    { href: "/services", label: t("nav.services") },
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
     { href: "/contact", label: t("nav.contact") },
   ];
 
-  const serviceLinks = [
-    { href: "/services/travel", label: t("services.travel.title"), icon: Plane },
-    { href: "/services/car", label: t("services.car.title"), icon: Car },
-    { href: "/services/home", label: t("services.home.title"), icon: Home },
-    { href: "/services/business", label: t("services.business.title"), icon: Building2 },
-  ];
-
   // Search data - pages and keywords with FAQ content
-  const searchData = useMemo(() => [
-    { href: "/", label: t("nav.home"), keywords: ["בית", "home", "ראשי", "main"] },
-    { href: "/services", label: t("nav.services"), keywords: ["שירותים", "services", "ביטוח", "insurance", "נסיעות", "travel", "רכב", "car", "דירה", "home", "עסקי", "business"] },
-    { href: "/about", label: t("nav.about"), keywords: ["אודות", "about", "מי אנחנו", "who we are", "החברה", "company", "ניסיון", "experience"] },
-    { href: "/faq", label: t("nav.faq"), keywords: [
-      // General FAQ keywords
-      "שאלות", "faq", "תשובות", "answers", "שאלות נפוצות", "frequently asked",
-      // Coverage keywords
-      "כיסוי", "coverage", "פוליסה", "policy", "הוצאות רפואיות", "medical expenses", "אשפוז", "hospitalization",
-      // Specific topics
-      "ביטול נסיעה", "trip cancellation", "כבודה", "luggage", "פינוי רפואי", "medical evacuation",
-      "מצב רפואי קיים", "pre-existing", "החמרה", "worsening",
-      "ספורט אתגרי", "extreme sports", "ספורט חורף", "winter sports", "סקי", "skiing",
-      "חירום", "emergency", "מוקד", "center", "24/7",
-      "הריון", "pregnancy", "לידה מוקדמת", "premature birth",
-      "מחיר", "price", "עלות", "cost", "הצעת מחיר", "quote",
-      "השתתפות עצמית", "deductible",
-      "תביעה", "claim", "קבלות", "receipts"
-    ] },
-    { href: "/contact", label: t("nav.contact"), keywords: ["צור קשר", "contact", "טלפון", "phone", "מייל", "email", "וואטסאפ", "whatsapp", "073", "054"] },
-    { href: "/purchase", label: t("nav.purchase"), keywords: ["רכישה", "purchase", "קנייה", "buy", "ביטוח נסיעות", "travel insurance", "5 מיליון", "5 million", "הרחבות", "extensions"] },
-    { href: "/privacy", label: t("footer.privacy"), keywords: ["פרטיות", "privacy", "מדיניות", "policy", "עוגיות", "cookies"] },
-  ], [t]);
+  const searchData = useMemo(
+    () => [
+      { href: "/", label: t("nav.home"), keywords: ["בית", "home", "ראשי", "main"] },
+      {
+        href: "/services",
+        label: t("nav.services"),
+        keywords: [
+          "שירותים",
+          "services",
+          "ביטוח",
+          "insurance",
+          "נסיעות",
+          "travel",
+          "רכב",
+          "car",
+          "דירה",
+          "home",
+          "עסקים",
+          "business",
+        ],
+      },
+      {
+        href: "/about",
+        label: t("nav.about"),
+        keywords: ["אודות", "about", "מי אנחנו", "who we are", "החברה", "company", "ניסיון", "experience"],
+      },
+      {
+        href: "/faq",
+        label: t("nav.faq"),
+        keywords: [
+          // General FAQ keywords
+          "שאלות",
+          "faq",
+          "תשובות",
+          "answers",
+          "שאלות נפוצות",
+          "frequently asked",
+          // Coverage keywords
+          "כיסוי",
+          "coverage",
+          "פוליסה",
+          "policy",
+          "הוצאות רפואיות",
+          "medical expenses",
+          "אשפוז",
+          "hospitalization",
+          // Specific topics
+          "ביטול נסיעה",
+          "trip cancellation",
+          "כבודה",
+          "luggage",
+          "פינוי רפואי",
+          "medical evacuation",
+          "מצב רפואי קיים",
+          "pre-existing",
+          "החמרה",
+          "worsening",
+          "ספורט אתגרי",
+          "extreme sports",
+          "ספורט חורף",
+          "winter sports",
+          "סקי",
+          "skiing",
+          "חירום",
+          "emergency",
+          "מוקד",
+          "center",
+          "24/7",
+          "הריון",
+          "pregnancy",
+          "לידה מוקדמת",
+          "premature birth",
+          "מחיר",
+          "price",
+          "עלות",
+          "cost",
+          "הצעת מחיר",
+          "quote",
+          "השתתפות עצמית",
+          "deductible",
+          "תביעה",
+          "claim",
+          "קבלות",
+          "receipts",
+        ],
+      },
+      {
+        href: "/contact",
+        label: t("nav.contact"),
+        keywords: ["צור קשר", "contact", "טלפון", "phone", "מייל", "email", "וואטסאפ", "whatsapp", "073", "054"],
+      },
+      {
+        href: "/purchase",
+        label: t("nav.purchase"),
+        keywords: [
+          "רכישה",
+          "purchase",
+          "קנייה",
+          "buy",
+          "ביטוח נסיעות",
+          "travel insurance",
+          "5 מיליון",
+          "5 million",
+          "הרחבות",
+          "extensions",
+        ],
+      },
+      {
+        href: "/privacy",
+        label: t("footer.privacy"),
+        keywords: ["פרטיות", "privacy", "מדיניות", "policy", "עוגיות", "cookies"],
+      },
+    ],
+    [t],
+  );
 
   // Filter search results
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
-    return searchData.filter(item => 
-      item.label.toLowerCase().includes(query) ||
-      item.keywords.some(keyword => keyword.toLowerCase().includes(query))
+    return searchData.filter(
+      (item) =>
+        item.label.toLowerCase().includes(query) ||
+        item.keywords.some((keyword) => keyword.toLowerCase().includes(query)),
     );
   }, [searchQuery, searchData]);
 
@@ -103,43 +178,18 @@ const Header = () => {
                   <span className="sr-only">{t("nav.openMenu")}</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side={isRTL ? "right" : "left"} className="w-[280px] font-heebo" dir={isRTL ? "rtl" : "ltr"}>
+              <SheetContent
+                side={isRTL ? "right" : "left"}
+                className="w-[280px] font-heebo"
+                dir={isRTL ? "rtl" : "ltr"}
+              >
                 <SheetHeader>
                   <SheetTitle className={isRTL ? "text-right" : "text-left"}>
                     <img src={logo} alt="TravelSure" className="h-10 w-auto" />
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-4 mt-8">
-                  {navLinks.slice(0, 1).map((link) => (
-                    <Link
-                      key={link.href}
-                      to={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className="text-foreground hover:text-primary transition-colors font-medium text-lg py-2 border-b border-border"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                  
-                  {/* Services Section in Mobile */}
-                  <div className="border-b border-border pb-2">
-                    <span className="text-foreground font-medium text-lg">{t("nav.services")}</span>
-                    <div className="flex flex-col gap-2 mt-2 pr-4">
-                      {serviceLinks.map((service) => (
-                        <Link
-                          key={service.href}
-                          to={service.href}
-                          onClick={() => setIsOpen(false)}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-base py-1"
-                        >
-                          <service.icon className="w-4 h-4 text-secondary" />
-                          {service.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-
-                  {navLinks.slice(1).map((link) => (
+                  {navLinks.map((link) => (
                     <Link
                       key={link.href}
                       to={link.href}
@@ -162,38 +212,7 @@ const Header = () => {
 
           {/* Left side - Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            {navLinks.slice(0, 1).map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="text-foreground hover:text-primary transition-colors font-medium"
-              >
-                {link.label}
-              </Link>
-            ))}
-            
-            {/* Services Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium outline-none">
-                {t("nav.services")}
-                <ChevronDown className="w-4 h-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 bg-background border border-border shadow-lg z-50">
-                {serviceLinks.map((service) => (
-                  <DropdownMenuItem key={service.href} asChild>
-                    <Link
-                      to={service.href}
-                      className="flex items-center gap-3 cursor-pointer"
-                    >
-                      <service.icon className="w-4 h-4 text-secondary" />
-                      {service.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {navLinks.slice(1).map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
@@ -217,9 +236,7 @@ const Header = () => {
                 <button
                   onClick={() => setLanguage("en")}
                   className={`text-sm font-medium transition-colors ${
-                    language === "en"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                    language === "en" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   En
@@ -228,9 +245,7 @@ const Header = () => {
                 <button
                   onClick={() => setLanguage("he")}
                   className={`text-sm font-medium transition-colors ${
-                    language === "he"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                    language === "he" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   עב
@@ -297,7 +312,11 @@ const Header = () => {
 
             {/* CTA Button - Desktop */}
             <Link to="/purchase">
-              <Button variant="cta" size="default" className="hidden sm:flex shadow-[0_8px_30px_rgba(134,239,172,0.4)] hover:shadow-[0_12px_40px_rgba(134,239,172,0.5)] transition-all duration-300 hover:scale-105">
+              <Button
+                variant="cta"
+                size="default"
+                className="hidden sm:flex shadow-[0_8px_30px_rgba(134,239,172,0.4)] hover:shadow-[0_12px_40px_rgba(134,239,172,0.5)] transition-all duration-300 hover:scale-105"
+              >
                 {t("nav.purchase")}
                 <ArrowLeft className="w-4 h-4" />
               </Button>
