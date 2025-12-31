@@ -165,17 +165,11 @@ const BusinessInsurance = () => {
               <p className="text-muted-foreground mb-6">
                 נציג מטעמנו יחזור אליכם עם ניתוח סיכונים והצעת מחיר מותאמת לעסק שלכם
               </p>
-              <div className="space-y-4">
-                <a href="tel:+972732721111" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
-                  <Phone className="w-5 h-5 text-secondary" />
-                  073-2721111
-                </a>
-                <Link to="/contact">
-                  <Button variant="cta" className="w-full">
-                    השאירו פרטים
-                  </Button>
-                </Link>
-              </div>
+              <Link to="/contact">
+                <Button variant="cta" className="w-full">
+                  השאירו פרטים
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
