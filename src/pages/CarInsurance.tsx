@@ -157,7 +157,7 @@ const CarInsurance = () => {
                 </Button>
               </Link>
               <a href="tel:+972732721111">
-                <Button variant="outline" size="xl" className="border-white/30 text-white hover:bg-white/10">
+                <Button variant="serviceWhite" size="xl">
                   <Phone className="w-5 h-5" />
                   073-2721111
                 </Button>
