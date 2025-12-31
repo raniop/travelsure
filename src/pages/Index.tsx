@@ -238,10 +238,12 @@ const AboutSection = () => {
             <p className="text-white/80 text-lg leading-relaxed mb-8">
               {t("about.p2")}
             </p>
-            <Button variant="cta" size="lg" style={{ background: '#86efac', color: '#134e4a' }}>
-              <Phone className="w-5 h-5" />
-              {t("about.cta")}
-            </Button>
+            <Link to="/contact">
+              <Button variant="cta" size="lg" style={{ background: '#86efac', color: '#134e4a' }}>
+                <Phone className="w-5 h-5" />
+                {t("about.cta")}
+              </Button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -360,10 +362,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold mb-4">{t("nav.services")}</h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li><a href="#services" className="hover:text-white transition-colors">{t("nav.services")}</a></li>
-              <li><a href="#about" className="hover:text-white transition-colors">{t("nav.about")}</a></li>
-              
-              <li><a href="#contact" className="hover:text-white transition-colors">{t("nav.contact")}</a></li>
+              <li><Link to="/services" className="hover:text-white transition-colors">{t("nav.services")}</Link></li>
+              <li><Link to="/about" className="hover:text-white transition-colors">{t("nav.about")}</Link></li>
+              <li><Link to="/faq" className="hover:text-white transition-colors">{t("nav.faq")}</Link></li>
+              <li><Link to="/contact" className="hover:text-white transition-colors">{t("nav.contact")}</Link></li>
             </ul>
           </div>
 
