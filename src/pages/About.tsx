@@ -14,10 +14,10 @@ const About = () => {
   }, []);
 
   const highlights = [
-    { icon: Building2, title: "מאז 1977", description: "שנות ניסיון בתחום הביטוח" },
-    { icon: Users, title: "18+ עובדים", description: "צוות מקצועי ומנוסה" },
+    { icon: Building2, title: "מאז 1977", description: "47+ שנות ניסיון" },
+    { icon: Users, title: "10 עובדים", description: "צוות מקצועי ומנוסה" },
     { icon: Award, title: "מוניטין רב", description: "אמינות ומקצועיות" },
-    { icon: Shield, title: "450+ סוכנויות", description: "רשת שיווק ארצית" }
+    { icon: Shield, title: "100%", description: "מחויבות ללקוח" }
   ];
 
   return (
@@ -67,7 +67,7 @@ const About = () => {
                 <div className="prose prose-lg max-w-none">
                   <p className="text-foreground/80 text-lg leading-relaxed mb-6">
                     סוכנות אופיר ושות׳ הוקמה בשנת 1977 ומנוהלת ע״י מר אלי אופיר ומר הדר גלעד.
-                    בנוסף להם עובדים בסוכנות עוד 18 איש, ביניהם אנשי שיווק ומכירות הפועלים בכל רחבי הארץ.
+                    בנוסף להם עובדים בסוכנות צוות מקצועי ומנוסה, ביניהם אנשי שיווק ומכירות הפועלים בכל רחבי הארץ.
                   </p>
                   <p className="text-foreground/80 text-lg leading-relaxed mb-6">
                     הסוכנות רכשה לה מוניטין רב בקרב חברות הביטוח והלקוחות, הן מבחינה מקצועית והן מבחינת המהימנות והמוסריות.
