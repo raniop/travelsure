@@ -1,4 +1,4 @@
-import { Car, Shield, Clock, Phone, CheckCircle2, Wrench, FileText, AlertTriangle, Zap } from "lucide-react";
+import { Car, Shield, Clock, Phone, CheckCircle2, Wrench, FileText, AlertTriangle, Zap, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -49,6 +49,25 @@ const CarInsurance = () => {
                 <Car className="w-5 h-5" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* What is Car Insurance Section */}
+      <section className="section-padding bg-muted/30">
+        <div className="container-wide">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-secondary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">מהו ביטוח רכב?</h2>
+            </div>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              ביטוח רכב הוא פוליסה המעניקה הגנה כלכלית במקרה של נזק לרכב או לצד שלישי. 
+              ישנם סוגי ביטוח שונים: ביטוח חובה (המכסה נזקי גוף), ביטוח צד ג׳ (המכסה נזקי רכוש לאחרים) וביטוח מקיף (המכסה גם נזקים לרכב שלכם). 
+              הביטוח כולל גם שירותי דרך, רכב חלופי וליווי בתביעות.
+            </p>
           </div>
         </div>
       </section>

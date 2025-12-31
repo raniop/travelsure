@@ -1,4 +1,4 @@
-import { Plane, Shield, Clock, Phone, CheckCircle2, AlertCircle, Globe, Heart, Briefcase } from "lucide-react";
+import { Plane, Shield, Clock, Phone, CheckCircle2, AlertCircle, Globe, Heart, Briefcase, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -47,6 +47,25 @@ const TravelInsurance = () => {
                 <Plane className="w-5 h-5" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* What is Travel Insurance Section */}
+      <section className="section-padding bg-muted/30">
+        <div className="container-wide">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-secondary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">מהו ביטוח נסיעות לחו״ל?</h2>
+            </div>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              ביטוח נסיעות לחו״ל הוא פוליסה המעניקה כיסוי רפואי ונלווה בזמן שהייה בחו״ל. 
+              הביטוח מכסה הוצאות רפואיות, אשפוז, פינוי רפואי, אובדן כבודה וביטול נסיעה. 
+              בנוסף, מעניק הביטוח גישה למוקד חירום 24/7 שיסייע לכם בכל מצב רפואי או לוגיסטי במהלך הנסיעה.
+            </p>
           </div>
         </div>
       </section>
