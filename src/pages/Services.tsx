@@ -75,7 +75,7 @@ const Services = () => {
 
           <AnimatedSection className="text-center mt-12" delay={500}>
             <Link to="/purchase">
-              <Button variant="cta" size="xl">
+              <Button variant="hero" size="xl">
                 <ArrowLeft className="w-5 h-5" />
                 {t("hero.cta")}
               </Button>
