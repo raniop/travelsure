@@ -23,7 +23,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Hero
     "hero.subtitle": "ביטוח נסיעות לחו״ל",
     "hero.description":
-      "הביטחון שלכם הוא העדיפות שלנו. אנו מספקים פתרונות ביטוח מקיפים ומותאמים אישית לכל לקוח, עם שירות מקצועי וליווי צמוד.",
+      "הביטחון שלכם הוא העדיפות שלנו. אנו מספקים פתרונות ביטוח מקיפים ומותאמים אישית לכל לקוח, עם שירות מקצועי וליווי צמוד. אנחנו מטפלים ומלווים אתכם בכל תהליך התביעה מא׳ ועד ת׳.",
     "hero.feature1": "ליווי אישי ומקצועי גם במקרה תביעה",
     "hero.feature2": "מגוון פתרונות ביטוח",
     "hero.feature3": "שירות אנושי 24/7",
@@ -178,7 +178,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Hero
     "hero.subtitle": "Travel Insurance",
     "hero.description":
-      "Your security is our priority. We provide comprehensive and personalized insurance solutions for every client, with professional service and close support.",
+      "Your security is our priority. We provide comprehensive and personalized insurance solutions for every client, with professional service and close support. We handle and accompany you through the entire claims process from start to finish.",
     "hero.feature1": "Personal & Professional Support",
     "hero.feature2": "Variety of Insurance Solutions",
     "hero.feature3": "24/7 Service",

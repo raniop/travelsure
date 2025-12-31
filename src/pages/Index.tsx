@@ -108,16 +108,16 @@ const HeroSection = () => {
           </p>
 
           {/* Features Row */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mb-10">
-            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 lg:gap-12 mb-10">
+            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>{t("hero.feature1")}</span>
             </div>
-            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>{t("hero.feature2")}</span>
             </div>
-            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+            <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#86efac' }} />
               <span>{t("hero.feature3")}</span>
             </div>
