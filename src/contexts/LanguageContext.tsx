@@ -48,7 +48,7 @@ const translations: Record<Language, Record<string, string>> = {
     "about.title": "מחויבים להגנה",
     "about.titleHighlight": "שלכם ושל משפחתכם",
     "about.p1":
-      "TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
+      "אופיר ושות׳ היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
     "about.p2":
       "אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.",
     "about.cta": "דברו איתנו",
@@ -203,7 +203,7 @@ const translations: Record<Language, Record<string, string>> = {
     "about.title": "Committed to Protection",
     "about.titleHighlight": "For You and Your Family",
     "about.p1":
-      "TravelSure is a leading insurance agency in Israel specializing in travel insurance. With many years of experience, we provide our clients with personal, professional service available 24/7.",
+      "Ophir & Co. is a leading insurance agency in Israel specializing in travel insurance. With many years of experience, we provide our clients with personal, professional service available 24/7.",
     "about.p2":
       "We believe every client deserves personal attention and an insurance solution tailored exactly to their needs. Our experienced team is here to accompany you every step of the way.",
     "about.cta": "Talk to Us",
