@@ -251,7 +251,65 @@ const Header = () => {
                     <img src={logo} alt="TravelSure" className="h-10 w-auto" />
                   </SheetTitle>
                 </SheetHeader>
-                <nav className="flex flex-col gap-4 mt-8">
+                {/* Search in Mobile Menu */}
+                <div className="mt-6 mb-4">
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder={isRTL ? "חיפוש..." : "Search..."}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      className="w-full h-10 text-sm pr-10"
+                    />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    {/* Search Results */}
+                    {searchQuery.trim() && (
+                      <div className="mt-2 bg-muted rounded-lg overflow-hidden">
+                        {searchResults.length > 0 ? (
+                          searchResults.map((result) => (
+                            <button
+                              key={result.href}
+                              onClick={() => {
+                                handleSearchSelect(result.href);
+                                setIsOpen(false);
+                              }}
+                              className="w-full px-4 py-3 text-sm text-foreground hover:bg-background transition-colors text-right"
+                            >
+                              {result.label}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                            {isRTL ? "לא נמצאו תוצאות" : "No results found"}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Language Toggle in Mobile Menu */}
+                <div className="flex items-center justify-center gap-4 mb-6 py-3 bg-muted rounded-lg">
+                  <button
+                    onClick={() => setLanguage("he")}
+                    className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
+                      language === "he" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    עברית
+                  </button>
+                  <button
+                    onClick={() => setLanguage("en")}
+                    className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
+                      language === "en" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    English
+                  </button>
+                </div>
+
+                <nav className="flex flex-col gap-4">
                   <Link
                     to="/"
                     onClick={() => setIsOpen(false)}
