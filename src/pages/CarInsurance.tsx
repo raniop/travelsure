@@ -1,4 +1,4 @@
-import { Car, Shield, Clock, Phone, CheckCircle2, Wrench, FileText, AlertTriangle, Zap, HelpCircle } from "lucide-react";
+import { Car, Shield, Clock, Phone, CheckCircle2, Wrench, FileText, AlertTriangle, Zap, HelpCircle, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -150,12 +150,19 @@ const CarInsurance = () => {
             <p className="text-white/80 text-lg mb-8">
               צרו קשר עכשיו וקבלו הצעת מחיר אטרקטיבית
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Link to="/contact">
                 <Button variant="hero" size="xl">
+                  <Mail className="w-5 h-5" />
                   קבלו הצעת מחיר
                 </Button>
               </Link>
+              <a href="https://wa.me/972523333603" target="_blank" rel="noopener noreferrer">
+                <Button variant="serviceWhite" size="xl" className="bg-green-500 text-white hover:bg-green-600 border-0">
+                  <MessageCircle className="w-5 h-5" />
+                  וואטסאפ
+                </Button>
+              </a>
               <a href="tel:+972732721111">
                 <Button variant="serviceWhite" size="xl">
                   <Phone className="w-5 h-5" />
