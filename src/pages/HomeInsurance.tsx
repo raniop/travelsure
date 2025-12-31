@@ -41,9 +41,9 @@ const HomeInsurance = () => {
               הגנה מלאה על הבית שלכם ותכולתו. שקט נפשי מוחלט עם ביטוח דירה מקיף ומותאם אישית.
             </p>
             <Link to="/contact">
-              <Button variant="hero" size="xl" className="shadow-lg">
+              <Button size="xl" className="shadow-lg bg-gradient-to-r from-purple-400 to-violet-500 text-white font-bold hover:from-purple-500 hover:to-violet-600 hover:scale-105 transition-all border-0">
+                <Mail className="w-5 h-5" />
                 קבלו הצעת מחיר
-                <Home className="w-5 h-5" />
               </Button>
             </Link>
           </div>
@@ -132,7 +132,7 @@ const HomeInsurance = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Link to="/contact">
-                <Button variant="hero" size="xl">
+                <Button size="xl" className="bg-gradient-to-r from-purple-400 to-violet-500 text-white font-bold hover:from-purple-500 hover:to-violet-600 hover:scale-105 transition-all border-0 shadow-lg">
                   <Mail className="w-5 h-5" />
                   קבלו הצעת מחיר
                 </Button>

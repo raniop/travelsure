@@ -42,9 +42,9 @@ const TravelInsurance = () => {
               טסו בראש שקט עם כיסוי מקיף ומושלם לכל מצב. הגנה מלאה לכם ולמשפחתכם בכל יעד בעולם.
             </p>
             <Link to="/purchase">
-              <Button variant="hero" size="xl" className="shadow-lg">
-                לרכישת ביטוח נסיעות
+              <Button size="xl" className="shadow-lg bg-gradient-to-r from-teal-400 to-emerald-500 text-white font-bold hover:from-teal-500 hover:to-emerald-600 hover:scale-105 transition-all border-0">
                 <Plane className="w-5 h-5" />
+                לרכישת ביטוח נסיעות
               </Button>
             </Link>
           </div>
@@ -133,7 +133,7 @@ const TravelInsurance = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Link to="/purchase">
-                <Button variant="hero" size="xl">
+                <Button size="xl" className="bg-gradient-to-r from-teal-400 to-emerald-500 text-white font-bold hover:from-teal-500 hover:to-emerald-600 hover:scale-105 transition-all border-0 shadow-lg">
                   <Plane className="w-5 h-5" />
                   לרכישת ביטוח
                 </Button>
