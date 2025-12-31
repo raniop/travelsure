@@ -234,10 +234,12 @@ const Header = () => {
             {/* Mobile Menu Button */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-6 w-6" />
+                <button className="md:hidden w-12 h-12 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-secondary/10 hover:bg-secondary/20 transition-all duration-300">
+                  <span className={`block w-6 h-0.5 bg-foreground rounded-full transition-all duration-300 ${isOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                  <span className={`block w-6 h-0.5 bg-foreground rounded-full transition-all duration-300 ${isOpen ? 'opacity-0' : ''}`} />
+                  <span className={`block w-6 h-0.5 bg-foreground rounded-full transition-all duration-300 ${isOpen ? '-rotate-45 -translate-y-2' : ''}`} />
                   <span className="sr-only">{t("nav.openMenu")}</span>
-                </Button>
+                </button>
               </SheetTrigger>
               <SheetContent
                 side={isRTL ? "right" : "left"}
