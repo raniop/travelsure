@@ -41,7 +41,7 @@ const About = () => {
                 {t("about.p2")}
               </p>
               <Link to="/contact">
-                <Button variant="cta" size="lg" style={{ background: '#86efac', color: '#134e4a' }}>
+                <Button variant="hero" size="lg">
                   <Phone className="w-5 h-5" />
                   {t("about.cta")}
                 </Button>

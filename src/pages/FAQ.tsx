@@ -76,12 +76,12 @@ const FAQ = () => {
             <p className="text-muted-foreground mb-8">{t("faq.contactUs")}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/purchase">
-                <Button variant="cta" size="xl" style={{ background: '#4ade80', color: '#1a5a5a' }}>
+                <Button variant="hero" size="xl">
                   {t("nav.purchase")}
                 </Button>
               </Link>
               <a href="tel:+972732721111">
-                <Button variant="outline" size="xl" className="gap-2">
+                <Button variant="cta" size="xl" className="gap-2">
                   <Phone className="w-5 h-5" />
                   073-2721111
                 </Button>
