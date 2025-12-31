@@ -13,7 +13,7 @@ const translations: Record<Language, Record<string, string>> = {
   he: {
     // Header
     "nav.home": "בית",
-    "nav.services": "השירותים שלנו",
+    "nav.services": "שירותים",
     "nav.about": "אודות",
     "nav.faq": "שאלות נפוצות",
     "nav.contact": "צור קשר",
@@ -24,9 +24,9 @@ const translations: Record<Language, Record<string, string>> = {
     "hero.subtitle": "ביטוח נסיעות לחו״ל",
     "hero.description":
       "הביטחון שלכם הוא העדיפות שלנו. אנו מספקים פתרונות ביטוח מקיפים ומותאמים אישית לכל לקוח, עם שירות מקצועי וליווי צמוד.",
-    "hero.feature1": "ליווי אישי ומקצועי",
+    "hero.feature1": "ליווי אישי ומקצועי גם במקרה תביעה",
     "hero.feature2": "מגוון פתרונות ביטוח",
-    "hero.feature3": "שירות 24/7",
+    "hero.feature3": "שירות אנושי 24/7",
     "hero.cta": "לרכישת ביטוח נסיעות",
 
     // Services
@@ -39,7 +39,7 @@ const translations: Record<Language, Record<string, string>> = {
     "services.car.desc": "כיסוי מקיף לרכב שלכם במחירים תחרותיים",
     "services.home.title": "ביטוח דירה",
     "services.home.desc": "הגנה מלאה על הבית ותכולתו",
-    "services.business.title": "ביטוח עסקים",
+    "services.business.title": "ביטוח עסקי",
     "services.business.desc": "פתרונות ביטוח מותאמים לעסקים קטנים וגדולים",
     "services.learnMore": "למידע נוסף",
 
@@ -48,7 +48,7 @@ const translations: Record<Language, Record<string, string>> = {
     "about.title": "מחויבים להגנה",
     "about.titleHighlight": "שלכם ושל משפחתכם",
     "about.p1":
-      "אופיר ושות׳ היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
+      "TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
     "about.p2":
       "אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.",
     "about.cta": "דברו איתנו",
@@ -168,7 +168,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Header
     "nav.home": "Home",
-    "nav.services": "Our Services",
+    "nav.services": "Services",
     "nav.about": "About",
     "nav.faq": "FAQ",
     "nav.contact": "Contact",
@@ -203,7 +203,7 @@ const translations: Record<Language, Record<string, string>> = {
     "about.title": "Committed to Protection",
     "about.titleHighlight": "For You and Your Family",
     "about.p1":
-      "Ophir & Co. is a leading insurance agency in Israel specializing in travel insurance. With many years of experience, we provide our clients with personal, professional service available 24/7.",
+      "TravelSure is a leading insurance agency in Israel specializing in travel insurance. With many years of experience, we provide our clients with personal, professional service available 24/7.",
     "about.p2":
       "We believe every client deserves personal attention and an insurance solution tailored exactly to their needs. Our experienced team is here to accompany you every step of the way.",
     "about.cta": "Talk to Us",
