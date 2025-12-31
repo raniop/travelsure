@@ -22,7 +22,10 @@ const buttonVariants = cva(
         ctaOutline:
           "border-2 border-secondary text-secondary bg-transparent hover:bg-secondary hover:text-secondary-foreground",
         hero: "bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-bold shadow-[0_8px_30px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_40px_rgba(16,185,129,0.6)] hover:scale-105 border-0",
-        heroOutline: "bg-white/10 backdrop-blur-sm text-white font-bold border-2 border-white/50 hover:bg-white/20 hover:border-white",
+        heroOutline:
+          "bg-white/10 backdrop-blur-sm text-white font-bold border-2 border-white/50 hover:bg-white/20 hover:border-white",
+        serviceWhite:
+          "bg-background text-foreground font-bold border border-background/60 shadow-lg hover:bg-background/90 hover:shadow-xl hover:scale-105",
       },
       size: {
         default: "h-10 px-6 py-2",
