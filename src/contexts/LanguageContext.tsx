@@ -22,7 +22,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Hero
     "hero.subtitle": "ביטוח נסיעות לחו״ל",
-    "hero.description": "הביטחון שלכם הוא העדיפות שלנו. אנו מספקים פתרונות ביטוח מקיפים ומותאמים אישית לכל לקוח, עם שירות מקצועי וליווי צמוד.",
+    "hero.description":
+      "הביטחון שלכם הוא העדיפות שלנו. אנו מספקים פתרונות ביטוח מקיפים ומותאמים אישית לכל לקוח, עם שירות מקצועי וליווי צמוד.",
     "hero.feature1": "ליווי אישי ומקצועי",
     "hero.feature2": "מגוון פתרונות ביטוח",
     "hero.feature3": "שירות 24/7",
@@ -46,8 +47,10 @@ const translations: Record<Language, Record<string, string>> = {
     "about.label": "אודותינו",
     "about.title": "מחויבים להגנה",
     "about.titleHighlight": "שלכם ושל משפחתכם",
-    "about.p1": "TravelSure היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
-    "about.p2": "אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.",
+    "about.p1":
+      "אופיר ושות' היא סוכנות ביטוח מובילה בישראל המתמחה בביטוחי נסיעות לחו״ל. עם ניסיון של שנים רבות בתחום, אנו מספקים ללקוחותינו שירות אישי, מקצועי וזמין 24/7.",
+    "about.p2":
+      "אנו מאמינים שכל לקוח ראוי להתייחסות אישית ולפתרון ביטוחי המותאם במדויק לצרכיו. הצוות המנוסה שלנו כאן כדי ללוות אתכם בכל שלב.",
     "about.cta": "דברו איתנו",
     "about.stat1": "שנות ניסיון",
     "about.stat2": "לקוחות מרוצים",
@@ -99,32 +102,44 @@ const translations: Record<Language, Record<string, string>> = {
     "faq.notFound": "לא מצאתם תשובה לשאלה שלכם?",
     "faq.contactUs": "צרו איתנו קשר ונשמח לעזור",
     "faq.q1": "מה כולל ביטוח נסיעות לחו״ל?",
-    "faq.a1": "ביטוח נסיעות לחו״ל כולל כיסוי להוצאות רפואיות, אשפוז, תרופות, פינוי רפואי, ביטול או קיצור נסיעה, אובדן או עיכוב כבודה, ועוד. הכיסוי המדויק תלוי בפוליסה שנבחרה ובהרחבות הנוספות.",
+    "faq.a1":
+      "ביטוח נסיעות לחו״ל כולל כיסוי להוצאות רפואיות, אשפוז, תרופות, פינוי רפואי, ביטול או קיצור נסיעה, אובדן או עיכוב כבודה, ועוד. הכיסוי המדויק תלוי בפוליסה שנבחרה ובהרחבות הנוספות.",
     "faq.q2": "עד כמה זמן לפני הנסיעה אפשר לרכוש ביטוח?",
-    "faq.a2": "ניתן לרכוש ביטוח נסיעות עד רגע לפני היציאה מהארץ. עם זאת, מומלץ לרכוש את הביטוח מוקדם יותר כדי ליהנות מכיסוי לביטול נסיעה מסיבות רפואיות.",
+    "faq.a2":
+      "ניתן לרכוש ביטוח נסיעות עד רגע לפני היציאה מהארץ. עם זאת, מומלץ לרכוש את הביטוח מוקדם יותר כדי ליהנות מכיסוי לביטול נסיעה מסיבות רפואיות.",
     "faq.q3": "האם יש כיסוי למצבים רפואיים קיימים?",
-    "faq.a3": "כן, ברוב הפוליסות יש כיסוי להחמרה פתאומית ובלתי צפויה של מצב רפואי קיים. חשוב לציין את המצבים הרפואיים הקיימים בעת הרכישה ולבדוק את תנאי הפוליסה.",
+    "faq.a3":
+      "כן, ברוב הפוליסות יש כיסוי להחמרה פתאומית ובלתי צפויה של מצב רפואי קיים. חשוב לציין את המצבים הרפואיים הקיימים בעת הרכישה ולבדוק את תנאי הפוליסה.",
     "faq.q4": "מה הכיסוי המקסימלי בביטוח נסיעות?",
-    "faq.a4": "הכיסוי המקסימלי להוצאות רפואיות מגיע עד 5 מיליון דולר, תלוי בסוג הפוליסה שנבחרה. כיסויים נוספים כמו כבודה וביטול נסיעה יש להם תקרות נפרדות.",
+    "faq.a4":
+      "הכיסוי המקסימלי להוצאות רפואיות מגיע עד 5 מיליון דולר, תלוי בסוג הפוליסה שנבחרה. כיסויים נוספים כמו כבודה וביטול נסיעה יש להם תקרות נפרדות.",
     "faq.q5": "האם הביטוח מכסה ספורט אתגרי?",
-    "faq.a5": "ספורט אתגרי וספורט חורף (כמו סקי) דורשים הרחבה מיוחדת לפוליסה. ניתן להוסיף את ההרחבה בעת רכישת הביטוח בתוספת תשלום קטנה.",
+    "faq.a5":
+      "ספורט אתגרי וספורט חורף (כמו סקי) דורשים הרחבה מיוחדת לפוליסה. ניתן להוסיף את ההרחבה בעת רכישת הביטוח בתוספת תשלום קטנה.",
     "faq.q6": "מה עושים במקרה חירום בחו״ל?",
-    "faq.a6": "במקרה חירום יש להתקשר למוקד החירום שלנו הפועל 24/7 בעברית ובאנגלית. המוקד יספק הכוונה רפואית, יתאם טיפול, ויטפל בכל הבירוקרטיה מול בתי החולים והרופאים.",
+    "faq.a6":
+      "במקרה חירום יש להתקשר למוקד החירום שלנו הפועל 24/7 בעברית ובאנגלית. המוקד יספק הכוונה רפואית, יתאם טיפול, ויטפל בכל הבירוקרטיה מול בתי החולים והרופאים.",
     "faq.q7": "האם יש כיסוי להריון?",
-    "faq.a7": "כן, ניתן להוסיף הרחבת הריון לפוליסה עם כיסוי עד 350,000 דולר. ההרחבה תקפה עד שבוע 32 להריון ומכסה סיבוכי הריון ולידה מוקדמת.",
+    "faq.a7":
+      "כן, ניתן להוסיף הרחבת הריון לפוליסה עם כיסוי עד 350,000 דולר. ההרחבה תקפה עד שבוע 32 להריון ומכסה סיבוכי הריון ולידה מוקדמת.",
     "faq.q8": "כמה עולה ביטוח נסיעות?",
-    "faq.a8": "מחיר הביטוח תלוי במספר גורמים: יעד הנסיעה, משך הנסיעה, גיל המבוטחים, והרחבות נוספות שנבחרו. ניתן לקבל הצעת מחיר מיידית באתר שלנו.",
+    "faq.a8":
+      "מחיר הביטוח תלוי במספר גורמים: יעד הנסיעה, משך הנסיעה, גיל המבוטחים, והרחבות נוספות שנבחרו. ניתן לקבל הצעת מחיר מיידית באתר שלנו.",
     "faq.q9": "האם יש השתתפות עצמית?",
-    "faq.a9": "ברוב הפוליסות אין השתתפות עצמית על הוצאות רפואיות. על כיסויים מסוימים כמו כבודה או ביטול נסיעה עשויה להיות השתתפות עצמית קטנה.",
+    "faq.a9":
+      "ברוב הפוליסות אין השתתפות עצמית על הוצאות רפואיות. על כיסויים מסוימים כמו כבודה או ביטול נסיעה עשויה להיות השתתפות עצמית קטנה.",
     "faq.q10": "איך מגישים תביעה?",
-    "faq.a10": "להגשת תביעה יש לשמור את כל הקבלות והאישורים הרפואיים. לאחר החזרה לארץ יש למלא טופס תביעה ולצרף את המסמכים. הצוות שלנו מלווה אתכם לאורך כל התהליך.",
+    "faq.a10":
+      "להגשת תביעה יש לשמור את כל הקבלות והאישורים הרפואיים. לאחר החזרה לארץ יש למלא טופס תביעה ולצרף את המסמכים. הצוות שלנו מלווה אתכם לאורך כל התהליך.",
 
     // Privacy Policy
     "privacy.title": "מדיניות פרטיות",
     "privacy.general": "כללי",
-    "privacy.generalText": "אופיר ושות׳ סוכנות לביטוח (להלן: \"החברה\") מכבדת את פרטיות המשתמשים באתר. מדיניות פרטיות זו מתארת את האופן בו אנו אוספים, משתמשים ומגנים על המידע שלך.",
+    "privacy.generalText":
+      'אופיר ושות׳ סוכנות לביטוח (להלן: "החברה") מכבדת את פרטיות המשתמשים באתר. מדיניות פרטיות זו מתארת את האופן בו אנו אוספים, משתמשים ומגנים על המידע שלך.',
     "privacy.collection": "איסוף מידע",
-    "privacy.collectionText": "אנו אוספים מידע שאתה מספק לנו באופן ישיר, כגון שם, כתובת דוא\"ל, מספר טלפון ופרטים נוספים הנדרשים לצורך מתן שירותי ביטוח. בנוסף, אנו עשויים לאסוף מידע טכני אודות הגלישה שלך באתר.",
+    "privacy.collectionText":
+      'אנו אוספים מידע שאתה מספק לנו באופן ישיר, כגון שם, כתובת דוא"ל, מספר טלפון ופרטים נוספים הנדרשים לצורך מתן שירותי ביטוח. בנוסף, אנו עשויים לאסוף מידע טכני אודות הגלישה שלך באתר.',
     "privacy.usage": "שימוש במידע",
     "privacy.usageText": "המידע שנאסף משמש אותנו למטרות הבאות:",
     "privacy.usage1": "מתן שירותי ביטוח ותמיכה",
@@ -132,13 +147,17 @@ const translations: Record<Language, Record<string, string>> = {
     "privacy.usage3": "שיפור השירותים והאתר שלנו",
     "privacy.usage4": "עמידה בדרישות חוקיות ורגולטוריות",
     "privacy.security": "אבטחת מידע",
-    "privacy.securityText": "אנו נוקטים באמצעי אבטחה מתקדמים על מנת להגן על המידע האישי שלך מפני גישה בלתי מורשית, שימוש לרעה או חשיפה.",
+    "privacy.securityText":
+      "אנו נוקטים באמצעי אבטחה מתקדמים על מנת להגן על המידע האישי שלך מפני גישה בלתי מורשית, שימוש לרעה או חשיפה.",
     "privacy.sharing": "שיתוף מידע",
-    "privacy.sharingText": "איננו מוכרים, סוחרים או מעבירים לצדדים שלישיים את המידע האישי שלך, למעט במקרים הנדרשים לצורך מתן השירותים (כגון חברות ביטוח) או כנדרש על פי חוק.",
+    "privacy.sharingText":
+      "איננו מוכרים, סוחרים או מעבירים לצדדים שלישיים את המידע האישי שלך, למעט במקרים הנדרשים לצורך מתן השירותים (כגון חברות ביטוח) או כנדרש על פי חוק.",
     "privacy.cookies": "עוגיות (Cookies)",
-    "privacy.cookiesText": "האתר עשוי להשתמש בעוגיות לצורך שיפור חווית המשתמש. באפשרותך לשלוט בהגדרות העוגיות דרך הדפדפן שלך.",
+    "privacy.cookiesText":
+      "האתר עשוי להשתמש בעוגיות לצורך שיפור חווית המשתמש. באפשרותך לשלוט בהגדרות העוגיות דרך הדפדפן שלך.",
     "privacy.rights": "זכויותיך",
-    "privacy.rightsText": "יש לך זכות לבקש גישה למידע האישי שלך, לתקן אותו או למחוק אותו. לכל בקשה ניתן לפנות אלינו בפרטי ההתקשרות המופיעים באתר.",
+    "privacy.rightsText":
+      "יש לך זכות לבקש גישה למידע האישי שלך, לתקן אותו או למחוק אותו. לכל בקשה ניתן לפנות אלינו בפרטי ההתקשרות המופיעים באתר.",
     "privacy.contactTitle": "יצירת קשר",
     "privacy.contactText": "לשאלות בנוגע למדיניות הפרטיות, ניתן לפנות אלינו:",
     "privacy.lastUpdated": "מדיניות זו עודכנה לאחרונה בתאריך:",
@@ -158,7 +177,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Hero
     "hero.subtitle": "Travel Insurance",
-    "hero.description": "Your security is our priority. We provide comprehensive and personalized insurance solutions for every client, with professional service and close support.",
+    "hero.description":
+      "Your security is our priority. We provide comprehensive and personalized insurance solutions for every client, with professional service and close support.",
     "hero.feature1": "Personal & Professional Support",
     "hero.feature2": "Variety of Insurance Solutions",
     "hero.feature3": "24/7 Service",
@@ -182,8 +202,10 @@ const translations: Record<Language, Record<string, string>> = {
     "about.label": "About Us",
     "about.title": "Committed to Protection",
     "about.titleHighlight": "For You and Your Family",
-    "about.p1": "TravelSure is a leading insurance agency in Israel specializing in travel insurance. With many years of experience, we provide our clients with personal, professional service available 24/7.",
-    "about.p2": "We believe every client deserves personal attention and an insurance solution tailored exactly to their needs. Our experienced team is here to accompany you every step of the way.",
+    "about.p1":
+      "TravelSure is a leading insurance agency in Israel specializing in travel insurance. With many years of experience, we provide our clients with personal, professional service available 24/7.",
+    "about.p2":
+      "We believe every client deserves personal attention and an insurance solution tailored exactly to their needs. Our experienced team is here to accompany you every step of the way.",
     "about.cta": "Talk to Us",
     "about.stat1": "Years of Experience",
     "about.stat2": "Happy Customers",
@@ -235,32 +257,44 @@ const translations: Record<Language, Record<string, string>> = {
     "faq.notFound": "Didn't find an answer to your question?",
     "faq.contactUs": "Contact us and we'll be happy to help",
     "faq.q1": "What does travel insurance include?",
-    "faq.a1": "Travel insurance includes coverage for medical expenses, hospitalization, medications, medical evacuation, trip cancellation or curtailment, luggage loss or delay, and more. The exact coverage depends on the policy chosen and additional extensions.",
+    "faq.a1":
+      "Travel insurance includes coverage for medical expenses, hospitalization, medications, medical evacuation, trip cancellation or curtailment, luggage loss or delay, and more. The exact coverage depends on the policy chosen and additional extensions.",
     "faq.q2": "How far in advance can I purchase insurance?",
-    "faq.a2": "You can purchase travel insurance up until the moment you leave the country. However, it's recommended to purchase earlier to enjoy coverage for trip cancellation due to medical reasons.",
+    "faq.a2":
+      "You can purchase travel insurance up until the moment you leave the country. However, it's recommended to purchase earlier to enjoy coverage for trip cancellation due to medical reasons.",
     "faq.q3": "Is there coverage for pre-existing conditions?",
-    "faq.a3": "Yes, most policies cover sudden and unexpected worsening of pre-existing conditions. It's important to declare existing conditions when purchasing and check the policy terms.",
+    "faq.a3":
+      "Yes, most policies cover sudden and unexpected worsening of pre-existing conditions. It's important to declare existing conditions when purchasing and check the policy terms.",
     "faq.q4": "What is the maximum coverage?",
-    "faq.a4": "Maximum coverage for medical expenses reaches up to $5 million, depending on the policy type. Other coverages like luggage and trip cancellation have separate limits.",
+    "faq.a4":
+      "Maximum coverage for medical expenses reaches up to $5 million, depending on the policy type. Other coverages like luggage and trip cancellation have separate limits.",
     "faq.q5": "Does the insurance cover extreme sports?",
-    "faq.a5": "Extreme sports and winter sports (like skiing) require a special policy extension. The extension can be added when purchasing insurance for a small additional fee.",
+    "faq.a5":
+      "Extreme sports and winter sports (like skiing) require a special policy extension. The extension can be added when purchasing insurance for a small additional fee.",
     "faq.q6": "What to do in case of emergency abroad?",
-    "faq.a6": "In case of emergency, call our 24/7 emergency center available in Hebrew and English. The center will provide medical guidance, coordinate treatment, and handle all bureaucracy with hospitals and doctors.",
+    "faq.a6":
+      "In case of emergency, call our 24/7 emergency center available in Hebrew and English. The center will provide medical guidance, coordinate treatment, and handle all bureaucracy with hospitals and doctors.",
     "faq.q7": "Is there pregnancy coverage?",
-    "faq.a7": "Yes, you can add pregnancy coverage to the policy with coverage up to $350,000. The extension is valid until week 32 of pregnancy and covers pregnancy complications and premature birth.",
+    "faq.a7":
+      "Yes, you can add pregnancy coverage to the policy with coverage up to $350,000. The extension is valid until week 32 of pregnancy and covers pregnancy complications and premature birth.",
     "faq.q8": "How much does travel insurance cost?",
-    "faq.a8": "Insurance price depends on several factors: destination, trip duration, insured age, and additional extensions chosen. You can get an instant quote on our website.",
+    "faq.a8":
+      "Insurance price depends on several factors: destination, trip duration, insured age, and additional extensions chosen. You can get an instant quote on our website.",
     "faq.q9": "Is there a deductible?",
-    "faq.a9": "Most policies have no deductible for medical expenses. For certain coverages like luggage or trip cancellation, there may be a small deductible.",
+    "faq.a9":
+      "Most policies have no deductible for medical expenses. For certain coverages like luggage or trip cancellation, there may be a small deductible.",
     "faq.q10": "How do I file a claim?",
-    "faq.a10": "To file a claim, keep all receipts and medical documents. After returning, fill out a claim form and attach the documents. Our team accompanies you throughout the process.",
+    "faq.a10":
+      "To file a claim, keep all receipts and medical documents. After returning, fill out a claim form and attach the documents. Our team accompanies you throughout the process.",
 
     // Privacy Policy
     "privacy.title": "Privacy Policy",
     "privacy.general": "General",
-    "privacy.generalText": "Ophir Insurance Agency (\"the Company\") respects the privacy of website users. This privacy policy describes how we collect, use, and protect your information.",
+    "privacy.generalText":
+      'Ophir Insurance Agency ("the Company") respects the privacy of website users. This privacy policy describes how we collect, use, and protect your information.',
     "privacy.collection": "Information Collection",
-    "privacy.collectionText": "We collect information you provide directly, such as name, email address, phone number, and other details required for insurance services. We may also collect technical information about your browsing.",
+    "privacy.collectionText":
+      "We collect information you provide directly, such as name, email address, phone number, and other details required for insurance services. We may also collect technical information about your browsing.",
     "privacy.usage": "Use of Information",
     "privacy.usageText": "The collected information is used for the following purposes:",
     "privacy.usage1": "Providing insurance services and support",
@@ -268,13 +302,17 @@ const translations: Record<Language, Record<string, string>> = {
     "privacy.usage3": "Improving our services and website",
     "privacy.usage4": "Compliance with legal and regulatory requirements",
     "privacy.security": "Information Security",
-    "privacy.securityText": "We take advanced security measures to protect your personal information from unauthorized access, misuse, or disclosure.",
+    "privacy.securityText":
+      "We take advanced security measures to protect your personal information from unauthorized access, misuse, or disclosure.",
     "privacy.sharing": "Information Sharing",
-    "privacy.sharingText": "We do not sell, trade, or transfer your personal information to third parties, except as required for service provision (such as insurance companies) or as required by law.",
+    "privacy.sharingText":
+      "We do not sell, trade, or transfer your personal information to third parties, except as required for service provision (such as insurance companies) or as required by law.",
     "privacy.cookies": "Cookies",
-    "privacy.cookiesText": "The website may use cookies to improve user experience. You can control cookie settings through your browser.",
+    "privacy.cookiesText":
+      "The website may use cookies to improve user experience. You can control cookie settings through your browser.",
     "privacy.rights": "Your Rights",
-    "privacy.rightsText": "You have the right to request access to your personal information, correct it, or delete it. For any request, contact us using the contact details on the website.",
+    "privacy.rightsText":
+      "You have the right to request access to your personal information, correct it, or delete it. For any request, contact us using the contact details on the website.",
     "privacy.contactTitle": "Contact",
     "privacy.contactText": "For questions about the privacy policy, contact us:",
     "privacy.lastUpdated": "This policy was last updated on:",
@@ -308,11 +346,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isRTL = language === "he";
 
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>
-      {children}
-    </LanguageContext.Provider>
-  );
+  return <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>{children}</LanguageContext.Provider>;
 };
 
 export const useLanguage = (): LanguageContextType => {
