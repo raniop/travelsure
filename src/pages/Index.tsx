@@ -218,8 +218,8 @@ const ServicesSection = () => {
 const AboutSection = () => {
   const stats = [
     { value: "1977", label: "שנת הקמה" },
-    { value: "10", label: "עובדים מקצועיים" },
     { value: "47+", label: "שנות ניסיון" },
+    { value: "100%", label: "מחויבות ללקוח" },
     { value: "24/7", label: "שירות לקוחות" }
   ];
 
