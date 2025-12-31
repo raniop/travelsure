@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Menu, Search, X } from "lucide-react";
+import { ArrowLeft, Menu, Search, X, Plane, Car, Home, Building2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,6 +9,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.avif";
@@ -25,10 +31,16 @@ const Header = () => {
 
   const navLinks = [
     { href: "/", label: t("nav.home") },
-    { href: "/services", label: t("nav.services") },
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
     { href: "/contact", label: t("nav.contact") },
+  ];
+
+  const serviceLinks = [
+    { href: "/services/travel", label: t("services.travel.title"), icon: Plane },
+    { href: "/services/car", label: t("services.car.title"), icon: Car },
+    { href: "/services/home", label: t("services.home.title"), icon: Home },
+    { href: "/services/business", label: t("services.business.title"), icon: Building2 },
   ];
 
   // Search data - pages and keywords with FAQ content
@@ -98,7 +110,36 @@ const Header = () => {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-4 mt-8">
-                  {navLinks.map((link) => (
+                  {navLinks.slice(0, 1).map((link) => (
+                    <Link
+                      key={link.href}
+                      to={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="text-foreground hover:text-primary transition-colors font-medium text-lg py-2 border-b border-border"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                  
+                  {/* Services Section in Mobile */}
+                  <div className="border-b border-border pb-2">
+                    <span className="text-foreground font-medium text-lg">{t("nav.services")}</span>
+                    <div className="flex flex-col gap-2 mt-2 pr-4">
+                      {serviceLinks.map((service) => (
+                        <Link
+                          key={service.href}
+                          to={service.href}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-base py-1"
+                        >
+                          <service.icon className="w-4 h-4 text-secondary" />
+                          {service.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {navLinks.slice(1).map((link) => (
                     <Link
                       key={link.href}
                       to={link.href}
@@ -121,7 +162,38 @@ const Header = () => {
 
           {/* Left side - Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
+            {navLinks.slice(0, 1).map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="text-foreground hover:text-primary transition-colors font-medium"
+              >
+                {link.label}
+              </Link>
+            ))}
+            
+            {/* Services Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium outline-none">
+                {t("nav.services")}
+                <ChevronDown className="w-4 h-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 bg-background border border-border shadow-lg z-50">
+                {serviceLinks.map((service) => (
+                  <DropdownMenuItem key={service.href} asChild>
+                    <Link
+                      to={service.href}
+                      className="flex items-center gap-3 cursor-pointer"
+                    >
+                      <service.icon className="w-4 h-4 text-secondary" />
+                      {service.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {navLinks.slice(1).map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
