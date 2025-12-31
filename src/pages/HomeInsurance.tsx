@@ -119,6 +119,61 @@ const HomeInsurance = () => {
         </div>
       </section>
 
+      {/* Why Us Section */}
+      <section className="section-padding bg-background">
+        <div className="container-wide">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">למה אנחנו?</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+                היתרונות שלנו
+              </h2>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-secondary shrink-0 mt-1" />
+                  <div>
+                    <span className="font-bold text-foreground">השוואת מחירים</span>
+                    <p className="text-muted-foreground text-sm">השוואה בין חברות הביטוח המובילות לקבלת המחיר הטוב ביותר</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-secondary shrink-0 mt-1" />
+                  <div>
+                    <span className="font-bold text-foreground">התאמה אישית</span>
+                    <p className="text-muted-foreground text-sm">פוליסה מותאמת לצרכים הספציפיים של הדירה שלכם</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-secondary shrink-0 mt-1" />
+                  <div>
+                    <span className="font-bold text-foreground">ליווי בתביעות</span>
+                    <p className="text-muted-foreground text-sm">תמיכה מקצועית לאורך כל תהליך התביעה</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-secondary shrink-0 mt-1" />
+                  <div>
+                    <span className="font-bold text-foreground">שירות אישי</span>
+                    <p className="text-muted-foreground text-sm">נציג אישי זמין עבורכם בכל שאלה</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-card rounded-2xl p-8 border border-border">
+              <h3 className="text-2xl font-bold text-foreground mb-4">רוצים לשמוע עוד?</h3>
+              <p className="text-muted-foreground mb-6">
+                נציג מטעמנו יחזור אליכם עם הצעת מחיר מותאמת לדירה שלכם
+              </p>
+              <Link to="/contact">
+                <Button variant="cta" className="w-full">
+                  השאירו פרטים
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="section-padding" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)' }}>
         <div className="container-wide">
