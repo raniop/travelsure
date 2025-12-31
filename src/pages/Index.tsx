@@ -89,7 +89,7 @@ const HeroSection = () => {
   const { t } = useLanguage();
   
   return (
-    <section id="hero" className="relative min-h-screen flex items-center justify-center pt-16 pb-24 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f3d3a 0%, #134e4a 30%, #1a6b5f 60%, #22877a 100%)' }}>
+    <section id="hero" className="relative min-h-screen flex items-center justify-center pt-32 md:pt-24 pb-24 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f3d3a 0%, #134e4a 30%, #1a6b5f 60%, #22877a 100%)' }}>
       <AnimatedBackground />
       
       <div className="container-wide relative z-10">
