@@ -229,11 +229,12 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Left side - Language, Search, CTA & Mobile Menu */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Mobile Menu Button */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">{t("nav.openMenu")}</span>
                 </Button>
@@ -301,13 +302,10 @@ const Header = () => {
                 </nav>
               </SheetContent>
             </Sheet>
-          </div>
 
-          {/* Right side - Language, Search & CTA */}
-          <div className="flex items-center gap-2 md:gap-3">
             {/* Language Toggle - Hidden on Purchase page */}
             {!isPurchasePage && !isSearchOpen && (
-              <div className="flex items-center bg-background border border-border rounded-full px-4 py-2 shadow-sm">
+              <div className="hidden sm:flex items-center bg-background border border-border rounded-full px-4 py-2 shadow-sm">
                 <button
                   onClick={() => setLanguage("en")}
                   className={`text-sm font-medium transition-colors ${
@@ -330,7 +328,7 @@ const Header = () => {
 
             {/* Search */}
             {!isPurchasePage && (
-              <div className="relative">
+              <div className="relative hidden sm:block">
                 {isSearchOpen ? (
                   <div className="relative animate-fade-in">
                     <div className="flex items-center gap-2">
