@@ -95,9 +95,12 @@ const HeroSection = () => {
       <div className="container-wide relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-4 drop-shadow-lg">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-2 drop-shadow-lg">
             TravelSure
           </h1>
+          <p className="text-lg md:text-xl text-white/70 mb-4">
+            מבית אופיר ושות׳ סוכנות לביטוח
+          </p>
           
           <h2 className="text-2xl md:text-4xl font-bold mb-8" style={{ color: '#86efac' }}>
             {t("hero.subtitle")}
