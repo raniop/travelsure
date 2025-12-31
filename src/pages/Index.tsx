@@ -17,7 +17,6 @@ const Index = () => {
       <HeroSection />
       <ServicesSection />
       <AboutSection />
-      <ExtensionsSection />
       <ContactSection />
       <Footer />
       <CookieBanner />
@@ -255,51 +254,6 @@ const AboutSection = () => {
   );
 };
 
-// Extensions Section
-const ExtensionsSection = () => {
-  const { t } = useLanguage();
-  
-  const extensions = [
-    { title: t("extensions.pregnancy"), description: t("extensions.pregnancy.desc") },
-    { title: t("extensions.cancellation"), description: t("extensions.cancellation.desc") },
-    { title: t("extensions.luggage"), description: t("extensions.luggage.desc") },
-    { title: t("extensions.rental"), description: t("extensions.rental.desc") },
-    { title: t("extensions.winter"), description: t("extensions.winter.desc") },
-    { title: t("extensions.extreme"), description: t("extensions.extreme.desc") }
-  ];
-
-  return (
-    <section id="extensions" className="section-padding bg-muted/50">
-      <div className="container-wide">
-        <div className="text-center mb-12 md:mb-16">
-          <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("extensions.label")}</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("extensions.title")}</h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {t("extensions.description")}
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {extensions.map((ext, index) => (
-            <div key={index} className="bg-card rounded-xl p-6 border border-border hover:border-secondary/50 hover:shadow-lg transition-all h-full">
-              <h3 className="font-bold text-lg text-foreground mb-2">{ext.title}</h3>
-              <p className="text-muted-foreground">{ext.description}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center mt-12">
-          <Link to="/purchase">
-            <Button variant="cta" size="xl">
-              <ArrowLeft className="w-5 h-5" />
-              {t("extensions.cta")}
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 // Contact Section
 const ContactSection = () => {
@@ -404,7 +358,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-white/70">
               <li><a href="#services" className="hover:text-white transition-colors">{t("nav.services")}</a></li>
               <li><a href="#about" className="hover:text-white transition-colors">{t("nav.about")}</a></li>
-              <li><a href="#extensions" className="hover:text-white transition-colors">{t("extensions.title")}</a></li>
+              
               <li><a href="#contact" className="hover:text-white transition-colors">{t("nav.contact")}</a></li>
             </ul>
           </div>
