@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccessibilityMenu from "@/components/AccessibilityMenu";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import Purchase from "./pages/Purchase";
 import FAQ from "./pages/FAQ";
@@ -28,6 +29,7 @@ const App = () => (
         <Sonner />
         <AccessibilityMenu />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/purchase" element={<Purchase />} />
