@@ -13,7 +13,7 @@ const translations: Record<Language, Record<string, string>> = {
   he: {
     // Header
     "nav.home": "בית",
-    "nav.services": "שירותים",
+    "nav.services": "השירותים שלנו",
     "nav.about": "אודות",
     "nav.faq": "שאלות נפוצות",
     "nav.contact": "צור קשר",
@@ -168,7 +168,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Header
     "nav.home": "Home",
-    "nav.services": "Services",
+    "nav.services": "Our Services",
     "nav.about": "About",
     "nav.faq": "FAQ",
     "nav.contact": "Contact",
