@@ -36,7 +36,7 @@ const BusinessInsurance = () => {
               <Building2 className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white mb-6">
-              ביטוח עסקי
+              ביטוח עסקים
             </h1>
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
               פתרונות ביטוח מקיפים ומותאמים אישית לעסקים בכל גודל. הגנה מלאה שתאפשר לכם להתמקד בצמיחה.
