@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccessibilityMenu from "@/components/AccessibilityMenu";
 import ScrollToTop from "@/components/ScrollToTop";
+import ScrollIndicator from "@/components/ScrollIndicator";
 import Index from "./pages/Index";
 import Purchase from "./pages/Purchase";
 import FAQ from "./pages/FAQ";
@@ -30,6 +31,7 @@ const App = () => (
         <AccessibilityMenu />
         <BrowserRouter>
           <ScrollToTop />
+          <ScrollIndicator />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/purchase" element={<Purchase />} />
