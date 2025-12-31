@@ -30,6 +30,7 @@ const Header = () => {
     { href: "/about", label: t("nav.about") },
     { href: "/faq", label: t("nav.faq") },
     { href: "/contact", label: t("nav.contact") },
+    { href: "/privacy-policy", label: t("footer.privacy") },
   ];
 
   // Search data - pages and keywords with FAQ content
