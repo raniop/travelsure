@@ -41,12 +41,12 @@ const BusinessInsurance = () => {
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
               פתרונות ביטוח מקיפים ומותאמים אישית לעסקים בכל גודל. הגנה מלאה שתאפשר לכם להתמקד בצמיחה.
             </p>
-            <a href="#contact">
+            <Link to="/contact">
               <Button variant="cta" size="xl" className="shadow-lg" style={{ background: '#fcd34d', color: '#92400e' }}>
                 קבלו הצעת מחיר
                 <Building2 className="w-5 h-5" />
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </section>

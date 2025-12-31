@@ -43,12 +43,12 @@ const CarInsurance = () => {
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
               כיסוי מקיף לרכב שלכם במחירים תחרותיים. הגנה מלאה לכל מצב עם שירות אישי ומקצועי.
             </p>
-            <a href="#contact">
+            <Link to="/contact">
               <Button variant="cta" size="xl" className="shadow-lg" style={{ background: '#60a5fa', color: '#1e3a5f' }}>
                 קבלו הצעת מחיר
                 <Car className="w-5 h-5" />
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
