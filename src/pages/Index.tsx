@@ -157,22 +157,26 @@ const ServicesSection = () => {
     {
       icon: Plane,
       title: t("services.travel.title"),
-      description: t("services.travel.desc")
+      description: t("services.travel.desc"),
+      link: "/services/travel"
     },
     {
       icon: Car,
       title: t("services.car.title"),
-      description: t("services.car.desc")
+      description: t("services.car.desc"),
+      link: "/services/car"
     },
     {
       icon: Home,
       title: t("services.home.title"),
-      description: t("services.home.desc")
+      description: t("services.home.desc"),
+      link: "/services/home"
     },
     {
       icon: Building2,
       title: t("services.business.title"),
-      description: t("services.business.desc")
+      description: t("services.business.desc"),
+      link: "/services/business"
     }
   ];
 
@@ -195,10 +199,10 @@ const ServicesSection = () => {
               </div>
               <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
               <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
-              <a href="#contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
+              <Link to={service.link} className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
                 {t("services.learnMore")}
                 <ArrowLeft className="w-4 h-4" />
-              </a>
+              </Link>
             </div>
           ))}
         </div>
