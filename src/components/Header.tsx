@@ -355,9 +355,9 @@ const Header = () => {
                     </div>
                   </div>
 
-                  <Link to="/purchase" onClick={() => setIsOpen(false)} className="mt-2">
+                  <Link to={isPurchasePage ? "/" : "/purchase"} onClick={() => setIsOpen(false)} className="mt-2">
                     <Button variant="cta" size="lg" className="w-full">
-                      {t("nav.purchase")}
+                      {isPurchasePage ? t("nav.backToHome") : t("nav.purchase")}
                       <ArrowLeft className="w-4 h-4" />
                     </Button>
                   </Link>
@@ -446,13 +446,13 @@ const Header = () => {
             )}
 
             {/* CTA Button - Desktop */}
-            <Link to="/purchase">
+            <Link to={isPurchasePage ? "/" : "/purchase"}>
               <Button
                 variant="cta"
                 size="default"
                 className="hidden sm:flex shadow-[0_8px_30px_rgba(134,239,172,0.4)] hover:shadow-[0_12px_40px_rgba(134,239,172,0.5)] transition-all duration-300 hover:scale-105"
               >
-                {t("nav.purchase")}
+                {isPurchasePage ? t("nav.backToHome") : t("nav.purchase")}
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>

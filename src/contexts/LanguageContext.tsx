@@ -18,6 +18,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.faq": "שאלות נפוצות",
     "nav.contact": "צור קשר",
     "nav.purchase": "לרכישה",
+    "nav.backToHome": "חזרה לעמוד הבית",
     "nav.openMenu": "פתח תפריט",
 
     // Hero
@@ -173,6 +174,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.faq": "FAQ",
     "nav.contact": "Contact",
     "nav.purchase": "Purchase",
+    "nav.backToHome": "Back to Home",
     "nav.openMenu": "Open menu",
 
     // Hero
