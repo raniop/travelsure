@@ -42,9 +42,9 @@ const BusinessInsurance = () => {
               פתרונות ביטוח מקיפים ומותאמים אישית לעסקים בכל גודל. הגנה מלאה שתאפשר לכם להתמקד בצמיחה.
             </p>
             <Link to="/contact">
-              <Button variant="hero" size="xl" className="shadow-lg">
+              <Button size="xl" className="shadow-lg bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold hover:from-amber-500 hover:to-orange-600 hover:scale-105 transition-all border-0">
+                <Mail className="w-5 h-5" />
                 קבלו הצעת מחיר
-                <Building2 className="w-5 h-5" />
               </Button>
             </Link>
           </div>
@@ -194,7 +194,7 @@ const BusinessInsurance = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Link to="/contact">
-                <Button variant="hero" size="xl">
+                <Button size="xl" className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold hover:from-amber-500 hover:to-orange-600 hover:scale-105 transition-all border-0 shadow-lg">
                   <Mail className="w-5 h-5" />
                   קבלו הצעת מחיר
                 </Button>

@@ -44,9 +44,9 @@ const CarInsurance = () => {
               כיסוי מקיף לרכב שלכם במחירים תחרותיים. הגנה מלאה לכל מצב עם שירות אישי ומקצועי.
             </p>
             <Link to="/contact">
-              <Button variant="hero" size="xl" className="shadow-lg">
+              <Button size="xl" className="shadow-lg bg-gradient-to-r from-blue-400 to-blue-600 text-white font-bold hover:from-blue-500 hover:to-blue-700 hover:scale-105 transition-all border-0">
+                <Mail className="w-5 h-5" />
                 קבלו הצעת מחיר
-                <Car className="w-5 h-5" />
               </Button>
             </Link>
           </div>
@@ -152,7 +152,7 @@ const CarInsurance = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Link to="/contact">
-                <Button variant="hero" size="xl">
+                <Button size="xl" className="bg-gradient-to-r from-blue-400 to-blue-600 text-white font-bold hover:from-blue-500 hover:to-blue-700 hover:scale-105 transition-all border-0 shadow-lg">
                   <Mail className="w-5 h-5" />
                   קבלו הצעת מחיר
                 </Button>
