@@ -404,8 +404,11 @@ export default function Home() {
       const params = new URLSearchParams(window.location.search);
       const shatapId = params.get("aff") || params.get("shatapId") || params.get("id");
 
+      console.log("Checking for shatap ID:", shatapId); // Debug log
+
       if (!shatapId) {
         // אם אין פרמטר, ננקה את שם השת"פ (לא נציג כלום)
+        console.log("No shatap ID found, clearing shatap name"); // Debug log
         setShatapName("");
         return;
       }
@@ -463,6 +466,8 @@ export default function Home() {
       
       // אם הגענו לכאן, כל הניסיונות נכשלו
       console.error("Failed to load shatap name from all URLs");
+      // ננקה את שם השת"פ אם לא הצלחנו לטעון אותו
+      setShatapName("");
     };
 
     loadShatapName();
