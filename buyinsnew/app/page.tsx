@@ -415,15 +415,37 @@ export default function Home() {
 
       // ⚡ ננסה רק את ה-URL הראשון שמתאים לסביבה - הרבה יותר מהיר!
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+      const fullUrl = typeof window !== 'undefined' ? window.location.href : '';
+      
+      // Debug: נדפיס את כל המידע על הסביבה
+      console.log("🔍 Debug Info:", {
+        hostname,
+        origin: baseUrl,
+        fullUrl,
+        pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+        search: typeof window !== 'undefined' ? window.location.search : '',
+      });
+      
       const isLocalhost = typeof window !== 'undefined' && 
                          (window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
-                          window.location.hostname.includes('lovable'));
+                          window.location.hostname.includes('lovable') ||
+                          window.location.hostname.includes('lovable.dev'));
+      
+      console.log("🔍 Environment Detection:", {
+        isLocalhost,
+        hostname,
+        includesLovable: hostname.includes('lovable'),
+      });
       
       // נבחר את ה-URL הראשון שמתאים לסביבה
       const primaryUrl = isLocalhost 
         ? `/api/shatap?id=${encodeURIComponent(shatapId)}` // Lovable/localhost - בלי basePath
         : getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`); // Production - עם basePath
+      
+      console.log("🔍 Primary URL:", primaryUrl);
+      console.log("🔍 BASE_PATH constant:", BASE_PATH);
       
       // רשימת fallback URLs רק אם הראשוני נכשל
       const fallbackUrls = isLocalhost ? [
@@ -433,6 +455,8 @@ export default function Home() {
         `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`,
         `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`,
       ];
+      
+      console.log("🔍 Fallback URLs:", fallbackUrls);
 
       const fetchWithTimeout = async (url: string, timeout: number = 1500) => {
         const controller = new AbortController();
@@ -453,33 +477,66 @@ export default function Home() {
 
       // ננסה קודם את ה-URL הראשוני (המהיר ביותר)
       try {
-        console.log("Fetching shatap from primary URL:", primaryUrl);
+        console.log("🚀 Fetching shatap from primary URL:", primaryUrl);
+        const startTime = Date.now();
         const res = await fetchWithTimeout(primaryUrl, 1500); // 1.5 שניות timeout
+        const duration = Date.now() - startTime;
+        
+        console.log("📡 Response received:", {
+          status: res.status,
+          statusText: res.statusText,
+          ok: res.ok,
+          duration: `${duration}ms`,
+          url: res.url,
+        });
 
         if (res.ok) {
           const data = await res.json();
+          console.log("📦 Response data:", data);
           if (data.name) {
             setShatapName(data.name);
-            console.log("Shatap name loaded successfully:", data.name);
+            console.log("✅ Shatap name loaded successfully:", data.name);
             return; // הצלחנו מיד!
+          } else {
+            console.warn("⚠️ No name in response data:", data);
+          }
+        } else {
+          // ננסה לקרוא את ה-error message
+          try {
+            const errorData = await res.json();
+            console.error("❌ API Error Response:", errorData);
+          } catch (e) {
+            console.error("❌ API Error (couldn't parse JSON):", res.status, res.statusText);
           }
         }
       } catch (error: any) {
-        console.warn("Primary URL failed, trying fallbacks...", error.message);
+        console.error("❌ Primary URL failed:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        });
+        console.warn("🔄 Trying fallbacks...");
       }
 
       // רק אם הראשוני נכשל, ננסה את ה-fallbacks במקביל
       const fallbackPromises = fallbackUrls.map(async (apiUrl) => {
         try {
+          console.log("🔄 Trying fallback URL:", apiUrl);
           const res = await fetchWithTimeout(apiUrl, 1500);
+          console.log("📡 Fallback response:", {
+            url: apiUrl,
+            status: res.status,
+            ok: res.ok,
+          });
           if (res.ok) {
             const data = await res.json();
             if (data.name) {
+              console.log("✅ Fallback succeeded:", data.name);
               return { success: true, name: data.name };
             }
           }
         } catch (error: any) {
-          // שקט - לא נדפיס שגיאות ל-fallbacks
+          console.warn("⚠️ Fallback URL failed:", apiUrl, error.message);
         }
         return { success: false };
       });
