@@ -343,7 +343,7 @@ function GenderToggle({
 export default function Home() {
   const [id, setId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [shatapName, setShatapName] = useState<string>("אופיר מיוחד 20");
+  const [shatapName, setShatapName] = useState<string>("");
   const [status, setStatus] = useState<
     | { type: "idle"; text: string }
     | { type: "checking"; text: string }
@@ -405,7 +405,8 @@ export default function Home() {
       const shatapId = params.get("aff") || params.get("shatapId") || params.get("id");
 
       if (!shatapId) {
-        // אם אין פרמטר, נשאר עם הערך הדיפולטיבי
+        // אם אין פרמטר, ננקה את שם השת"פ (לא נציג כלום)
+        setShatapName("");
         return;
       }
 
@@ -798,8 +799,10 @@ export default function Home() {
                 className="h-full w-auto object-contain"
               />
             </div>
-            {/* Text on the left (RTL) */}
-            <div className="text-white text-sm sm:text-base font-medium">{shatapName}</div>
+            {/* Text on the left (RTL) - מוצג רק אם יש שם שת"פ */}
+            {shatapName && (
+              <div className="text-white text-sm sm:text-base font-medium">{shatapName}</div>
+            )}
           </div>
         </div>
       </header>
