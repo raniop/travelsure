@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* הסתר לחלוטין את הטקסט dd/mm/yyyy בשדות תאריך עם class date-empty */
+input[type="date"].date-empty::-webkit-datetime-edit-text,
+input[type="date"].date-empty::-webkit-datetime-edit-month-field,
+input[type="date"].date-empty::-webkit-datetime-edit-day-field,
+input[type="date"].date-empty::-webkit-datetime-edit-year-field {
+  color: transparent !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* גם הסתר את כל ה-datetime-edit container כשהשדה ריק */
+input[type="date"].date-empty::-webkit-datetime-edit {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+
+/* הסתר placeholder בשדות תאריך */
+input[type="date"]::placeholder,
+input[type="date"]::-webkit-input-placeholder,
+input[type="date"]::-moz-placeholder,
+input[type="date"]:-ms-input-placeholder {
+  opacity: 0 !important;
+  color: transparent !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+
+/* כשהשדה בפוקוס או שיש ערך, הצג את הטקסט */
+input[type="date"]:focus::-webkit-datetime-edit-text,
+input[type="date"]:focus::-webkit-datetime-edit-month-field,
+input[type="date"]:focus::-webkit-datetime-edit-day-field,
+input[type="date"]:focus::-webkit-datetime-edit-year-field,
+input[type="date"]:not(.date-empty)::-webkit-datetime-edit-text,
+input[type="date"]:not(.date-empty)::-webkit-datetime-edit-month-field,
+input[type="date"]:not(.date-empty)::-webkit-datetime-edit-day-field,
+input[type="date"]:not(.date-empty)::-webkit-datetime-edit-year-field {
+  color: #171717 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline !important;
+}
+
+input[type="date"]:focus::-webkit-datetime-edit,
+input[type="date"]:not(.date-empty)::-webkit-datetime-edit {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-block !important;
+}
+
+/* וודא ששדה תאריך יהיה באותו גובה כמו שדות טקסט רגילים */
+/* שדה טקסט רגיל: pt-4 (16px) + line-height (20px) + pb-2 (8px) = 44px כולל */
+/* וודא שכל השדות (גם תאריך וגם טקסט) יהיו באותו גובה בדיוק */
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input:not([type]) {
+  height: 2.75rem !important; /* 44px */
+  min-height: 2.75rem !important;
+  max-height: 2.75rem !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+input[type="date"] {
+  height: 2.75rem !important; /* 44px = גובה זהה לשדה טקסט רגיל */
+  min-height: 2.75rem !important;
+  max-height: 2.75rem !important;
+  line-height: 1.25rem !important;
+  padding-top: 1.5rem !important; /* pt-6 */
+  padding-bottom: 0.125rem !important; /* pb-0.5 */
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  height: 1.25rem !important;
+  line-height: 1.25rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-block !important;
+  vertical-align: bottom !important;
+  margin-bottom: 0.125rem !important;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  height: 1.25rem !important;
+  line-height: 1.25rem !important;
+  display: inline-block !important;
+  vertical-align: bottom !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  margin-bottom: 0.125rem !important;
+}
+
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  line-height: 1.25rem !important;
+  height: 1.25rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  vertical-align: bottom !important;
+  display: inline-block !important;
+  text-align: right !important;
+}
+
+/* וודא שכל השדות מיושרים לימין ב-RTL */
+input[dir="rtl"] {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+input[dir="rtl"]::-webkit-datetime-edit,
+input[dir="rtl"]::-webkit-datetime-edit-fields-wrapper {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* וודא ששדות תאריך מיושרים לימין */
+input[type="date"][dir="rtl"],
+input[type="date"][dir="rtl"]::-webkit-datetime-edit,
+input[type="date"][dir="rtl"]::-webkit-datetime-edit-fields-wrapper {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* וודא שכל השדות עם dir="rtl" מיושרים לימין */
+input[dir="rtl"],
+input[type="text"][dir="rtl"],
+input[type="tel"][dir="rtl"],
+input[type="email"][dir="rtl"] {
+  text-align: right !important;
+  direction: rtl !important;
+}
