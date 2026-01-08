@@ -409,44 +409,59 @@ export default function Home() {
         return;
       }
 
-      try {
-        // יצירת AbortController ל-timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 שניות timeout
+      // רשימת URLs לנסות - עם basePath ובלי (למקרה של reverse proxy)
+      // נשתמש ב-URL מוחלט כדי לוודא שהוא עובד גם עם reverse proxy
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const apiUrls = [
+        getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`),
+        `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`, // URL מוחלט עם basePath
+        `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`, // URL מוחלט בלי basePath (למקרה של reverse proxy)
+        `/api/shatap?id=${encodeURIComponent(shatapId)}`, // Fallback יחסי בלי basePath
+      ];
 
-        const apiUrl = getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`);
-        console.log("Fetching shatap from:", apiUrl); // Debug log
+      for (const apiUrl of apiUrls) {
+        try {
+          // יצירת AbortController ל-timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 שניות timeout
 
-        const res = await fetch(apiUrl, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
+          console.log("Fetching shatap from:", apiUrl); // Debug log
 
-        clearTimeout(timeoutId);
+          const res = await fetch(apiUrl, {
+            cache: "no-store",
+            signal: controller.signal,
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          console.log("Shatap data received:", data); // Debug log
-          if (data.name) {
-            setShatapName(data.name);
-            console.log("Shatap name set to:", data.name); // Debug log
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            console.log("Shatap data received:", data); // Debug log
+            if (data.name) {
+              setShatapName(data.name);
+              console.log("Shatap name set to:", data.name); // Debug log
+              return; // הצלחנו, נצא מהלולאה
+            } else {
+              console.warn("Shatap name not found in response:", data);
+            }
           } else {
-            console.warn("Shatap name not found in response:", data);
+            console.warn(`Shatap API error for ${apiUrl}:`, res.status, res.statusText);
+            // נמשיך לנסות את ה-URL הבא
+            continue;
           }
-        } else {
-          console.error("Shatap API error:", res.status, res.statusText);
-          const errorData = await res.json().catch(() => ({}));
-          console.error("Error details:", errorData);
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            console.warn(`Shatap API timeout for ${apiUrl}`);
+          } else {
+            console.warn(`Error loading shatap from ${apiUrl}:`, error);
+          }
+          // נמשיך לנסות את ה-URL הבא
+          continue;
         }
-        // אם לא מצאנו, נשאר עם הערך הדיפולטיבי
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
-          console.error("Shatap API timeout");
-        } else {
-          console.error("Error loading shatap name:", error);
-        }
-        // במקרה של שגיאה, נשאר עם הערך הדיפולטיבי
       }
+      
+      // אם הגענו לכאן, כל הניסיונות נכשלו
+      console.error("Failed to load shatap name from all URLs");
     };
 
     loadShatapName();
