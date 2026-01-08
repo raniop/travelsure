@@ -661,7 +661,7 @@ export default function Home() {
           // ✅ המגדר כבר מנורמל ב-API (M/F או "")
           const gender = customer.gender || "";
 
-          // ✅ ממלא אוטומטית את הלקוח הראשון
+          // ✅ ממלא אוטומטית את הלקוח הראשון מיד - ללא המתנה!
           setCustomers((prev) => {
             const updated = [...prev];
             if (updated.length === 0) {
@@ -693,7 +693,11 @@ export default function Home() {
             return updated;
           });
 
-          // ✅ אוסף לקוחות נוספים מכל הפוליסות (מלבד הלקוח הנוכחי)
+          // ✅ מציג הודעה מיד - המשתמש רואה שהכל עובד!
+          setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""}` });
+          setLoading(false); // מסיים את ה-loading מיד
+
+          // ✅ טוען לקוחות נוספים ברקע - לא חוסם את המשתמש!
           const allCustomersFromApi: AdditionalCustomer[] = json.allCustomers || [];
           const normalizedCurrentId = clean.padStart(9, "0");
           
@@ -702,18 +706,22 @@ export default function Home() {
             return custId !== normalizedCurrentId && custId.length === 9;
           });
 
+          // מעדכן את הלקוחות הנוספים ברקע
           setAdditionalCustomers(additional);
           setSelectedAdditionalCustomers(new Set());
-          // אם יש לקוחות נוספים, פתח את המודאל אוטומטית
+          
+          // אם יש לקוחות נוספים, מציג הודעה (לא פותח מודאל אוטומטית)
           if (additional.length > 0) {
-            setShowAdditionalCustomersModal(true);
+            // עדכון ההודעה להוסיף מידע על לקוחות נוספים
+            setTimeout(() => {
+              setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""} · ${additional.length} מבוטחים נוספים זמינים` });
+            }, 500);
           }
-
-          setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""}` });
         } else {
           setStatus({ type: "notfound", text: "לא נמצא — מלא ידנית" });
           setAdditionalCustomers([]);
           setSelectedAdditionalCustomers(new Set());
+          setLoading(false);
         }
       } catch (error: any) {
         if (error.name === 'AbortError') {
@@ -721,7 +729,6 @@ export default function Home() {
         } else {
           setStatus({ type: "error", text: "שגיאת רשת" });
         }
-      } finally {
         setLoading(false);
       }
     }, 300); // הקטנתי מ-450ms ל-300ms - יותר מהיר
