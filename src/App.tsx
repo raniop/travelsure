@@ -9,6 +9,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import ScrollIndicator from "@/components/ScrollIndicator";
 import Index from "./pages/Index";
 import Purchase from "./pages/Purchase";
+import BuyInsNew from "./pages/BuyInsNew";
 import FAQ from "./pages/FAQ";
 import Services from "./pages/Services";
 import About from "./pages/About";
@@ -35,6 +36,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/purchase" element={<Purchase />} />
+            <Route path="/buyinsnew" element={<BuyInsNew />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/travel" element={<TravelInsurance />} />
             <Route path="/services/car" element={<CarInsurance />} />
