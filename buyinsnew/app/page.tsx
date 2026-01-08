@@ -413,45 +413,60 @@ export default function Home() {
         return;
       }
 
-      // רשימת URLs לנסות - עם basePath ובלי (למקרה של reverse proxy)
+      // רשימת URLs לנסות - עם basePath ובלי (למקרה של reverse proxy או Lovable)
       // נשתמש ב-URL מוחלט כדי לוודא שהוא עובד גם עם reverse proxy
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const apiUrls = [
+      const isLocalhost = typeof window !== 'undefined' && 
+                         (window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.includes('lovable'));
+      
+      // ב-localhost/Lovable, ננסה קודם בלי basePath
+      // ב-production, ננסה קודם עם basePath
+      const apiUrls = isLocalhost ? [
+        `/api/shatap?id=${encodeURIComponent(shatapId)}`, // קודם בלי basePath (ל-Lovable/localhost)
+        `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`, // URL מוחלט בלי basePath
+        getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`), // עם basePath
+        `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`, // URL מוחלט עם basePath
+      ] : [
         getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`),
         `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`, // URL מוחלט עם basePath
         `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`, // URL מוחלט בלי basePath (למקרה של reverse proxy)
         `/api/shatap?id=${encodeURIComponent(shatapId)}`, // Fallback יחסי בלי basePath
       ];
 
-      for (const apiUrl of apiUrls) {
+      // ⚡ ננסה את כל ה-URLs במקביל במקום ברצף - זה הרבה יותר מהיר!
+      const fetchWithTimeout = async (url: string, timeout: number = 2000) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
         try {
-          // יצירת AbortController ל-timeout
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 שניות timeout
-
-          console.log("Fetching shatap from:", apiUrl); // Debug log
-
-          const res = await fetch(apiUrl, {
+          const res = await fetch(url, {
             cache: "no-store",
             signal: controller.signal,
           });
-
           clearTimeout(timeoutId);
+          return res;
+        } catch (error: any) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
+      };
+
+      // ננסה את כל ה-URLs במקביל
+      const promises = apiUrls.map(async (apiUrl) => {
+        try {
+          console.log("Fetching shatap from:", apiUrl); // Debug log
+          const res = await fetchWithTimeout(apiUrl, 2000); // 2 שניות timeout (מהיר יותר!)
 
           if (res.ok) {
             const data = await res.json();
-            console.log("Shatap data received:", data); // Debug log
+            console.log("Shatap data received from", apiUrl, ":", data); // Debug log
             if (data.name) {
-              setShatapName(data.name);
-              console.log("Shatap name set to:", data.name); // Debug log
-              return; // הצלחנו, נצא מהלולאה
-            } else {
-              console.warn("Shatap name not found in response:", data);
+              return { success: true, name: data.name, url: apiUrl };
             }
           } else {
             console.warn(`Shatap API error for ${apiUrl}:`, res.status, res.statusText);
-            // נמשיך לנסות את ה-URL הבא
-            continue;
           }
         } catch (error: any) {
           if (error.name === 'AbortError') {
@@ -459,8 +474,18 @@ export default function Home() {
           } else {
             console.warn(`Error loading shatap from ${apiUrl}:`, error);
           }
-          // נמשיך לנסות את ה-URL הבא
-          continue;
+        }
+        return { success: false };
+      });
+
+      // נחכה לתוצאה הראשונה שמצליחה
+      const results = await Promise.allSettled(promises);
+      
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.success) {
+          setShatapName(result.value.name);
+          console.log("Shatap name set to:", result.value.name, "from URL:", result.value.url); // Debug log
+          return; // הצלחנו!
         }
       }
       
