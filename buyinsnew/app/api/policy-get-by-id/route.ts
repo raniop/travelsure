@@ -99,20 +99,24 @@ export async function GET(req: Request) {
 
     const policies = Array.isArray(data) ? data : [];
 
+  // מיון לפי תאריך - מהחדש לישן
   policies.sort((a: any, b: any) => {
     const ad = new Date(a.issueDate || 0).getTime();
     const bd = new Date(b.issueDate || 0).getTime();
     return bd - ad;
   });
 
+  // ⚡ הגבלה ל-4 פוליסות אחרונות בלבד - כדי לקצר את זמן הטעינה
+  const recentPolicies = policies.slice(0, 4);
+
   // נרמול תעודת הזהות לחיפוש - גם עם padding וגם בלי
   const normalizedId = id.padStart(9, "0");
   const idWithoutPadding = id.trim();
 
-  // 🔎 מחפש את הלקוח הספציפי לפי תעודת זהות בתוך customers של הפוליסות
+  // 🔎 מחפש את הלקוח הספציפי לפי תעודת זהות בתוך customers של הפוליסות (רק 4 האחרונות)
   let foundCustomer: any = null;
 
-  for (const policy of policies) {
+  for (const policy of recentPolicies) {
     if (Array.isArray(policy.customers)) {
       for (const cust of policy.customers) {
         // מנסה כמה פורמטים של תעודת זהות
@@ -160,7 +164,7 @@ export async function GET(req: Request) {
     lastNameEn: lastNameEn ? String(lastNameEn) : "",
   };
 
-  const summarized = policies.slice(0, 12).map((p: any) => ({
+  const summarized = recentPolicies.map((p: any) => ({
     fullPolicyID: p.fullPolicyID,
     issueDate: p.issueDate,
     startDate: p.startDate,
@@ -171,11 +175,11 @@ export async function GET(req: Request) {
     clientName: p.clientName,
   }));
 
-  // אוסף את כל הלקוחות מכל הפוליסות
+  // אוסף את כל הלקוחות מכל הפוליסות (רק מ-4 האחרונות)
   const allCustomers: any[] = [];
   const seenIds = new Set<string>();
 
-  for (const policy of policies) {
+  for (const policy of recentPolicies) {
     if (Array.isArray(policy.customers)) {
       for (const cust of policy.customers) {
         const custId = String(cust?.personId || "").trim();
@@ -211,10 +215,11 @@ export async function GET(req: Request) {
         found: foundCustomer !== null, // ✅ רק אם מצאנו לקוח עם תעודת זהות תואמת
         id,
         primaryName,
-        policiesCount: policies.length,
+        policiesCount: recentPolicies.length, // מספר הפוליסות שנבדקו (4)
+        totalPoliciesCount: policies.length, // מספר הפוליסות הכולל
         policies: summarized,
         customer,
-        allCustomers, // כל הלקוחות מכל הפוליסות
+        allCustomers, // כל הלקוחות מ-4 הפוליסות האחרונות
       },
       { status: 200 }
     );
