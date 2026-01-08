@@ -74,22 +74,30 @@ export async function GET(req: Request) {
 
   const upstreamUrl = `https://mobile.ophirins.co.il/api/Policy/GetById?id=${encodeURIComponent(id)}`;
 
-  const upstreamRes = await fetch(upstreamUrl, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
+  // יצירת AbortController ל-timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 שניות timeout
 
-  if (!upstreamRes.ok) {
-    return NextResponse.json(
-      { error: "Upstream error", status: upstreamRes.status },
-      { status: 502 }
-    );
-  }
+  try {
+    const upstreamRes = await fetch(upstreamUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: controller.signal,
+    });
 
-  const data = await upstreamRes.json();
+    clearTimeout(timeoutId);
 
-  const policies = Array.isArray(data) ? data : [];
+    if (!upstreamRes.ok) {
+      return NextResponse.json(
+        { error: "Upstream error", status: upstreamRes.status },
+        { status: 502 }
+      );
+    }
+
+    const data = await upstreamRes.json();
+
+    const policies = Array.isArray(data) ? data : [];
 
   policies.sort((a: any, b: any) => {
     const ad = new Date(a.issueDate || 0).getTime();
@@ -198,16 +206,29 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json(
-    {
-      found: foundCustomer !== null, // ✅ רק אם מצאנו לקוח עם תעודת זהות תואמת
-      id,
-      primaryName,
-      policiesCount: policies.length,
-      policies: summarized,
-      customer,
-      allCustomers, // כל הלקוחות מכל הפוליסות
-    },
-    { status: 200 }
-  );
+    return NextResponse.json(
+      {
+        found: foundCustomer !== null, // ✅ רק אם מצאנו לקוח עם תעודת זהות תואמת
+        id,
+        primaryName,
+        policiesCount: policies.length,
+        policies: summarized,
+        customer,
+        allCustomers, // כל הלקוחות מכל הפוליסות
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: "Request timeout - השרת לא הגיב בזמן" },
+        { status: 504 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Network error", details: error.message },
+      { status: 500 }
+    );
+  }
 }

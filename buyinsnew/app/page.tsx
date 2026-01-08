@@ -624,9 +624,16 @@ export default function Home() {
         setLoading(true);
         setStatus({ type: "checking", text: "בודק במערכת…" });
 
+        // יצירת AbortController ל-timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 שניות timeout
+
         const res = await fetch(getApiPath(`/api/policy-get-by-id?id=${encodeURIComponent(clean)}`), {
           cache: "no-store",
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         let json: any = null;
         try {
@@ -708,12 +715,16 @@ export default function Home() {
           setAdditionalCustomers([]);
           setSelectedAdditionalCustomers(new Set());
         }
-      } catch {
-        setStatus({ type: "error", text: "שגיאת רשת" });
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          setStatus({ type: "error", text: "הזמן הקצוב לבדיקה פג - נסה שוב" });
+        } else {
+          setStatus({ type: "error", text: "שגיאת רשת" });
+        }
       } finally {
         setLoading(false);
       }
-    }, 450);
+    }, 300); // הקטנתי מ-450ms ל-300ms - יותר מהיר
 
     return () => clearTimeout(t);
   }, [id]);
