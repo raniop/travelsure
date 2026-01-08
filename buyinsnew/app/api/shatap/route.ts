@@ -22,12 +22,20 @@ export async function GET(req: Request) {
   try {
     // קריאת ה-XML מהקישור
     const xmlUrl = "https://www.ophirbit.co.il/aff/XmlShatapim.asp";
+    
+    // יצירת AbortController ל-timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 שניות timeout
+
     const response = await fetch(xmlUrl, {
       cache: "no-store",
       headers: {
         Accept: "application/xml, text/xml, */*",
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return NextResponse.json(
@@ -75,10 +83,16 @@ export async function GET(req: Request) {
       id: foundShatap.id,
       name: foundShatap.name,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: "Request timeout - השרת לא הגיב בזמן" },
+        { status: 504 }
+      );
+    }
     console.error("Error fetching shatap:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }

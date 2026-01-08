@@ -410,19 +410,41 @@ export default function Home() {
       }
 
       try {
-        const res = await fetch(getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`), {
+        // יצירת AbortController ל-timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 שניות timeout
+
+        const apiUrl = getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`);
+        console.log("Fetching shatap from:", apiUrl); // Debug log
+
+        const res = await fetch(apiUrl, {
           cache: "no-store",
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const data = await res.json();
+          console.log("Shatap data received:", data); // Debug log
           if (data.name) {
             setShatapName(data.name);
+            console.log("Shatap name set to:", data.name); // Debug log
+          } else {
+            console.warn("Shatap name not found in response:", data);
           }
+        } else {
+          console.error("Shatap API error:", res.status, res.statusText);
+          const errorData = await res.json().catch(() => ({}));
+          console.error("Error details:", errorData);
         }
         // אם לא מצאנו, נשאר עם הערך הדיפולטיבי
-      } catch (error) {
-        console.error("Error loading shatap name:", error);
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.error("Shatap API timeout");
+        } else {
+          console.error("Error loading shatap name:", error);
+        }
         // במקרה של שגיאה, נשאר עם הערך הדיפולטיבי
       }
     };
