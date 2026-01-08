@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     
     // יצירת AbortController ל-timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 שניות timeout (מהיר יותר)
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 שניות timeout (מהיר יותר)
 
     const response = await fetch(xmlUrl, {
       cache: "no-store",
@@ -44,31 +44,75 @@ export async function GET(req: Request) {
       );
     }
 
-    const xmlText = await response.text();
+    // ⚡ נחפש את ה-ID ישירות ב-XML בלי לטעון את כל הטקסט קודם
+    // זה יכול להיות מהיר יותר אם ה-ID נמצא בתחילת ה-XML
+    const reader = response.body?.getReader();
+    if (!reader) {
+      return NextResponse.json(
+        { error: "Failed to read response" },
+        { status: 500 }
+      );
+    }
 
-    // פארסינג ה-XML ידנית
-    // ה-XML מגיע בפורמט: <ShatapItem><Id>770</Id><Name>Nira Lizra</Name></ShatapItem>
-    // נחפש את כל ה-ShatapItem ונמצא את זה עם ה-ID המתאים
-    
-    // regex למציאת כל ה-ShatapItem (מתמודד גם עם רווחים ושורות חדשות)
-    const itemRegex = /<ShatapItem>\s*<Id>(.*?)<\/Id>\s*<Name>(.*?)<\/Name>\s*<\/ShatapItem>/gs;
-    let match;
+    const decoder = new TextDecoder();
+    let xmlBuffer = '';
     let foundShatap: { id: string; name: string } | null = null;
+    const targetId = id.trim();
 
-    while ((match = itemRegex.exec(xmlText)) !== null) {
-      const itemId = match[1]?.trim() || "";
-      const itemName = match[2]?.trim() || "";
+    // נחפש את ה-ID תוך כדי קריאת ה-XML (streaming)
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      // מדלג על רשומות עם ID או שם ריק
-      if (!itemId || !itemName) {
-        continue;
+        xmlBuffer += decoder.decode(value, { stream: true });
+        
+        // נחפש את ה-ID בכל פעם שיש לנו עוד נתונים
+        // regex למציאת ShatapItem עם ה-ID המבוקש
+        const itemRegex = new RegExp(
+          `<ShatapItem>\\s*<Id>\\s*${targetId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*</Id>\\s*<Name>(.*?)</Name>\\s*</ShatapItem>`,
+          'is'
+        );
+        const match = xmlBuffer.match(itemRegex);
+        
+        if (match && match[1]) {
+          const itemName = match[1].trim();
+          if (itemName) {
+            const decodedName = decodeHtmlEntities(itemName);
+            foundShatap = { id: targetId, name: decodedName };
+            reader.cancel(); // נעצור את הקריאה מיד כשמצאנו
+            break;
+          }
+        }
+
+        // אם ה-buffer גדול מדי, נשמור רק את החלק האחרון (למקרה שה-XML גדול)
+        if (xmlBuffer.length > 100000) {
+          xmlBuffer = xmlBuffer.slice(-50000);
+        }
       }
+    } catch (error) {
+      // אם יש שגיאה ב-streaming, ננסה את השיטה הישנה
+      console.warn("Streaming failed, falling back to full text parsing");
+    }
 
-      if (itemId === id) {
-        // מפענח HTML entities בשם
-        const decodedName = decodeHtmlEntities(itemName);
-        foundShatap = { id: itemId, name: decodedName };
-        break;
+    // אם לא מצאנו ב-streaming, נחפש בכל ה-xmlBuffer שכבר טענו
+    if (!foundShatap && xmlBuffer) {
+      const itemRegex = /<ShatapItem>\s*<Id>(.*?)<\/Id>\s*<Name>(.*?)<\/Name>\s*<\/ShatapItem>/gs;
+      let match;
+
+      while ((match = itemRegex.exec(xmlBuffer)) !== null) {
+        const itemId = match[1]?.trim() || "";
+        const itemName = match[2]?.trim() || "";
+
+        if (!itemId || !itemName) {
+          continue;
+        }
+
+        if (itemId === targetId) {
+          const decodedName = decodeHtmlEntities(itemName);
+          foundShatap = { id: itemId, name: decodedName };
+          break;
+        }
       }
     }
 

@@ -413,30 +413,28 @@ export default function Home() {
         return;
       }
 
-      // רשימת URLs לנסות - עם basePath ובלי (למקרה של reverse proxy או Lovable)
-      // נשתמש ב-URL מוחלט כדי לוודא שהוא עובד גם עם reverse proxy
+      // ⚡ ננסה רק את ה-URL הראשון שמתאים לסביבה - הרבה יותר מהיר!
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       const isLocalhost = typeof window !== 'undefined' && 
                          (window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
                           window.location.hostname.includes('lovable'));
       
-      // ב-localhost/Lovable, ננסה קודם בלי basePath
-      // ב-production, ננסה קודם עם basePath
-      const apiUrls = isLocalhost ? [
-        `/api/shatap?id=${encodeURIComponent(shatapId)}`, // קודם בלי basePath (ל-Lovable/localhost)
-        `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`, // URL מוחלט בלי basePath
-        getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`), // עם basePath
-        `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`, // URL מוחלט עם basePath
-      ] : [
+      // נבחר את ה-URL הראשון שמתאים לסביבה
+      const primaryUrl = isLocalhost 
+        ? `/api/shatap?id=${encodeURIComponent(shatapId)}` // Lovable/localhost - בלי basePath
+        : getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`); // Production - עם basePath
+      
+      // רשימת fallback URLs רק אם הראשוני נכשל
+      const fallbackUrls = isLocalhost ? [
+        `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`,
         getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`),
-        `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`, // URL מוחלט עם basePath
-        `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`, // URL מוחלט בלי basePath (למקרה של reverse proxy)
-        `/api/shatap?id=${encodeURIComponent(shatapId)}`, // Fallback יחסי בלי basePath
+      ] : [
+        `${baseUrl}${getApiPath(`/api/shatap?id=${encodeURIComponent(shatapId)}`)}`,
+        `${baseUrl}/api/shatap?id=${encodeURIComponent(shatapId)}`,
       ];
 
-      // ⚡ ננסה את כל ה-URLs במקביל במקום ברצף - זה הרבה יותר מהיר!
-      const fetchWithTimeout = async (url: string, timeout: number = 2000) => {
+      const fetchWithTimeout = async (url: string, timeout: number = 1500) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
@@ -453,45 +451,50 @@ export default function Home() {
         }
       };
 
-      // ננסה את כל ה-URLs במקביל
-      const promises = apiUrls.map(async (apiUrl) => {
-        try {
-          console.log("Fetching shatap from:", apiUrl); // Debug log
-          const res = await fetchWithTimeout(apiUrl, 2000); // 2 שניות timeout (מהיר יותר!)
+      // ננסה קודם את ה-URL הראשוני (המהיר ביותר)
+      try {
+        console.log("Fetching shatap from primary URL:", primaryUrl);
+        const res = await fetchWithTimeout(primaryUrl, 1500); // 1.5 שניות timeout
 
+        if (res.ok) {
+          const data = await res.json();
+          if (data.name) {
+            setShatapName(data.name);
+            console.log("Shatap name loaded successfully:", data.name);
+            return; // הצלחנו מיד!
+          }
+        }
+      } catch (error: any) {
+        console.warn("Primary URL failed, trying fallbacks...", error.message);
+      }
+
+      // רק אם הראשוני נכשל, ננסה את ה-fallbacks במקביל
+      const fallbackPromises = fallbackUrls.map(async (apiUrl) => {
+        try {
+          const res = await fetchWithTimeout(apiUrl, 1500);
           if (res.ok) {
             const data = await res.json();
-            console.log("Shatap data received from", apiUrl, ":", data); // Debug log
             if (data.name) {
-              return { success: true, name: data.name, url: apiUrl };
+              return { success: true, name: data.name };
             }
-          } else {
-            console.warn(`Shatap API error for ${apiUrl}:`, res.status, res.statusText);
           }
         } catch (error: any) {
-          if (error.name === 'AbortError') {
-            console.warn(`Shatap API timeout for ${apiUrl}`);
-          } else {
-            console.warn(`Error loading shatap from ${apiUrl}:`, error);
-          }
+          // שקט - לא נדפיס שגיאות ל-fallbacks
         }
         return { success: false };
       });
 
-      // נחכה לתוצאה הראשונה שמצליחה
-      const results = await Promise.allSettled(promises);
-      
-      for (const result of results) {
+      const fallbackResults = await Promise.allSettled(fallbackPromises);
+      for (const result of fallbackResults) {
         if (result.status === 'fulfilled' && result.value.success) {
           setShatapName(result.value.name);
-          console.log("Shatap name set to:", result.value.name, "from URL:", result.value.url); // Debug log
-          return; // הצלחנו!
+          console.log("Shatap name loaded from fallback:", result.value.name);
+          return;
         }
       }
       
-      // אם הגענו לכאן, כל הניסיונות נכשלו
-      console.error("Failed to load shatap name from all URLs");
-      // ננקה את שם השת"פ אם לא הצלחנו לטעון אותו
+      // אם כל הניסיונות נכשלו
+      console.error("Failed to load shatap name");
       setShatapName("");
     };
 
