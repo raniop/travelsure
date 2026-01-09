@@ -1589,11 +1589,8 @@ export default function Home() {
                         return sortCustomersByBirthDate(updated);
                       });
                       
-                      // הסר את המבוטחים שנוספו מהרשימה
-                      const remainingCustomers = additionalCustomers.filter((c) =>
-                        !selectedAdditionalCustomers.has(c.personId)
-                      );
-                      setAdditionalCustomers(remainingCustomers);
+                      // לא מסירים את המבוטחים מהרשימה - כך הכפתור יישאר תמיד גלוי
+                      // המשתמש יכול לפתוח את המודאל שוב ולראות את כל הנוסעים
                     }
                     
                     setSelectedAdditionalCustomers(new Set());
