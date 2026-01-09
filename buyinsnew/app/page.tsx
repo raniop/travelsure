@@ -433,6 +433,7 @@ export default function Home() {
   const [additionalCustomers, setAdditionalCustomers] = useState<AdditionalCustomer[]>([]);
   const [selectedAdditionalCustomers, setSelectedAdditionalCustomers] = useState<Set<string>>(new Set());
   const [showAdditionalCustomersModal, setShowAdditionalCustomersModal] = useState(false);
+  const [removingCustomerIndex, setRemovingCustomerIndex] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
 
@@ -974,6 +975,12 @@ export default function Home() {
               key={index} 
               data-customer-index={index}
               className={cn(
+                "transition-all duration-300",
+                removingCustomerIndex === index 
+                  ? "opacity-0 -translate-x-4 scale-95" 
+                  : "opacity-100 translate-x-0 scale-100"
+              )}
+              className={cn(
                 "rounded-xl border backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] transition-all",
                 validationErrors[index] && validationErrors[index].length > 0
                   ? "border-rose-300 bg-rose-50/80"
@@ -995,7 +1002,14 @@ export default function Home() {
                   {customers.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => setCustomers((prev) => prev.filter((_, i) => i !== index))}
+                      onClick={() => {
+                        // אנימציה של הסרה
+                        setRemovingCustomerIndex(index);
+                        setTimeout(() => {
+                          setCustomers((prev) => prev.filter((_, i) => i !== index));
+                          setRemovingCustomerIndex(null);
+                        }, 300); // זמן האנימציה
+                      }}
                       className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
