@@ -2,32 +2,28 @@ import {
   createRequestContext,
   runWithRequestContext,
 } from '/var/task/travelsure-1/buyinsnew/.netlify/dist/run/handlers/request-context.cjs'
-import { getTracer } from '/var/task/travelsure-1/buyinsnew/.netlify/dist/run/handlers/tracer.cjs'
-import tracing from '/var/task/travelsure-1/buyinsnew/.netlify/dist/run/handlers/tracing.js'
+import { getTracer, withActiveSpan } from '/var/task/travelsure-1/buyinsnew/.netlify/dist/run/handlers/tracer.cjs'
 
 process.chdir('/var/task/travelsure-1/buyinsnew')
 
 // Set feature flag for regional blobs
-process.env.USE_REGIONAL_BLOBS = 'false'
+process.env.USE_REGIONAL_BLOBS = 'true'
 
 let cachedHandler
 export default async function (req, context) {
-  if (process.env.NETLIFY_OTLP_TRACE_EXPORTER_URL) {
-    tracing.start()
-  }
-
-  const requestContext = createRequestContext(req.headers.get('x-next-debug-logging'))
+  const requestContext = createRequestContext(req, context)
   const tracer = getTracer()
 
   const handlerResponse = await runWithRequestContext(requestContext, () => {
-    return tracer.withActiveSpan('Next.js Server Handler', async (span) => {
-      span.setAttributes({
+    return withActiveSpan(tracer, 'Next.js Server Handler', async (span) => {
+      span?.setAttributes({
         'account.id': context.account.id,
         'deploy.id': context.deploy.id,
         'request.id': context.requestId,
         'site.id': context.site.id,
         'http.method': req.method,
         'http.target': req.url,
+        isBackgroundRevalidation: requestContext.isBackgroundRevalidation,
         monorepo: true,
         cwd: '/var/task/travelsure-1/buyinsnew',
       })
@@ -35,8 +31,8 @@ export default async function (req, context) {
         const { default: handler } = await import('/var/task/travelsure-1/buyinsnew/.netlify/dist/run/handlers/server.js')
         cachedHandler = handler
       }
-      const response = await cachedHandler(req, context)
-      span.setAttributes({
+      const response = await cachedHandler(req, context, span, requestContext)
+      span?.setAttributes({
         'http.status_code': response.status,
       })
       return response

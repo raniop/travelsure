@@ -992,7 +992,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  {index > 0 && (
+                  {customers.length > 1 && (
                     <button
                       type="button"
                       onClick={() => setCustomers((prev) => prev.filter((_, i) => i !== index))}
@@ -1313,13 +1313,7 @@ export default function Home() {
                     return sortCustomersByBirthDate(updated);
                   })
                 }
-                disabled={customers.length >= 10}
-                className={cn(
-                  "h-10 w-10 rounded-full text-white flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0",
-                  customers.length >= 10
-                    ? "bg-slate-300 cursor-not-allowed"
-                    : "bg-[#0b4e86] hover:bg-[#0a3d6b]"
-                )}
+                className="h-10 w-10 rounded-full text-white flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0 bg-[#0b4e86] hover:bg-[#0a3d6b]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M12 5v14M5 12h14" />
