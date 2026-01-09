@@ -962,7 +962,10 @@ export default function Home() {
                     <FloatingInput
                       label={<>תעודת זהות <span className="text-rose-500">*</span></>}
                       dir="rtl"
-                      className="pl-8"
+                      className={cn(
+                        "pl-8",
+                        idValidationErrors[index] ? "border-rose-400 focus:border-rose-500" : ""
+                      )}
                       value={index === 0 ? id : customer.id}
                       onChange={(e) => {
                         clearCustomerErrors(index);
@@ -1014,7 +1017,6 @@ export default function Home() {
                       }}
                       inputMode="numeric"
                       maxLength={9}
-                      className={idValidationErrors[index] ? "border-rose-400 focus:border-rose-500" : ""}
                     />
                     {idValidationErrors[index] && (
                       <div className="mt-1.5 flex items-start gap-1.5 text-xs text-rose-600">
