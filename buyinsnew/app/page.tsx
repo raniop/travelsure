@@ -655,36 +655,43 @@ export default function Home() {
     return isValid;
   };
 
-  useEffect(() => {
-    const clean = id.replace(/[^\d]/g, "");
+  // פונקציה משותפת לחיפוש במערכת
+  const searchCustomerInSystem = async (customerId: string, customerIndex: number) => {
+    const clean = customerId.replace(/[^\d]/g, "");
 
     if (clean.length < 9) {
-      setStatus({ type: "idle", text: "" });
+      if (customerIndex === 0) {
+        setStatus({ type: "idle", text: "" });
+      }
       return;
     }
 
     if (clean.length !== 9) return;
 
     if (!isValidIsraeliId(clean)) {
-      setStatus({ type: "error", text: "ת״ז לא תקינה" });
+      if (customerIndex === 0) {
+        setStatus({ type: "error", text: "ת״ז לא תקינה" });
+      }
       setIdValidationErrors((prev) => ({
         ...prev,
-        [0]: "תעודת זהות לא תקינה - אנא בדוק את המספר שהזנת",
+        [customerIndex]: "תעודת זהות לא תקינה - אנא בדוק את המספר שהזנת",
       }));
       return;
     } else {
       // אם התעודת זהות תקינה, מנקים את שגיאת הוולידציה בזמן אמת
       setIdValidationErrors((prev) => {
         const updated = { ...prev };
-        delete updated[0];
+        delete updated[customerIndex];
         return updated;
       });
     }
 
     const t = setTimeout(async () => {
       try {
-        setLoading(true);
-        setStatus({ type: "checking", text: "בודק במערכת…" });
+        if (customerIndex === 0) {
+          setLoading(true);
+          setStatus({ type: "checking", text: "בודק במערכת…" });
+        }
 
         // יצירת AbortController ל-timeout
         const controller = new AbortController();
@@ -701,12 +708,16 @@ export default function Home() {
         try {
           json = await res.json();
         } catch {
-          setStatus({ type: "error", text: "תגובה לא תקינה מהשרת" });
+          if (customerIndex === 0) {
+            setStatus({ type: "error", text: "תגובה לא תקינה מהשרת" });
+          }
           return;
         }
 
         if (!res.ok) {
-          setStatus({ type: "error", text: "שגיאה בבדיקה" });
+          if (customerIndex === 0) {
+            setStatus({ type: "error", text: "שגיאה בבדיקה" });
+          }
           return;
         }
 
@@ -723,43 +734,99 @@ export default function Home() {
           // ✅ המגדר כבר מנורמל ב-API (M/F או "")
           const gender = customer.gender || "";
 
-          // ✅ ממלא אוטומטית את הלקוח הראשון מיד - ללא המתנה!
+          // ✅ ממלא אוטומטית את הלקוח (ראשון או נוסף) מיד - ללא המתנה!
           setCustomers((prev) => {
             const updated = [...prev];
-            if (updated.length === 0) {
-              updated.push({
-                id: clean,
-                gender: (gender as "M" | "F" | "") || "",
-                firstNameHe: split.first || "",
-                lastNameHe: split.last || "",
-                firstNameEn: customer.firstNameEn || "",
-                lastNameEn: customer.lastNameEn || "",
-                birthDate: customer.birthDate || "",
-                email: customer.email || "",
-                phone: customer.phone || "",
-              });
+            if (customerIndex === 0) {
+              // עבור הנוסע הראשון
+              if (updated.length === 0) {
+                updated.push({
+                  id: clean,
+                  gender: (gender as "M" | "F" | "") || "",
+                  firstNameHe: split.first || "",
+                  lastNameHe: split.last || "",
+                  firstNameEn: customer.firstNameEn || "",
+                  lastNameEn: customer.lastNameEn || "",
+                  birthDate: customer.birthDate || "",
+                  email: customer.email || "",
+                  phone: customer.phone || "",
+                });
+              } else {
+                updated[0] = {
+                  ...updated[0],
+                  id: clean,
+                  gender: updated[0].gender || (gender as "M" | "F" | "") || "",
+                  firstNameHe: updated[0].firstNameHe || split.first || "",
+                  lastNameHe: updated[0].lastNameHe || split.last || "",
+                  firstNameEn: updated[0].firstNameEn || customer.firstNameEn || "",
+                  lastNameEn: updated[0].lastNameEn || customer.lastNameEn || "",
+                  birthDate: updated[0].birthDate || customer.birthDate || "",
+                  email: updated[0].email || customer.email || "",
+                  phone: updated[0].phone || customer.phone || "",
+                };
+              }
             } else {
-              updated[0] = {
-                ...updated[0],
+              // עבור נוסעים נוספים
+              if (updated.length <= customerIndex) {
+                // אם אין מספיק נוסעים, מוסיף חדש
+                while (updated.length <= customerIndex) {
+                  updated.push({
+                    id: "",
+                    gender: "",
+                    firstNameHe: "",
+                    lastNameHe: "",
+                    firstNameEn: "",
+                    lastNameEn: "",
+                    birthDate: "",
+                    email: "",
+                    phone: "",
+                  });
+                }
+              }
+              updated[customerIndex] = {
+                ...updated[customerIndex],
                 id: clean,
-                gender: updated[0].gender || (gender as "M" | "F" | "") || "",
-                firstNameHe: updated[0].firstNameHe || split.first || "",
-                lastNameHe: updated[0].lastNameHe || split.last || "",
-                firstNameEn: updated[0].firstNameEn || customer.firstNameEn || "",
-                lastNameEn: updated[0].lastNameEn || customer.lastNameEn || "",
-                birthDate: updated[0].birthDate || customer.birthDate || "",
-                email: updated[0].email || customer.email || "",
-                phone: updated[0].phone || customer.phone || "",
+                gender: updated[customerIndex].gender || (gender as "M" | "F" | "") || "",
+                firstNameHe: updated[customerIndex].firstNameHe || split.first || "",
+                lastNameHe: updated[customerIndex].lastNameHe || split.last || "",
+                firstNameEn: updated[customerIndex].firstNameEn || customer.firstNameEn || "",
+                lastNameEn: updated[customerIndex].lastNameEn || customer.lastNameEn || "",
+                birthDate: updated[customerIndex].birthDate || customer.birthDate || "",
+                email: updated[customerIndex].email || customer.email || "",
+                phone: updated[customerIndex].phone || customer.phone || "",
               };
             }
             return updated;
           });
 
           // ✅ מציג הודעה מיד - המשתמש רואה שהכל עובד!
-          setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""}` });
-          setLoading(false); // מסיים את ה-loading מיד
+          if (customerIndex === 0) {
+            setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""}` });
+            setLoading(false); // מסיים את ה-loading מיד
 
-          // ✅ סגירת מקלדת ואיפוס zoom במובייל
+            // ✅ טוען לקוחות נוספים ברקע - לא חוסם את המשתמש!
+            const allCustomersFromApi: AdditionalCustomer[] = json.allCustomers || [];
+            const normalizedCurrentId = clean.padStart(9, "0");
+            
+            const additional = allCustomersFromApi.filter((c) => {
+              const custId = String(c.personId || "").padStart(9, "0");
+              return custId !== normalizedCurrentId && custId.length === 9;
+            });
+
+            // מעדכן את הלקוחות הנוספים ברקע
+            setAdditionalCustomers(additional);
+            setSelectedAdditionalCustomers(new Set());
+            
+            // אם יש לקוחות נוספים, מציג הודעה (לא פותח מודאל אוטומטית)
+            if (additional.length > 0) {
+              // עדכון ההודעה להוסיף מידע על לקוחות נוספים
+              setTimeout(() => {
+                setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""} · ${additional.length} מבוטחים נוספים זמינים` });
+              }, 500);
+            }
+          }
+
+          // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים)
           setTimeout(() => {
             // סגירת המקלדת - blur על השדה הפעיל
             const activeElement = document.activeElement as HTMLElement;
@@ -778,45 +845,55 @@ export default function Home() {
               }, 50);
             }, 100);
           }, 200);
-
-          // ✅ טוען לקוחות נוספים ברקע - לא חוסם את המשתמש!
-          const allCustomersFromApi: AdditionalCustomer[] = json.allCustomers || [];
-          const normalizedCurrentId = clean.padStart(9, "0");
-          
-          const additional = allCustomersFromApi.filter((c) => {
-            const custId = String(c.personId || "").padStart(9, "0");
-            return custId !== normalizedCurrentId && custId.length === 9;
-          });
-
-          // מעדכן את הלקוחות הנוספים ברקע
-          setAdditionalCustomers(additional);
-          setSelectedAdditionalCustomers(new Set());
-          
-          // אם יש לקוחות נוספים, מציג הודעה (לא פותח מודאל אוטומטית)
-          if (additional.length > 0) {
-            // עדכון ההודעה להוסיף מידע על לקוחות נוספים
-            setTimeout(() => {
-              setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""} · ${additional.length} מבוטחים נוספים זמינים` });
-            }, 500);
-          }
         } else {
-          setStatus({ type: "notfound", text: "לא נמצא — מלא ידנית" });
-          setAdditionalCustomers([]);
-          setSelectedAdditionalCustomers(new Set());
-          setLoading(false);
+          if (customerIndex === 0) {
+            setStatus({ type: "notfound", text: "לא נמצא — מלא ידנית" });
+            setAdditionalCustomers([]);
+            setSelectedAdditionalCustomers(new Set());
+            setLoading(false);
+          }
         }
       } catch (error: any) {
-        if (error.name === 'AbortError') {
-          setStatus({ type: "error", text: "הזמן הקצוב לבדיקה פג - נסה שוב" });
-        } else {
-          setStatus({ type: "error", text: "שגיאת רשת" });
+        if (customerIndex === 0) {
+          if (error.name === 'AbortError') {
+            setStatus({ type: "error", text: "הזמן הקצוב לבדיקה פג - נסה שוב" });
+          } else {
+            setStatus({ type: "error", text: "שגיאת רשת" });
+          }
+          setLoading(false);
         }
-        setLoading(false);
       }
     }, 300); // הקטנתי מ-450ms ל-300ms - יותר מהיר
 
     return () => clearTimeout(t);
+  };
+
+  // useEffect עבור הנוסע הראשון
+  useEffect(() => {
+    searchCustomerInSystem(id, 0);
   }, [id]);
+
+  // useEffect עבור נוסעים נוספים - מחפש במערכת כשמכניסים תעודת זהות
+  useEffect(() => {
+    const searchPromises: Array<() => void> = [];
+    
+    customers.forEach((customer, index) => {
+      if (index > 0 && customer.id) {
+        const cleanId = customer.id.replace(/[^\d]/g, "");
+        if (cleanId.length === 9 && isValidIsraeliId(cleanId)) {
+          // משתמש ב-debounce כדי לא לחפש יותר מדי פעמים
+          const timeoutId = setTimeout(() => {
+            searchCustomerInSystem(customer.id, index);
+          }, 500);
+          searchPromises.push(() => clearTimeout(timeoutId));
+        }
+      }
+    });
+
+    return () => {
+      searchPromises.forEach(cleanup => cleanup());
+    };
+  }, [customers.map(c => `${c.id || ''}`).join('|')]);
 
   return (
     <div dir="rtl" className="min-h-screen relative">
