@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     
     // יצירת AbortController ל-timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 שניות timeout (מהיר יותר)
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 שניות timeout - מספיק זמן אבל לא יותר מדי
 
     const response = await fetch(xmlUrl, {
       cache: "no-store",
