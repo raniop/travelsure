@@ -817,11 +817,13 @@ export default function Home() {
             setAdditionalCustomers(additional);
             setSelectedAdditionalCustomers(new Set());
             
-            // אם יש לקוחות נוספים, מציג הודעה (לא פותח מודאל אוטומטית)
+            // אם יש לקוחות נוספים, פותח את המודאל אוטומטית
             if (additional.length > 0) {
               // עדכון ההודעה להוסיף מידע על לקוחות נוספים
               setTimeout(() => {
                 setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""} · ${additional.length} מבוטחים נוספים זמינים` });
+                // פתיחת המודאל אוטומטית
+                setShowAdditionalCustomersModal(true);
               }, 500);
             }
           }
