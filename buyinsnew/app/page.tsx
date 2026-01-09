@@ -1481,50 +1481,87 @@ export default function Home() {
                   const MAX_CUSTOMERS = 10;
                   const availableSlots = MAX_CUSTOMERS - customers.length;
                   const isSelected = selectedAdditionalCustomers.has(addCust.personId);
-                  const canSelect = isSelected || selectedAdditionalCustomers.size < availableSlots;
+                  
+                  // בדיקה אם הנוסע כבר נוסף לרשימת הנוסעים
+                  const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
+                  const isAlreadyAdded = customers.some((c) => {
+                    const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                    return normalizedCustomerId === normalizedAddCustId;
+                  });
+                  
+                  const canSelect = !isAlreadyAdded && (isSelected || selectedAdditionalCustomers.size < availableSlots);
                   const fullName = addCust.primaryName || `${addCust.firstNameHe} ${addCust.lastNameHe}`.trim();
                   
                   return (
-                    <label
+                    <div
                       key={addCust.personId}
                       className={cn(
                         "flex items-center gap-2 px-3 py-2 transition",
-                        canSelect ? "cursor-pointer" : "cursor-not-allowed opacity-60",
-                        isSelected ? "bg-sky-50/50" : canSelect ? "hover:bg-slate-50/50" : ""
+                        isAlreadyAdded ? "bg-green-50/50" : isSelected ? "bg-sky-50/50" : canSelect ? "hover:bg-slate-50/50" : ""
                       )}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        disabled={!canSelect}
-                        onChange={(e) => {
-                          if (!canSelect && !isSelected) return;
-                          const newSet = new Set(selectedAdditionalCustomers);
-                          if (e.target.checked) {
-                            if (newSet.size < availableSlots) {
-                              newSet.add(addCust.personId);
+                      {!isAlreadyAdded && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={!canSelect}
+                          onChange={(e) => {
+                            if (!canSelect && !isSelected) return;
+                            const newSet = new Set(selectedAdditionalCustomers);
+                            if (e.target.checked) {
+                              if (newSet.size < availableSlots) {
+                                newSet.add(addCust.personId);
+                              }
+                            } else {
+                              newSet.delete(addCust.personId);
                             }
-                          } else {
-                            newSet.delete(addCust.personId);
-                          }
-                          setSelectedAdditionalCustomers(newSet);
-                        }}
-                        className={cn(
-                          "h-4 w-4 rounded border-2 flex-shrink-0",
-                          isSelected 
-                            ? "border-[#18509C] bg-[#18509C] text-white" 
-                            : "border-[#18509C] bg-white",
-                          "focus:ring-[#18509C] focus:ring-1",
-                          canSelect ? "cursor-pointer" : "cursor-not-allowed"
-                        )}
-                        style={{
-                          accentColor: '#18509C'
-                        }}
-                      />
+                            setSelectedAdditionalCustomers(newSet);
+                          }}
+                          className={cn(
+                            "h-4 w-4 rounded border-2 flex-shrink-0",
+                            isSelected 
+                              ? "border-[#18509C] bg-[#18509C] text-white" 
+                              : "border-[#18509C] bg-white",
+                            "focus:ring-[#18509C] focus:ring-1",
+                            canSelect ? "cursor-pointer" : "cursor-not-allowed"
+                          )}
+                          style={{
+                            accentColor: '#18509C'
+                          }}
+                        />
+                      )}
+                      {isAlreadyAdded && (
+                        <div className="h-4 w-4 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate" style={{ color: '#18509C' }}>{fullName}</div>
+                        {isAlreadyAdded && (
+                          <div className="text-xs text-green-600 mt-0.5">כבר נוסף</div>
+                        )}
                       </div>
-                    </label>
+                      {isAlreadyAdded && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // הסרת הנוסע מהרשימה
+                            setCustomers((prev) => {
+                              const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
+                              return prev.filter((c) => {
+                                const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                                return normalizedCustomerId !== normalizedAddCustId;
+                              });
+                            });
+                          }}
+                          className="text-xs font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition flex-shrink-0"
+                        >
+                          הסר
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
