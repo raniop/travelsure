@@ -947,7 +947,7 @@ export default function Home() {
               {chip}
             </div>
             <div className="flex items-center gap-2">
-              {additionalCustomers.length > 0 && !showAdditionalCustomersModal && (
+              {additionalCustomers.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowAdditionalCustomersModal(true)}
