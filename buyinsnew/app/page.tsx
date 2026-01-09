@@ -256,7 +256,7 @@ function FloatingInput({
           "transition-all duration-200",
           className
         )}
-        placeholder={shouldFloat ? undefined : (props.placeholder || "")}
+        placeholder={hasValue ? undefined : (props.placeholder || "")}
       />
       {label && (
         <label
