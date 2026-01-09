@@ -25,11 +25,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* הסתר לחלוטין את הטקסט dd/mm/yyyy בשדות תאריך עם class date-empty */
-input[type="date"].date-empty::-webkit-datetime-edit-text,
-input[type="date"].date-empty::-webkit-datetime-edit-month-field,
-input[type="date"].date-empty::-webkit-datetime-edit-day-field,
-input[type="date"].date-empty::-webkit-datetime-edit-year-field {
+/* הסתר לחלוטין את הטקסט mm/dd/yyyy בשדות תאריך - תמיד */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
   color: transparent !important;
   opacity: 0 !important;
   visibility: hidden !important;
@@ -39,8 +39,8 @@ input[type="date"].date-empty::-webkit-datetime-edit-year-field {
   overflow: hidden !important;
 }
 
-/* גם הסתר את כל ה-datetime-edit container כשהשדה ריק */
-input[type="date"].date-empty::-webkit-datetime-edit {
+/* גם הסתר את כל ה-datetime-edit container - תמיד */
+input[type="date"]::-webkit-datetime-edit {
   opacity: 0 !important;
   visibility: hidden !important;
   display: none !important;
@@ -55,28 +55,6 @@ input[type="date"]:-ms-input-placeholder {
   color: transparent !important;
   visibility: hidden !important;
   display: none !important;
-}
-
-/* כשהשדה בפוקוס או שיש ערך, הצג את הטקסט */
-input[type="date"]:focus::-webkit-datetime-edit-text,
-input[type="date"]:focus::-webkit-datetime-edit-month-field,
-input[type="date"]:focus::-webkit-datetime-edit-day-field,
-input[type="date"]:focus::-webkit-datetime-edit-year-field,
-input[type="date"]:not(.date-empty)::-webkit-datetime-edit-text,
-input[type="date"]:not(.date-empty)::-webkit-datetime-edit-month-field,
-input[type="date"]:not(.date-empty)::-webkit-datetime-edit-day-field,
-input[type="date"]:not(.date-empty)::-webkit-datetime-edit-year-field {
-  color: #171717 !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: inline !important;
-}
-
-input[type="date"]:focus::-webkit-datetime-edit,
-input[type="date"]:not(.date-empty)::-webkit-datetime-edit {
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: inline-block !important;
 }
 
 /* וודא ששדה תאריך יהיה באותו גובה כמו שדות טקסט רגילים */

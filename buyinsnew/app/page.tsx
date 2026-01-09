@@ -225,8 +225,6 @@ function FloatingInput({
           type === "date" && "[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden",
           // עבור תאריך - הסתר placeholder לחלוטין תמיד
           type === "date" && "[&::placeholder]:opacity-0 [&::placeholder]:hidden [&::-webkit-input-placeholder]:opacity-0 [&::-webkit-input-placeholder]:hidden [&::-moz-placeholder]:opacity-0 [&::-moz-placeholder]:hidden [&:-ms-input-placeholder]:opacity-0 [&:-ms-input-placeholder]:hidden",
-          // עבור תאריך ריק ולא בפוקוס - הסתר את כל הטקסט
-          type === "date" && !hasValue && !isFocused && "date-empty",
           className
         )}
         {...(type === "date" ? {} : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
