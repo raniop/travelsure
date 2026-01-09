@@ -25,64 +25,33 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* הסתר את הטקסט dd/mm/yyyy רק כשהשדה ריק ולא בפוקוס - אבל השאר את השדה אינטראקטיבי */
-input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-text,
-input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-month-field,
-input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-day-field,
-input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-year-field {
+/* ברירת מחדל: אם ריק ולא בפוקוס - מסתירים טקסט תאריך (לא שוברים קליקים) */
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit {
   color: transparent !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
 }
 
-/* הסתר את ה-datetime-edit container רק כשהשדה ריק ולא בפוקוס - אבל השאר אינטראקטיבי */
-input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit {
-  opacity: 0 !important;
-  pointer-events: none !important;
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-text,
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-month-field,
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-day-field,
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-year-field {
+  color: transparent !important;
 }
 
-/* הסתר את ה-fields-wrapper רק כשהשדה ריק ולא בפוקוס - אבל השאר אינטראקטיבי */
-input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-fields-wrapper {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* הצג את התאריך כשהשדה בפוקוס או יש ערך - וודא שהשדה אינטראקטיבי */
+/* בפוקוס או אם יש ערך - מציגים */
 input[type="date"]:focus::-webkit-datetime-edit,
-input[type="date"].date-has-value::-webkit-datetime-edit {
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: inline-block !important;
-  pointer-events: auto !important;
-}
-
-input[type="date"]:focus::-webkit-datetime-edit-fields-wrapper,
-input[type="date"].date-has-value::-webkit-datetime-edit-fields-wrapper {
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: inline-block !important;
-  pointer-events: auto !important;
+input[type="date"][data-has-value="true"]::-webkit-datetime-edit {
+  color: #0f172a !important;
 }
 
 input[type="date"]:focus::-webkit-datetime-edit-text,
 input[type="date"]:focus::-webkit-datetime-edit-month-field,
 input[type="date"]:focus::-webkit-datetime-edit-day-field,
 input[type="date"]:focus::-webkit-datetime-edit-year-field,
-input[type="date"].date-has-value::-webkit-datetime-edit-text,
-input[type="date"].date-has-value::-webkit-datetime-edit-month-field,
-input[type="date"].date-has-value::-webkit-datetime-edit-day-field,
-input[type="date"].date-has-value::-webkit-datetime-edit-year-field {
+input[type="date"][data-has-value="true"]::-webkit-datetime-edit-text,
+input[type="date"][data-has-value="true"]::-webkit-datetime-edit-month-field,
+input[type="date"][data-has-value="true"]::-webkit-datetime-edit-day-field,
+input[type="date"][data-has-value="true"]::-webkit-datetime-edit-year-field {
   color: #0f172a !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: inline !important;
-  pointer-events: auto !important;
-}
-
-/* וודא שהשדה עצמו אינטראקטיבי תמיד */
-input[type="date"] {
-  pointer-events: auto !important;
-  cursor: text !important;
 }
 
 /* הסתר placeholder בשדות תאריך */
@@ -167,8 +136,12 @@ input[dir="rtl"]::-webkit-datetime-edit-fields-wrapper {
   direction: rtl !important;
 }
 
-/* וודא ששדות תאריך מיושרים לימין */
-input[type="date"][dir="rtl"],
+/* יישור RTL */
+input[type="date"][dir="rtl"] {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
 input[type="date"][dir="rtl"]::-webkit-datetime-edit,
 input[type="date"][dir="rtl"]::-webkit-datetime-edit-fields-wrapper {
   text-align: right !important;

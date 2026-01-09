@@ -225,11 +225,12 @@ function FloatingInput({
           type === "date" && "[&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden",
           // עבור תאריך - הסתר placeholder לחלוטין תמיד
           type === "date" && "[&::placeholder]:opacity-0 [&::placeholder]:hidden [&::-webkit-input-placeholder]:opacity-0 [&::-webkit-input-placeholder]:hidden [&::-moz-placeholder]:opacity-0 [&::-moz-placeholder]:hidden [&:-ms-input-placeholder]:opacity-0 [&:-ms-input-placeholder]:hidden",
-          // הוסף class כשהשדה תאריך יש לו ערך
-          type === "date" && hasValue && "date-has-value",
           className
         )}
-        {...(type === "date" ? { placeholder: "" } : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
+        {...(type === "date" ? { 
+          placeholder: "",
+          "data-has-value": hasValue ? "true" : "false"
+        } : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
       />
       {label && (
         <label
