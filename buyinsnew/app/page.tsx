@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 /** ========= Utils ========= */
@@ -762,20 +762,22 @@ export default function Home() {
           // ✅ סגירת מקלדת ואיפוס zoom במובייל
           setTimeout(() => {
             // סגירת המקלדת - blur על השדה הפעיל
-            if (idInputRef.current) {
-              idInputRef.current.blur();
+            const activeElement = document.activeElement as HTMLElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+              activeElement.blur();
             }
             // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
             if (window.visualViewport) {
-              window.scrollTo(0, window.scrollY);
+              window.scrollTo({ top: window.scrollY, behavior: 'instant' });
             }
-            // איפוס viewport scale במובייל
-            const viewport = document.querySelector('meta[name="viewport"]');
-            if (viewport) {
-              const content = viewport.getAttribute('content') || '';
-              viewport.setAttribute('content', content.replace(/user-scalable=\w+/i, 'user-scalable=yes'));
-            }
-          }, 100);
+            // איפוס viewport scale במובייל - scroll קצר כדי לסגור מקלדת
+            setTimeout(() => {
+              window.scrollTo({ top: window.scrollY + 1, behavior: 'instant' });
+              setTimeout(() => {
+                window.scrollTo({ top: window.scrollY - 1, behavior: 'instant' });
+              }, 50);
+            }, 100);
+          }, 200);
 
           // ✅ טוען לקוחות נוספים ברקע - לא חוסם את המשתמש!
           const allCustomersFromApi: AdditionalCustomer[] = json.allCustomers || [];
