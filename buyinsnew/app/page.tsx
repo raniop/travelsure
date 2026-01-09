@@ -50,6 +50,35 @@ function fmtDateToInput(d?: string | null) {
   return "";
 }
 
+function isoToDDMMYYYY(iso: string) {
+  if (!iso) return "";
+  // תופס yyyy-mm-dd
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso; // אם זה כבר טקסט חופשי, נשאיר
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+function ddmmyyyyToISO(input: string) {
+  const v = input.trim();
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+
+  // ולידציה בסיסית
+  if (yyyy < 1900 || yyyy > 2100) return null;
+  if (mm < 1 || mm > 12) return null;
+  if (dd < 1 || dd > 31) return null;
+
+  // ולידציה אמיתית עם Date
+  const d = new Date(yyyy, mm - 1, dd);
+  if (d.getFullYear() !== yyyy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${yyyy}-${pad(mm)}-${pad(dd)}`;
+}
+
 function splitNameHe(full?: string | null) {
   const name = (full || "").trim();
   if (!name) return { first: "", last: "" };
@@ -196,10 +225,9 @@ function FloatingInput({
   const [isFocused, setIsFocused] = useState(false);
   const shouldFloat = hasValue || isFocused;
   
-  // לתאריך: LTR לתוכן, אבל יישור לימין (כדי למנוע overlap ב-iOS Safari)
-  const isDate = inputType === "date";
-  const effectiveDir = isDate ? "ltr" : (dir || "rtl");
-  const effectiveAlign = isDate ? "right" : (dir === "ltr" ? "left" : "right");
+  // יישור לפי dir
+  const effectiveDir = dir || "rtl";
+  const effectiveAlign = dir === "ltr" ? "left" : "right";
 
   return (
     <div className="relative w-full">
@@ -226,18 +254,15 @@ function FloatingInput({
           "border-b border-slate-300",
           "focus:outline-none focus:border-b-2 focus:border-sky-500",
           "transition-all duration-200",
-          dir === "ltr" ? "text-left" : "text-right",
           className
         )}
-        {...(inputType === "date" ? { 
-          "data-has-value": hasValue ? "true" : "false"
-        } : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
+        placeholder={shouldFloat ? undefined : (props.placeholder || "")}
       />
       {label && (
         <label
           className={cn(
-            "absolute transition-all duration-200 pointer-events-none text-right",
-            "right-0"
+            "absolute w-full pointer-events-none transition-all duration-200",
+            "right-0 left-auto text-right"
           )}
           style={
             shouldFloat
@@ -993,15 +1018,33 @@ export default function Home() {
                     <FloatingInput
                       label={<>תאריך לידה <span className="text-rose-500">*</span></>}
                       dir="rtl"
-                      type="date"
-                      value={customer.birthDate}
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="DD/MM/YYYY"
+                      value={isoToDDMMYYYY(customer.birthDate)}
                       onChange={(e) => {
                         clearCustomerErrors(index);
+
+                        // מאפשרים רק ספרות ו-/
+                        let raw = e.target.value.replace(/[^\d/]/g, "");
+
+                        // auto-slash: 12 -> 12/ , 1212 -> 12/12/
+                        raw = raw.slice(0, 10);
+                        if (raw.length === 2 && !raw.includes("/")) raw = raw + "/";
+                        if (raw.length === 5 && raw.split("/").length === 2) raw = raw + "/";
+
+                        // אם הוזן תאריך מלא תקין -> נשמור ISO פנימי
+                        const iso = ddmmyyyyToISO(raw);
+
                         setCustomers((prev) => {
                           const updated = [...prev];
-                          updated[index] = { ...updated[index], birthDate: e.target.value };
+                          updated[index] = { ...updated[index], birthDate: iso ?? (raw as any) };
                           return updated;
                         });
+                      }}
+                      onBlur={(e) => {
+                        // אם יצא מהשדה עם טקסט לא תקין, אפשר להשאיר, או לנקות.
+                        // אני ממליץ: אם לא ISO תקין -> להשאיר טקסט, אבל הוולידציה שלך תתפוס "חובה".
                       }}
                     />
                   </div>
