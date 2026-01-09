@@ -191,15 +191,16 @@ function FloatingInput({
   dir?: "rtl" | "ltr";
   label?: React.ReactNode;
 }) {
+  const inputType = type ?? "text";
   const hasValue = value !== undefined && value !== null && String(value).length > 0;
   const [isFocused, setIsFocused] = useState(false);
   const shouldFloat = hasValue || isFocused;
 
   return (
-    <div className="relative w-full" style={{ minHeight: "2.75rem" }}>
+    <div className="relative w-full">
       <input
         {...props}
-        type={type}
+        type={inputType}
         value={value}
         dir={dir}
         style={{
@@ -216,19 +217,14 @@ function FloatingInput({
           props.onBlur?.(e);
         }}
         className={cn(
-          "w-full bg-transparent px-0 pt-6 pb-0.5 text-sm text-slate-900",
+          "w-full h-11 bg-transparent px-0 pt-6 pb-0.5 text-sm text-slate-900",
           "border-b border-slate-300",
           "focus:outline-none focus:border-b-2 focus:border-sky-500",
           "transition-all duration-200",
           dir === "ltr" ? "text-left" : "text-right",
-          // הסר לחלוטין את האייקון של לוח שנה בשדה תאריך
-          type === "date" && "[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-calendar-picker-indicator]:display-none [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden",
-          // עבור תאריך - הסתר placeholder לחלוטין תמיד
-          type === "date" && "[&::placeholder]:opacity-0 [&::placeholder]:hidden [&::-webkit-input-placeholder]:opacity-0 [&::-webkit-input-placeholder]:hidden [&::-moz-placeholder]:opacity-0 [&::-moz-placeholder]:hidden [&:-ms-input-placeholder]:opacity-0 [&:-ms-input-placeholder]:hidden",
           className
         )}
-        {...(type === "date" ? { 
-          placeholder: "",
+        {...(inputType === "date" ? { 
           "data-has-value": hasValue ? "true" : "false"
         } : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
       />
