@@ -1061,7 +1061,7 @@ export default function Home() {
                   הוסף מבוטחים נוספים ({additionalCustomers.length})
                 </button>
               )}
-              {loading ? (
+              {loading[0] ? (
                 <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
                   <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
                   טוען
