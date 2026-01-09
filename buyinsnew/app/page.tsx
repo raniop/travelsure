@@ -996,7 +996,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  {customers.length > 1 && (
+                  {customers.length > 1 && index !== 0 && (
                     <button
                       type="button"
                       onClick={() => {
