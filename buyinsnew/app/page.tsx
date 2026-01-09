@@ -434,6 +434,7 @@ export default function Home() {
   const [selectedAdditionalCustomers, setSelectedAdditionalCustomers] = useState<Set<string>>(new Set());
   const [showAdditionalCustomersModal, setShowAdditionalCustomersModal] = useState(false);
   const [removingCustomerIndex, setRemovingCustomerIndex] = useState<number | null>(null);
+  const [previousCustomerIds, setPreviousCustomerIds] = useState<Record<number, string>>({});
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
 
@@ -735,6 +736,10 @@ export default function Home() {
           // ✅ המגדר כבר מנורמל ב-API (M/F או "")
           const gender = customer.gender || "";
 
+          // בדיקה אם תעודת הזהות השתנתה
+          const previousId = previousCustomerIds[customerIndex] || "";
+          const idChanged = previousId !== clean;
+
           // ✅ ממלא אוטומטית את הלקוח (ראשון או נוסף) מיד - ללא המתנה!
           setCustomers((prev) => {
             const updated = [...prev];
@@ -753,18 +758,34 @@ export default function Home() {
                   phone: customer.phone || "",
                 });
               } else {
-                updated[0] = {
-                  ...updated[0],
-                  id: clean,
-                  gender: updated[0].gender || (gender as "M" | "F" | "") || "",
-                  firstNameHe: updated[0].firstNameHe || split.first || "",
-                  lastNameHe: updated[0].lastNameHe || split.last || "",
-                  firstNameEn: updated[0].firstNameEn || customer.firstNameEn || "",
-                  lastNameEn: updated[0].lastNameEn || customer.lastNameEn || "",
-                  birthDate: updated[0].birthDate || customer.birthDate || "",
-                  email: updated[0].email || customer.email || "",
-                  phone: updated[0].phone || customer.phone || "",
-                };
+                // אם תעודת הזהות השתנתה, דורס את כל הנתונים
+                if (idChanged) {
+                  updated[0] = {
+                    id: clean,
+                    gender: (gender as "M" | "F" | "") || "",
+                    firstNameHe: split.first || "",
+                    lastNameHe: split.last || "",
+                    firstNameEn: customer.firstNameEn || "",
+                    lastNameEn: customer.lastNameEn || "",
+                    birthDate: customer.birthDate || "",
+                    email: customer.email || "",
+                    phone: customer.phone || "",
+                  };
+                } else {
+                  // אם תעודת הזהות לא השתנתה, מעדכן רק שדות ריקים
+                  updated[0] = {
+                    ...updated[0],
+                    id: clean,
+                    gender: updated[0].gender || (gender as "M" | "F" | "") || "",
+                    firstNameHe: updated[0].firstNameHe || split.first || "",
+                    lastNameHe: updated[0].lastNameHe || split.last || "",
+                    firstNameEn: updated[0].firstNameEn || customer.firstNameEn || "",
+                    lastNameEn: updated[0].lastNameEn || customer.lastNameEn || "",
+                    birthDate: updated[0].birthDate || customer.birthDate || "",
+                    email: updated[0].email || customer.email || "",
+                    phone: updated[0].phone || customer.phone || "",
+                  };
+                }
               }
             } else {
               // עבור נוסעים נוספים
@@ -784,21 +805,43 @@ export default function Home() {
                   });
                 }
               }
-              updated[customerIndex] = {
-                ...updated[customerIndex],
-                id: clean,
-                gender: updated[customerIndex].gender || (gender as "M" | "F" | "") || "",
-                firstNameHe: updated[customerIndex].firstNameHe || split.first || "",
-                lastNameHe: updated[customerIndex].lastNameHe || split.last || "",
-                firstNameEn: updated[customerIndex].firstNameEn || customer.firstNameEn || "",
-                lastNameEn: updated[customerIndex].lastNameEn || customer.lastNameEn || "",
-                birthDate: updated[customerIndex].birthDate || customer.birthDate || "",
-                email: updated[customerIndex].email || customer.email || "",
-                phone: updated[customerIndex].phone || customer.phone || "",
-              };
+              // אם תעודת הזהות השתנתה, דורס את כל הנתונים
+              if (idChanged) {
+                updated[customerIndex] = {
+                  id: clean,
+                  gender: (gender as "M" | "F" | "") || "",
+                  firstNameHe: split.first || "",
+                  lastNameHe: split.last || "",
+                  firstNameEn: customer.firstNameEn || "",
+                  lastNameEn: customer.lastNameEn || "",
+                  birthDate: customer.birthDate || "",
+                  email: customer.email || "",
+                  phone: customer.phone || "",
+                };
+              } else {
+                // אם תעודת הזהות לא השתנתה, מעדכן רק שדות ריקים
+                updated[customerIndex] = {
+                  ...updated[customerIndex],
+                  id: clean,
+                  gender: updated[customerIndex].gender || (gender as "M" | "F" | "") || "",
+                  firstNameHe: updated[customerIndex].firstNameHe || split.first || "",
+                  lastNameHe: updated[customerIndex].lastNameHe || split.last || "",
+                  firstNameEn: updated[customerIndex].firstNameEn || customer.firstNameEn || "",
+                  lastNameEn: updated[customerIndex].lastNameEn || customer.lastNameEn || "",
+                  birthDate: updated[customerIndex].birthDate || customer.birthDate || "",
+                  email: updated[customerIndex].email || customer.email || "",
+                  phone: updated[customerIndex].phone || customer.phone || "",
+                };
+              }
             }
             return updated;
           });
+
+          // עדכון תעודת הזהות הקודמת
+          setPreviousCustomerIds((prev) => ({
+            ...prev,
+            [customerIndex]: clean,
+          }));
 
           // ✅ מציג הודעה מיד - המשתמש רואה שהכל עובד!
           if (customerIndex === 0) {
