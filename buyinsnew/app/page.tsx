@@ -236,7 +236,7 @@ function FloatingInput({
       : (align ?? (effectiveDir === "ltr" ? "left" : "right"));
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-[92%] mx-auto sm:w-full">
       <input
         {...props}
         type={inputType}
