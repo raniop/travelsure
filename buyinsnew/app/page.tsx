@@ -1332,9 +1332,11 @@ export default function Home() {
                             value={customer.email}
                             onChange={(e) => {
                               clearCustomerErrors(index);
+                              // מאפשר רק תווים מותרים במייל: אותיות, מספרים, @, ., _, -, +
+                              const emailOnly = e.target.value.replace(/[^a-zA-Z0-9@._+-]/g, '');
                               setCustomers((prev) => {
                                 const updated = [...prev];
-                                updated[index] = { ...updated[index], email: e.target.value };
+                                updated[index] = { ...updated[index], email: emailOnly };
                                 return updated;
                               });
                             }}
