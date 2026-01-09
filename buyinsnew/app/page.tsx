@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Image from "next/image";
 
 /** ========= Utils ========= */
@@ -758,6 +758,24 @@ export default function Home() {
           // ✅ מציג הודעה מיד - המשתמש רואה שהכל עובד!
           setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""}` });
           setLoading(false); // מסיים את ה-loading מיד
+
+          // ✅ סגירת מקלדת ואיפוס zoom במובייל
+          setTimeout(() => {
+            // סגירת המקלדת - blur על השדה הפעיל
+            if (idInputRef.current) {
+              idInputRef.current.blur();
+            }
+            // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
+            if (window.visualViewport) {
+              window.scrollTo(0, window.scrollY);
+            }
+            // איפוס viewport scale במובייל
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+              const content = viewport.getAttribute('content') || '';
+              viewport.setAttribute('content', content.replace(/user-scalable=\w+/i, 'user-scalable=yes'));
+            }
+          }, 100);
 
           // ✅ טוען לקוחות נוספים ברקע - לא חוסם את המשתמש!
           const allCustomersFromApi: AdditionalCustomer[] = json.allCustomers || [];
