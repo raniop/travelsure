@@ -975,16 +975,13 @@ export default function Home() {
               key={index} 
               data-customer-index={index}
               className={cn(
-                "transition-all duration-300",
+                "rounded-xl border backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] transition-all duration-300",
+                validationErrors[index] && validationErrors[index].length > 0
+                  ? "border-rose-300 bg-rose-50/80"
+                  : "border-white/60 bg-white/90",
                 removingCustomerIndex === index 
                   ? "opacity-0 -translate-x-4 scale-95" 
                   : "opacity-100 translate-x-0 scale-100"
-              )}
-              className={cn(
-                "rounded-xl border backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] transition-all",
-                validationErrors[index] && validationErrors[index].length > 0
-                  ? "border-rose-300 bg-rose-50/80"
-                  : "border-white/60 bg-white/90"
               )}
             >
               <div className="p-3 sm:p-4">
@@ -1580,14 +1577,25 @@ export default function Home() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation(); // מונע click על השורה
-                            // הסרת הנוסע מהרשימה
-                            setCustomers((prev) => {
-                              const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
-                              return prev.filter((c) => {
-                                const normalizedCustomerId = String(c.id || "").padStart(9, "0");
-                                return normalizedCustomerId !== normalizedAddCustId;
-                              });
+                            // אנימציה של הסרה
+                            const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
+                            const customerIndex = customers.findIndex((c) => {
+                              const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                              return normalizedCustomerId === normalizedAddCustId;
                             });
+                            
+                            if (customerIndex !== -1) {
+                              setRemovingCustomerIndex(customerIndex);
+                              setTimeout(() => {
+                                setCustomers((prev) => {
+                                  return prev.filter((c) => {
+                                    const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                                    return normalizedCustomerId !== normalizedAddCustId;
+                                  });
+                                });
+                                setRemovingCustomerIndex(null);
+                              }, 300); // זמן האנימציה
+                            }
                           }}
                           className="text-xs font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition flex-shrink-0"
                         >
