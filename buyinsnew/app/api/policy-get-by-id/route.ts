@@ -106,14 +106,14 @@ export async function GET(req: Request) {
     return bd - ad;
   });
 
-  // ⚡ הגבלה ל-4 פוליסות אחרונות בלבד - כדי לקצר את זמן הטעינה
-  const recentPolicies = policies.slice(0, 4);
+  // משתמש בכל הפוליסות (ללא הגבלה)
+  const recentPolicies = policies;
 
   // נרמול תעודת הזהות לחיפוש - גם עם padding וגם בלי
   const normalizedId = id.padStart(9, "0");
   const idWithoutPadding = id.trim();
 
-  // 🔎 מחפש את הלקוח הספציפי לפי תעודת זהות בתוך customers של הפוליסות (רק 4 האחרונות)
+  // 🔎 מחפש את הלקוח הספציפי לפי תעודת זהות בתוך customers של כל הפוליסות
   let foundCustomer: any = null;
 
   for (const policy of recentPolicies) {
@@ -175,7 +175,7 @@ export async function GET(req: Request) {
     clientName: p.clientName,
   }));
 
-  // אוסף את כל הלקוחות מכל הפוליסות (רק מ-4 האחרונות)
+  // אוסף את כל הלקוחות מכל הפוליסות
   const allCustomers: any[] = [];
   const seenIds = new Set<string>();
 
@@ -215,11 +215,11 @@ export async function GET(req: Request) {
         found: foundCustomer !== null, // ✅ רק אם מצאנו לקוח עם תעודת זהות תואמת
         id,
         primaryName,
-        policiesCount: recentPolicies.length, // מספר הפוליסות שנבדקו (4)
+        policiesCount: recentPolicies.length, // מספר הפוליסות שנבדקו
         totalPoliciesCount: policies.length, // מספר הפוליסות הכולל
         policies: summarized,
         customer,
-        allCustomers, // כל הלקוחות מ-4 הפוליסות האחרונות
+        allCustomers, // כל הלקוחות מכל הפוליסות
       },
       { status: 200 }
     );
