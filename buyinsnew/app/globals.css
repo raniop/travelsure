@@ -25,7 +25,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* הסתר לחלוטין את הטקסט mm/dd/yyyy בשדות תאריך - תמיד */
+/* הסתר לחלוטין את הטקסט dd/mm/yyyy בשדות תאריך - הסרה מלאה */
 input[type="date"]::-webkit-datetime-edit-text,
 input[type="date"]::-webkit-datetime-edit-month-field,
 input[type="date"]::-webkit-datetime-edit-day-field,
@@ -37,13 +37,39 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   width: 0 !important;
   height: 0 !important;
   overflow: hidden !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  content: "" !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
-/* גם הסתר את כל ה-datetime-edit container - תמיד */
+/* גם הסתר את כל ה-datetime-edit container - הסרה מלאה */
 input[type="date"]::-webkit-datetime-edit {
   opacity: 0 !important;
   visibility: hidden !important;
   display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  content: "" !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* הסתר גם את ה-fields-wrapper */
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  content: "" !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* הסתר placeholder בשדות תאריך */

@@ -227,7 +227,7 @@ function FloatingInput({
           type === "date" && "[&::placeholder]:opacity-0 [&::placeholder]:hidden [&::-webkit-input-placeholder]:opacity-0 [&::-webkit-input-placeholder]:hidden [&::-moz-placeholder]:opacity-0 [&::-moz-placeholder]:hidden [&:-ms-input-placeholder]:opacity-0 [&:-ms-input-placeholder]:hidden",
           className
         )}
-        {...(type === "date" ? {} : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
+        {...(type === "date" ? { placeholder: "" } : { placeholder: shouldFloat ? undefined : (props.placeholder || "") })}
       />
       {label && (
         <label
