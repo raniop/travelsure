@@ -221,8 +221,8 @@ function FloatingInput({
           "focus:outline-none focus:border-b-2 focus:border-sky-500",
           "transition-all duration-200",
           dir === "ltr" ? "text-left" : "text-right",
-          // הסר את האייקון של לוח שנה בשדה תאריך
-          type === "date" && "[&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden",
+          // הסר את האייקון של לוח שנה בשדה תאריך - אבל השאר אותו אינטראקטיבי
+          type === "date" && "[&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden",
           // עבור תאריך - הסתר placeholder לחלוטין תמיד
           type === "date" && "[&::placeholder]:opacity-0 [&::placeholder]:hidden [&::-webkit-input-placeholder]:opacity-0 [&::-webkit-input-placeholder]:hidden [&::-moz-placeholder]:opacity-0 [&::-moz-placeholder]:hidden [&:-ms-input-placeholder]:opacity-0 [&:-ms-input-placeholder]:hidden",
           // הוסף class כשהשדה תאריך יש לו ערך

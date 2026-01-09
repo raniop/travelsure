@@ -25,64 +25,35 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* הסתר את הטקסט dd/mm/yyyy רק כשהשדה ריק ולא בפוקוס */
+/* הסתר את הטקסט dd/mm/yyyy רק כשהשדה ריק ולא בפוקוס - אבל השאר את השדה אינטראקטיבי */
 input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-text,
 input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-month-field,
 input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-day-field,
 input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-year-field {
   color: transparent !important;
   opacity: 0 !important;
-  visibility: hidden !important;
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  content: "" !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  pointer-events: none !important;
 }
 
-/* הסתר את ה-datetime-edit container רק כשהשדה ריק ולא בפוקוס */
+/* הסתר את ה-datetime-edit container רק כשהשדה ריק ולא בפוקוס - אבל השאר אינטראקטיבי */
 input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit {
   opacity: 0 !important;
-  visibility: hidden !important;
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  content: "" !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  pointer-events: none !important;
 }
 
-/* הסתר את ה-fields-wrapper רק כשהשדה ריק ולא בפוקוס */
+/* הסתר את ה-fields-wrapper רק כשהשדה ריק ולא בפוקוס - אבל השאר אינטראקטיבי */
 input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-fields-wrapper {
   opacity: 0 !important;
-  visibility: hidden !important;
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  content: "" !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  pointer-events: none !important;
 }
 
-/* הצג את התאריך כשהשדה בפוקוס או יש ערך */
+/* הצג את התאריך כשהשדה בפוקוס או יש ערך - וודא שהשדה אינטראקטיבי */
 input[type="date"]:focus::-webkit-datetime-edit,
 input[type="date"].date-has-value::-webkit-datetime-edit {
   opacity: 1 !important;
   visibility: visible !important;
   display: inline-block !important;
-  width: auto !important;
-  height: auto !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  content: none !important;
+  pointer-events: auto !important;
 }
 
 input[type="date"]:focus::-webkit-datetime-edit-fields-wrapper,
@@ -90,11 +61,7 @@ input[type="date"].date-has-value::-webkit-datetime-edit-fields-wrapper {
   opacity: 1 !important;
   visibility: visible !important;
   display: inline-block !important;
-  width: auto !important;
-  height: auto !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  content: none !important;
+  pointer-events: auto !important;
 }
 
 input[type="date"]:focus::-webkit-datetime-edit-text,
@@ -109,13 +76,13 @@ input[type="date"].date-has-value::-webkit-datetime-edit-year-field {
   opacity: 1 !important;
   visibility: visible !important;
   display: inline !important;
-  width: auto !important;
-  height: auto !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  content: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  pointer-events: auto !important;
+}
+
+/* וודא שהשדה עצמו אינטראקטיבי תמיד */
+input[type="date"] {
+  pointer-events: auto !important;
+  cursor: text !important;
 }
 
 /* הסתר placeholder בשדות תאריך */
