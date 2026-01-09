@@ -274,13 +274,13 @@ function GenderToggle({
         type="button"
         onClick={() => onChange(v)}
         className={cn(
-          "group w-full h-24 sm:h-28 aspect-square rounded-lg bg-white p-3 sm:p-4 text-center transition-all",
+          "group aspect-square rounded-lg bg-white p-3 sm:p-4 text-center transition-all",
           "border shadow-sm hover:shadow-md flex-shrink-0",
           selected
             ? "border-sky-400 ring-2 ring-sky-200"
             : "border-slate-200 hover:border-slate-300"
         )}
-        style={{ aspectRatio: "1 / 1" }}
+        style={{ width: "105px", height: "105px", aspectRatio: "1 / 1" }}
       >
         <div className="flex flex-col items-center justify-center gap-2 h-full">
           <div
