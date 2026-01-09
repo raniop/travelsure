@@ -940,7 +940,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mx-auto max-w-lg">
+        <div className="mx-auto max-w-sm sm:max-w-lg">
           {/* Header with status chips - above first customer card */}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
@@ -1284,7 +1284,7 @@ export default function Home() {
           </div>
 
           {/* Bottom Section */}
-          <div className="mt-2 sm:mt-3 mx-auto max-w-lg">
+          <div className="mt-2 sm:mt-3 mx-auto max-w-sm sm:max-w-lg">
             {/* כפתור הוספת נוסע - מחוץ לקוביה */}
             <div className="flex items-center gap-3 mb-3">
               <button
