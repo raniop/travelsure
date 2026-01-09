@@ -1284,9 +1284,11 @@ export default function Home() {
                       value={customer.firstNameEn}
                       onChange={(e) => {
                         clearCustomerErrors(index);
+                        // מאפשר רק אותיות באנגלית, רווחים, מקפים ואפוסטרופים
+                        const englishOnly = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
                         setCustomers((prev) => {
                           const updated = [...prev];
-                          updated[index] = { ...updated[index], firstNameEn: e.target.value };
+                          updated[index] = { ...updated[index], firstNameEn: englishOnly };
                           return updated;
                         });
                       }}
@@ -1300,9 +1302,11 @@ export default function Home() {
                       value={customer.lastNameEn}
                       onChange={(e) => {
                         clearCustomerErrors(index);
+                        // מאפשר רק אותיות באנגלית, רווחים, מקפים ואפוסטרופים
+                        const englishOnly = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
                         setCustomers((prev) => {
                           const updated = [...prev];
-                          updated[index] = { ...updated[index], lastNameEn: e.target.value };
+                          updated[index] = { ...updated[index], lastNameEn: englishOnly };
                           return updated;
                         });
                       }}
