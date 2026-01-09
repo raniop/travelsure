@@ -892,6 +892,63 @@ export default function Home() {
             }, 100);
           }, 200);
         } else {
+          // אם לא נמצא במערכת, מנקים את הנתונים הקודמים אם תעודת הזהות השתנתה
+          const previousId = previousCustomerIds[customerIndex] || "";
+          const idChanged = previousId !== clean && previousId !== "";
+          
+          if (idChanged) {
+            setCustomers((prev) => {
+              const updated = [...prev];
+              if (customerIndex === 0) {
+                updated[0] = {
+                  id: clean,
+                  gender: "",
+                  firstNameHe: "",
+                  lastNameHe: "",
+                  firstNameEn: "",
+                  lastNameEn: "",
+                  birthDate: "",
+                  email: "",
+                  phone: "",
+                };
+              } else {
+                if (updated.length <= customerIndex) {
+                  while (updated.length <= customerIndex) {
+                    updated.push({
+                      id: "",
+                      gender: "",
+                      firstNameHe: "",
+                      lastNameHe: "",
+                      firstNameEn: "",
+                      lastNameEn: "",
+                      birthDate: "",
+                      email: "",
+                      phone: "",
+                    });
+                  }
+                }
+                updated[customerIndex] = {
+                  id: clean,
+                  gender: "",
+                  firstNameHe: "",
+                  lastNameHe: "",
+                  firstNameEn: "",
+                  lastNameEn: "",
+                  birthDate: "",
+                  email: "",
+                  phone: "",
+                };
+              }
+              return updated;
+            });
+          }
+          
+          // עדכון תעודת הזהות הקודמת גם אם לא נמצא
+          setPreviousCustomerIds((prev) => ({
+            ...prev,
+            [customerIndex]: clean,
+          }));
+          
           if (customerIndex === 0) {
             setStatus({ type: "notfound", text: "לא נמצא — מלא ידנית" });
             setAdditionalCustomers([]);
