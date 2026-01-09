@@ -381,7 +381,7 @@ function GenderToggle({
 /** ========= Page ========= */
 export default function Home() {
   const [id, setId] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<Record<number, boolean>>({});
   const [shatapName, setShatapName] = useState<string>("");
   const [status, setStatus] = useState<
     | { type: "idle"; text: string }
@@ -690,8 +690,9 @@ export default function Home() {
 
     const t = setTimeout(async () => {
       try {
+        // הגדרת loading לכל נוסע
+        setLoading((prev) => ({ ...prev, [customerIndex]: true }));
         if (customerIndex === 0) {
-          setLoading(true);
           setStatus({ type: "checking", text: "בודק במערכת…" });
         }
 
@@ -844,9 +845,9 @@ export default function Home() {
           }));
 
           // ✅ מציג הודעה מיד - המשתמש רואה שהכל עובד!
+          setLoading((prev) => ({ ...prev, [customerIndex]: false })); // מסיים את ה-loading מיד
           if (customerIndex === 0) {
             setStatus({ type: "ok", text: `נמצא במערכת · ${fullName || ""}` });
-            setLoading(false); // מסיים את ה-loading מיד
 
             // ✅ טוען לקוחות נוספים ברקע - לא חוסם את המשתמש!
             const allCustomersFromApi: AdditionalCustomer[] = json.allCustomers || [];
@@ -949,21 +950,21 @@ export default function Home() {
             [customerIndex]: clean,
           }));
           
+          setLoading((prev) => ({ ...prev, [customerIndex]: false })); // מסיים את ה-loading
           if (customerIndex === 0) {
             setStatus({ type: "notfound", text: "לא נמצא — מלא ידנית" });
             setAdditionalCustomers([]);
             setSelectedAdditionalCustomers(new Set());
-            setLoading(false);
           }
         }
       } catch (error: any) {
+        setLoading((prev) => ({ ...prev, [customerIndex]: false })); // מסיים את ה-loading גם במקרה של שגיאה
         if (customerIndex === 0) {
           if (error.name === 'AbortError') {
             setStatus({ type: "error", text: "הזמן הקצוב לבדיקה פג - נסה שוב" });
           } else {
             setStatus({ type: "error", text: "שגיאת רשת" });
           }
-          setLoading(false);
         }
       }
     }, 300); // הקטנתי מ-450ms ל-300ms - יותר מהיר
@@ -1161,7 +1162,7 @@ export default function Home() {
                 {/* תעודת זהות ותאריך לידה */}
                 <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
                   <div className="relative">
-                    {index === 0 && (loading || status.type === "checking") && (
+                    {loading[index] && (
                       <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10">
                         <svg className="animate-spin h-5 w-5 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
