@@ -799,14 +799,14 @@ export default function Home() {
   }, [id]);
 
   return (
-    <div dir="rtl" className="min-h-screen">
+    <div dir="rtl" className="min-h-screen relative">
       {/* Background */}
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 -z-10 min-h-full">
         {/* Background Image */}
         <img
           src={getAssetPath("/background2.png")}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover min-h-full"
         />
       </div>
 
