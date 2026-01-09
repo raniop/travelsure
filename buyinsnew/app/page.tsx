@@ -332,7 +332,7 @@ function GenderToggle({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 gap-4 sm:gap-5" style={{ width: "fit-content" }}>
       {item("F", "נוסעת")}
       {item("M", "נוסע")}
     </div>
@@ -890,9 +890,9 @@ export default function Home() {
                 {/* מין הנוסע */}
                 <div className="mb-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="grid gap-1 max-w-[160px]">
+                    <div className="grid gap-1 w-fit">
                       <FieldLabel required>מין הנוסע</FieldLabel>
-                      <div>
+                      <div className="w-fit">
                         <GenderToggle
                           value={customer.gender}
                           onChange={(v) => {
