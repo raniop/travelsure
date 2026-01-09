@@ -1513,7 +1513,7 @@ export default function Home() {
           />
 
           {/* Modal Content */}
-          <div className="relative w-full max-w-[95%] sm:max-w-md max-h-[70vh] sm:max-h-[45vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="relative w-full max-w-[95%] sm:max-w-lg md:max-w-xl max-h-[70vh] sm:max-h-[60vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             {/* Header */}
               <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-blue-50">
               <div className="flex items-start justify-between">
@@ -1622,7 +1622,7 @@ export default function Home() {
                     <div
                       key={addCust.personId}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-3 sm:py-2 transition",
+                        "flex items-center gap-2 px-3 py-3 sm:py-3 md:py-4 transition",
                         isAlreadyAdded ? "bg-green-50/50" : isSelected ? "bg-sky-50/50" : canSelect ? "hover:bg-slate-50/50 cursor-pointer" : "",
                         !isAlreadyAdded && canSelect ? "cursor-pointer" : ""
                       )}
