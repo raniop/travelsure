@@ -1,6 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/policy-get-by-id/route": "app/api/policy-get-by-id/route.js",
-  "/api/shatap/route": "app/api/shatap/route.js",
-  "/page": "app/page.js"
-}
