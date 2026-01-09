@@ -1530,11 +1530,6 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate" style={{ color: '#18509C' }}>{fullName}</div>
                       </div>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        </div>
-                      )}
                     </label>
                   );
                 })}
