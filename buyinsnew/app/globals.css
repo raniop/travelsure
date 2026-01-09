@@ -25,11 +25,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* הסתר לחלוטין את הטקסט dd/mm/yyyy בשדות תאריך - הסרה מלאה */
-input[type="date"]::-webkit-datetime-edit-text,
-input[type="date"]::-webkit-datetime-edit-month-field,
-input[type="date"]::-webkit-datetime-edit-day-field,
-input[type="date"]::-webkit-datetime-edit-year-field {
+/* הסתר את הטקסט dd/mm/yyyy רק כשהשדה ריק ולא בפוקוס */
+input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-text,
+input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-month-field,
+input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-day-field,
+input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-year-field {
   color: transparent !important;
   opacity: 0 !important;
   visibility: hidden !important;
@@ -44,8 +44,8 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   margin: 0 !important;
 }
 
-/* גם הסתר את כל ה-datetime-edit container - הסרה מלאה */
-input[type="date"]::-webkit-datetime-edit {
+/* הסתר את ה-datetime-edit container רק כשהשדה ריק ולא בפוקוס */
+input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit {
   opacity: 0 !important;
   visibility: hidden !important;
   display: none !important;
@@ -58,8 +58,8 @@ input[type="date"]::-webkit-datetime-edit {
   margin: 0 !important;
 }
 
-/* הסתר גם את ה-fields-wrapper */
-input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+/* הסתר את ה-fields-wrapper רק כשהשדה ריק ולא בפוקוס */
+input[type="date"]:not(:focus):not(.date-has-value)::-webkit-datetime-edit-fields-wrapper {
   opacity: 0 !important;
   visibility: hidden !important;
   display: none !important;
@@ -68,6 +68,52 @@ input[type="date"]::-webkit-datetime-edit-fields-wrapper {
   font-size: 0 !important;
   line-height: 0 !important;
   content: "" !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* הצג את התאריך כשהשדה בפוקוס או יש ערך */
+input[type="date"]:focus::-webkit-datetime-edit,
+input[type="date"].date-has-value::-webkit-datetime-edit {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  content: none !important;
+}
+
+input[type="date"]:focus::-webkit-datetime-edit-fields-wrapper,
+input[type="date"].date-has-value::-webkit-datetime-edit-fields-wrapper {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  content: none !important;
+}
+
+input[type="date"]:focus::-webkit-datetime-edit-text,
+input[type="date"]:focus::-webkit-datetime-edit-month-field,
+input[type="date"]:focus::-webkit-datetime-edit-day-field,
+input[type="date"]:focus::-webkit-datetime-edit-year-field,
+input[type="date"].date-has-value::-webkit-datetime-edit-text,
+input[type="date"].date-has-value::-webkit-datetime-edit-month-field,
+input[type="date"].date-has-value::-webkit-datetime-edit-day-field,
+input[type="date"].date-has-value::-webkit-datetime-edit-year-field {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline !important;
+  width: auto !important;
+  height: auto !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  content: none !important;
   padding: 0 !important;
   margin: 0 !important;
 }
