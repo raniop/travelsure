@@ -1492,13 +1492,29 @@ export default function Home() {
                   const canSelect = !isAlreadyAdded && (isSelected || selectedAdditionalCustomers.size < availableSlots);
                   const fullName = addCust.primaryName || `${addCust.firstNameHe} ${addCust.lastNameHe}`.trim();
                   
+                  const handleRowClick = () => {
+                    if (isAlreadyAdded) return; // לא עושה כלום אם כבר נוסף
+                    if (!canSelect && !isSelected) return;
+                    const newSet = new Set(selectedAdditionalCustomers);
+                    if (isSelected) {
+                      newSet.delete(addCust.personId);
+                    } else {
+                      if (newSet.size < availableSlots) {
+                        newSet.add(addCust.personId);
+                      }
+                    }
+                    setSelectedAdditionalCustomers(newSet);
+                  };
+
                   return (
                     <div
                       key={addCust.personId}
                       className={cn(
                         "flex items-center gap-2 px-3 py-2 transition",
-                        isAlreadyAdded ? "bg-green-50/50" : isSelected ? "bg-sky-50/50" : canSelect ? "hover:bg-slate-50/50" : ""
+                        isAlreadyAdded ? "bg-green-50/50" : isSelected ? "bg-sky-50/50" : canSelect ? "hover:bg-slate-50/50 cursor-pointer" : "",
+                        !isAlreadyAdded && canSelect ? "cursor-pointer" : ""
                       )}
+                      onClick={!isAlreadyAdded ? handleRowClick : undefined}
                     >
                       {!isAlreadyAdded && (
                         <input
@@ -1506,6 +1522,7 @@ export default function Home() {
                           checked={isSelected}
                           disabled={!canSelect}
                           onChange={(e) => {
+                            e.stopPropagation(); // מונע double-click
                             if (!canSelect && !isSelected) return;
                             const newSet = new Set(selectedAdditionalCustomers);
                             if (e.target.checked) {
@@ -1517,6 +1534,7 @@ export default function Home() {
                             }
                             setSelectedAdditionalCustomers(newSet);
                           }}
+                          onClick={(e) => e.stopPropagation()} // מונע double-click
                           className={cn(
                             "h-4 w-4 rounded border-2 flex-shrink-0",
                             isSelected 
@@ -1546,7 +1564,8 @@ export default function Home() {
                       {isAlreadyAdded && (
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation(); // מונע click על השורה
                             // הסרת הנוסע מהרשימה
                             setCustomers((prev) => {
                               const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
