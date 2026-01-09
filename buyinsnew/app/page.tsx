@@ -831,7 +831,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-3 sm:px-4 py-2 sm:py-3">
+      <main className="mx-auto max-w-xl px-3 sm:px-4 py-2 sm:py-3">
         <div className="text-center mb-2 sm:mb-3">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             רכישת ביטוח נסיעות לחו״ל
@@ -841,7 +841,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mx-auto max-w-xl">
+        <div className="mx-auto max-w-lg">
           {/* Header with status chips - above first customer card */}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
@@ -1185,7 +1185,7 @@ export default function Home() {
           </div>
 
           {/* Bottom Section */}
-          <div className="mt-2 sm:mt-3 mx-auto max-w-xl">
+          <div className="mt-2 sm:mt-3 mx-auto max-w-lg">
             {/* כפתור הוספת נוסע - מחוץ לקוביה */}
             <div className="flex items-center gap-3 mb-3">
               <button
