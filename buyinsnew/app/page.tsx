@@ -1407,7 +1407,7 @@ export default function Home() {
           />
 
           {/* Modal Content */}
-          <div className="relative w-full max-w-sm sm:max-w-md max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="relative w-full max-w-[90%] sm:max-w-md max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             {/* Header */}
               <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-blue-50">
               <div className="flex items-start justify-between">
