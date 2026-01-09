@@ -1596,35 +1596,46 @@ export default function Home() {
                       selectedAdditionalCustomers.has(c.personId)
                     );
                     
-                    // אם יש נוסעים שנבחרו, הוסף אותם
+                    // אם יש נוסעים שנבחרו, הוסף אותם (רק אם הם לא קיימים כבר)
                     if (selected.length > 0) {
-                      const newCustomers = selected.map((c) => {
-                        const normalizedGender = (c.gender === "M" || c.gender === "F") ? c.gender : "";
-                        return {
-                          id: c.personId,
-                          gender: normalizedGender as "M" | "F" | "",
-                          firstNameHe: c.firstNameHe,
-                          lastNameHe: c.lastNameHe,
-                          firstNameEn: c.firstNameEn,
-                          lastNameEn: c.lastNameEn,
-                          birthDate: c.birthDate,
-                          email: c.email || "",
-                          phone: c.phone || "",
-                        };
-                      });
+                      const newCustomers = selected
+                        .filter((c) => {
+                          // בדיקה אם הנוסע כבר קיים
+                          const normalizedCustId = String(c.personId || "").padStart(9, "0");
+                          return !customers.some((existing) => {
+                            const normalizedExistingId = String(existing.id || "").padStart(9, "0");
+                            return normalizedExistingId === normalizedCustId;
+                          });
+                        })
+                        .map((c) => {
+                          const normalizedGender = (c.gender === "M" || c.gender === "F") ? c.gender : "";
+                          return {
+                            id: c.personId,
+                            gender: normalizedGender as "M" | "F" | "",
+                            firstNameHe: c.firstNameHe,
+                            lastNameHe: c.lastNameHe,
+                            firstNameEn: c.firstNameEn,
+                            lastNameEn: c.lastNameEn,
+                            birthDate: c.birthDate,
+                            email: c.email || "",
+                            phone: c.phone || "",
+                          };
+                        });
 
-                      setCustomers((prev) => {
-                        const MAX_CUSTOMERS = 10;
-                        const currentCount = prev.length;
-                        const canAdd = MAX_CUSTOMERS - currentCount;
-                        
-                        // מוסיף רק עד המקסימום
-                        const toAdd = newCustomers.slice(0, canAdd);
-                        const updated = [...prev, ...toAdd];
-                        
-                        // ממיין לפי תאריך לידה
-                        return sortCustomersByBirthDate(updated);
-                      });
+                      if (newCustomers.length > 0) {
+                        setCustomers((prev) => {
+                          const MAX_CUSTOMERS = 10;
+                          const currentCount = prev.length;
+                          const canAdd = MAX_CUSTOMERS - currentCount;
+                          
+                          // מוסיף רק עד המקסימום
+                          const toAdd = newCustomers.slice(0, canAdd);
+                          const updated = [...prev, ...toAdd];
+                          
+                          // ממיין לפי תאריך לידה
+                          return sortCustomersByBirthDate(updated);
+                        });
+                      }
                       
                       // לא מסירים את המבוטחים מהרשימה - כך הכפתור יישאר תמיד גלוי
                       // המשתמש יכול לפתוח את המודאל שוב ולראות את כל הנוסעים
