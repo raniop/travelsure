@@ -59,6 +59,17 @@ input[type="date"][data-has-value="true"]::-webkit-datetime-edit {
   color: #0f172a !important;
 }
 
+/* הסר לחלוטין את כפתור לוח השנה */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+}
+
 /* הסתר placeholder בשדות תאריך */
 input[type="date"]::placeholder,
 input[type="date"]::-webkit-input-placeholder,
