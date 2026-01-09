@@ -927,8 +927,8 @@ export default function Home() {
                 )}
 
                 {/* מין הנוסע */}
-                <div className="mb-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="mb-5 sm:mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
                     <div className="grid gap-1 w-fit">
                       <FieldLabel required>מין הנוסע</FieldLabel>
                       <div className="w-fit">
@@ -949,7 +949,7 @@ export default function Home() {
                 </div>
 
                 {/* תעודת זהות ותאריך לידה */}
-                <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
                   <div className="relative">
                     {index === 0 && (loading || status.type === "checking") && (
                       <div className="absolute left-0.5 top-1/2 -translate-y-1/2 z-10">
@@ -1065,7 +1065,7 @@ export default function Home() {
                 </div>
 
                 {/* שמות באנגלית */}
-                <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
                   <div>
                     <FloatingInput
                       label={<>שם פרטי באנגלית <span className="text-rose-500">*</span></>}
@@ -1100,7 +1100,7 @@ export default function Home() {
                 </div>
 
                 {/* פרטי קשר */}
-                <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
                   {(() => {
                     const age = calculateAge(customer.birthDate);
                     // required רק אם הגיל >= 18, או אם אין תאריך לידה (נניח שהוא מבוגר)
@@ -1148,7 +1148,7 @@ export default function Home() {
                 </div>
 
                 {/* שמות בעברית */}
-                <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
                   <div>
                     <FloatingInput
                       label="שם פרטי בעברית"
