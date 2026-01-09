@@ -215,19 +215,25 @@ function FloatingInput({
   className,
   value,
   type,
+  align,
+  focusPlaceholder,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { 
+}: React.InputHTMLAttributes<HTMLInputElement> & {
   dir?: "rtl" | "ltr";
   label?: React.ReactNode;
+  align?: "left" | "right";
+  focusPlaceholder?: string;
 }) {
   const inputType = type ?? "text";
   const hasValue = value !== undefined && value !== null && String(value).length > 0;
   const [isFocused, setIsFocused] = useState(false);
   const shouldFloat = hasValue || isFocused;
-  
-  // יישור לפי dir
+
   const effectiveDir = dir || "rtl";
-  const effectiveAlign = dir === "ltr" ? "left" : "right";
+  const effectiveAlign =
+    props.style?.textAlign
+      ? (props.style.textAlign as any)
+      : (align ?? (effectiveDir === "ltr" ? "left" : "right"));
 
   return (
     <div className="relative w-full">
@@ -256,7 +262,11 @@ function FloatingInput({
           "transition-all duration-200",
           className
         )}
-        placeholder={hasValue ? undefined : (props.placeholder || "")}
+        placeholder={
+          hasValue
+            ? undefined
+            : (isFocused ? (focusPlaceholder ?? props.placeholder ?? "") : "")
+        }
       />
       {label && (
         <label
@@ -1017,10 +1027,11 @@ export default function Home() {
                   <div>
                     <FloatingInput
                       label={<>תאריך לידה <span className="text-rose-500">*</span></>}
-                      dir="rtl"
+                      dir="ltr"
+                      align="right"
                       type="text"
                       inputMode="numeric"
-                      placeholder="DD/MM/YYYY"
+                      focusPlaceholder="DD/MM/YYYY"
                       value={isoToDDMMYYYY(customer.birthDate)}
                       onChange={(e) => {
                         clearCustomerErrors(index);
