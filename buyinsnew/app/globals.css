@@ -25,32 +25,37 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ברירת מחדל: אם ריק ולא בפוקוס - מסתירים טקסט תאריך (לא שוברים קליקים) */
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit {
-  color: transparent !important;
+/* 1) תמיד מיושר לימין */
+input[type="date"] {
+  text-align: right !important;
+  direction: rtl !important;   /* העטיפה RTL */
 }
 
+/* 2) אבל כדי שספארי לא "יערום" את הספרות, הפנים של התאריך LTR */
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  direction: ltr !important;
+  unicode-bidi: plaintext !important;
+}
+
+/* 3) כשאין ערך ולא בפוקוס — להעלים לגמרי את dd/mm/yyyy */
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit,
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-fields-wrapper,
 input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-text,
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-month-field,
 input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-day-field,
+input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-month-field,
 input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-year-field {
-  color: transparent !important;
+  opacity: 0 !important;
 }
 
-/* בפוקוס או אם יש ערך - מציגים */
+/* 4) כשיש ערך או בפוקוס — להציג */
 input[type="date"]:focus::-webkit-datetime-edit,
 input[type="date"][data-has-value="true"]::-webkit-datetime-edit {
-  color: #0f172a !important;
-}
-
-input[type="date"]:focus::-webkit-datetime-edit-text,
-input[type="date"]:focus::-webkit-datetime-edit-month-field,
-input[type="date"]:focus::-webkit-datetime-edit-day-field,
-input[type="date"]:focus::-webkit-datetime-edit-year-field,
-input[type="date"][data-has-value="true"]::-webkit-datetime-edit-text,
-input[type="date"][data-has-value="true"]::-webkit-datetime-edit-month-field,
-input[type="date"][data-has-value="true"]::-webkit-datetime-edit-day-field,
-input[type="date"][data-has-value="true"]::-webkit-datetime-edit-year-field {
+  opacity: 1 !important;
   color: #0f172a !important;
 }
 
@@ -89,6 +94,8 @@ input[type="date"] {
   box-sizing: border-box !important;
   overflow: hidden !important;
   display: block !important;
+  text-align: right !important;
+  direction: rtl !important;   /* העטיפה RTL */
 }
 
 input[type="date"]::-webkit-datetime-edit {
@@ -130,23 +137,6 @@ input[dir="rtl"] {
   direction: rtl !important;
 }
 
-input[dir="rtl"]::-webkit-datetime-edit,
-input[dir="rtl"]::-webkit-datetime-edit-fields-wrapper {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-/* יישור RTL */
-input[type="date"][dir="rtl"] {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-input[type="date"][dir="rtl"]::-webkit-datetime-edit,
-input[type="date"][dir="rtl"]::-webkit-datetime-edit-fields-wrapper {
-  text-align: right !important;
-  direction: rtl !important;
-}
 
 /* וודא שכל השדות עם dir="rtl" מיושרים לימין */
 input[dir="rtl"],
