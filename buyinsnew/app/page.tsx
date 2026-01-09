@@ -275,12 +275,12 @@ function GenderToggle({
         onClick={() => onChange(v)}
         className={cn(
           "group aspect-square rounded-lg bg-white p-3 sm:p-4 text-center transition-all",
-          "border shadow-sm hover:shadow-md flex-shrink-0",
+          "border shadow-sm hover:shadow-md flex-shrink-0 box-border",
           selected
             ? "border-sky-400 ring-2 ring-sky-200"
             : "border-slate-200 hover:border-slate-300"
         )}
-        style={{ width: "105px", height: "105px", aspectRatio: "1 / 1" }}
+        style={{ width: "105px", height: "105px", aspectRatio: "1 / 1", boxSizing: "border-box" }}
       >
         <div className="flex flex-col items-center justify-center gap-2 h-full">
           <div
@@ -332,7 +332,7 @@ function GenderToggle({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4">
       {item("F", "נוסעת")}
       {item("M", "נוסע")}
     </div>
