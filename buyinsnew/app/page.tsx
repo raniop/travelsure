@@ -1045,15 +1045,19 @@ export default function Home() {
         <div className="mx-auto max-w-sm sm:max-w-lg">
           {/* Header with status chips - above first customer card */}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
-              {chip}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {chip && (
+                <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium max-w-full truncate">
+                  {chip}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {additionalCustomers.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowAdditionalCustomersModal(true)}
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-sky-100 text-sky-700 hover:bg-sky-200 transition"
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 5v14M5 12h14" />
@@ -1062,7 +1066,7 @@ export default function Home() {
                 </button>
               )}
               {loading[0] ? (
-                <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
+                <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 whitespace-nowrap">
                   <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
                   טוען
                 </span>
