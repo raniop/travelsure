@@ -286,12 +286,13 @@ function GenderToggle({
         <div className="flex flex-col items-center justify-center gap-2 h-full">
           <div
             className={cn(
-              "h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center border-2 transition-all",
+              "aspect-square h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center border-2 transition-all flex-shrink-0",
               selected
                 ? "border-sky-400 bg-sky-50"
                 : "border-sky-300 bg-sky-50"
             )}
             aria-hidden="true"
+            style={{ aspectRatio: "1 / 1" }}
           >
             {v === "F" ? (
               <svg 
