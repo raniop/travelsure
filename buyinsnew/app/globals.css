@@ -25,87 +25,64 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* 1) תמיד מיושר לימין */
-input[type="date"] {
-  text-align: right !important;
-  direction: rtl !important;   /* העטיפה RTL */
-}
+/* ===== iOS Safari date input fixes (NO dd/mm/yyyy + always right aligned) ===== */
 
-/* 2) אבל כדי שספארי לא "יערום" את הספרות, הפנים של התאריך LTR */
-input[type="date"]::-webkit-datetime-edit,
-input[type="date"]::-webkit-datetime-edit-fields-wrapper,
-input[type="date"]::-webkit-datetime-edit-text,
-input[type="date"]::-webkit-datetime-edit-day-field,
-input[type="date"]::-webkit-datetime-edit-month-field,
-input[type="date"]::-webkit-datetime-edit-year-field {
+input[type="date"]{
+  /* אל תשים RTL על השדה עצמו – זה גורם ל"ערימה"/גליצ'ים ב-Safari.
+     במקום זה: LTR לתוכן, אבל יישור לימין */
   direction: ltr !important;
-  unicode-bidi: plaintext !important;
+  text-align: right !important;
+
+  /* להפוך אותו להתנהג כמו input רגיל */
+  -webkit-appearance: none !important;
+  appearance: none !important;
+
+  box-sizing: border-box !important;
+  height: 2.75rem !important;     /* 44px */
+  min-height: 2.75rem !important;
+  line-height: 1.25rem !important;
+
+  /* אותו padding כמו אצלך ב-FloatingInput (pt-6 pb-0.5) */
+  padding-top: 1.5rem !important;
+  padding-bottom: 0.125rem !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-/* 3) כשאין ערך ולא בפוקוס — להעלים לגמרי את dd/mm/yyyy */
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit,
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-fields-wrapper,
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-text,
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-day-field,
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-month-field,
-input[type="date"]:not(:focus):not([data-has-value="true"])::-webkit-datetime-edit-year-field {
-  opacity: 0 !important;
+/* iOS: זה האלמנט שמחזיק את הערך (Aug 11, 1986) */
+input[type="date"]::-webkit-date-and-time-value{
+  text-align: right !important;
+  line-height: 1.25rem !important;
 }
 
-/* 4) כשיש ערך או בפוקוס — להציג */
-input[type="date"]:focus::-webkit-datetime-edit,
-input[type="date"][data-has-value="true"]::-webkit-datetime-edit {
-  opacity: 1 !important;
-  color: #0f172a !important;
+/* להעלים לגמרי dd/mm/yyyy כשהשדה ריק */
+input[type="date"][data-has-value="false"]{
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
-/* הסר לחלוטין את כפתור לוח השנה */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  position: absolute !important;
-  pointer-events: none !important;
+input[type="date"][data-has-value="false"]::-webkit-date-and-time-value{
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
-/* ===== Date input: hide dd/mm/yyyy when empty + keep RTL alignment ===== */
-
-/* השדה עצמו RTL ומיושר לימין */
-input[type="date"] {
-  text-align: right;
-  direction: rtl;
-}
-
-/* התוכן הפנימי של התאריך נשאר LTR כדי שספארי לא "יערום" ספרות */
-input[type="date"]::-webkit-datetime-edit,
-input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-  direction: ltr;
-  unicode-bidi: plaintext;
-}
-
-/* כשאין ערך – מסתירים את הטקסט (זה מה שמעלים dd/mm/yyyy בפועל) */
-input[type="date"][data-has-value="false"] {
-  color: transparent;
-}
-
-/* וכשאין ערך – גם הפנים שקופות לגמרי */
-input[type="date"][data-has-value="false"]::-webkit-datetime-edit,
-input[type="date"][data-has-value="false"]::-webkit-datetime-edit-text,
-input[type="date"][data-has-value="false"]::-webkit-datetime-edit-month-field,
-input[type="date"][data-has-value="false"]::-webkit-datetime-edit-day-field,
-input[type="date"][data-has-value="false"]::-webkit-datetime-edit-year-field {
-  color: transparent;
-}
-
-/* כשיש ערך – מציגים רגיל */
+/* להציג כשיש ערך / בפוקוס */
 input[type="date"][data-has-value="true"],
-input[type="date"][data-has-value="true"]::-webkit-datetime-edit {
-  color: #0f172a;
+input[type="date"]:focus{
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+input[type="date"][data-has-value="true"]::-webkit-date-and-time-value,
+input[type="date"]:focus::-webkit-date-and-time-value{
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
 
 /* אם אתה באמת רוצה בלי אייקון */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
+input[type="date"]::-webkit-calendar-picker-indicator{
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
 }

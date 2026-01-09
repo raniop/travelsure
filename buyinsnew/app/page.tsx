@@ -195,6 +195,11 @@ function FloatingInput({
   const hasValue = value !== undefined && value !== null && String(value).length > 0;
   const [isFocused, setIsFocused] = useState(false);
   const shouldFloat = hasValue || isFocused;
+  
+  // לתאריך: LTR לתוכן, אבל יישור לימין (כדי למנוע overlap ב-iOS Safari)
+  const isDate = inputType === "date";
+  const effectiveDir = isDate ? "ltr" : (dir || "rtl");
+  const effectiveAlign = isDate ? "right" : (dir === "ltr" ? "left" : "right");
 
   return (
     <div className="relative w-full">
@@ -202,10 +207,10 @@ function FloatingInput({
         {...props}
         type={inputType}
         value={value}
-        dir={dir}
+        dir={effectiveDir}
         style={{
-          textAlign: dir === "ltr" ? "left" : "right",
-          direction: dir || "rtl",
+          textAlign: effectiveAlign,
+          direction: effectiveDir,
           ...props.style,
         }}
         onFocus={(e) => {
