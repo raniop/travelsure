@@ -276,17 +276,17 @@ function GenderToggle({
         type="button"
         onClick={() => onChange(v)}
         className={cn(
-          "group w-full rounded-lg bg-white p-1 text-center transition-all",
+          "group w-full aspect-square rounded-lg bg-white p-3 sm:p-4 text-center transition-all",
           "border shadow-sm hover:shadow-md",
           selected
             ? "border-sky-400 ring-2 ring-sky-200"
             : "border-slate-200 hover:border-slate-300"
         )}
       >
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center justify-center gap-2 h-full">
           <div
             className={cn(
-              "h-7 w-7 rounded-full grid place-items-center border-2 transition-all",
+              "h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center border-2 transition-all",
               selected
                 ? "border-sky-400 bg-sky-50"
                 : "border-sky-300 bg-sky-50"
@@ -295,8 +295,8 @@ function GenderToggle({
           >
             {v === "F" ? (
               <svg 
-                width="14" 
-                height="14" 
+                width="20" 
+                height="20" 
                 viewBox="0 0 24 24" 
                 fill="none" 
                 stroke="currentColor"
@@ -310,8 +310,8 @@ function GenderToggle({
               </svg>
             ) : (
               <svg 
-                width="14" 
-                height="14" 
+                width="20" 
+                height="20" 
                 viewBox="0 0 24 24" 
                 fill="none" 
                 stroke="currentColor"
@@ -323,7 +323,7 @@ function GenderToggle({
               </svg>
             )}
           </div>
-          <div className="text-xs font-medium text-[#0b4e86]">
+          <div className="text-sm sm:text-base font-medium text-[#0b4e86]">
             {title}
           </div>
         </div>
