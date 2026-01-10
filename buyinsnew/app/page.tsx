@@ -1512,7 +1512,6 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => {
-                  const previousCustomersCount = customers.length;
                   setCustomers((prev) => {
                     const MAX_CUSTOMERS = 10;
                     if (prev.length >= MAX_CUSTOMERS) return prev;
