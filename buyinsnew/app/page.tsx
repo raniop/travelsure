@@ -908,25 +908,31 @@ export default function Home() {
             }
           }
 
-          // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים)
-          setTimeout(() => {
-            // סגירת המקלדת - blur על השדה הפעיל
-            const activeElement = document.activeElement as HTMLElement;
-            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-              activeElement.blur();
-            }
-            // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
-            if (window.visualViewport) {
-              window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-            }
-            // איפוס viewport scale במובייל - scroll קצר כדי לסגור מקלדת
+          // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים) - רק אם הפרטים התמלאו
+          // נבדוק אם באמת יש פרטים שמילאנו (שם פרטי/משפחה) - רק אז נסגור את המקלדת
+          const hasFilledData = (firstNameHe || lastNameHe || firstNameEn || lastNameEn || birthDate || email || phone);
+          if (hasFilledData) {
             setTimeout(() => {
-              window.scrollTo({ top: window.scrollY + 1, behavior: 'instant' });
+              // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות
+              const activeElement = document.activeElement as HTMLElement;
+              if (activeElement && 
+                  (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
+                  activeElement.getAttribute('maxlength') === '9') { // רק אם זה שדה תעודת זהות
+                activeElement.blur();
+              }
+              // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
+              if (window.visualViewport) {
+                window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+              }
+              // איפוס viewport scale במובייל - scroll קצר כדי לסגור מקלדת
               setTimeout(() => {
-                window.scrollTo({ top: window.scrollY - 1, behavior: 'instant' });
-              }, 50);
-            }, 100);
-          }, 200);
+                window.scrollTo({ top: window.scrollY + 1, behavior: 'instant' });
+                setTimeout(() => {
+                  window.scrollTo({ top: window.scrollY - 1, behavior: 'instant' });
+                }, 50);
+              }, 100);
+            }, 200);
+          }
         } else {
           // אם לא נמצא במערכת, מנקים את הנתונים הקודמים אם תעודת הזהות השתנתה
           const previousId = previousCustomerIds[customerIndex] || "";
