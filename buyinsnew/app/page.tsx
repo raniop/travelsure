@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Image from "next/image";
 
 /** ========= Utils ========= */
@@ -1511,7 +1511,8 @@ export default function Home() {
             <div className="flex items-center gap-3 mb-3">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  const previousCustomersCount = customers.length;
                   setCustomers((prev) => {
                     const MAX_CUSTOMERS = 10;
                     if (prev.length >= MAX_CUSTOMERS) return prev;
@@ -1533,8 +1534,51 @@ export default function Home() {
                     
                     // ממיין לפי תאריך לידה
                     return sortCustomersByBirthDate(updated);
-                  })
-                }
+                  });
+                  
+                  // אחרי שה-state מתעדכן, עושים focus על שדה תעודת הזהות של הנוסע החדש
+                  // משתמשים ב-setTimeout כדי לתת ל-DOM להתעדכן
+                  setTimeout(() => {
+                    // מוצאים את כל שדות תעודת הזהות של נוסעים שאינם ראשונים
+                    const idInputs = Array.from(
+                      document.querySelectorAll<HTMLInputElement>(
+                        'input[data-field-type="id"][data-customer-index]'
+                      )
+                    ).filter(input => {
+                      const customerIndex = parseInt(input.getAttribute('data-customer-index') || '0', 10);
+                      const value = input.value.trim();
+                      // רק נוסעים שאינם ראשונים ושדה תעודת הזהות שלהם ריק
+                      return customerIndex > 0 && value === '';
+                    });
+                    
+                    // מוצאים את השדה עם האינדקס הגבוה ביותר (הנוסע החדש שהוסף)
+                    let targetInput: HTMLInputElement | null = null;
+                    let maxIndex = -1;
+                    
+                    for (const input of idInputs) {
+                      const customerIndex = parseInt(input.getAttribute('data-customer-index') || '0', 10);
+                      if (customerIndex > maxIndex) {
+                        maxIndex = customerIndex;
+                        targetInput = input;
+                      }
+                    }
+                    
+                    // אם לא מצאנו לפי האינדקס, ניקח את השדה הריק הראשון
+                    if (!targetInput && idInputs.length > 0) {
+                      targetInput = idInputs[0];
+                    }
+                    
+                    // עושים focus על השדה
+                    if (targetInput) {
+                      // גלילה לשדה במובייל - block: 'center' כדי שהשדה יהיה במרכז המסך
+                      targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // focus על השדה אחרי שהגלילה מסתיימת
+                      setTimeout(() => {
+                        targetInput?.focus();
+                      }, 200); // קצת delay כדי שהגלילה תסתיים
+                    }
+                  }, 150); // קצת delay כדי שה-state וה-DOM יתעדכנו (אחרי המיון)
+                }}
                 className="h-10 w-10 rounded-full text-white flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0 bg-[#0b4e86] hover:bg-[#0a3d6b]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
