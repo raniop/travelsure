@@ -26,6 +26,24 @@ body {
   min-height: 100vh;
 }
 
+/* מניעת zoom במובייל - iOS Safari מזיז זום אם font-size קטן מ-16px */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"] {
+  font-size: 16px !important;
+}
+
+@media (min-width: 640px) {
+  /* במסכים גדולים אפשר גודל קטן יותר */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"] {
+    font-size: 14px !important;
+  }
+}
+
 html {
   min-height: 100vh;
 }

@@ -235,25 +235,28 @@ function FloatingInput({
       ? (props.style.textAlign as any)
       : (align ?? (effectiveDir === "ltr" ? "left" : "right"));
 
+  // מוציא props ספציפיים כדי לא לדרוס אותם
+  const { onFocus, onBlur, style, placeholder, ...restProps } = props;
+  
   return (
     <div className="relative w-[92%] ml-auto sm:w-full">
       <input
-        {...props}
+        {...restProps}
         type={inputType}
         value={value}
         dir={effectiveDir}
         style={{
           textAlign: effectiveAlign,
           direction: effectiveDir,
-          ...props.style,
+          ...style,
         }}
         onFocus={(e) => {
           setIsFocused(true);
-          props.onFocus?.(e);
+          onFocus?.(e);
         }}
         onBlur={(e) => {
           setIsFocused(false);
-          props.onBlur?.(e);
+          onBlur?.(e);
         }}
         className={cn(
           "w-full h-11 bg-transparent px-0 pt-6 pb-0.5 text-base sm:text-sm text-slate-900",
@@ -265,7 +268,7 @@ function FloatingInput({
         placeholder={
           hasValue
             ? undefined
-            : (isFocused ? (focusPlaceholder ?? props.placeholder ?? "") : "")
+            : (isFocused ? (focusPlaceholder ?? placeholder ?? "") : "")
         }
       />
       {label && (
@@ -930,24 +933,16 @@ export default function Home() {
           // רק אם הפרטים התמלאו מה-API וזה לא חיפוש ראשוני, נסגור את המקלדת
           if (hasFilledDataFromApi && !isFirstSearch) {
             setTimeout(() => {
-              // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות
+              // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות של אותו נוסע
               const activeElement = document.activeElement as HTMLElement;
-              if (activeElement && 
-                  (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
-                  activeElement.getAttribute('data-field-type') === 'id') { // רק אם זה שדה תעודת זהות
+              if (
+                activeElement &&
+                (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
+                activeElement.getAttribute('data-field-type') === 'id' &&
+                activeElement.getAttribute('data-customer-index') === String(customerIndex)
+              ) {
                 activeElement.blur();
               }
-              // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
-              if (window.visualViewport) {
-                window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-              }
-              // איפוס viewport scale במובייל - scroll קצר כדי לסגור מקלדת
-              setTimeout(() => {
-                window.scrollTo({ top: window.scrollY + 1, behavior: 'instant' });
-                setTimeout(() => {
-                  window.scrollTo({ top: window.scrollY - 1, behavior: 'instant' });
-                }, 50);
-              }, 100);
             }, 300); // הגדלתי את הזמן ל-300ms כדי לוודא שהפרטים התמלאו לפני שסוגרים את המקלדת
           }
         } else {
@@ -1241,6 +1236,7 @@ export default function Home() {
                       )}
                       value={index === 0 ? id : customer.id}
                       data-field-type="id"
+                      data-customer-index={index}
                       onChange={(e) => {
                         clearCustomerErrors(index);
                         const cleanValue = e.target.value.replace(/[^\d]/g, "");
