@@ -967,27 +967,55 @@ export default function Home() {
             }
           }
 
-          // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים) - רק אם הפרטים התמלאו
-          // נבדוק אם באמת יש פרטים שמילאנו מה-API (שם פרטי/משפחה) - רק אז נסגור את המקלדת
+          // ✅ סגירת מקלדת במובייל - רק אם הפרטים התמלאו אוטומטית מהחיפוש
+          // בודקים שהפרטים מה-API אכן קיימים והם התמלאו אוטומטית
           const hasFilledDataFromApi = (split.first || split.last || customer.firstNameEn || customer.lastNameEn || customer.birthDate || customer.email || customer.phone);
-          // רק אם זה לא היה חיפוש ראשוני (היו פרטים קיימים או previousId קיים ושונה) והפרטים התמלאו מהחיפוש, נסגור את המקלדת
-          // כלומר - רק אם הפרטים התמלאו מהחיפוש ולא מהמשתמש עצמו, ואם זה לא חיפוש ראשוני
-          // חיפוש ראשוני = אין previousId או previousId שווה ל-clean (אותו חיפוש שוב) או שלא היו פרטים קיימים
+          
+          // בודקים אם זה חיפוש ראשוני - אם זה חיפוש ראשוני, לא סוגרים את המקלדת
           const isFirstSearch = !hadExistingData && (previousId === "" || previousId === clean || previousId.length !== 9);
+          
           // רק אם הפרטים התמלאו מה-API וזה לא חיפוש ראשוני, נסגור את המקלדת
+          // הפרטים כבר התמלאו דרך setCustomers שהוגדר למעלה, אז נבדוק את זה אחרי שהדום מתעדכן
           if (hasFilledDataFromApi && !isFirstSearch) {
+            // ממתינים שה-state וה-DOM יתעדכנו כדי שהפרטים יתמלאו בפועל בשדות
             setTimeout(() => {
-              // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות של אותו נוסע
-              const activeElement = document.activeElement as HTMLElement;
-              if (
-                activeElement &&
-                (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
-                activeElement.getAttribute('data-field-type') === 'id' &&
-                activeElement.getAttribute('data-customer-index') === String(customerIndex)
-              ) {
-                activeElement.blur();
+              // מוצאים את הקונטיינר של הנוסע הזה דרך data-customer-index
+              const customerContainer = document.querySelector(`[data-customer-index="${customerIndex}"]`);
+              if (!customerContainer) return;
+              
+              // מוצאים את כל השדות בתוך הקונטיינר הזה (חוץ מתעודת זהות)
+              const allInputs = customerContainer.querySelectorAll<HTMLInputElement>('input');
+              
+              // בודקים אם לפחות אחד מהשדות (שם, תאריך לידה, אימייל, טלפון) התמלא
+              let hasAnyFilledField = false;
+              for (const input of Array.from(allInputs)) {
+                // מתעלמים משדה תעודת זהות
+                if (input.getAttribute('data-field-type') === 'id') continue;
+                // בודקים אם השדה לא ריק
+                if (input.value && input.value.trim().length > 0) {
+                  hasAnyFilledField = true;
+                  break;
+                }
               }
-            }, 300); // הגדלתי את הזמן ל-300ms כדי לוודא שהפרטים התמלאו לפני שסוגרים את המקלדת
+              
+              // רק אם יש שדות שהתמלאו בפועל, סוגרים את המקלדת
+              if (hasAnyFilledField) {
+                // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות של אותו נוסע
+                const activeElement = document.activeElement as HTMLElement;
+                if (
+                  activeElement &&
+                  (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
+                  activeElement.getAttribute('data-field-type') === 'id' &&
+                  activeElement.getAttribute('data-customer-index') === String(customerIndex)
+                ) {
+                  activeElement.blur();
+                  // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
+                  if (window.visualViewport) {
+                    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+                  }
+                }
+              }
+            }, 600); // זמן ארוך יותר כדי לוודא שה-state וה-DOM התעדכנו והפרטים באמת התמלאו
           }
         } else {
           // אם לא נמצא במערכת, מנקים את הנתונים הקודמים אם תעודת הזהות השתנתה
