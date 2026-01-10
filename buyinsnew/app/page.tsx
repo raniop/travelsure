@@ -1643,17 +1643,19 @@ export default function Home() {
 
             <div className="rounded-xl border border-white/60 bg-white/90 backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] p-3 sm:p-4">
               {/* הודעה על רכישה בישראל */}
-              <div className="mb-4 text-center space-y-1.5">
-                <p className="text-xs font-bold text-[#0b4e86] leading-relaxed">
+              <div className="mb-4 text-center">
+                <p className="text-xs font-bold text-[#0b4e86] leading-relaxed mb-1.5">
                   עצור גבול לפניך :)
                 </p>
-                <p className="text-xs font-medium text-[#0b4e86] leading-relaxed">
-                  תנאי לרכישת הפוליסה היא הימצאות המבוטח בארץ.
-                </p>
-                <p className="text-xs font-medium text-[#0b4e86] leading-relaxed">
-                  רכישת הפוליסה באתר מהווה הצהרה כי כל המועמדים לביטוח מצויים בארץ בעת הרכישה.
-                </p>
-                <p className="text-[10px] font-medium text-[#0b4e86] leading-relaxed">
+                <div className="space-y-0">
+                  <p className="text-xs font-medium text-[#0b4e86] leading-relaxed">
+                    תנאי לרכישת הפוליסה היא הימצאות המבוטח בארץ.
+                  </p>
+                  <p className="text-xs font-medium text-[#0b4e86] leading-relaxed">
+                    רכישת הפוליסה באתר מהווה הצהרה כי כל המועמדים לביטוח מצויים בארץ בעת הרכישה.
+                  </p>
+                </div>
+                <p className="text-[10px] font-medium text-[#0b4e86] leading-relaxed mt-1.5">
                   שדות החובה מסומנים בכוכבית.
                 </p>
               </div>
