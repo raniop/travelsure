@@ -1006,6 +1006,7 @@ export default function Home() {
 
           // ✅ סגירת מקלדת במובייל - רק אם בוצע autofill אמיתי
           // משתמשים ב-didAutofillRef שמתעד אם שדה שהיה ריק קיבל ערך אוטומטית
+          // ה-ref מתעדכן בתוך setCustomers, אז נבדוק אותו אחרי שה-state מתעדכן
           setTimeout(() => {
             // בודקים אם בוצע autofill אמיתי לפי ה-ref
             if (!didAutofillRef.current[customerIndex]) return;
@@ -1024,7 +1025,7 @@ export default function Home() {
                 window.scrollTo({ top: window.scrollY, behavior: 'instant' });
               }
             }
-          }, 100); // זמן קצר כדי לתת ל-state להתעדכן
+          }, 200); // זמן כדי לתת ל-state להתעדכן - ה-ref מתעדכן מיד בתוך setCustomers
         } else {
           // אם לא נמצא במערכת, מנקים את הנתונים הקודמים אם תעודת הזהות השתנתה
           const previousId = previousCustomerIds[customerIndex] || "";
