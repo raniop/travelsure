@@ -1096,6 +1096,23 @@ export default function Home() {
     };
   }, [customers.map(c => `${c.id || ''}`).join('|')]);
 
+  // ✅ סגירת מקלדת אוטומטית כשהמודאל של לקוחות נוספים נפתח במובייל
+  useEffect(() => {
+    if (showAdditionalCustomersModal) {
+      // סגירת המקלדת - blur על כל השדות הפעילים
+      setTimeout(() => {
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+          activeElement.blur();
+        }
+        // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
+        if (window.visualViewport) {
+          window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+        }
+      }, 100); // קצת delay כדי שהמודאל יופיע קודם
+    }
+  }, [showAdditionalCustomersModal]);
+
   return (
     <div dir="rtl" className="min-h-screen relative">
       {/* Background */}
