@@ -506,14 +506,22 @@ export default function Home() {
   }, [status]);
 
   // פונקציה לניקוי שגיאות עבור נוסע מסוים
+  // לא מוחקת שגיאת כפילות של תעודת זהות - היא נשארת עד שהמשתמש משנה את תעודת הזהות
   const clearCustomerErrors = (customerIndex: number) => {
     setValidationErrors((prev) => {
       const updated = { ...prev };
       delete updated[customerIndex];
       return updated;
     });
+    // לא מוחקים שגיאת כפילות של תעודת זהות - היא נשארת עד שהמשתמש משנה את תעודת הזהות
     setIdValidationErrors((prev) => {
       const updated = { ...prev };
+      const currentError = updated[customerIndex];
+      // אם זו שגיאת כפילות, שומרים עליה - רק מוחקים שגיאות אחרות
+      if (currentError && currentError.includes("כבר קיימת")) {
+        return prev; // לא משנים כלום - שומרים על שגיאת הכפילות
+      }
+      // אחרת, מוחקים את השגיאה
       delete updated[customerIndex];
       return updated;
     });
@@ -534,46 +542,57 @@ export default function Home() {
     }
 
     // אם יש פחות מ-9 ספרות, אין שגיאה עדיין (המשתמש עדיין מקליד)
+    // אבל אם כבר יש שגיאת כפילות, שומרים עליה
     if (cleanId.length < 9) {
       setIdValidationErrors((prev) => {
         const updated = { ...prev };
+        const currentError = updated[customerIndex];
+        // אם זו שגיאת כפילות, שומרים עליה גם אם התעודת זהות לא מלאה
+        if (currentError && currentError.includes("כבר קיימת")) {
+          return prev; // לא משנים כלום - שומרים על השגיאה
+        }
+        // אחרת, מוחקים את השגיאה
         delete updated[customerIndex];
         return updated;
       });
       return;
     }
 
-    // אם יש בדיוק 9 ספרות, בודקים את תקינות התעודת זהות
+    // אם יש בדיוק 9 ספרות, בודקים את תקינות התעודת זהות וכפילות
     if (cleanId.length === 9) {
       // בדיקה אם תעודת הזהות כבר קיימת אצל נוסע אחר
-      const normalizedId = cleanId.padStart(9, "0");
-      const isDuplicate = customers.some((c, idx) => {
-        if (idx === customerIndex) return false; // מדלגים על הנוסע הנוכחי
-        const currentCustomerId = idx === 0 ? id : c.id;
-        const normalizedCurrentId = String(currentCustomerId || "").replace(/[^\d]/g, "").padStart(9, "0");
-        return normalizedCurrentId === normalizedId && normalizedCurrentId.length === 9;
-      });
+      // משתמשים ב-callback של setState כדי לקבל את הערכים המעודכנים
+      setCustomers((currentCustomers) => {
+        setId((currentId) => {
+          const normalizedId = cleanId.padStart(9, "0");
+          const isDuplicate = currentCustomers.some((c, idx) => {
+            if (idx === customerIndex) return false; // מדלגים על הנוסע הנוכחי
+            const currentCustomerId = idx === 0 ? currentId : c.id;
+            const normalizedCurrentId = String(currentCustomerId || "").replace(/[^\d]/g, "").padStart(9, "0");
+            return normalizedCurrentId === normalizedId && normalizedCurrentId.length === 9;
+          });
 
-      if (isDuplicate) {
-        setIdValidationErrors((prev) => ({
-          ...prev,
-          [customerIndex]: "תעודת זהות זו כבר קיימת אצל נוסע אחר",
-        }));
-        return;
-      }
-
-      if (!isValidIsraeliId(cleanId)) {
-        setIdValidationErrors((prev) => ({
-          ...prev,
-          [customerIndex]: "תעודת זהות לא תקינה - אנא בדוק את המספר שהזנת",
-        }));
-      } else {
-        setIdValidationErrors((prev) => {
-          const updated = { ...prev };
-          delete updated[customerIndex];
-          return updated;
+          setIdValidationErrors((prev) => {
+            const updated = { ...prev };
+            
+            if (isDuplicate) {
+              // אם יש כפילות, מגדירים את השגיאה
+              updated[customerIndex] = "תעודת זהות זו כבר קיימת אצל נוסע אחר";
+            } else if (!isValidIsraeliId(cleanId)) {
+              // אם התעודת זהות לא תקינה, מגדירים את השגיאה
+              updated[customerIndex] = "תעודת זהות לא תקינה - אנא בדוק את המספר שהזנת";
+            } else {
+              // אם התעודת זהות תקינה ולא כפולה, מוחקים את השגיאה
+              delete updated[customerIndex];
+            }
+            
+            return updated;
+          });
+          
+          return currentId;
         });
-      }
+        return currentCustomers;
+      });
     }
   };
 
@@ -717,14 +736,39 @@ export default function Home() {
         [customerIndex]: "תעודת זהות לא תקינה - אנא בדוק את המספר שהזנת",
       }));
       return;
-    } else {
-      // אם התעודת זהות תקינה, מנקים את שגיאת הוולידציה בזמן אמת
-      setIdValidationErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[customerIndex];
-        return updated;
-      });
     }
+    
+    // בודקים כפילות לפני שמנקים את השגיאה - רק אם אין כפילות, מנקים את השגיאה
+    const normalizedId = clean.padStart(9, "0");
+    const isDuplicate = customers.some((c, idx) => {
+      if (idx === customerIndex) return false; // מדלגים על הנוסע הנוכחי
+      const currentCustomerId = idx === 0 ? id : c.id;
+      const normalizedCurrentId = String(currentCustomerId || "").replace(/[^\d]/g, "").padStart(9, "0");
+      return normalizedCurrentId === normalizedId && normalizedCurrentId.length === 9;
+    });
+    
+    if (isDuplicate) {
+      // אם יש כפילות, שומרים על השגיאה (או מגדירים אותה אם לא קיימת)
+      setIdValidationErrors((prev) => ({
+        ...prev,
+        [customerIndex]: "תעודת זהות זו כבר קיימת אצל נוסע אחר",
+      }));
+      return;
+    }
+    
+    // רק אם התעודת זהות תקינה ולא כפולה, מנקים את שגיאת הוולידציה בזמן אמת
+    // אבל לא מוחקים אם זו שגיאת כפילות
+    setIdValidationErrors((prev) => {
+      const updated = { ...prev };
+      const currentError = updated[customerIndex];
+      // אם זו שגיאת כפילות, לא מוחקים אותה
+      if (currentError && currentError.includes("כבר קיימת")) {
+        return prev; // לא משנים כלום
+      }
+      // אחרת, מוחקים את השגיאה
+      delete updated[customerIndex];
+      return updated;
+    });
 
     const t = setTimeout(async () => {
       try {
@@ -1238,7 +1282,8 @@ export default function Home() {
                       data-field-type="id"
                       data-customer-index={index}
                       onChange={(e) => {
-                        clearCustomerErrors(index);
+                        // לא קוראים ל-clearCustomerErrors כאן - validateIdRealTime יטפל בזה
+                        // כדי לשמור על שגיאת כפילות אם היא קיימת
                         const cleanValue = e.target.value.replace(/[^\d]/g, "");
                         // מגביל ל-9 ספרות
                         const limitedValue = cleanValue.slice(0, 9);
@@ -1250,7 +1295,7 @@ export default function Home() {
                             updated[0] = { ...updated[0], id: limitedValue };
                             return updated;
                           });
-                          // בדיקת ולידציה בזמן אמת
+                          // בדיקת ולידציה בזמן אמת - זה יבדוק כפילות ויתקן שגיאות בהתאם
                           validateIdRealTime(limitedValue, index);
                         } else {
                           setCustomers((prev) => {
@@ -1258,7 +1303,7 @@ export default function Home() {
                             updated[index] = { ...updated[index], id: limitedValue };
                             return updated;
                           });
-                          // בדיקת ולידציה בזמן אמת
+                          // בדיקת ולידציה בזמן אמת - זה יבדוק כפילות ויתקן שגיאות בהתאם
                           validateIdRealTime(limitedValue, index);
                         }
                       }}
