@@ -542,6 +542,23 @@ export default function Home() {
 
     // אם יש בדיוק 9 ספרות, בודקים את תקינות התעודת זהות
     if (cleanId.length === 9) {
+      // בדיקה אם תעודת הזהות כבר קיימת אצל נוסע אחר
+      const normalizedId = cleanId.padStart(9, "0");
+      const isDuplicate = customers.some((c, idx) => {
+        if (idx === customerIndex) return false; // מדלגים על הנוסע הנוכחי
+        const currentCustomerId = idx === 0 ? id : c.id;
+        const normalizedCurrentId = String(currentCustomerId || "").replace(/[^\d]/g, "").padStart(9, "0");
+        return normalizedCurrentId === normalizedId && normalizedCurrentId.length === 9;
+      });
+
+      if (isDuplicate) {
+        setIdValidationErrors((prev) => ({
+          ...prev,
+          [customerIndex]: "תעודת זהות זו כבר קיימת אצל נוסע אחר",
+        }));
+        return;
+      }
+
       if (!isValidIsraeliId(cleanId)) {
         setIdValidationErrors((prev) => ({
           ...prev,
@@ -592,12 +609,30 @@ export default function Home() {
           [index]: "תעודת זהות לא תקינה - אנא בדוק את המספר שהזנת",
         }));
       } else {
-        // אם התעודת זהות תקינה, מנקים את שגיאת הוולידציה בזמן אמת
-        setIdValidationErrors((prev) => {
-          const updated = { ...prev };
-          delete updated[index];
-          return updated;
+        // בדיקה אם תעודת הזהות כבר קיימת אצל נוסע אחר
+        const normalizedId = cleanCustomerId.padStart(9, "0");
+        const isDuplicate = customers.some((c, idx) => {
+          if (idx === index) return false; // מדלגים על הנוסע הנוכחי
+          const otherCustomerId = idx === 0 ? id : c.id;
+          const normalizedOtherId = String(otherCustomerId || "").replace(/[^\d]/g, "").padStart(9, "0");
+          return normalizedOtherId === normalizedId && normalizedOtherId.length === 9;
         });
+
+        if (isDuplicate) {
+          customerErrors.push("תעודת זהות זו כבר קיימת אצל נוסע אחר");
+          isValid = false;
+          setIdValidationErrors((prev) => ({
+            ...prev,
+            [index]: "תעודת זהות זו כבר קיימת אצל נוסע אחר",
+          }));
+        } else {
+          // אם התעודת זהות תקינה ולא כפולה, מנקים את שגיאת הוולידציה בזמן אמת
+          setIdValidationErrors((prev) => {
+            const updated = { ...prev };
+            delete updated[index];
+            return updated;
+          });
+        }
       }
 
       // בדיקת תאריך לידה
