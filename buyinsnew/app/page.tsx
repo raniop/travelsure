@@ -775,6 +775,18 @@ export default function Home() {
           // בדיקה אם תעודת הזהות השתנתה
           const previousId = previousCustomerIds[customerIndex] || "";
           const idChanged = previousId !== clean;
+          
+          // בודקים את המצב הקודם של הנוסע - אם היו לו כבר פרטים, זה לא חיפוש ראשוני
+          const currentCustomerBeforeUpdate = customers[customerIndex];
+          const hadExistingData = currentCustomerBeforeUpdate && (
+            currentCustomerBeforeUpdate.firstNameHe || 
+            currentCustomerBeforeUpdate.lastNameHe || 
+            currentCustomerBeforeUpdate.firstNameEn || 
+            currentCustomerBeforeUpdate.lastNameEn || 
+            currentCustomerBeforeUpdate.birthDate || 
+            currentCustomerBeforeUpdate.email || 
+            currentCustomerBeforeUpdate.phone
+          );
 
           // ✅ ממלא אוטומטית את הלקוח (ראשון או נוסף) מיד - ללא המתנה!
           setCustomers((prev) => {
@@ -911,11 +923,12 @@ export default function Home() {
           // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים) - רק אם הפרטים התמלאו
           // נבדוק אם באמת יש פרטים שמילאנו מה-API (שם פרטי/משפחה) - רק אז נסגור את המקלדת
           const hasFilledDataFromApi = (split.first || split.last || customer.firstNameEn || customer.lastNameEn || customer.birthDate || customer.email || customer.phone);
-          // רק אם זה לא היה חיפוש ראשוני (previousId קיים ושונה מ-clean) והפרטים התמלאו מהחיפוש, נסגור את המקלדת
+          // רק אם זה לא היה חיפוש ראשוני (היו פרטים קיימים או previousId קיים ושונה) והפרטים התמלאו מהחיפוש, נסגור את המקלדת
           // כלומר - רק אם הפרטים התמלאו מהחיפוש ולא מהמשתמש עצמו, ואם זה לא חיפוש ראשוני
-          const isNotFirstSearch = previousId !== "" && previousId !== clean && previousId.length === 9; // אם previousId קיים, שונה מ-clean, וזה תעודת זהות מלאה, זה לא חיפוש ראשוני
+          // חיפוש ראשוני = אין previousId או previousId שווה ל-clean (אותו חיפוש שוב) או שלא היו פרטים קיימים
+          const isFirstSearch = !hadExistingData && (previousId === "" || previousId === clean || previousId.length !== 9);
           // רק אם הפרטים התמלאו מה-API וזה לא חיפוש ראשוני, נסגור את המקלדת
-          if (hasFilledDataFromApi && isNotFirstSearch) {
+          if (hasFilledDataFromApi && !isFirstSearch) {
             setTimeout(() => {
               // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות
               const activeElement = document.activeElement as HTMLElement;
