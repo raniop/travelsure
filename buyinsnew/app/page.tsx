@@ -911,16 +911,19 @@ export default function Home() {
           // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים) - רק אם הפרטים התמלאו
           // נבדוק אם באמת יש פרטים שמילאנו (שם פרטי/משפחה) - רק אז נסגור את המקלדת
           const hasFilledDataFromApi = (split.first || split.last || customer.firstNameEn || customer.lastNameEn || customer.birthDate || customer.email || customer.phone);
-          // רק אם זה לא היה חיפוש ראשוני (previousId קיים) והפרטים התמלאו מהחיפוש, נסגור את המקלדת
+          // רק אם זה לא היה חיפוש ראשוני (previousId קיים ולא שווה ל-clean) והפרטים התמלאו מהחיפוש, נסגור את המקלדת
           // כלומר - רק אם הפרטים התמלאו מהחיפוש ולא מהמשתמש עצמו, ואם זה לא חיפוש ראשוני
-          const isNotFirstSearch = previousId !== ""; // אם previousId קיים, זה לא חיפוש ראשוני
+          const isNotFirstSearch = previousId !== "" && previousId !== clean; // אם previousId קיים ושונה מ-clean, זה לא חיפוש ראשוני
+          // רק אם הפרטים התמלאו מה-API וזה לא חיפוש ראשוני, נסגור את המקלדת
           if (hasFilledDataFromApi && isNotFirstSearch) {
             setTimeout(() => {
               // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות
               const activeElement = document.activeElement as HTMLElement;
               if (activeElement && 
                   (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
-                  activeElement.getAttribute('maxlength') === '9') { // רק אם זה שדה תעודת זהות
+                  (activeElement as HTMLInputElement).maxLength === 9 && 
+                  (activeElement as HTMLInputElement).type !== 'email' &&
+                  (activeElement as HTMLInputElement).type !== 'tel') { // רק אם זה שדה תעודת זהות
                 activeElement.blur();
               }
               // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
