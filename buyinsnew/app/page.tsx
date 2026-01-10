@@ -440,6 +440,9 @@ export default function Home() {
   const [previousCustomerIds, setPreviousCustomerIds] = useState<Record<number, string>>({});
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
+  
+  // Ref לעקוב אחרי autofill אמיתי - האם שדות שהיו ריקים התמלאו אוטומטית
+  const didAutofillRef = useRef<Record<number, boolean>>({});
 
   // טעינת שם השת"פ מה-URL - מותאם לביצועים
   useEffect(() => {
@@ -822,22 +825,27 @@ export default function Home() {
           // בדיקה אם תעודת הזהות השתנתה
           const previousId = previousCustomerIds[customerIndex] || "";
           const idChanged = previousId !== clean;
-          
-          // בודקים את המצב הקודם של הנוסע - אם היו לו כבר פרטים, זה לא חיפוש ראשוני
-          const currentCustomerBeforeUpdate = customers[customerIndex];
-          const hadExistingData = currentCustomerBeforeUpdate && (
-            currentCustomerBeforeUpdate.firstNameHe || 
-            currentCustomerBeforeUpdate.lastNameHe || 
-            currentCustomerBeforeUpdate.firstNameEn || 
-            currentCustomerBeforeUpdate.lastNameEn || 
-            currentCustomerBeforeUpdate.birthDate || 
-            currentCustomerBeforeUpdate.email || 
-            currentCustomerBeforeUpdate.phone
-          );
+
+          // ✅ אתחול הדגל של autofill לפני עדכון ה-state
+          didAutofillRef.current[customerIndex] = false;
 
           // ✅ ממלא אוטומטית את הלקוח (ראשון או נוסף) מיד - ללא המתנה!
           setCustomers((prev) => {
             const updated = [...prev];
+            
+            // ✅ שמירת המצב הקודם (before) מתוך prev - זה הערך הנוכחי של ה-state
+            const before = prev[customerIndex] ?? {
+              id: "",
+              gender: "",
+              firstNameHe: "",
+              lastNameHe: "",
+              firstNameEn: "",
+              lastNameEn: "",
+              birthDate: "",
+              email: "",
+              phone: "",
+            };
+            
             if (customerIndex === 0) {
               // עבור הנוסע הראשון
               if (updated.length === 0) {
@@ -929,6 +937,35 @@ export default function Home() {
                 };
               }
             }
+            
+            // ✅ בדיקה אם בוצע autofill אמיתי - השוואה בין before ל-after
+            // before נשמר לפני setCustomers, after הוא הערך החדש ב-updated
+            const after = updated[customerIndex] ?? {
+              id: "",
+              gender: "",
+              firstNameHe: "",
+              lastNameHe: "",
+              firstNameEn: "",
+              lastNameEn: "",
+              birthDate: "",
+              email: "",
+              phone: "",
+            };
+            
+            // autofill נחשב רק אם שדה שהיה ריק קודם קיבל ערך עכשיו
+            const didAutofill =
+              (!before.firstNameHe && !!after.firstNameHe) ||
+              (!before.lastNameHe && !!after.lastNameHe) ||
+              (!before.firstNameEn && !!after.firstNameEn) ||
+              (!before.lastNameEn && !!after.lastNameEn) ||
+              (!before.birthDate && !!after.birthDate) ||
+              (!before.email && !!after.email) ||
+              (!before.phone && !!after.phone) ||
+              (!before.gender && !!after.gender);
+            
+            // עדכון ה-ref עם התוצאה - אם בוצע autofill, הדגל יהיה true
+            didAutofillRef.current[customerIndex] = didAutofill;
+            
             return updated;
           });
 
@@ -967,56 +1004,27 @@ export default function Home() {
             }
           }
 
-          // ✅ סגירת מקלדת במובייל - רק אם הפרטים התמלאו אוטומטית מהחיפוש
-          // בודקים שהפרטים מה-API אכן קיימים והם התמלאו אוטומטית
-          const hasFilledDataFromApi = (split.first || split.last || customer.firstNameEn || customer.lastNameEn || customer.birthDate || customer.email || customer.phone);
-          
-          // בודקים אם זה חיפוש ראשוני - אם זה חיפוש ראשוני, לא סוגרים את המקלדת
-          const isFirstSearch = !hadExistingData && (previousId === "" || previousId === clean || previousId.length !== 9);
-          
-          // רק אם הפרטים התמלאו מה-API וזה לא חיפוש ראשוני, נסגור את המקלדת
-          // הפרטים כבר התמלאו דרך setCustomers שהוגדר למעלה, אז נבדוק את זה אחרי שהדום מתעדכן
-          if (hasFilledDataFromApi && !isFirstSearch) {
-            // ממתינים שה-state וה-DOM יתעדכנו כדי שהפרטים יתמלאו בפועל בשדות
-            setTimeout(() => {
-              // מוצאים את הקונטיינר של הנוסע הזה דרך data-customer-index
-              const customerContainer = document.querySelector(`[data-customer-index="${customerIndex}"]`);
-              if (!customerContainer) return;
-              
-              // מוצאים את כל השדות בתוך הקונטיינר הזה (חוץ מתעודת זהות)
-              const allInputs = customerContainer.querySelectorAll<HTMLInputElement>('input');
-              
-              // בודקים אם לפחות אחד מהשדות (שם, תאריך לידה, אימייל, טלפון) התמלא
-              let hasAnyFilledField = false;
-              for (const input of Array.from(allInputs)) {
-                // מתעלמים משדה תעודת זהות
-                if (input.getAttribute('data-field-type') === 'id') continue;
-                // בודקים אם השדה לא ריק
-                if (input.value && input.value.trim().length > 0) {
-                  hasAnyFilledField = true;
-                  break;
-                }
+          // ✅ סגירת מקלדת במובייל - רק אם בוצע autofill אמיתי
+          // משתמשים ב-didAutofillRef שמתעד אם שדה שהיה ריק קיבל ערך אוטומטית
+          setTimeout(() => {
+            // בודקים אם בוצע autofill אמיתי לפי ה-ref
+            if (!didAutofillRef.current[customerIndex]) return;
+            
+            // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות של אותו נוסע
+            const activeElement = document.activeElement as HTMLElement;
+            if (
+              activeElement &&
+              (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
+              activeElement.getAttribute('data-field-type') === 'id' &&
+              activeElement.getAttribute('data-customer-index') === String(customerIndex)
+            ) {
+              activeElement.blur();
+              // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
+              if (window.visualViewport) {
+                window.scrollTo({ top: window.scrollY, behavior: 'instant' });
               }
-              
-              // רק אם יש שדות שהתמלאו בפועל, סוגרים את המקלדת
-              if (hasAnyFilledField) {
-                // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות של אותו נוסע
-                const activeElement = document.activeElement as HTMLElement;
-                if (
-                  activeElement &&
-                  (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') &&
-                  activeElement.getAttribute('data-field-type') === 'id' &&
-                  activeElement.getAttribute('data-customer-index') === String(customerIndex)
-                ) {
-                  activeElement.blur();
-                  // איפוס zoom במובייל - scroll קטן כדי לסגור את המקלדת
-                  if (window.visualViewport) {
-                    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-                  }
-                }
-              }
-            }, 600); // זמן ארוך יותר כדי לוודא שה-state וה-DOM התעדכנו והפרטים באמת התמלאו
-          }
+            }
+          }, 100); // זמן קצר כדי לתת ל-state להתעדכן
         } else {
           // אם לא נמצא במערכת, מנקים את הנתונים הקודמים אם תעודת הזהות השתנתה
           const previousId = previousCustomerIds[customerIndex] || "";
