@@ -910,8 +910,11 @@ export default function Home() {
 
           // ✅ סגירת מקלדת ואיפוס zoom במובייל (עבור כל הנוסעים) - רק אם הפרטים התמלאו
           // נבדוק אם באמת יש פרטים שמילאנו (שם פרטי/משפחה) - רק אז נסגור את המקלדת
-          const hasFilledData = (firstNameHe || lastNameHe || firstNameEn || lastNameEn || birthDate || email || phone);
-          if (hasFilledData) {
+          const hasFilledDataFromApi = (split.first || split.last || customer.firstNameEn || customer.lastNameEn || customer.birthDate || customer.email || customer.phone);
+          // רק אם זה לא היה חיפוש ראשוני (previousId קיים) והפרטים התמלאו מהחיפוש, נסגור את המקלדת
+          // כלומר - רק אם הפרטים התמלאו מהחיפוש ולא מהמשתמש עצמו, ואם זה לא חיפוש ראשוני
+          const isNotFirstSearch = previousId !== ""; // אם previousId קיים, זה לא חיפוש ראשוני
+          if (hasFilledDataFromApi && isNotFirstSearch) {
             setTimeout(() => {
               // סגירת המקלדת - blur על השדה הפעיל, אבל רק אם זה שדה תעודת זהות
               const activeElement = document.activeElement as HTMLElement;

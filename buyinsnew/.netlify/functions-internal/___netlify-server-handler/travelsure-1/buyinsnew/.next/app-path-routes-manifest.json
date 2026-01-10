@@ -1,8 +1,0 @@
-{
-  "/_global-error/page": "/_global-error",
-  "/_not-found/page": "/_not-found",
-  "/api/policy-get-by-id/route": "/api/policy-get-by-id",
-  "/api/shatap/route": "/api/shatap",
-  "/favicon.ico/route": "/favicon.ico",
-  "/page": "/"
-}
