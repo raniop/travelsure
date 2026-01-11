@@ -16,6 +16,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TravelInsurance from "./pages/TravelInsurance";
+import TravelPolicy from "./pages/TravelPolicy";
+import VerifyIdentity from "./pages/VerifyIdentity";
 import CarInsurance from "./pages/CarInsurance";
 import HomeInsurance from "./pages/HomeInsurance";
 import BusinessInsurance from "./pages/BusinessInsurance";
@@ -39,6 +41,8 @@ const App = () => (
             <Route path="/buyinsnew" element={<BuyInsNew />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/travel" element={<TravelInsurance />} />
+            <Route path="/travel-policy" element={<TravelPolicy />} />
+            <Route path="/verify-identity" element={<VerifyIdentity />} />
             <Route path="/services/car" element={<CarInsurance />} />
             <Route path="/services/home" element={<HomeInsurance />} />
             <Route path="/services/business" element={<BusinessInsurance />} />
