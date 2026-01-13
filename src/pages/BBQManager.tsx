@@ -58,7 +58,7 @@ const BBQManager = () => {
     }
   }, []);
 
-  // Update isAdmin when group changes
+  // Update isAdmin when group changes and find user name from members list
   useEffect(() => {
     if (user && group) {
       const isAdmin = group.owner_id === user.id;
@@ -68,12 +68,47 @@ const BBQManager = () => {
         isAdmin: isAdmin,
         match: group.owner_id === user.id
       });
-      if (user.isAdmin !== isAdmin) {
-        setUser({
-          ...user,
-          isAdmin
-        });
-      }
+      
+      // Find user name from members list by phone
+      const findUserNameFromMembers = async () => {
+        try {
+          const members = await apiClient.getMembers(group.id);
+          const userMember = members.find((m: any) => m.phone === user.phone);
+          
+          if (userMember && userMember.name && userMember.name !== user.name) {
+            console.log("Found user in members list:", userMember.name);
+            const updatedUser = {
+              ...user,
+              name: userMember.name,
+              isAdmin: isAdmin
+            };
+            setUser(updatedUser);
+            // Update localStorage
+            localStorage.setItem('bbq_current_user', JSON.stringify({
+              id: updatedUser.id,
+              name: updatedUser.name,
+              phone: updatedUser.phone
+            }));
+          } else if (user.isAdmin !== isAdmin) {
+            // Only update isAdmin if name didn't change
+            setUser({
+              ...user,
+              isAdmin
+            });
+          }
+        } catch (error) {
+          console.error("Error loading members:", error);
+          // If error, just update isAdmin
+          if (user.isAdmin !== isAdmin) {
+            setUser({
+              ...user,
+              isAdmin
+            });
+          }
+        }
+      };
+      
+      findUserNameFromMembers();
     }
   }, [group, user]);
 
