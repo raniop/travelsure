@@ -3,7 +3,7 @@ import { apiClient } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Calendar, DollarSign, History, Settings, Copy, Check, LogOut, User as UserIcon } from "lucide-react";
+import { Plus, Users, Calendar, DollarSign, History, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CreateEventDialog from "@/components/bbq/CreateEventDialog";
 import EventsList from "@/components/bbq/EventsList";
@@ -33,6 +33,8 @@ const BBQManager = () => {
   const [activeTab, setActiveTab] = useState("events");
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(true); // Start with login dialog open
+  const [userNotInGroup, setUserNotInGroup] = useState(false);
+  const [checkingGroups, setCheckingGroups] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -47,7 +49,7 @@ const BBQManager = () => {
           isAdmin: false
         });
         // Load group
-        loadGroup(userData.id);
+        loadGroup(userData.id, userData.phone);
       } catch {
         setLoading(false);
         setShowLogin(true);
@@ -112,28 +114,63 @@ const BBQManager = () => {
     }
   }, [group, user]);
 
-  const loadGroup = async (userId?: string) => {
+  // Check if user is in any group
+  const checkUserInGroups = async (userPhone: string): Promise<Group | null> => {
+    try {
+      const groups = await apiClient.getGroups();
+      
+      if (!groups || groups.length === 0) {
+        return null;
+      }
+      
+      // Check each group for the user
+      for (const group of groups) {
+        try {
+          const members = await apiClient.getMembers(group.id);
+          const userMember = members.find((m: any) => m.phone === userPhone);
+          
+          if (userMember) {
+            // User found in this group
+            return group;
+          }
+        } catch (error) {
+          console.error(`Error checking members in group ${group.id}:`, error);
+          // Continue to next group
+        }
+      }
+      
+      // User not found in any group
+      return null;
+    } catch (error) {
+      console.error("Error checking user in groups:", error);
+      return null;
+    }
+  };
+
+  const loadGroup = async (userId?: string, userPhone?: string) => {
     try {
       setLoading(true);
+      setUserNotInGroup(false);
       
-      // Try to load saved group ID from localStorage, or use default
-      const savedGroupId = localStorage.getItem('bbq_group_id') || 'default-group-001';
-      
-      // Get all groups
-      const groups = await apiClient.getGroups();
-
-      if (groups && groups.length > 0) {
-        // Try to find the saved/default group
-        let targetGroup = groups.find(g => g.id === savedGroupId);
+      // If user phone is provided, check if user is in any group
+      if (userPhone) {
+        const userGroup = await checkUserInGroups(userPhone);
         
-        // If not found, try default-group-001
-        if (!targetGroup) {
-          targetGroup = groups.find(g => g.id === 'default-group-001');
+        if (!userGroup) {
+          // User not in any group
+          setUserNotInGroup(true);
+          setGroup(null);
+          setLoading(false);
+          return;
         }
         
-        // If still not found, use the first group
-        if (!targetGroup) {
-          targetGroup = groups[0];
+        // User found in a group, load it
+        const savedGroupId = localStorage.getItem('bbq_group_id');
+        
+        // If user is in the saved group, use it; otherwise use the found group
+        let targetGroup = userGroup;
+        if (savedGroupId && savedGroupId === userGroup.id) {
+          targetGroup = userGroup;
         }
         
         // If user is provided and group doesn't have owner_id, update it
@@ -160,17 +197,44 @@ const BBQManager = () => {
           userId: userId
         });
         setGroup(targetGroup);
+        setUserNotInGroup(false);
+        return;
+      }
+      
+      // Fallback to old logic if no user phone provided
+      const savedGroupId = localStorage.getItem('bbq_group_id') || 'default-group-001';
+      const groups = await apiClient.getGroups();
+
+      if (groups && groups.length > 0) {
+        let targetGroup = groups.find(g => g.id === savedGroupId);
+        
+        if (!targetGroup) {
+          targetGroup = groups.find(g => g.id === 'default-group-001');
+        }
+        
+        if (!targetGroup) {
+          targetGroup = groups[0];
+        }
+        
+        if (userId && !targetGroup.owner_id) {
+          console.log("Group has no owner, updating to:", userId);
+          try {
+            const updatedGroup = await apiClient.updateGroup(targetGroup.id, {
+              ...targetGroup,
+              owner_id: userId
+            });
+            targetGroup = updatedGroup;
+          } catch (error) {
+            console.error("Failed to update group owner:", error);
+          }
+        }
+        
+        localStorage.setItem('bbq_group_id', targetGroup.id);
+        localStorage.setItem('bbq_current_group', JSON.stringify(targetGroup));
+        setGroup(targetGroup);
       } else {
-        // Create default group only if no groups exist
-        // If userId is provided, set as owner
-        const newGroup = await apiClient.createGroup({
-          name: "העל האש שלנו",
-          description: "חבורת העל האש השבועית",
-          owner_id: userId
-        });
-        localStorage.setItem('bbq_group_id', newGroup.id);
-        localStorage.setItem('bbq_current_group', JSON.stringify(newGroup));
-        setGroup(newGroup);
+        setUserNotInGroup(true);
+        setGroup(null);
       }
     } catch (error: any) {
       console.error("Error loading group:", error);
@@ -186,11 +250,68 @@ const BBQManager = () => {
     }
   };
 
+  const handleRefreshCheck = async () => {
+    if (!user) return;
+    
+    setCheckingGroups(true);
+    try {
+      await loadGroup(user.id, user.phone);
+    } catch (error) {
+      console.error("Error refreshing check:", error);
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לבדוק שוב. נסה שוב מאוחר יותר.",
+        variant: "destructive"
+      });
+    } finally {
+      setCheckingGroups(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const newGroup = await apiClient.createGroup({
+        name: "העל האש שלנו",
+        description: "חבורת העל האש השבועית",
+        owner_id: user.id
+      });
+      
+      // Add user as member to the new group
+      await apiClient.createMember({
+        group_id: newGroup.id,
+        name: user.name,
+        phone: user.phone
+      });
+      
+      localStorage.setItem('bbq_group_id', newGroup.id);
+      localStorage.setItem('bbq_current_group', JSON.stringify(newGroup));
+      setGroup(newGroup);
+      setUserNotInGroup(false);
+      
+      toast({
+        title: "הצלחה!",
+        description: "הקבוצה נוצרה בהצלחה"
+      });
+    } catch (error: any) {
+      console.error("Error creating group:", error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו ליצור קבוצה. נסה שוב מאוחר יותר.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = (userData: User) => {
     setUser(userData);
     setShowLogin(false);
     setLoading(true);
-    loadGroup(userData.id).then(() => {
+    loadGroup(userData.id, userData.phone).then(() => {
       // isAdmin will be updated by the useEffect when group loads
       setLoading(false);
     }).catch((error) => {
@@ -243,8 +364,53 @@ const BBQManager = () => {
     );
   }
 
-  // Show loading group message if user exists but no group yet
-  if (!group) {
+  // Show "user not in group" screen if user is not in any group
+  if (user && userNotInGroup && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">אינך נמצא בקבוצה</CardTitle>
+            <CardDescription className="text-base mt-2 text-center">
+              כרגע אינך רשום באף קבוצה. אתה יכול ליצור קבוצה חדשה או לחכות שמנהל קבוצה יוסיף אותך.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handleRefreshCheck}
+                disabled={checkingGroups}
+                variant="outline"
+                className="w-full"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${checkingGroups ? 'animate-spin' : ''}`} />
+                {checkingGroups ? "בודק..." : "רענון"}
+              </Button>
+              <Button
+                onClick={handleCreateGroup}
+                disabled={loading}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                צור קבוצה חדשה
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                className="w-full"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                התנתק
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading group message if user exists but no group yet (and not in "not in group" state)
+  if (!group && !userNotInGroup) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
         <Card className="w-full max-w-2xl">
