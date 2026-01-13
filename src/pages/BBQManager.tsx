@@ -62,6 +62,12 @@ const BBQManager = () => {
   useEffect(() => {
     if (user && group) {
       const isAdmin = group.owner_id === user.id;
+      console.log("Checking admin status:", {
+        groupOwnerId: group.owner_id,
+        userId: user.id,
+        isAdmin: isAdmin,
+        match: group.owner_id === user.id
+      });
       if (user.isAdmin !== isAdmin) {
         setUser({
           ...user,
@@ -95,9 +101,29 @@ const BBQManager = () => {
           targetGroup = groups[0];
         }
         
+        // If user is provided and group doesn't have owner_id, update it
+        if (userId && !targetGroup.owner_id) {
+          console.log("Group has no owner, updating to:", userId);
+          try {
+            const updatedGroup = await apiClient.updateGroup(targetGroup.id, {
+              ...targetGroup,
+              owner_id: userId
+            });
+            targetGroup = updatedGroup;
+          } catch (error) {
+            console.error("Failed to update group owner:", error);
+          }
+        }
+        
         // Save the group ID for next time
         localStorage.setItem('bbq_group_id', targetGroup.id);
         localStorage.setItem('bbq_current_group', JSON.stringify(targetGroup));
+        console.log("Loaded group:", {
+          id: targetGroup.id,
+          name: targetGroup.name,
+          owner_id: targetGroup.owner_id,
+          userId: userId
+        });
         setGroup(targetGroup);
       } else {
         // Create default group only if no groups exist

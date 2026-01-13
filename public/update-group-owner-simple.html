@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>עדכון מנהל קבוצה</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>עדכון מנהל קבוצה</h1>
+    <p>טלפון: <strong>0524444244</strong></p>
+    <p>User ID: <strong>user_0524444244</strong></p>
+    <button onclick="updateGroup()">עדכן קבוצה</button>
+    <div id="result"></div>
+
+    <script>
+        async function updateGroup() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'מעדכן...';
+            resultDiv.className = '';
+            
+            try {
+                const phone = "0524444244";
+                const cleanPhone = phone.replace(/[^\d]/g, "");
+                const userId = `user_${cleanPhone}`;
+                
+                console.log("Updating group owner to:", userId);
+                
+                // Get all groups
+                const groupsResponse = await fetch('/api-bbq.ashx?entity=groups');
+                if (!groupsResponse.ok) {
+                    throw new Error('Failed to fetch groups');
+                }
+                const groups = await groupsResponse.json();
+                
+                console.log("Found groups:", groups);
+                
+                // Find the default group
+                const targetGroup = groups.find(g => g.id === 'default-group-001') || groups[0];
+                
+                if (!targetGroup) {
+                    throw new Error("No group found!");
+                }
+                
+                console.log("Updating group:", targetGroup);
+                
+                // Update the group with new owner_id
+                const updatedGroup = {
+                    ...targetGroup,
+                    owner_id: userId,
+                    updated_at: new Date().toISOString()
+                };
+                
+                console.log("Updated group:", updatedGroup);
+                
+                // Update via API
+                const updateResponse = await fetch(`/api-bbq.ashx?entity=groups&id=${targetGroup.id}&action=update`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedGroup)
+                });
+                
+                if (!updateResponse.ok) {
+                    const errorText = await updateResponse.text();
+                    throw new Error(`Update failed: ${errorText}`);
+                }
+                
+                const result = await updateResponse.json();
+                console.log("Update result:", result);
+                
+                resultDiv.innerHTML = `
+                    <strong>✅ הצלחה!</strong><br>
+                    הקבוצה עודכנה בהצלחה.<br>
+                    Owner ID: ${result.owner_id || userId}<br>
+                    <br>
+                    <strong>עכשיו:</strong><br>
+                    1. רענן את הדף<br>
+                    2. התנתק והתחבר מחדש עם הטלפון 0524444244<br>
+                    3. תראה "מנהל" ליד השם שלך
+                `;
+                resultDiv.className = 'success';
+            } catch (error) {
+                console.error("Error:", error);
+                resultDiv.innerHTML = `<strong>❌ שגיאה:</strong><br>${error.message}`;
+                resultDiv.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>
