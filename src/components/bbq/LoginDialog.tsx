@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Lock } from "lucide-react";
+import { Phone, Lock, User } from "lucide-react";
 
 interface LoginDialogProps {
   open: boolean;
@@ -22,6 +22,7 @@ interface LoginDialogProps {
 const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogProps) => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -40,6 +41,16 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       toast({
         title: "שגיאה",
         description: "אנא הזן סיסמה",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate full name only when registering
+    if (isRegistering && !fullName.trim()) {
+      toast({
+        title: "שגיאה",
+        description: "אנא הזן שם מלא",
         variant: "destructive"
       });
       return;
@@ -72,7 +83,7 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
         
         const newUser = {
           id: userId,
-          name: cleanPhone, // Use phone as name for now (can be updated later)
+          name: fullName.trim(), // Use full name from registration
           phone: cleanPhone,
           password: password, // Store password (not encrypted, but OK for this use case)
           created_at: new Date().toISOString()
@@ -116,7 +127,7 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       // Save current user
       const currentUser = existingUser || {
         id: userId,
-        name: cleanPhone,
+        name: fullName.trim() || cleanPhone, // Use full name if provided, otherwise phone
         phone: cleanPhone,
         password: password,
         created_at: new Date().toISOString()
@@ -138,6 +149,7 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       onOpenChange(false);
       setPhone("");
       setPassword("");
+      setFullName("");
       setIsRegistering(false);
     } catch (error: any) {
       toast({
@@ -164,6 +176,27 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          {isRegistering && (
+            <div className="space-y-2">
+              <Label htmlFor="fullName">שם מלא</Label>
+              <div className="relative">
+                <User className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="הזן שם מלא"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="pr-10"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && phone && password) {
+                      handleSubmit();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="phone">מספר טלפון</Label>
             <div className="relative">
@@ -176,7 +209,7 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
                 onChange={(e) => setPhone(e.target.value)}
                 className="pr-10"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && password) {
+                  if (e.key === 'Enter' && password && (!isRegistering || fullName)) {
                     handleSubmit();
                   }
                 }}
