@@ -21,10 +21,18 @@ function cn(...x: Array<string | false | undefined | null>) {
   return x.filter(Boolean).join(" ");
 }
 
+function fmtDateToInput(d?: string | null) {
+  if (!d) return "";
+  const s = String(d);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  return "";
+}
+
 function isoToDDMMYYYY(iso: string) {
   if (!iso) return "";
+  // תופס yyyy-mm-dd
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return iso;
+  if (!m) return iso; // אם זה כבר טקסט חופשי, נשאיר
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
@@ -69,35 +77,42 @@ function calculateAge(birthDate: string): number | null {
 }
 
 function sortCustomersByBirthDate<T extends { birthDate: string; lastNameHe?: string; lastNameEn?: string }>(customers: T[]): T[] {
+  // ממיין קודם לפי שם משפחה, ואז לפי תאריך לידה - מהקטן לגדול (כלומר מהגדול לקטן בגיל)
+  // הנוסע הראשון (index 0) נשאר במקומו
   if (customers.length <= 1) return customers;
-
+  
   const [first, ...rest] = customers;
-
+  
+  // ממיין את השאר קודם לפי שם משפחה, ואז לפי תאריך לידה
   const sorted = [...rest].sort((a, b) => {
+    // קודם מיון לפי שם משפחה
     const lastNameA = (a.lastNameHe || a.lastNameEn || "").trim();
     const lastNameB = (b.lastNameHe || b.lastNameEn || "").trim();
-
+    
     if (lastNameA && lastNameB) {
       const lastNameCompare = lastNameA.localeCompare(lastNameB, "he");
       if (lastNameCompare !== 0) {
         return lastNameCompare;
       }
     } else if (lastNameA && !lastNameB) {
-      return -1;
+      return -1; // A קודם
     } else if (!lastNameA && lastNameB) {
-      return 1;
+      return 1; // B קודם
     }
-
+    
+    // אם שם המשפחה זהה או אין שם משפחה, ממיינים לפי תאריך לידה
     const dateA = a.birthDate || "";
     const dateB = b.birthDate || "";
-
+    
+    // אם אין תאריך לידה, מניחים אותו בסוף
     if (!dateA && !dateB) return 0;
     if (!dateA) return 1;
     if (!dateB) return -1;
-
+    
+    // תאריך קטן יותר = גיל גדול יותר, אז ממיינים מהקטן לגדול
     return dateA.localeCompare(dateB);
   });
-
+  
   return [first, ...sorted];
 }
 
@@ -182,6 +197,10 @@ function FloatingInput({
         style={{
           textAlign: effectiveAlign,
           direction: effectiveDir,
+          color: hasValue ? "#0b4e86" : "#0f172a",
+          fontWeight: "700",
+          fontSize: "0.875rem", // 14px
+          fontFamily: "Arial, Helvetica, sans-serif",
           ...style,
         }}
         onFocus={(e) => {
@@ -193,7 +212,7 @@ function FloatingInput({
           onBlur?.(e);
         }}
         className={cn(
-          "w-full h-11 bg-transparent px-0 pt-6 pb-0.5 text-slate-900",
+          "w-full h-11 bg-transparent px-0 pt-6 pb-0.5",
           "border-b border-slate-300",
           "focus:outline-none focus:border-b-2 focus:border-sky-500",
           "transition-all duration-200",
@@ -216,16 +235,22 @@ function FloatingInput({
               ? {
                   bottom: "0",
                   transform: "translateY(calc(-100% - 0.375rem))",
-                  fontSize: "0.75rem",
+                  fontSize: "0.8125rem",
                   color: "#64748b",
                   lineHeight: "1rem",
+                  fontWeight: "600",
+                  letterSpacing: "0.01em",
+                  fontFamily: "Arial, Helvetica, sans-serif",
                 }
               : {
                   bottom: "0px",
-                  fontSize: "0.875rem",
-                  color: "#94a3b8",
+                  fontSize: "0.9375rem",
+                  color: "#64748b",
                   lineHeight: "1.25rem",
                   transform: "translateY(0)",
+                  fontWeight: "600",
+                  letterSpacing: "0.01em",
+                  fontFamily: "Arial, Helvetica, sans-serif",
                 }
           }
         >
@@ -253,7 +278,7 @@ function GenderToggle({
           "group aspect-square rounded-lg bg-white p-3 sm:p-4 text-center transition-all",
           "border shadow-sm hover:shadow-md flex-shrink-0 box-border",
           selected
-            ? "border-sky-400 ring-2 ring-sky-200"
+            ? "border-[#0b4e86] ring-2 ring-[#0b4e86]/20"
             : "border-slate-200 hover:border-slate-300"
         )}
         style={{ width: "105px", height: "105px", aspectRatio: "1 / 1", boxSizing: "border-box" }}
@@ -263,8 +288,8 @@ function GenderToggle({
             className={cn(
               "aspect-square h-10 w-10 sm:h-12 sm:w-12 rounded-full grid place-items-center border-2 transition-all flex-shrink-0",
               selected
-                ? "border-sky-400 bg-sky-50"
-                : "border-sky-300 bg-sky-50"
+                ? "border-[#0b4e86] bg-[#0b4e86]/10"
+                : "border-[#0b4e86]/30 bg-[#0b4e86]/5"
             )}
             aria-hidden="true"
             style={{ aspectRatio: "1 / 1" }}
@@ -277,7 +302,7 @@ function GenderToggle({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className="text-sky-600"
+                className="text-[#0b4e86]"
               >
                 <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4Z" />
                 <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" strokeLinecap="round" />
@@ -292,7 +317,7 @@ function GenderToggle({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className="text-sky-600"
+                className="text-[#0b4e86]"
               >
                 <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4Z" />
                 <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" strokeLinecap="round" />
@@ -377,8 +402,45 @@ export default function BuyInsNew() {
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
 
   const didAutofillRef = useRef<Record<number, boolean>>({});
+  const [cameFromVerifyIdentity, setCameFromVerifyIdentity] = useState(false);
 
-  // טעינת שם השת"פ מה-URL
+  // טעינת נתונים מ-sessionStorage אם הגיע מ-verify-identity
+  useEffect(() => {
+    try {
+      const storedData = sessionStorage.getItem("buyinsnew_customer_data");
+      if (storedData) {
+        const customerData = JSON.parse(storedData);
+        
+        if (customerData.cameFromVerifyIdentity) {
+          // מילוי הנתונים ישירות
+          if (customerData.primaryCustomer) {
+            const primary = customerData.primaryCustomer;
+            setId(primary.id);
+            setCustomers([primary]);
+            setPreviousCustomerIds({ 0: primary.id });
+          }
+
+          // הגדרת לקוחות נוספים
+          if (customerData.additionalCustomers && customerData.additionalCustomers.length > 0) {
+            setAdditionalCustomers(customerData.additionalCustomers);
+            setSelectedAdditionalCustomers(new Set());
+            
+            // פתיחת ה-modal ישר
+            setShowAdditionalCustomersModal(true);
+          }
+
+          // ניקוי sessionStorage
+          sessionStorage.removeItem("buyinsnew_customer_data");
+          setCameFromVerifyIdentity(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading customer data from sessionStorage:", error);
+      sessionStorage.removeItem("buyinsnew_customer_data");
+    }
+  }, []);
+
+  // טעינת שם השת"פ מה-URL - מותאם לביצועים
   useEffect(() => {
     const loadShatapName = async () => {
       const params = new URLSearchParams(window.location.search);
@@ -389,30 +451,130 @@ export default function BuyInsNew() {
         return;
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      // פונקציה לפרסור XML ולמצוא שם לפי ID
+      const findShatapInXml = async (xmlUrl: string, id: string): Promise<string | null> => {
+        try {
+          const response = await fetch(xmlUrl, {
+            headers: {
+              Accept: "application/xml, text/xml, */*",
+            },
+          });
 
+          if (!response.ok) {
+            return null;
+          }
+
+          const xmlText = await response.text();
+          
+          // פונקציה לפרסור HTML entities
+          const decodeHtmlEntities = (text: string): string => {
+            return text
+              .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+              .replace(/&amp;/g, "&")
+              .replace(/&lt;/g, "<")
+              .replace(/&gt;/g, ">")
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'");
+          };
+
+          // חיפוש ב-XML
+          const itemRegex = /<ShatapItem>\s*<Id>(.*?)<\/Id>\s*<Name>(.*?)<\/Name>\s*<\/ShatapItem>/gs;
+          let match;
+
+          while ((match = itemRegex.exec(xmlText)) !== null) {
+            const itemId = match[1]?.trim() || "";
+            const itemName = match[2]?.trim() || "";
+
+            if (itemId === id && itemName) {
+              return decodeHtmlEntities(itemName);
+            }
+          }
+
+          return null;
+        } catch (error) {
+          console.error("Error fetching XML:", error);
+          return null;
+        }
+      };
+
+      // ניסיון 1: קריאה ישירה מה-XML (הכי פשוט)
+      const xmlUrl = "https://www.ophirbit.co.il/aff/XmlShatapim.asp";
+      
       try {
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/shatap?id=${encodeURIComponent(shatapId)}`;
-        const res = await fetch(apiUrl, {
+        const xmlResponse = await fetch(xmlUrl, {
+          method: 'GET',
           cache: "no-store",
-          signal: controller.signal,
+          headers: {
+            'Accept': 'application/xml, text/xml, */*',
+          },
         });
 
-        clearTimeout(timeoutId);
+        if (xmlResponse.ok) {
+          const xmlText = await xmlResponse.text();
+          
+          // פונקציה לפרסור HTML entities
+          const decodeHtmlEntities = (text: string): string => {
+            return text
+              .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+              .replace(/&amp;/g, "&")
+              .replace(/&lt;/g, "<")
+              .replace(/&gt;/g, ">")
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'");
+          };
+
+          // חיפוש ב-XML
+          const itemRegex = /<ShatapItem>\s*<Id>(.*?)<\/Id>\s*<Name>(.*?)<\/Name>\s*<\/ShatapItem>/gs;
+          let match;
+
+          while ((match = itemRegex.exec(xmlText)) !== null) {
+            const itemId = match[1]?.trim() || "";
+            const itemName = match[2]?.trim() || "";
+
+            if (itemId === shatapId && itemName) {
+              const decodedName = decodeHtmlEntities(itemName);
+              console.log("Shatap name loaded directly from XML:", decodedName);
+              setShatapName(decodedName);
+              return;
+            }
+          }
+        }
+      } catch (error: any) {
+        console.log("Direct XML fetch failed (CORS?), trying proxy...", error.message);
+      }
+
+      // אם קריאה ישירה נכשלה (CORS), ננסה דרך proxy מקומי על IIS
+      // ניסיון 2: ASHX handler (פתרון מקומי - רק על השרת שלך)
+      try {
+        const ashxUrl = `/api-shatap.ashx?id=${encodeURIComponent(shatapId)}`;
+        const res = await fetch(ashxUrl, {
+          method: 'GET',
+          cache: "no-store",
+        });
 
         if (res.ok) {
           const data = await res.json();
-          if (data.name) {
+          if (data && data.name) {
+            console.log("Shatap name loaded from ASHX:", data.name);
             setShatapName(data.name);
             return;
           }
+        } else {
+          console.log("ASHX returned:", res.status, res.statusText);
+          // ננסה לקרוא את ה-error message
+          try {
+            const errorData = await res.json();
+            console.log("ASHX error details:", errorData);
+          } catch (e) {
+            // לא JSON
+          }
         }
-      } catch (error: unknown) {
-        clearTimeout(timeoutId);
+      } catch (error: any) {
+        console.log("ASHX failed:", error.message);
       }
-
-      setShatapName("");
+      
+      // אם נכשל, נציג את ה-ID במקום השם (פתרון זמני)
+      setShatapName(`שת"פ ${shatapId}`);
     };
 
     loadShatapName();
@@ -666,7 +828,17 @@ export default function BuyInsNew() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-get-by-id?id=${encodeURIComponent(clean)}`;
+        // קביעת ה-URL הנכון בהתאם לסביבה
+        const isLocalhost = typeof window !== 'undefined' && 
+                           (window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1' ||
+                            window.location.hostname.includes('lovable') ||
+                            window.location.hostname.includes('lovable.dev'));
+        
+        const apiUrl = isLocalhost 
+          ? `/api/policy-get-by-id?id=${encodeURIComponent(clean)}`
+          : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-get-by-id?id=${encodeURIComponent(clean)}`;
+
         const res = await fetch(apiUrl, {
           cache: "no-store",
           signal: controller.signal,
@@ -807,6 +979,19 @@ export default function BuyInsNew() {
 
           setAdditionalCustomers(additional);
           setSelectedAdditionalCustomers(new Set());
+          
+          // Remove customerId from URL after search completes
+          if (customerIndex === 0 && cameFromVerifyIdentity) {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has("customerId")) {
+              params.delete("customerId");
+              const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+              window.history.replaceState({}, '', newUrl);
+              setCameFromVerifyIdentity(false);
+            }
+          }
+          
+          // Open modal automatically if there are additional customers (for first customer only)
           if (additional.length > 0 && customerIndex === 0) {
             setShowAdditionalCustomersModal(true);
           }
@@ -817,7 +1002,21 @@ export default function BuyInsNew() {
         } else {
           if (customerIndex === 0) {
             setStatus({ type: "notfound", text: "לא נמצא — מלא ידנית" });
+            
+            // If customer came from verify-identity but not found in system, don't show modal
+            // (they need to fill manually)
             setAdditionalCustomers([]);
+            
+            // Remove customerId from URL
+            if (cameFromVerifyIdentity) {
+              const params = new URLSearchParams(window.location.search);
+              if (params.has("customerId")) {
+                params.delete("customerId");
+                const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+                window.history.replaceState({}, '', newUrl);
+                setCameFromVerifyIdentity(false);
+              }
+            }
           }
         }
       } catch (error: unknown) {
@@ -833,8 +1032,13 @@ export default function BuyInsNew() {
   };
 
   useEffect(() => {
+    // אם הגענו מ-verify-identity, החיפוש כבר בוצע בשקט ברקע
+    // לא להפעיל את החיפוש הרגיל
+    if (cameFromVerifyIdentity) {
+      return;
+    }
     searchCustomerInSystem(id, 0);
-  }, [id]);
+  }, [id, cameFromVerifyIdentity]);
 
   useEffect(() => {
     const searchPromises: Array<() => void> = [];
@@ -871,7 +1075,11 @@ export default function BuyInsNew() {
   }, [showAdditionalCustomersModal]);
 
   return (
-    <div dir="rtl" className="min-h-screen relative">
+    <div
+      dir="rtl"
+      className="min-h-screen relative"
+      style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
+    >
       {/* Background */}
       <div className="fixed inset-0 -z-10 min-h-full">
         <img
@@ -901,7 +1109,7 @@ export default function BuyInsNew() {
 
       <main className="mx-auto max-w-xl px-3 sm:px-4 py-2 sm:py-3">
         <div className="text-center mb-2 sm:mb-3">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0b4e86]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             רכישת ביטוח נסיעות לחו״ל
           </h1>
           <p className="mt-2 text-sm font-medium text-slate-600">
@@ -920,18 +1128,46 @@ export default function BuyInsNew() {
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {additionalCustomers.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAdditionalCustomersModal(true)}
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  הוסף מבוטחים נוספים ({additionalCustomers.length})
-                </button>
-              )}
+              {(() => {
+                // Filter out customers that are already added to show only available ones
+                const availableAdditional = additionalCustomers.filter((addCust) => {
+                  const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
+                  return !customers.some((c) => {
+                    const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                    return normalizedCustomerId === normalizedAddCustId;
+                  });
+                });
+                
+                return availableAdditional.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Clear selected customers that are already added
+                      setSelectedAdditionalCustomers((prev) => {
+                        const filtered = new Set<string>();
+                        prev.forEach((id) => {
+                          const normalizedId = String(id || "").padStart(9, "0");
+                          const isAlreadyAdded = customers.some((c) => {
+                            const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                            return normalizedCustomerId === normalizedId;
+                          });
+                          if (!isAlreadyAdded) {
+                            filtered.add(id);
+                          }
+                        });
+                        return filtered;
+                      });
+                      setShowAdditionalCustomersModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-sky-100 text-sky-700 hover:bg-sky-200 transition whitespace-nowrap"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    הוסף מבוטחים נוספים ({availableAdditional.length})
+                  </button>
+                );
+              })()}
               {loading[0] ? (
                 <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 whitespace-nowrap">
                   <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
@@ -959,7 +1195,7 @@ export default function BuyInsNew() {
                 <div className="p-3 sm:p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <div className="text-base sm:text-lg font-bold text-slate-900" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                      <div className="text-base sm:text-lg font-bold text-[#0b4e86]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                         {index === 0 ? "פרטי הנוסע הראשון" : `פרטי הנוסע ${index === 1 ? "השני" : index === 2 ? "השלישי" : `מספר ${index + 1}`}`}
                       </div>
                       {index === 0 && (
@@ -1030,10 +1266,10 @@ export default function BuyInsNew() {
                   </div>
 
                   {/* תעודת זהות ותאריך לידה */}
-                  <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2" dir="rtl">
                     <div className="relative">
                       {loading[index] && (
-                        <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10">
+                        <div className="absolute left-1 bottom-1 z-10">
                           <svg className="animate-spin h-5 w-5 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1134,7 +1370,7 @@ export default function BuyInsNew() {
                   </div>
 
                   {/* שמות באנגלית */}
-                  <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2" dir="rtl">
                     <div>
                       <FloatingInput
                         label={<>שם פרטי באנגלית <span className="text-rose-500">*</span></>}
@@ -1169,87 +1405,85 @@ export default function BuyInsNew() {
                     </div>
                   </div>
 
+                  {/* פרטי קשר */}
+                <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2" dir="rtl">
+                    {(() => {
+                      const age = calculateAge(customer.birthDate);
+                      // required רק אם הגיל >= 18, או אם אין תאריך לידה (נניח שהוא מבוגר)
+                      // אופציונלי רק אם הגיל < 18
+                      const isRequired = age === null || age >= 18;
+                      
+                      return (
+                        <>
+                          <div>
+                            <FloatingInput
+                              label={<>דואר אלקטרוני{isRequired && <span className="text-rose-500"> *</span>}{!isRequired && " (אופציונלי)"}</>}
+                              dir="rtl"
+                              type="email"
+                              value={customer.email}
+                              onChange={(e) => {
+                                clearCustomerErrors(index);
+                                // מאפשר רק תווים מותרים במייל: אותיות, מספרים, @, ., _, -, +
+                                const emailOnly = e.target.value.replace(/[^a-zA-Z0-9@._+-]/g, '');
+                                setCustomers((prev) => {
+                                  const updated = [...prev];
+                                  updated[index] = { ...updated[index], email: emailOnly };
+                                  return updated;
+                                });
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <FloatingInput
+                              label={<>טלפון נייד{isRequired && <span className="text-rose-500"> *</span>}{!isRequired && " (אופציונלי)"}</>}
+                              dir="rtl"
+                              value={customer.phone}
+                              onChange={(e) => {
+                                clearCustomerErrors(index);
+                                setCustomers((prev) => {
+                                  const updated = [...prev];
+                                  updated[index] = { ...updated[index], phone: e.target.value };
+                                  return updated;
+                                });
+                              }}
+                              inputMode="tel"
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
                   {/* שמות בעברית */}
-                  <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
+                  <div className="mb-5 sm:mb-3 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2" dir="rtl">
                     <div>
                       <FloatingInput
                         label="שם פרטי בעברית"
                         dir="rtl"
                         value={customer.firstNameHe}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setCustomers((prev) => {
                             const updated = [...prev];
                             updated[index] = { ...updated[index], firstNameHe: e.target.value };
                             return updated;
-                          });
-                        }}
+                          })
+                        }
                       />
                     </div>
+
                     <div>
                       <FloatingInput
                         label="שם משפחה בעברית"
                         dir="rtl"
                         value={customer.lastNameHe}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setCustomers((prev) => {
                             const updated = [...prev];
                             updated[index] = { ...updated[index], lastNameHe: e.target.value };
                             return updated;
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* אימייל וטלפון */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
-                    <div>
-                      <FloatingInput
-                        label={
-                          <>
-                            דואר אלקטרוני
-                            {(calculateAge(customer.birthDate) === null || calculateAge(customer.birthDate)! >= 18) && (
-                              <span className="text-rose-500"> *</span>
-                            )}
-                          </>
+                          })
                         }
-                        dir="ltr"
-                        align="right"
-                        type="email"
-                        value={customer.email}
-                        onChange={(e) => {
-                          clearCustomerErrors(index);
-                          setCustomers((prev) => {
-                            const updated = [...prev];
-                            updated[index] = { ...updated[index], email: e.target.value };
-                            return updated;
-                          });
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <FloatingInput
-                        label={
-                          <>
-                            טלפון נייד
-                            {(calculateAge(customer.birthDate) === null || calculateAge(customer.birthDate)! >= 18) && (
-                              <span className="text-rose-500"> *</span>
-                            )}
-                          </>
-                        }
-                        dir="ltr"
-                        align="right"
-                        inputMode="tel"
-                        value={customer.phone}
-                        onChange={(e) => {
-                          clearCustomerErrors(index);
-                          const digitsOnly = e.target.value.replace(/[^\d-]/g, '');
-                          setCustomers((prev) => {
-                            const updated = [...prev];
-                            updated[index] = { ...updated[index], phone: digitsOnly };
-                            return updated;
-                          });
-                        }}
                       />
                     </div>
                   </div>
@@ -1258,45 +1492,136 @@ export default function BuyInsNew() {
             ))}
           </div>
 
-          {/* הוספת נוסע */}
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (customers.length < 10) {
-                  setCustomers((prev) => sortCustomersByBirthDate([...prev, {
-                    id: "",
-                    gender: "",
-                    firstNameHe: "",
-                    lastNameHe: "",
-                    firstNameEn: "",
-                    lastNameEn: "",
-                    birthDate: "",
-                    email: "",
-                    phone: "",
-                  }]));
-                }
-              }}
-              disabled={customers.length >= 10}
-              className={cn(
-                "h-10 w-10 rounded-full flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0",
-                customers.length >= 10
-                  ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                  : "bg-[#0b4e86] text-white hover:bg-[#083d6b]"
-              )}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-            <span className="text-sm font-medium text-slate-700">הוספת נוסע נוסף</span>
-          </div>
-
-          {/* כפתור המשך */}
-          <div className="mt-6 rounded-xl border border-white/60 bg-white/90 backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] p-4">
-            <div className="text-center mb-4 text-sm font-medium text-[#0b4e86]">
-              אפשר לרכוש את הביטוח הזה אך ורק כאשר המבוטח נמצא בישראל.
+          {/* Bottom Section */}
+          <div className="mt-2 sm:mt-3 mx-auto max-w-sm sm:max-w-lg">
+            {/* כפתור הוספת נוסע - מחוץ לקוביה */}
+            <div className="flex items-center gap-3 mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomers((prev) => {
+                    const MAX_CUSTOMERS = 10;
+                    if (prev.length >= MAX_CUSTOMERS) return prev;
+                    
+                    const updated: CustomerForm[] = [
+                      ...prev,
+                      {
+                        id: "",
+                        gender: "" as "M" | "F" | "",
+                        firstNameHe: "",
+                        lastNameHe: "",
+                        firstNameEn: "",
+                        lastNameEn: "",
+                        birthDate: "",
+                        email: "",
+                        phone: "",
+                      },
+                    ];
+                    
+                    // ממיין לפי תאריך לידה
+                    return sortCustomersByBirthDate(updated);
+                  });
+                  
+                  // אחרי שה-state מתעדכן, עושים focus על שדה תעודת הזהות של הנוסע החדש
+                  // משתמשים ב-setTimeout כדי לתת ל-DOM להתעדכן
+                  setTimeout(() => {
+                    // מוצאים את כל שדות תעודת הזהות של נוסעים שאינם ראשונים
+                    const idInputs = Array.from(
+                      document.querySelectorAll<HTMLInputElement>(
+                        'input[data-field-type="id"][data-customer-index]'
+                      )
+                    ).filter(input => {
+                      const customerIndex = parseInt(input.getAttribute('data-customer-index') || '0', 10);
+                      const value = input.value.trim();
+                      // רק נוסעים שאינם ראשונים ושדה תעודת הזהות שלהם ריק
+                      return customerIndex > 0 && value === '';
+                    });
+                    
+                    // מוצאים את השדה עם האינדקס הגבוה ביותר (הנוסע החדש שהוסף)
+                    let targetInput: HTMLInputElement | null = null;
+                    let maxIndex = -1;
+                    
+                    for (const input of idInputs) {
+                      const customerIndex = parseInt(input.getAttribute('data-customer-index') || '0', 10);
+                      if (customerIndex > maxIndex) {
+                        maxIndex = customerIndex;
+                        targetInput = input;
+                      }
+                    }
+                    
+                    // אם לא מצאנו לפי האינדקס, ניקח את השדה הריק הראשון
+                    if (!targetInput && idInputs.length > 0) {
+                      targetInput = idInputs[0];
+                    }
+                    
+                    // עושים focus על השדה
+                    if (targetInput) {
+                      // גלילה לשדה במובייל - block: 'center' כדי שהשדה יהיה במרכז המסך
+                      targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // focus על השדה אחרי שהגלילה מסתיימת
+                      setTimeout(() => {
+                        targetInput?.focus();
+                      }, 200); // קצת delay כדי שהגלילה תסתיים
+                    }
+                  }, 150); // קצת delay כדי שה-state וה-DOM יתעדכנו (אחרי המיון)
+                }}
+                className="h-10 w-10 rounded-full text-white flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0 bg-[#0b4e86] hover:bg-[#0a3d6b]"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+              <span className="text-sm font-medium text-slate-900">להוספת נוסע/ת</span>
             </div>
+
+            <div className="rounded-xl border border-white/60 bg-white/90 backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] p-3 sm:p-4">
+            {/* הודעה על רכישה בישראל */}
+            <div className="mb-4 text-center">
+              <p className="text-xs font-bold text-[#0b4e86] leading-relaxed mb-1.5">
+                עצור גבול לפניך :)
+              </p>
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-[#0b4e86] leading-relaxed">
+                  תנאי לרכישת הפוליסה היא הימצאות המבוטח בארץ.
+                </p>
+                <p className="text-xs font-medium text-[#0b4e86] leading-relaxed">
+                  רכישת הפוליסה באתר מהווה הצהרה כי כל המועמדים לביטוח מצויים בארץ בעת הרכישה.
+                </p>
+              </div>
+              <p className="text-[10px] font-medium text-[#0b4e86] leading-relaxed mt-1.5">
+                שדות החובה מסומנים בכוכבית.
+              </p>
+            </div>
+
+            {/* כפתורי ניווט */}
+            <div className="flex flex-col items-center gap-3">
+              {/* הצגת שגיאות ולידציה */}
+              {Object.keys(validationErrors).length > 0 && (
+                <div className="w-full rounded-lg bg-rose-50 border border-rose-200 p-3">
+                  <div className="flex items-start gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-rose-600 flex-shrink-0 mt-0.5">
+                      <path d="M12 9v4M12 17h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <div className="flex-1">
+                      <div className="text-sm font-bold text-rose-900 mb-2">נא למלא את כל השדות החובה:</div>
+                      <div className="space-y-1">
+                        {Object.entries(validationErrors).map(([index, errors]) => (
+                          <div key={index} className="text-xs text-rose-800">
+                            <span className="font-semibold">
+                              {Number(index) === 0 ? "נוסע ראשון" : `נוסע ${Number(index) + 1}`}:
+                            </span>
+                            <ul className="list-disc list-inside mr-2 mt-1">
+                              {errors.map((error, i) => (
+                                <li key={i}>{error}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             <button
               type="button"
               onClick={() => {
@@ -1311,13 +1636,15 @@ export default function BuyInsNew() {
                   }
                 }
               }}
-              className="w-full rounded-xl px-5 py-3 text-base font-bold transition shadow-sm hover:shadow-md bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#0b4e86]"
+              className="w-full sm:w-auto min-w-[280px] rounded-xl px-5 py-3 text-base font-bold transition shadow-sm hover:shadow-md bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#0b4e86]"
             >
               המשך תהליך באתר הראל
             </button>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 text-center text-xs font-medium text-slate-500">
+          <div className="mt-2 text-center text-xs font-medium text-slate-500">
             © {new Date().getFullYear()} Ophir Insurance • Designed for 2026 UI
           </div>
         </div>
@@ -1384,7 +1711,48 @@ export default function BuyInsNew() {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="divide-y divide-slate-200">
-                {[...additionalCustomers].sort((a, b) => {
+                {(() => {
+                  // Combine additional customers (not yet added) with already added customers (except primary)
+                  const notAdded = additionalCustomers.filter((addCust) => {
+                    const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
+                    return !customers.some((c) => {
+                      const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                      return normalizedCustomerId === normalizedAddCustId;
+                    });
+                  });
+
+                  // Get already added customers (except primary customer at index 0)
+                  const alreadyAdded = customers.slice(1).map((c) => {
+                    // Find matching additional customer or create from customer data
+                    const matchingAddCust = additionalCustomers.find((ac) => {
+                      const normalizedAddCustId = String(ac.personId || "").padStart(9, "0");
+                      const normalizedCustomerId = String(c.id || "").padStart(9, "0");
+                      return normalizedAddCustId === normalizedCustomerId;
+                    });
+
+                    if (matchingAddCust) {
+                      return matchingAddCust;
+                    }
+
+                    // Create AdditionalCustomer from customer data
+                    return {
+                      personId: c.id,
+                      primaryName: `${c.firstNameHe || ""} ${c.lastNameHe || ""}`.trim() || `${c.firstNameEn || ""} ${c.lastNameEn || ""}`.trim(),
+                      firstNameHe: c.firstNameHe || "",
+                      lastNameHe: c.lastNameHe || "",
+                      firstNameEn: c.firstNameEn || "",
+                      lastNameEn: c.lastNameEn || "",
+                      gender: c.gender || "",
+                      birthDate: c.birthDate || "",
+                      email: c.email || "",
+                      phone: c.phone || "",
+                    } as AdditionalCustomer;
+                  });
+
+                  // Combine both lists
+                  const allCustomers = [...notAdded, ...alreadyAdded];
+
+                  return allCustomers.sort((a, b) => {
                   const lastNameA = (a.lastNameHe || a.lastNameEn || "").trim();
                   const lastNameB = (b.lastNameHe || b.lastNameEn || "").trim();
 
@@ -1407,7 +1775,9 @@ export default function BuyInsNew() {
                   if (!dateB) return -1;
 
                   return dateA.localeCompare(dateB);
-                }).map((addCust) => {
+                  });
+                })()
+                .map((addCust) => {
                   const MAX_CUSTOMERS = 10;
                   const availableSlots = MAX_CUSTOMERS - customers.length;
                   const isSelected = selectedAdditionalCustomers.has(addCust.personId);

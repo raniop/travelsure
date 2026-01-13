@@ -6,6 +6,9 @@ const NotFound = () => {
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    console.log("Available routes:", ["/", "/purchase", "/buyinsnew", "/services", "/bbq", "/on-the-fire"]);
+    console.log("Current pathname:", location.pathname);
+    console.log("Is /bbq route registered?", location.pathname === "/bbq" || location.pathname === "/on-the-fire");
   }, [location.pathname]);
 
   return (

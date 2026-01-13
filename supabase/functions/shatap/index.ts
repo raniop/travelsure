@@ -32,20 +32,98 @@ serve(async (req) => {
     }
 
     const xmlUrl = "https://www.ophirbit.co.il/aff/XmlShatapim.asp";
-    const response = await fetch(xmlUrl, {
-      headers: {
-        Accept: "application/xml, text/xml, */*",
-      },
-    });
+    
+    // קריאה ל-XML עם טיפול טוב יותר בשגיאות
+    let xmlText: string | null = null;
+    
+    try {
+      // ניסיון ראשון - עם timeout ארוך יותר
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 שניות
+      
+      const response = await fetch(xmlUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/xml, text/xml, */*',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept-Language': 'he,en;q=0.9',
+        },
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Failed to fetch XML", 
+            status: response.status,
+            statusText: response.statusText
+          }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      xmlText = await response.text();
+      
+      if (!xmlText || xmlText.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "Empty XML response" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (error: any) {
+      console.error("Error fetching XML:", error);
+      
+      // אם יש שגיאת timeout או connection, ננסה שוב עם timeout קצר יותר
+      if (error.name === 'AbortError' || error.message?.includes('reset') || error.message?.includes('timeout')) {
+        try {
+          const retryResponse = await fetch(xmlUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/xml, text/xml, */*',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
+            signal: AbortSignal.timeout(8000), // 8 שניות
+          });
+          
+          if (retryResponse.ok) {
+            xmlText = await retryResponse.text();
+          } else {
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch XML after retry", 
+                status: retryResponse.status 
+              }),
+              { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        } catch (retryError: any) {
+          return new Response(
+            JSON.stringify({ 
+              error: "Failed to fetch XML", 
+              details: retryError.message 
+            }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        return new Response(
+          JSON.stringify({ 
+            error: "Failed to fetch XML", 
+            details: error.message 
+          }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    if (!xmlText) {
       return new Response(
-        JSON.stringify({ error: "Failed to fetch XML" }),
+        JSON.stringify({ error: "No XML data received" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const xmlText = await response.text();
 
     const itemRegex = /<ShatapItem>\s*<Id>(.*?)<\/Id>\s*<Name>(.*?)<\/Name>\s*<\/ShatapItem>/gs;
     let match;

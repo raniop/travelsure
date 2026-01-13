@@ -21,6 +21,7 @@ import VerifyIdentity from "./pages/VerifyIdentity";
 import CarInsurance from "./pages/CarInsurance";
 import HomeInsurance from "./pages/HomeInsurance";
 import BusinessInsurance from "./pages/BusinessInsurance";
+import BBQManager from "./pages/BBQManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,8 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/on-the-fire" element={<BBQManager />} />
+            <Route path="/bbq" element={<BBQManager />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

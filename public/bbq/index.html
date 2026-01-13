@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>מנהל על האש - BBQ Manager</title>
+    <script type="module" crossorigin src="/assets/index-C7X_ZfUc.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BeMa3mtJ.css">
+    <script>
+      // Redirect to main app with hash routing as fallback
+      if (window.location.pathname === '/bbq/' || window.location.pathname === '/bbq') {
+        window.location.href = '/#/bbq';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Fallback: if hash routing doesn't work, try direct navigation
+      if (!window.location.hash) {
+        window.location.replace('/#/bbq');
+      }
+    </script>
+  </body>
+</html>

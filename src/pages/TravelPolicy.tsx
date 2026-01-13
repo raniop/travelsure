@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Smartphone, Shield, DollarSign, Heart, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import CookieBanner from "@/components/CookieBanner";
+import VerifyIdentityModal from "@/components/VerifyIdentityModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const TravelPolicy = () => {
   const { isRTL, language } = useLanguage();
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   return (
     <div className="min-h-screen font-heebo bg-gradient-to-b from-sky-100 to-blue-50 relative overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
@@ -44,7 +47,7 @@ const TravelPolicy = () => {
               <div className="flex items-center gap-3 mb-4">
                 {/* Logo placeholder - using text for now */}
                 <div className="text-3xl md:text-4xl font-black text-slate-800">
-                  הראל
+                  אופיר
                 </div>
                 {/* Decorative colorful swirl */}
                 <div className="w-12 h-12 md:w-16 md:h-16 relative">
@@ -86,7 +89,7 @@ const TravelPolicy = () => {
 
               {/* Main Title */}
               <h1 className="text-4xl md:text-6xl font-black text-blue-900 mb-4">
-                הגעת להראל
+                הגעת לאופיר
               </h1>
 
               {/* Subtitle */}
@@ -104,11 +107,12 @@ const TravelPolicy = () => {
                 </Link>
 
                 {/* Second Purchase Button - White with orange border on left (appears second in RTL) */}
-                <Link to="/verify-identity">
-                  <button className="px-8 py-4 bg-white border-2 border-orange-300 text-slate-700 font-bold text-lg rounded-xl shadow-md hover:shadow-lg hover:bg-orange-50 hover:border-orange-400 transform hover:scale-105 transition-all duration-300 min-w-[240px] w-full sm:w-auto">
-                    לרכישה פעם נוספת
-                  </button>
-                </Link>
+                <button
+                  onClick={() => setShowVerifyModal(true)}
+                  className="px-8 py-4 bg-white border-2 border-orange-300 text-slate-700 font-bold text-lg rounded-xl shadow-md hover:shadow-lg hover:bg-orange-50 hover:border-orange-400 transform hover:scale-105 transition-all duration-300 min-w-[240px] w-full sm:w-auto"
+                >
+                  לרכישה פעם נוספת
+                </button>
               </div>
             </div>
           </div>
@@ -157,7 +161,7 @@ const TravelPolicy = () => {
                     </div>
                   </div>
                   <p className="text-slate-700 text-center text-sm md:text-base font-medium leading-relaxed">
-                    <span className="font-bold text-green-700">בלעדי להראל.</span> המשך טיפול רפואי בארץ
+                    <span className="font-bold text-green-700">בלעדי לאופיר.</span> המשך טיפול רפואי בארץ
                   </p>
                 </div>
 
@@ -214,7 +218,7 @@ const TravelPolicy = () => {
               {/* Air Doctor Disclaimer */}
               <div className="mt-6 p-4 bg-white/60 rounded-xl backdrop-blur-sm border border-blue-100 max-w-3xl mx-auto">
                 <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-                  *הראל בשיתוף עם Air Doctor מאפשרות לך לאתר רופא בסביבתך בחו״ל ולקבל ייעוץ רפואי מכוח הפוליסה, ללא תשלום מצדך וללא צורך בהגשת תביעה.
+                  *אופיר בשיתוף עם Air Doctor מאפשרות לך לאתר רופא בסביבתך בחו״ל ולקבל ייעוץ רפואי מכוח הפוליסה, ללא תשלום מצדך וללא צורך בהגשת תביעה.
                 </p>
               </div>
             </div>
@@ -223,6 +227,7 @@ const TravelPolicy = () => {
       </main>
 
       <CookieBanner />
+      <VerifyIdentityModal open={showVerifyModal} onOpenChange={setShowVerifyModal} />
     </div>
   );
 };

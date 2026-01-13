@@ -80,14 +80,15 @@ const ContactForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" dir="rtl">
       <div>
         <Input
           name="name"
           placeholder="שם מלא *"
           value={formData.name}
           onChange={handleChange}
-          className={`bg-background ${errors.name ? "border-destructive" : ""}`}
+          className={`bg-background text-right ${errors.name ? "border-destructive" : ""}`}
+          style={{ direction: "rtl", textAlign: "right" }}
           disabled={isLoading}
         />
         {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
@@ -100,7 +101,8 @@ const ContactForm = () => {
           placeholder="אימייל *"
           value={formData.email}
           onChange={handleChange}
-          className={`bg-background ${errors.email ? "border-destructive" : ""}`}
+          className={`bg-background text-right ${errors.email ? "border-destructive" : ""}`}
+          style={{ direction: "rtl", textAlign: "right" }}
           disabled={isLoading}
         />
         {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
@@ -113,7 +115,8 @@ const ContactForm = () => {
           placeholder="טלפון"
           value={formData.phone}
           onChange={handleChange}
-          className={`bg-background ${errors.phone ? "border-destructive" : ""}`}
+          className={`bg-background text-right ${errors.phone ? "border-destructive" : ""}`}
+          style={{ direction: "rtl", textAlign: "right" }}
           disabled={isLoading}
         />
         {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
@@ -125,7 +128,8 @@ const ContactForm = () => {
           placeholder="ההודעה שלך *"
           value={formData.message}
           onChange={handleChange}
-          className={`bg-background min-h-[120px] ${errors.message ? "border-destructive" : ""}`}
+          className={`bg-background min-h-[120px] text-right ${errors.message ? "border-destructive" : ""}`}
+          style={{ direction: "rtl", textAlign: "right" }}
           disabled={isLoading}
         />
         {errors.message && <p className="text-destructive text-sm mt-1">{errors.message}</p>}

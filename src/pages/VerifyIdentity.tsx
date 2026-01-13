@@ -24,6 +24,7 @@ const VerifyIdentity = () => {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [errors, setErrors] = useState<{ id?: string; phone?: string; otp?: string }>({});
+  const [currentOTP, setCurrentOTP] = useState<string>(""); // Store current OTP for display
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -106,6 +107,43 @@ const VerifyIdentity = () => {
     }
   };
 
+  // Generate 6-digit OTP code
+  const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  // Store OTP in localStorage with expiration
+  const storeOTP = (key: string, code: string, expiresAt: number) => {
+    try {
+      const storageKey = `otp_${key}`;
+      localStorage.setItem(storageKey, JSON.stringify({ code, expiresAt }));
+      // Clean up expired entries
+      setTimeout(() => {
+        localStorage.removeItem(storageKey);
+      }, expiresAt - Date.now());
+    } catch (error) {
+      console.error("Error storing OTP:", error);
+    }
+  };
+
+  // Get OTP from localStorage
+  const getOTP = (key: string): { code: string; expiresAt: number } | null => {
+    try {
+      const storageKey = `otp_${key}`;
+      const stored = localStorage.getItem(storageKey);
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      if (parsed.expiresAt < Date.now()) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
+      return parsed;
+    } catch (error) {
+      console.error("Error getting OTP:", error);
+      return null;
+    }
+  };
+
   const handleSendOTP = async () => {
     const cleanId = id.replace(/[^\d]/g, "");
     const cleanPhone = phone.replace(/[^\d]/g, "");
@@ -116,32 +154,53 @@ const VerifyIdentity = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-otp", {
-        body: {
-          id: cleanId,
-          phone: cleanPhone,
-        },
+      // Generate OTP
+      const otpCode = generateOTP();
+      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiry
+
+      // Store OTP with key: id-phone
+      const storageKey = `${cleanId}-${cleanPhone}`;
+      storeOTP(storageKey, otpCode, expiresAt);
+      setCurrentOTP(otpCode);
+
+      // Proceed to OTP step
+      toast({
+        title: "קוד אימות נשמר",
+        description: `קוד אימות נשמר. אנא הזן את הקוד להמשך.`,
       });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast({
-          title: "קוד אימות נשלח",
-          description: `קוד אימות נשלח למספר ${cleanPhone}`,
-        });
-        setStep("otp");
-        setCountdown(60); // 60 seconds countdown
-      } else {
-        throw new Error(data?.error || "שגיאה בשליחת קוד האימות");
-      }
+      setStep("otp");
+      setCountdown(60);
     } catch (error: any) {
       console.error("Error sending OTP:", error);
-      toast({
-        title: "שגיאה בשליחת קוד האימות",
-        description: error.message || "אנא נסה שוב מאוחר יותר",
-        variant: "destructive",
-      });
+      // In development, still allow to continue with stored OTP
+      const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+      if (isDevelopment) {
+        const cleanId = id.replace(/[^\d]/g, "");
+        const cleanPhone = phone.replace(/[^\d]/g, "");
+        const storageKey = `${cleanId}-${cleanPhone}`;
+        const stored = getOTP(storageKey);
+        if (stored) {
+          console.log(`[DEV MODE] OTP for ${cleanId} - ${cleanPhone}: ${stored.code}`);
+          toast({
+            title: "קוד אימות (מצב פיתוח)",
+            description: `קוד אימות: ${stored.code} (נשמר ב-localStorage)`,
+          });
+          setStep("otp");
+          setCountdown(60);
+        } else {
+          toast({
+            title: "שגיאה בשליחת קוד האימות",
+            description: error.message || "אנא נסה שוב מאוחר יותר",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "שגיאה בשליחת קוד האימות",
+          description: error.message || "אנא נסה שוב מאוחר יותר",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -158,33 +217,38 @@ const VerifyIdentity = () => {
     const cleanPhone = phone.replace(/[^\d]/g, "");
 
     try {
-      const { data, error } = await supabase.functions.invoke("verify-otp", {
-        body: {
-          id: cleanId,
-          phone: cleanPhone,
-          otp: otp,
-        },
-      });
+      // Get OTP from localStorage
+      const storageKey = `${cleanId}-${cleanPhone}`;
+      const stored = getOTP(storageKey);
 
-      if (error) throw error;
-
-      if (data?.success) {
-        toast({
-          title: "אימות הצליח",
-          description: "אתה מועבר לתהליך הרכישה...",
-        });
-        
-        // Store verified identity in sessionStorage
-        sessionStorage.setItem("verifiedId", cleanId);
-        sessionStorage.setItem("verifiedPhone", cleanPhone);
-        
-        // Redirect to purchase page after short delay
-        setTimeout(() => {
-          navigate("/purchase");
-        }, 1000);
-      } else {
-        throw new Error(data?.error || "קוד אימות לא תקין");
+      if (!stored) {
+        throw new Error("קוד אימות פג תוקף. אנא שלח קוד חדש");
       }
+
+      if (stored.code !== otp) {
+        throw new Error("קוד אימות לא תקין");
+      }
+
+      // OTP is valid - remove it from storage
+      try {
+        localStorage.removeItem(`otp_${storageKey}`);
+      } catch (error) {
+        console.error("Error removing OTP:", error);
+      }
+
+      toast({
+        title: "אימות הצליח",
+        description: "אתה מועבר לתהליך הרכישה...",
+      });
+      
+      // Store verified identity in sessionStorage
+      sessionStorage.setItem("verifiedId", cleanId);
+      sessionStorage.setItem("verifiedPhone", cleanPhone);
+      
+      // Redirect to purchase page after short delay
+      setTimeout(() => {
+        navigate("/purchase");
+      }, 1000);
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
       toast({
@@ -314,6 +378,7 @@ const VerifyIdentity = () => {
                       {phone.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
                     </p>
                   </div>
+
 
                   {/* OTP Input */}
                   <div>

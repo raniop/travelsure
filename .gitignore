@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# FTP Credentials - DO NOT COMMIT!
+FTP_CREDENTIALS.ps1

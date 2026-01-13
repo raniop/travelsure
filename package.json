@@ -9,7 +9,10 @@
     "build:dev": "vite build --mode development",
     "build:deploy": "vite build && powershell -ExecutionPolicy Bypass -File .\\deploy-to-iis.ps1",
     "build:deploy:push": "vite build && powershell -ExecutionPolicy Bypass -File .\\deploy-to-iis.ps1 && powershell -ExecutionPolicy Bypass -File .\\git-push.ps1",
+    "build:ftp": "vite build",
     "deploy": "powershell -ExecutionPolicy Bypass -File .\\deploy-to-iis.ps1",
+    "deploy:ftp": "powershell -ExecutionPolicy Bypass -File .\\deploy-to-ftp-simple.ps1 -Username \"Yaniv\" -Password \"180900\"",
+    "cleanup:ftp": "powershell -ExecutionPolicy Bypass -File .\\cleanup-ftp.ps1 -Username \"Yaniv\" -Password \"180900\" -DryRun",
     "git:push": "powershell -ExecutionPolicy Bypass -File .\\git-push.ps1",
     "lint": "eslint .",
     "preview": "vite preview"
