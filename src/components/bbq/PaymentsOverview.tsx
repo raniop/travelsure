@@ -24,9 +24,11 @@ interface Payment {
 
 interface PaymentsOverviewProps {
   groupId: string;
+  userId?: string;
+  isAdmin?: boolean;
 }
 
-const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
+const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverviewProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({
@@ -38,6 +40,14 @@ const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
 
   useEffect(() => {
     loadPayments();
+    
+    // Auto-refresh payments every 10 seconds to check for PayBox updates
+    const interval = setInterval(() => {
+      loadPayments();
+    }, 10000); // 10 seconds
+    
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
   const loadPayments = async () => {
@@ -60,7 +70,7 @@ const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
       const paymentsData = allPayments.flat();
 
       // Enrich with event and payer names
-      const enrichedPayments = await Promise.all(
+      let enrichedPayments = await Promise.all(
         paymentsData.map(async (payment: any) => {
           let payerName = "לא ידוע";
           const event = events.find(e => e.id === payment.event_id);
@@ -90,6 +100,46 @@ const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
         })
       );
 
+      // Filter payments by user if not admin
+      if (!isAdmin && userId) {
+        const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
+        
+        // Get all members to match user
+        const members = await apiClient.getMembers(groupId);
+        const userMember = members.find(m => {
+          // Match by phone or name
+          return m.phone === userData.phone || m.name === userData.name;
+        });
+
+        // Get all guests from all events to match user
+        const allGuests = await Promise.all(
+          events.map(e => apiClient.getGuests(e.id))
+        );
+        const flatGuests = allGuests.flat();
+        const userGuests = flatGuests.filter(g => g.phone === userData.phone);
+
+        // Filter payments - show only payments for this user
+        enrichedPayments = enrichedPayments.filter((payment: any) => {
+          // If payment has user_id, use it
+          if (payment.user_id) {
+            return payment.user_id === userId;
+          }
+          
+          // Otherwise, try to match by payer (member or guest)
+          if (payment.payer_type === "member" && userMember) {
+            return payment.payer_id === userMember.id;
+          }
+          
+          // For guests, check if guest phone matches user phone
+          if (payment.payer_type === "guest") {
+            const matchingGuest = userGuests.find(g => g.id === payment.payer_id);
+            return !!matchingGuest;
+          }
+          
+          return false;
+        });
+      }
+
       // Sort by created_at descending
       enrichedPayments.sort((a, b) => 
         new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
@@ -117,23 +167,50 @@ const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
   };
 
   const markAsPaid = async (paymentId: string) => {
-    try {
-      const payment = payments.find(p => p.id === paymentId);
-      if (!payment) throw new Error("Payment not found");
-      
-      await apiClient.updatePayment(paymentId, {
-        ...payment,
-        payment_status: "paid",
-        paid_at: new Date().toISOString()
+    const payment = payments.find(p => p.id === paymentId);
+    if (!payment) {
+      toast({
+        title: "שגיאה",
+        description: "תשלום לא נמצא",
+        variant: "destructive"
       });
+      return;
+    }
 
+    // Save old values for rollback
+    const oldSummary = { ...summary };
+    const oldPayments = [...payments];
+
+    // Optimistic update - update UI immediately
+    const updatedPayment = {
+      ...payment,
+      payment_status: "paid",
+      paid_at: new Date().toISOString()
+    };
+    
+    setPayments(prevPayments => 
+      prevPayments.map(p => p.id === paymentId ? updatedPayment : p)
+    );
+
+    // Update summary immediately
+    const newTotal = summary.total;
+    const newPaid = summary.paid + payment.amount;
+    const newPending = summary.pending - payment.amount;
+    setSummary({ total: newTotal, paid: newPaid, pending: newPending });
+
+    // Update server in background
+    try {
+      await apiClient.updatePayment(paymentId, updatedPayment);
+      
       toast({
         title: "הצלחה!",
         description: "התשלום סומן כמשולם"
       });
-
-      loadPayments();
     } catch (error: any) {
+      // Rollback on error
+      setPayments(oldPayments);
+      setSummary(oldSummary);
+      
       toast({
         title: "שגיאה",
         description: "לא הצלחנו לעדכן את התשלום",
@@ -181,7 +258,7 @@ const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
         </Card>
       </div>
 
-      {/* Payments List */}
+      {/* Payments List - Grouped by Event */}
       <div>
         <h3 className="text-lg font-semibold mb-4">רשימת תשלומים</h3>
         {payments.length === 0 ? (
@@ -191,57 +268,130 @@ const PaymentsOverview = ({ groupId }: PaymentsOverviewProps) => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
-            {payments.map((payment) => {
-              const eventDate = new Date(payment.event.event_date);
-              const isPaid = payment.payment_status === "paid" || payment.payment_status === "confirmed";
+          (() => {
+            // Group payments by event
+            const paymentsByEvent = payments.reduce((acc, payment) => {
+              const eventId = payment.event?.id || 'unknown';
+              if (!acc[eventId]) {
+                acc[eventId] = {
+                  event: payment.event,
+                  payments: []
+                };
+              }
+              acc[eventId].payments.push(payment);
+              return acc;
+            }, {} as Record<string, { event: any; payments: Payment[] }>);
 
-              return (
-                <Card key={payment.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{payment.payer_name}</span>
-                          <Badge variant={isPaid ? "default" : "secondary"}>
-                            {isPaid ? "שולם" : "ממתין"}
-                          </Badge>
+            // Sort events by date (newest first)
+            const sortedEvents = Object.values(paymentsByEvent).sort((a, b) => {
+              const dateA = new Date(a.event?.event_date || 0).getTime();
+              const dateB = new Date(b.event?.event_date || 0).getTime();
+              return dateB - dateA;
+            });
+
+            return (
+              <div className="space-y-6">
+                {sortedEvents.map((eventGroup) => {
+                  const eventDate = new Date(eventGroup.event?.event_date || 0);
+                  const eventTotal = eventGroup.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                  const eventPaid = eventGroup.payments
+                    .filter(p => p.payment_status === "paid" || p.payment_status === "confirmed")
+                    .reduce((sum, p) => sum + (p.amount || 0), 0);
+                  const eventPending = eventTotal - eventPaid;
+
+                  return (
+                    <Card key={eventGroup.event?.id || 'unknown'} className="overflow-hidden">
+                      <CardHeader className="bg-muted/50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg">
+                              {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
+                            </CardTitle>
+                            {eventGroup.event?.description && (
+                              <CardDescription className="mt-1">
+                                {eventGroup.event.description}
+                              </CardDescription>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground">סה״כ אירוע</div>
+                            <div className="text-xl font-bold">{eventGroup.event?.total_cost?.toFixed(2) || '0.00'} ₪</div>
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {format(eventDate, "d בMMMM yyyy", { locale: he })} • {payment.amount.toFixed(2)} ₪
+                        <div className="flex gap-4 mt-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">שולם: </span>
+                            <span className="font-semibold text-green-600">{eventPaid.toFixed(2)} ₪</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">ממתין: </span>
+                            <span className="font-semibold text-orange-600">{eventPending.toFixed(2)} ₪</span>
+                          </div>
                         </div>
-                      </div>
-                      {!isPaid && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => {
-                              // Generate payment link (PayBox/Bit format)
-                              // You can customize this URL based on your payment provider
-                              const paymentLink = `https://payboxapp.co.il/pay?amount=${payment.amount}&description=תשלום%20לעל%20האש&event=${payment.event.id}`;
-                              window.open(paymentLink, '_blank');
-                            }}
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            שלם עכשיו
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => markAsPaid(payment.id)}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            סמן כמשולם
-                          </Button>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="space-y-2">
+                          {eventGroup.payments.map((payment) => {
+                            const isPaid = payment.payment_status === "paid" || payment.payment_status === "confirmed";
+
+                            return (
+                              <div
+                                key={payment.id}
+                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-medium">{payment.payer_name}</span>
+                                    <Badge variant={isPaid ? "default" : "secondary"}>
+                                      {isPaid ? "שולם" : "ממתין"}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {payment.amount.toFixed(2)} ₪
+                                  </div>
+                                </div>
+                                {!isPaid && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => {
+                                        // PayBox group link - users join the group and pay there
+                                        // The group link: https://links.payboxapp.com/k5qia1URTZb
+                                        const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
+                                        
+                                        window.open(payboxGroupLink, '_blank');
+                                        
+                                        toast({
+                                          title: "קישור קבוצת PayBox נפתח",
+                                          description: `הצטרף לקבוצה ושלם ${payment.amount.toFixed(2)} ₪. המערכת תתעדכן אוטומטית תוך 10 שניות אחרי התשלום.`,
+                                        });
+                                      }}
+                                    >
+                                      <ExternalLink className="w-4 h-4 mr-2" />
+                                      שלם עכשיו
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => markAsPaid(payment.id)}
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                                      סמן כמשולם
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()
         )}
       </div>
     </div>

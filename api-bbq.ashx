@@ -33,27 +33,35 @@ public class BBQHandler : IHttpHandler
                 Directory.CreateDirectory(dataFolder);
             }
 
-            string entity = context.Request.QueryString["entity"] ?? "";
+                    string entity = context.Request.QueryString["entity"] ?? "";
+                    string action = context.Request.QueryString["action"] ?? "";
 
-            switch (context.Request.HttpMethod)
-            {
-                case "GET":
-                    HandleGet(context, entity, dataFolder);
-                    break;
-                case "POST":
-                    HandlePost(context, entity, dataFolder);
-                    break;
-                case "PUT":
-                    HandlePut(context, entity, dataFolder);
-                    break;
-                case "DELETE":
-                    HandleDelete(context, entity, dataFolder);
-                    break;
-                default:
-                    context.Response.StatusCode = 405;
-                    context.Response.Write("{\"error\":\"Method not allowed\"}");
-                    break;
-            }
+                    // Handle webhook for payment notifications (from PayBox)
+                    if (action == "webhook" && entity.ToLower() == "payments")
+                    {
+                        HandlePaymentWebhook(context, dataFolder);
+                        return;
+                    }
+
+                    switch (context.Request.HttpMethod)
+                    {
+                        case "GET":
+                            HandleGet(context, entity, dataFolder);
+                            break;
+                        case "POST":
+                            HandlePost(context, entity, dataFolder);
+                            break;
+                        case "PUT":
+                            HandlePut(context, entity, dataFolder);
+                            break;
+                        case "DELETE":
+                            HandleDelete(context, entity, dataFolder);
+                            break;
+                        default:
+                            context.Response.StatusCode = 405;
+                            context.Response.Write("{\"error\":\"Method not allowed\"}");
+                            break;
+                    }
         }
         catch (Exception ex)
         {
@@ -606,16 +614,88 @@ public class BBQHandler : IHttpHandler
             case "payments":
                 string paymentUpdatedAt = DateTime.UtcNow.ToString("o");
                 string paymentJson = body;
-                if (!paymentJson.Contains("\"updated_at\""))
+                
+                // Preserve created_at if exists
+                string existingPaymentJson = LoadEntityJson("payments", id, dataFolder);
+                string paymentCreatedAt = "";
+                if (!string.IsNullOrEmpty(existingPaymentJson) && existingPaymentJson.Contains("\"created_at\""))
                 {
-                    paymentJson = paymentJson.Trim();
-                    if (paymentJson.StartsWith("{") && paymentJson.EndsWith("}"))
+                    int createdIdx = existingPaymentJson.IndexOf("\"created_at\"");
+                    if (createdIdx > 0)
                     {
-                        paymentJson = paymentJson.Substring(1, paymentJson.Length - 2);
-                        paymentJson = paymentJson + ",\"updated_at\":\"" + paymentUpdatedAt + "\"}";
-                        if (!paymentJson.StartsWith("{")) paymentJson = "{" + paymentJson;
+                        int startQuote = existingPaymentJson.IndexOf("\"", createdIdx + 12);
+                        int endQuote = existingPaymentJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            paymentCreatedAt = existingPaymentJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                        }
                     }
                 }
+                
+                // Parse and rebuild JSON
+                paymentJson = paymentJson.Trim();
+                if (!paymentJson.StartsWith("{") || !paymentJson.EndsWith("}"))
+                {
+                    context.Response.StatusCode = 400;
+                    context.Response.Write("{\"error\":\"Invalid JSON format\"}");
+                    return;
+                }
+                
+                // Remove outer braces
+                string paymentJsonContent = paymentJson.Substring(1, paymentJson.Length - 2);
+                
+                // Ensure id is in the JSON
+                if (!paymentJsonContent.Contains("\"id\""))
+                {
+                    paymentJsonContent = "\"id\":\"" + id + "\"," + paymentJsonContent;
+                }
+                else
+                {
+                    // Replace existing id with the one from query string
+                    int idIdx = paymentJsonContent.IndexOf("\"id\"");
+                    if (idIdx >= 0)
+                    {
+                        int startQuote = paymentJsonContent.IndexOf("\"", idIdx + 4);
+                        int endQuote = paymentJsonContent.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = paymentJsonContent.Substring(0, startQuote + 1);
+                            string after = paymentJsonContent.Substring(endQuote);
+                            paymentJsonContent = before + id + after;
+                        }
+                    }
+                }
+                
+                // Add created_at if we have it
+                if (!string.IsNullOrEmpty(paymentCreatedAt) && !paymentJsonContent.Contains("\"created_at\""))
+                {
+                    paymentJsonContent = paymentJsonContent + ",\"created_at\":\"" + paymentCreatedAt + "\"";
+                }
+                
+                // Add/update updated_at
+                if (paymentJsonContent.Contains("\"updated_at\""))
+                {
+                    // Replace existing updated_at
+                    int updatedIdx = paymentJsonContent.IndexOf("\"updated_at\"");
+                    if (updatedIdx > 0)
+                    {
+                        int startQuote = paymentJsonContent.IndexOf("\"", updatedIdx + 13);
+                        int endQuote = paymentJsonContent.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = paymentJsonContent.Substring(0, startQuote + 1);
+                            string after = paymentJsonContent.Substring(endQuote);
+                            paymentJsonContent = before + paymentUpdatedAt + after;
+                        }
+                    }
+                }
+                else
+                {
+                    paymentJsonContent = paymentJsonContent + ",\"updated_at\":\"" + paymentUpdatedAt + "\"";
+                }
+                
+                // Rebuild JSON
+                paymentJson = "{" + paymentJsonContent + "}";
                 
                 SaveEntityJson("payments", id, paymentJson, dataFolder);
                 context.Response.Write(paymentJson);
@@ -657,38 +737,38 @@ public class BBQHandler : IHttpHandler
                 }
                 
                 // Remove outer braces
-                string jsonContent = attendeeJson.Substring(1, attendeeJson.Length - 2);
+                string attendeeJsonContent = attendeeJson.Substring(1, attendeeJson.Length - 2);
                 
                 // Ensure id is in the JSON
-                if (!jsonContent.Contains("\"id\""))
+                if (!attendeeJsonContent.Contains("\"id\""))
                 {
-                    jsonContent = "\"id\":\"" + id + "\"," + jsonContent;
+                    attendeeJsonContent = "\"id\":\"" + id + "\"," + attendeeJsonContent;
                 }
                 else
                 {
                     // Replace existing id with the one from query string
-                    int idIdx = jsonContent.IndexOf("\"id\"");
+                    int idIdx = attendeeJsonContent.IndexOf("\"id\"");
                     if (idIdx >= 0)
                     {
-                        int startQuote = jsonContent.IndexOf("\"", idIdx + 4);
-                        int endQuote = jsonContent.IndexOf("\"", startQuote + 1);
+                        int startQuote = attendeeJsonContent.IndexOf("\"", idIdx + 4);
+                        int endQuote = attendeeJsonContent.IndexOf("\"", startQuote + 1);
                         if (startQuote > 0 && endQuote > startQuote)
                         {
-                            string before = jsonContent.Substring(0, startQuote + 1);
-                            string after = jsonContent.Substring(endQuote);
-                            jsonContent = before + id + after;
+                            string before = attendeeJsonContent.Substring(0, startQuote + 1);
+                            string after = attendeeJsonContent.Substring(endQuote);
+                            attendeeJsonContent = before + id + after;
                         }
                     }
                 }
                 
                 // Add created_at if we have it
-                if (!string.IsNullOrEmpty(attendeeCreatedAt) && !jsonContent.Contains("\"created_at\""))
+                if (!string.IsNullOrEmpty(attendeeCreatedAt) && !attendeeJsonContent.Contains("\"created_at\""))
                 {
-                    jsonContent = jsonContent + ",\"created_at\":\"" + attendeeCreatedAt + "\"";
+                    attendeeJsonContent = attendeeJsonContent + ",\"created_at\":\"" + attendeeCreatedAt + "\"";
                 }
                 
                 // Rebuild JSON
-                attendeeJson = "{" + jsonContent + "}";
+                attendeeJson = "{" + attendeeJsonContent + "}";
                 
                 SaveEntityJson("attendees", id, attendeeJson, dataFolder);
                 context.Response.Write(attendeeJson);
@@ -732,6 +812,133 @@ public class BBQHandler : IHttpHandler
                 string errorMsg = "{\"error\":\"Invalid entity\",\"entity\":\"" + HttpUtility.JavaScriptStringEncode(entity ?? "") + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"id\":\"" + HttpUtility.JavaScriptStringEncode(id ?? "") + "\",\"queryString\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString()) + "\"}";
                 context.Response.Write(errorMsg);
                 break;
+        }
+    }
+
+    private void HandlePaymentWebhook(HttpContext context, string dataFolder)
+    {
+        // Webhook endpoint for PayBox payment notifications
+        // PayBox will call this URL when a payment is completed
+        // Expected parameters: payment_id (from query string), status (from POST body)
+        
+        string paymentId = context.Request.QueryString["payment_id"] ?? "";
+        if (string.IsNullOrEmpty(paymentId))
+        {
+            context.Response.StatusCode = 400;
+            context.Response.Write("{\"error\":\"Missing payment_id parameter\"}");
+            return;
+        }
+
+        try
+        {
+            // Read webhook data from PayBox (usually in POST body)
+            string body = new StreamReader(context.Request.InputStream).ReadToEnd();
+            
+            // Try to parse PayBox webhook data
+            // PayBox typically sends: {"status": "paid", "payment_id": "...", "amount": ...}
+            // For now, we'll mark as paid if webhook is called (PayBox only calls on success)
+            string existingPaymentJson = LoadEntityJson("payments", paymentId, dataFolder);
+            if (string.IsNullOrEmpty(existingPaymentJson))
+            {
+                context.Response.StatusCode = 404;
+                context.Response.Write("{\"error\":\"Payment not found\"}");
+                return;
+            }
+
+            // Update payment status to paid
+            string paymentUpdatedAt = DateTime.UtcNow.ToString("o");
+            string paymentJson = existingPaymentJson;
+            
+            // Update payment_status to "paid"
+            if (paymentJson.Contains("\"payment_status\""))
+            {
+                int statusIdx = paymentJson.IndexOf("\"payment_status\"");
+                if (statusIdx > 0)
+                {
+                    int startQuote = paymentJson.IndexOf("\"", statusIdx + 17);
+                    int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                    if (startQuote > 0 && endQuote > startQuote)
+                    {
+                        string before = paymentJson.Substring(0, startQuote + 1);
+                        string after = paymentJson.Substring(endQuote);
+                        paymentJson = before + "paid" + after;
+                    }
+                }
+            }
+            else
+            {
+                // Add payment_status if it doesn't exist
+                paymentJson = paymentJson.Trim();
+                if (paymentJson.EndsWith("}"))
+                {
+                    paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                    paymentJson = paymentJson + ",\"payment_status\":\"paid\"}";
+                }
+            }
+
+            // Add/update paid_at
+            if (paymentJson.Contains("\"paid_at\""))
+            {
+                int paidAtIdx = paymentJson.IndexOf("\"paid_at\"");
+                if (paidAtIdx > 0)
+                {
+                    int startQuote = paymentJson.IndexOf("\"", paidAtIdx + 9);
+                    int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                    if (startQuote > 0 && endQuote > startQuote)
+                    {
+                        string before = paymentJson.Substring(0, startQuote + 1);
+                        string after = paymentJson.Substring(endQuote);
+                        paymentJson = before + paymentUpdatedAt + after;
+                    }
+                }
+            }
+            else
+            {
+                paymentJson = paymentJson.Trim();
+                if (paymentJson.EndsWith("}"))
+                {
+                    paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                    paymentJson = paymentJson + ",\"paid_at\":\"" + paymentUpdatedAt + "\"}";
+                }
+            }
+
+            // Update updated_at
+            if (paymentJson.Contains("\"updated_at\""))
+            {
+                int updatedIdx = paymentJson.IndexOf("\"updated_at\"");
+                if (updatedIdx > 0)
+                {
+                    int startQuote = paymentJson.IndexOf("\"", updatedIdx + 13);
+                    int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                    if (startQuote > 0 && endQuote > startQuote)
+                    {
+                        string before = paymentJson.Substring(0, startQuote + 1);
+                        string after = paymentJson.Substring(endQuote);
+                        paymentJson = before + paymentUpdatedAt + after;
+                    }
+                }
+            }
+            else
+            {
+                paymentJson = paymentJson.Trim();
+                if (paymentJson.EndsWith("}"))
+                {
+                    paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                    paymentJson = paymentJson + ",\"updated_at\":\"" + paymentUpdatedAt + "\"}";
+                }
+            }
+
+            SaveEntityJson("payments", paymentId, paymentJson, dataFolder);
+            
+            // Return success to PayBox
+            context.Response.StatusCode = 200;
+            context.Response.Write("{\"success\":true,\"message\":\"Payment updated\"}");
+        }
+        catch (Exception ex)
+        {
+            context.Response.StatusCode = 500;
+            string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+            context.Response.Write("{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\"}");
         }
     }
 

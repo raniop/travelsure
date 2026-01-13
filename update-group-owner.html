@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Update Group Owner</title>
+</head>
+<body>
+    <h1>Update Group Owner</h1>
+    <button onclick="updateOwner()">Update Group Owner to user_0524444244</button>
+    <div id="result"></div>
+
+    <script>
+        async function updateOwner() {
+            const apiUrl = 'https://travsure.chatpilotapi.com/api-bbq.ashx';
+            const userId = 'user_0524444244';
+            
+            try {
+                // Get all groups
+                const groupsResponse = await fetch(`${apiUrl}?entity=groups`);
+                const groups = await groupsResponse.json();
+                
+                console.log('Groups:', groups);
+                
+                if (!groups || groups.length === 0) {
+                    document.getElementById('result').innerHTML = 'No groups found';
+                    return;
+                }
+                
+                // Find default-group-001 or first group
+                let targetGroup = groups.find(g => g.id === 'default-group-001');
+                if (!targetGroup) {
+                    targetGroup = groups[0];
+                }
+                
+                console.log('Target group:', targetGroup);
+                
+                // Update group with owner_id
+                const updateData = {
+                    id: targetGroup.id,
+                    name: targetGroup.name,
+                    description: targetGroup.description || '',
+                    owner_id: userId,
+                    created_at: targetGroup.created_at,
+                    updated_at: new Date().toISOString()
+                };
+                
+                console.log('Update data:', updateData);
+                
+                const updateResponse = await fetch(
+                    `${apiUrl}?entity=groups&id=${targetGroup.id}&action=update`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updateData)
+                    }
+                );
+                
+                const result = await updateResponse.json();
+                console.log('Update result:', result);
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>Success!</h2>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h2>Error:</h2>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

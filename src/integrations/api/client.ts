@@ -36,9 +36,14 @@ class ApiClient {
           errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
         }
       } catch {
-        errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        // If parsing fails, show the raw text
+        const text = await response.text().catch(() => '');
+        errorData = { 
+          error: `HTTP ${response.status}: ${response.statusText}`, 
+          details: text || 'Unknown error' 
+        };
       }
-      const errorMessage = errorData.error || errorData.details || `HTTP ${response.status}`;
+      const errorMessage = errorData.error || errorData.details || errorData.stack || `HTTP ${response.status}`;
       throw new Error(errorMessage);
     }
 
@@ -74,8 +79,9 @@ class ApiClient {
   }
 
   async updateGroup(id: string, data: any): Promise<any> {
-    return this.request(`entity=groups&id=${id}`, {
-      method: 'PUT',
+    // Use POST with action=update instead of PUT to avoid IIS restrictions
+    return this.request(`entity=groups&id=${id}&action=update`, {
+      method: 'POST',
       body: JSON.stringify(data),
     });
   }
@@ -170,8 +176,9 @@ class ApiClient {
   }
 
   async updatePayment(id: string, data: any): Promise<any> {
-    return this.request(`entity=payments&id=${id}`, {
-      method: 'PUT',
+    // Use POST with action=update instead of PUT to avoid IIS restrictions
+    return this.request(`entity=payments&id=${id}&action=update`, {
+      method: 'POST',
       body: JSON.stringify(data),
     });
   }
