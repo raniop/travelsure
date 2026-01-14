@@ -65,13 +65,24 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
   }
 
   // Separate events into future and past
-  const now = new Date();
+  // Use start of today (00:00:00) to compare - events today are considered future
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const futureEvents = events
-    .filter(event => new Date(event.event_date) >= now)
+    .filter(event => {
+      const eventDate = new Date(event.event_date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today;
+    })
     .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()); // Ascending - closest first
   
   const pastEvents = events
-    .filter(event => new Date(event.event_date) < now)
+    .filter(event => {
+      const eventDate = new Date(event.event_date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate < today;
+    })
     .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()); // Descending - most recent first
 
   // Limit past events if not showing full history
@@ -143,7 +154,11 @@ interface EventCardProps {
 
 const EventCard = ({ event, groupId, onPaymentsCalculated }: EventCardProps) => {
   const eventDate = new Date(event.event_date);
-  const isPast = eventDate < new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDateOnly = new Date(eventDate);
+  eventDateOnly.setHours(0, 0, 0, 0);
+  const isPast = eventDateOnly < today;
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
