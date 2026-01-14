@@ -40,7 +40,9 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       setLoading(true);
       const allEvents = await apiClient.getEvents(groupId);
       
-      // If not admin, filter past events to only show ones where user was present
+      console.log('EventsList - isAdmin:', isAdmin, 'userId:', userId, 'allEvents count:', allEvents.length);
+      
+      // Admin sees all events, non-admin only sees events they attended (for past events)
       if (!isAdmin) {
         // Get user's phone from localStorage
         const savedUser = localStorage.getItem('bbq_current_user');
@@ -92,6 +94,8 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
         
         setEvents(filteredEvents.filter(e => e !== null) as Event[]);
       } else {
+        // Admin sees all events - no filtering
+        console.log('EventsList - Admin user, showing all events:', allEvents.length);
         setEvents(allEvents);
       }
     } catch (error: any) {
