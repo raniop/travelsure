@@ -496,43 +496,6 @@ public class BBQHandler : IHttpHandler
                 string userCreatedAt = DateTime.UtcNow.ToString("o");
                 
                 string userJson = body;
-                // Check if user already exists by phone
-                string phone = "";
-                if (userJson.Contains("\"phone\""))
-                {
-                    int phoneStart = userJson.IndexOf("\"phone\":\"") + 9;
-                    int phoneEnd = userJson.IndexOf("\"", phoneStart);
-                    if (phoneEnd > phoneStart)
-                    {
-                        phone = userJson.Substring(phoneStart, phoneEnd - phoneStart);
-                    }
-                }
-                
-                // If phone provided, check if user exists
-                if (!string.IsNullOrEmpty(phone))
-                {
-                    string allUsersJson = LoadAllJson("users", dataFolder);
-                    if (!string.IsNullOrEmpty(allUsersJson) && allUsersJson != "[]")
-                    {
-                        string trimmed = allUsersJson.Trim('[', ']');
-                        if (!string.IsNullOrEmpty(trimmed))
-                        {
-                            string[] parts = trimmed.Split(new string[] { "},{" }, StringSplitOptions.None);
-                            foreach (string part in parts)
-                            {
-                                string clean = part.Trim();
-                                if (!clean.StartsWith("{")) clean = "{" + clean;
-                                if (!clean.EndsWith("}")) clean = clean + "}";
-                                if (clean.Contains("\"phone\":\"" + phone + "\""))
-                                {
-                                    // User exists, return existing user
-                                    context.Response.Write(clean);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
                 
                 // Extract id from userJson if provided (for user_0524444244 format)
                 if (userJson.Contains("\"id\""))
@@ -545,6 +508,61 @@ public class BBQHandler : IHttpHandler
                     }
                 }
                 
+                // Check if user already exists by id
+                string existingUserJson = LoadEntityJson("users", userNewId, dataFolder);
+                if (!string.IsNullOrEmpty(existingUserJson))
+                {
+                    // User exists, return existing user
+                    context.Response.Write(existingUserJson);
+                    return;
+                }
+                
+                // Check if user exists by phone (if phone is in the JSON)
+                string phone = "";
+                if (userJson.Contains("\"phone\""))
+                {
+                    int phoneStart = userJson.IndexOf("\"phone\":\"") + 9;
+                    int phoneEnd = userJson.IndexOf("\"", phoneStart);
+                    if (phoneEnd > phoneStart)
+                    {
+                        phone = userJson.Substring(phoneStart, phoneEnd - phoneStart);
+                    }
+                }
+                
+                // If phone provided, check if user exists by phone
+                if (!string.IsNullOrEmpty(phone))
+                {
+                    try
+                    {
+                        string allUsersJson = LoadAllJson("users", dataFolder);
+                        if (!string.IsNullOrEmpty(allUsersJson) && allUsersJson != "[]")
+                        {
+                            string trimmed = allUsersJson.Trim('[', ']');
+                            if (!string.IsNullOrEmpty(trimmed))
+                            {
+                                string[] parts = trimmed.Split(new string[] { "},{" }, StringSplitOptions.None);
+                                foreach (string part in parts)
+                                {
+                                    string clean = part.Trim();
+                                    if (!clean.StartsWith("{")) clean = "{" + clean;
+                                    if (!clean.EndsWith("}")) clean = clean + "}";
+                                    if (clean.Contains("\"phone\":\"" + phone + "\""))
+                                    {
+                                        // User exists, return existing user
+                                        context.Response.Write(clean);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // If error loading users, continue to create new user
+                    }
+                }
+                
+                // Create new user
                 if (!userJson.Contains("\"id\""))
                 {
                     userJson = userJson.Trim();
@@ -552,6 +570,19 @@ public class BBQHandler : IHttpHandler
                     {
                         userJson = userJson.Substring(1, userJson.Length - 2);
                         userJson = "{\"id\":\"" + userNewId + "\",\"created_at\":\"" + userCreatedAt + "\"," + userJson + "}";
+                    }
+                }
+                else
+                {
+                    // Ensure created_at is in the JSON
+                    if (!userJson.Contains("\"created_at\""))
+                    {
+                        userJson = userJson.Trim();
+                        if (userJson.StartsWith("{") && userJson.EndsWith("}"))
+                        {
+                            userJson = userJson.Substring(1, userJson.Length - 2);
+                            userJson = "{" + userJson + ",\"created_at\":\"" + userCreatedAt + "\"}";
+                        }
                     }
                 }
                 
