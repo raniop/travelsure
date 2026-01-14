@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
-import { Users, UserPlus, DollarSign, CheckCircle2, XCircle } from "lucide-react";
+import { Users, UserPlus, DollarSign, CheckCircle2, XCircle, Edit2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface EventDetailsDialogProps {
@@ -63,7 +63,6 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
   const [newGuestName, setNewGuestName] = useState("");
   const [newGuestPhone, setNewGuestPhone] = useState("");
   const [newGuestIsFirstTime, setNewGuestIsFirstTime] = useState(true);
-  const [newGuestAttended, setNewGuestAttended] = useState(true);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const { toast } = useToast();
@@ -216,6 +215,41 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
     }
   };
 
+  const toggleGuestPaymentStatus = async (guestId: string, shouldPay: boolean) => {
+    try {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+
+      // Optimistic update
+      setGuests(prev => prev.map(g => 
+        g.id === guestId ? { ...g, should_pay: shouldPay } : g
+      ));
+
+      await apiClient.updateGuest(guestId, {
+        ...guest,
+        should_pay: shouldPay
+      });
+
+      // Reload to ensure consistency
+      await loadEventDetails();
+      
+      toast({
+        title: "הצלחה!",
+        description: `האורח עודכן ל-${shouldPay ? "משלם" : "חינם"}`
+      });
+    } catch (error: any) {
+      // Rollback on error
+      setGuests(prev => prev.map(g => 
+        g.id === guestId ? { ...g, should_pay: !shouldPay } : g
+      ));
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן את האורח",
+        variant: "destructive"
+      });
+    }
+  };
+
   const addGuest = async () => {
     if (!newGuestName.trim()) {
       toast({
@@ -261,13 +295,12 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
         phone: newGuestPhone.trim() || null,
         visit_count: visitCount,
         should_pay: shouldPay,
-        attended: newGuestAttended
+        attended: true // Default to attended when adding
       });
 
       setNewGuestName("");
       setNewGuestPhone("");
       setNewGuestIsFirstTime(true);
-      setNewGuestAttended(true);
       await loadEventDetails();
 
       toast({
@@ -491,9 +524,16 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                             הגיע
                           </Badge>
                         )}
-                        <Badge variant={guest.should_pay ? "default" : "secondary"}>
-                          {guest.should_pay ? "משלם" : "חינם"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={!guest.should_pay}
+                            onCheckedChange={(checked) => toggleGuestPaymentStatus(guest.id, !(checked as boolean))}
+                            className="ml-2"
+                          />
+                          <Badge variant={guest.should_pay ? "default" : "secondary"}>
+                            {guest.should_pay ? "משלם" : "חינם"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   );
@@ -520,27 +560,15 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                     הוסף
                   </Button>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="first-time"
-                      checked={newGuestIsFirstTime}
-                      onCheckedChange={(checked) => setNewGuestIsFirstTime(checked as boolean)}
-                    />
-                    <Label htmlFor="first-time" className="text-sm font-normal cursor-pointer">
-                      פעם ראשונה (חינם)
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="guest-attended"
-                      checked={newGuestAttended}
-                      onCheckedChange={(checked) => setNewGuestAttended(checked as boolean)}
-                    />
-                    <Label htmlFor="guest-attended" className="text-sm font-normal cursor-pointer">
-                      הגיע
-                    </Label>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="first-time"
+                    checked={newGuestIsFirstTime}
+                    onCheckedChange={(checked) => setNewGuestIsFirstTime(checked as boolean)}
+                  />
+                  <Label htmlFor="first-time" className="text-sm font-normal cursor-pointer">
+                    פעם ראשונה (חינם)
+                  </Label>
                 </div>
               </div>
             </div>
