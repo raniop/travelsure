@@ -163,14 +163,14 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
   const displayPastEvents = pastEvents;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Future Events */}
       {futureEvents.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-primary" />
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="w-5 h-5 text-primary shrink-0" />
             <h2 className="text-xl font-semibold">אירועים קרובים</h2>
-            <Badge variant="default" className="mr-auto">{futureEvents.length}</Badge>
+            <Badge variant="default">{futureEvents.length}</Badge>
           </div>
           <div className="space-y-4">
             {futureEvents.map((event) => (
@@ -190,10 +190,10 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       {/* Past Events */}
       {displayPastEvents.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <History className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-center gap-3 mb-4">
+            <History className="w-5 h-5 text-muted-foreground shrink-0" />
             <h2 className="text-xl font-semibold">אירועים שעברו</h2>
-            <Badge variant="secondary" className="mr-auto">
+            <Badge variant="secondary">
               {displayPastEvents.length}{!showHistory && pastEvents.length > 5 && ` מתוך ${pastEvents.length}`}
             </Badge>
           </div>
@@ -241,38 +241,36 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
   const isPast = eventDateOnly < today;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow" dir="rtl">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="flex items-center gap-3 text-lg">
+              <Calendar className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">{format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}</span>
             </CardTitle>
             {event.description && (
               <CardDescription className="mt-2">{event.description}</CardDescription>
             )}
           </div>
-          <Badge variant={isPast ? "secondary" : "default"}>
+          <Badge variant={isPast ? "secondary" : "default"} className="shrink-0">
             {isPast ? "עבר" : "קרוב"}
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{event.total_cost.toFixed(2)} ₪</span>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-foreground">{event.total_cost.toFixed(2)} ₪</span>
           </div>
           <EventDetailsDialog eventId={event.id} groupId={groupId} userId={userId} isAdmin={isAdmin} onPaymentsCalculated={onPaymentsCalculated}>
             <Button 
               variant="default" 
               size="sm" 
-              className="min-w-[100px]"
+              className="min-w-[100px] shrink-0"
               type="button"
             >
-              <ChevronLeft className="w-4 h-4 ml-1" />
+              <ChevronLeft className="w-4 h-4 mr-1" />
               פרטים
             </Button>
           </EventDetailsDialog>

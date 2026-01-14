@@ -16,7 +16,7 @@ import { apiClient } from "@/integrations/api/client";
 interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLogin: (user: { id: string; name: string; phone: string; isAdmin: boolean }) => void;
+  onLogin: (user: { id: string; name: string; phone: string; isAdmin: boolean; profile_image?: string }) => void;
   groupOwnerId?: string;
 }
 
@@ -128,14 +128,16 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       localStorage.setItem('bbq_current_user', JSON.stringify({
         id: existingUser.id,
         name: existingUser.name,
-        phone: existingUser.phone
+        phone: existingUser.phone,
+        profile_image: existingUser.profile_image || null
       }));
       
       onLogin({
         id: existingUser.id,
         name: existingUser.name,
         phone: existingUser.phone,
-        isAdmin
+        isAdmin,
+        profile_image: existingUser.profile_image
       });
       
       onOpenChange(false);

@@ -262,38 +262,38 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">סה״כ תשלומים</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
+            <CardTitle className="text-sm font-medium text-right">סה״כ תשלומים</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.total.toFixed(2)} ₪</div>
+            <div className="text-2xl font-bold text-right">{summary.total.toFixed(2)} ₪</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">שולם</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
+            <CardTitle className="text-sm font-medium text-right">שולם</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{summary.paid.toFixed(2)} ₪</div>
+            <div className="text-2xl font-bold text-green-600 text-right">{summary.paid.toFixed(2)} ₪</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ממתין לתשלום</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
+            <CardTitle className="text-sm font-medium text-right">ממתין לתשלום</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600 shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{summary.pending.toFixed(2)} ₪</div>
+            <div className="text-2xl font-bold text-orange-600 text-right">{summary.pending.toFixed(2)} ₪</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Payments List - Grouped by Event */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">רשימת תשלומים</h3>
+        <h3 className="text-lg font-semibold mb-4 text-right">רשימת תשלומים</h3>
         {payments.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
@@ -335,30 +335,30 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                   return (
                     <Card key={eventGroup.event?.id || 'unknown'} className="overflow-hidden">
                       <CardHeader className="bg-muted/50">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-lg">
-                              {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
-                            </CardTitle>
-                            {eventGroup.event?.description && (
-                              <CardDescription className="mt-1">
-                                {eventGroup.event.description}
-                              </CardDescription>
-                            )}
-                          </div>
+                        <div className="flex items-center justify-between" style={{ flexDirection: 'row-reverse' }}>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">סה״כ אירוע</div>
                             <div className="text-xl font-bold">{eventGroup.event?.total_cost?.toFixed(2) || '0.00'} ₪</div>
                           </div>
-                        </div>
-                        <div className="flex gap-4 mt-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">שולם: </span>
-                            <span className="font-semibold text-green-600">{eventPaid.toFixed(2)} ₪</span>
+                            <CardTitle className="text-lg text-right">
+                              {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
+                            </CardTitle>
+                            {eventGroup.event?.description && (
+                              <CardDescription className="mt-1 text-right">
+                                {eventGroup.event.description}
+                              </CardDescription>
+                            )}
                           </div>
-                          <div>
+                        </div>
+                        <div className="flex gap-4 mt-4 text-sm justify-end">
+                          <div className="text-right">
                             <span className="text-muted-foreground">ממתין: </span>
                             <span className="font-semibold text-orange-600">{eventPending.toFixed(2)} ₪</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-muted-foreground">שולם: </span>
+                            <span className="font-semibold text-green-600">{eventPaid.toFixed(2)} ₪</span>
                           </div>
                         </div>
                       </CardHeader>
@@ -372,12 +372,12 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                                 key={payment.id}
                                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
                               >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium">{payment.payer_name}</span>
+                                <div className="flex-1 text-right">
+                                  <div className="flex items-center gap-2 mb-1 justify-end">
                                     <Badge variant={isPaid ? "default" : "secondary"}>
                                       {isPaid ? "שולם" : "ממתין"}
                                     </Badge>
+                                    <span className="font-medium">{payment.payer_name}</span>
                                   </div>
                                   <div className="text-sm text-muted-foreground">
                                     {payment.amount.toFixed(2)} ₪
@@ -385,6 +385,16 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                                 </div>
                                 {!isPaid && (
                                   <div className="flex gap-2">
+                                    {isAdmin && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => markAsPaid(payment.id)}
+                                      >
+                                        <CheckCircle2 className="w-4 h-4 ml-2" />
+                                        סמן כמשולם
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="default"
@@ -401,19 +411,9 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                                         });
                                       }}
                                     >
-                                      <ExternalLink className="w-4 h-4 mr-2" />
+                                      <ExternalLink className="w-4 h-4 ml-2" />
                                       שלם עכשיו
                                     </Button>
-                                    {isAdmin && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => markAsPaid(payment.id)}
-                                      >
-                                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                                        סמן כמשולם
-                                      </Button>
-                                    )}
                                   </div>
                                 )}
                               </div>

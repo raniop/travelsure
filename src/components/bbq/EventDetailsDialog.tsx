@@ -453,11 +453,11 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           <div className="space-y-6">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-              <div>
+              <div className="text-right">
                 <div className="text-sm text-muted-foreground">עלות כוללת</div>
                 <div className="text-2xl font-bold">{event.total_cost.toFixed(2)} ₪</div>
               </div>
-              <div>
+              <div className="text-right">
                 <div className="text-sm text-muted-foreground">משלמים</div>
                 <div className="text-2xl font-bold">{totalPaying}</div>
                 {totalPaying > 0 && (
@@ -514,7 +514,18 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                         key={member.id}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
-                        <div className="flex items-center gap-3">
+                        {attended ? (
+                          <Badge variant="default">
+                            <CheckCircle2 className="w-3 h-3 ml-1" />
+                            {attendanceLabel}
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <XCircle className="w-3 h-3 ml-1" />
+                            לא מגיע
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-3 flex-1">
                           <Checkbox
                             checked={attended}
                             disabled={!canEdit}
@@ -522,19 +533,13 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                               toggleMemberAttendance(member.id, checked as boolean)
                             }
                           />
-                          <span className={attended ? "font-medium" : "text-muted-foreground"}>
+                          <span className={`text-right ${attended ? "font-medium" : "text-muted-foreground"}`}>
                             {member.name}
                             {isCurrentUser && !isAdmin && (
-                              <span className="text-xs text-muted-foreground mr-2">(אתה)</span>
+                              <span className="text-xs text-muted-foreground ml-2">(אתה)</span>
                             )}
                           </span>
                         </div>
-                        {attended && (
-                          <Badge variant="default">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            {attendanceLabel}
-                          </Badge>
-                        )}
                       </div>
                     );
                   });
@@ -558,32 +563,15 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                       key={guest.id}
                       className="flex items-center justify-between p-3 border rounded-lg"
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Checkbox
-                          checked={guestAttended}
-                          disabled={!isAdmin}
-                          onCheckedChange={(checked) => toggleGuestAttendance(guest.id, checked as boolean)}
-                        />
-                        <div>
-                          <div className="font-medium">{guest.name}</div>
-                          {guest.phone && (
-                            <div className="text-sm text-muted-foreground">{guest.phone}</div>
-                          )}
-                          <div className="text-xs text-muted-foreground mt-1">
-                            ביקור #{guest.visit_count}
-                            {guest.visit_count === 1 && " (חינם)"}
-                          </div>
-                        </div>
-                      </div>
                       <div className="flex items-center gap-3">
                         {guestAttended && (
                           <Badge variant="default">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            <CheckCircle2 className="w-3 h-3 ml-1" />
                             {attendanceLabel}
                           </Badge>
                         )}
                         {isAdmin && (
-                          <div className="flex items-center gap-2 border-r pr-3">
+                          <div className="flex items-center gap-2 border-l pl-3">
                             <Toggle
                               pressed={guest.should_pay}
                               onPressedChange={(pressed) => toggleGuestPaymentStatus(guest.id, pressed)}
@@ -600,6 +588,23 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                             {guest.should_pay ? "משלם" : "חינם"}
                           </Badge>
                         )}
+                      </div>
+                      <div className="flex items-center gap-3 flex-1">
+                        <Checkbox
+                          checked={guestAttended}
+                          disabled={!isAdmin}
+                          onCheckedChange={(checked) => toggleGuestAttendance(guest.id, checked as boolean)}
+                        />
+                        <div>
+                          <div className="font-medium">{guest.name}</div>
+                          {guest.phone && (
+                            <div className="text-sm text-muted-foreground">{guest.phone}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            ביקור #{guest.visit_count}
+                            {guest.visit_count === 1 && " (חינם)"}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -645,7 +650,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
 
             {/* Calculate Payments - Only for admin */}
             {isAdmin && (
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-start gap-2">
               <Button
                 onClick={calculatePayments}
                 disabled={calculating || totalPaying === 0}

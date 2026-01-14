@@ -11,7 +11,7 @@ const TravelPolicy = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   return (
-    <div className="min-h-screen font-heebo bg-gradient-to-b from-sky-100 to-blue-50 relative overflow-hidden" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="min-h-screen font-heebo bg-gradient-to-b from-sky-100 to-blue-50 relative overflow-hidden" dir="rtl">
       {/* Background decorative elements - clouds and sun */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Sun in top right */}

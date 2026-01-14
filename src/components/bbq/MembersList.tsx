@@ -26,9 +26,10 @@ interface Member {
 
 interface MembersListProps {
   groupId: string;
+  isAdmin?: boolean;
 }
 
-const MembersList = ({ groupId }: MembersListProps) => {
+const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -82,17 +83,19 @@ const MembersList = ({ groupId }: MembersListProps) => {
 
   return (
     <div className="space-y-4">
-      <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          הוסף חבר
-        </Button>
-      </AddMemberDialog>
+      {isAdmin && (
+        <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
+          <Button>
+            <Plus className="w-4 h-4 ml-2" />
+            הוסף חבר
+          </Button>
+        </AddMemberDialog>
+      )}
 
       {members.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            עדיין אין חברים. הוסף חבר ראשון!
+            {isAdmin ? "עדיין אין חברים. הוסף חבר ראשון!" : "עדיין אין חברים בקבוצה."}
           </CardContent>
         </Card>
       ) : (
@@ -100,34 +103,36 @@ const MembersList = ({ groupId }: MembersListProps) => {
           {members.map((member) => (
             <Card key={member.id}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  {member.name}
+                <CardTitle className="flex items-center gap-2 justify-end">
+                  <span className="text-right">{member.name}</span>
+                  <User className="w-5 h-5 text-primary shrink-0" />
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {member.phone && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="w-4 h-4" />
-                      {member.phone}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
+                      <span className="text-right">{member.phone}</span>
+                      <Phone className="w-4 h-4 shrink-0" />
                     </div>
                   )}
                   {member.email && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="w-4 h-4" />
-                      {member.email}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
+                      <span className="text-right">{member.email}</span>
+                      <Mail className="w-4 h-4 shrink-0" />
                     </div>
                   )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="w-full mt-4"
-                    onClick={() => deleteMember(member.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    מחק
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full mt-4"
+                      onClick={() => deleteMember(member.id)}
+                    >
+                      <Trash2 className="w-4 h-4 ml-2" />
+                      מחק
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

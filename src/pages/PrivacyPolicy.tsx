@@ -5,7 +5,7 @@ const PrivacyPolicy = () => {
   const { t, isRTL, language } = useLanguage();
   
   return (
-    <div className="min-h-screen font-heebo bg-background" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="min-h-screen font-heebo bg-background" dir="rtl">
       <Header />
       <div className="h-16 md:h-20" />
 

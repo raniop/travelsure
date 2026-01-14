@@ -71,6 +71,8 @@ const GroupSettings = ({ group, onGroupUpdated }: GroupSettingsProps) => {
               onChange={(e) => setName(e.target.value)}
               placeholder="שם הקבוצה"
               required
+              className="text-right"
+              dir="rtl"
             />
           </div>
           <div className="grid gap-2">
@@ -81,10 +83,12 @@ const GroupSettings = ({ group, onGroupUpdated }: GroupSettingsProps) => {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="תיאור הקבוצה..."
               rows={3}
+              className="text-right"
+              dir="rtl"
             />
           </div>
           <Button type="submit" disabled={loading}>
-            <Save className="w-4 h-4 mr-2" />
+            <Save className="w-4 h-4 ml-2" />
             {loading ? "שומר..." : "שמור שינויים"}
           </Button>
         </form>

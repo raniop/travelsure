@@ -12,7 +12,7 @@ const Index = () => {
   const { isRTL } = useLanguage();
   
   return (
-    <div className="min-h-screen font-heebo" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="min-h-screen font-heebo" dir="rtl">
       <Header />
       <HeroSection />
       <ServicesSection />

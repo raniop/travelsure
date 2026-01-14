@@ -10,6 +10,7 @@ import EventsList from "@/components/bbq/EventsList";
 import MembersList from "@/components/bbq/MembersList";
 import PaymentsOverview from "@/components/bbq/PaymentsOverview";
 import GroupSettings from "@/components/bbq/GroupSettings";
+import UserSettings from "@/components/bbq/UserSettings";
 import LoginDialog from "@/components/bbq/LoginDialog";
 
 interface Group {
@@ -25,6 +26,7 @@ interface User {
   name: string;
   phone: string;
   isAdmin: boolean;
+  profile_image?: string;
 }
 
 const BBQManager = () => {
@@ -32,7 +34,7 @@ const BBQManager = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("events");
   const [user, setUser] = useState<User | null>(null);
-  const [showLogin, setShowLogin] = useState(true); // Start with login dialog open
+  const [showLogin, setShowLogin] = useState(false); // Will be set to true only if no user found
   const [userNotInGroup, setUserNotInGroup] = useState(false);
   const [checkingGroups, setCheckingGroups] = useState(false);
   const { toast } = useToast();
@@ -43,11 +45,38 @@ const BBQManager = () => {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
-        // Set user first (without isAdmin, will be updated when group loads)
+        // Set user immediately from localStorage to avoid showing login screen
         setUser({
           ...userData,
-          isAdmin: false
+          isAdmin: false,
+          profile_image: userData.profile_image || undefined
         });
+        setShowLogin(false);
+        
+        // Load user data from server to get latest profile_image (async, won't block)
+        const loadUserFromServer = async () => {
+          try {
+            const serverUser = await apiClient.getUser(userData.id);
+            if (serverUser) {
+              // Update localStorage with latest data
+              localStorage.setItem('bbq_current_user', JSON.stringify({
+                ...userData,
+                profile_image: serverUser.profile_image || userData.profile_image || null
+              }));
+              // Update user state with latest data
+              setUser(prev => ({
+                ...prev,
+                ...serverUser,
+                profile_image: serverUser.profile_image || prev.profile_image
+              }));
+            }
+          } catch (error) {
+            console.error("Error loading user from server:", error);
+            // Continue with local data if server fails
+          }
+        };
+        
+        loadUserFromServer();
         // Load group
         loadGroup(userData.id, userData.phone);
       } catch {
@@ -89,7 +118,8 @@ const BBQManager = () => {
             localStorage.setItem('bbq_current_user', JSON.stringify({
               id: updatedUser.id,
               name: updatedUser.name,
-              phone: updatedUser.phone
+              phone: updatedUser.phone,
+              profile_image: updatedUser.profile_image || null
             }));
           } else if (user.isAdmin !== isAdmin) {
             // Only update isAdmin if name didn't change
@@ -429,30 +459,37 @@ const BBQManager = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{group.name}</h1>
-            {group.description && (
-              <p className="text-gray-600">{group.description}</p>
+        <div className="mb-8 flex items-start justify-between w-full" style={{ flexDirection: 'row-reverse' }}>
+          <div className="flex items-center gap-3">
+            {user.profile_image ? (
+              <img 
+                src={user.profile_image} 
+                alt={user.name}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
             )}
-          </div>
-          <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-sm text-muted-foreground">שלום, {user.name}</div>
               {user.isAdmin && (
                 <div className="text-xs text-primary font-semibold">מנהל</div>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              התנתק
-            </Button>
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">{group.name}</h1>
+            {group.description && (
+              <p className="text-gray-600">{group.description}</p>
+            )}
           </div>
         </div>
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6" dir="rtl">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               אירועים
@@ -493,15 +530,7 @@ const BBQManager = () => {
 
           <TabsContent value="members" className="space-y-4">
             <h2 className="text-2xl font-semibold mb-4">חברים קבועים</h2>
-            {user.isAdmin ? (
-              <MembersList groupId={group.id} />
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  רק מנהל הקבוצה יכול לראות ולנהל חברים
-                </CardContent>
-              </Card>
-            )}
+            <MembersList groupId={group.id} isAdmin={user.isAdmin} />
           </TabsContent>
 
           <TabsContent value="payments" className="space-y-4">
@@ -512,18 +541,49 @@ const BBQManager = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
-            {user.isAdmin ? (
-              <>
-                <h2 className="text-2xl font-semibold mb-4">הגדרות קבוצה</h2>
-                <GroupSettings group={group} onGroupUpdated={() => loadGroup(user.id)} />
-              </>
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  רק מנהל הקבוצה יכול לשנות הגדרות
-                </CardContent>
-              </Card>
-            )}
+            <div className="space-y-6">
+              {/* User Settings - for all users */}
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">הגדרות פרופיל</h2>
+                <UserSettings 
+                  user={user} 
+                  onUserUpdated={(updatedUser) => {
+                    setUser(updatedUser);
+                    // Update localStorage
+                    localStorage.setItem('bbq_current_user', JSON.stringify({
+                      id: updatedUser.id,
+                      name: updatedUser.name,
+                      phone: updatedUser.phone,
+                      profile_image: updatedUser.profile_image
+                    }));
+                  }} 
+                />
+              </div>
+
+              {/* Group Settings - only for admins */}
+              {user.isAdmin && (
+                <div>
+                  <h2 className="text-2xl font-semibold mb-4">הגדרות קבוצה</h2>
+                  <GroupSettings group={group} onGroupUpdated={() => loadGroup(user.id)} />
+                </div>
+              )}
+
+              {/* Logout Button */}
+              <div>
+                <Card>
+                  <CardContent className="py-6">
+                    <Button 
+                      variant="destructive" 
+                      onClick={handleLogout}
+                      className="w-full"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      התנתק
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

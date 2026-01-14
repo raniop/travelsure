@@ -334,8 +334,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     localStorage.setItem("language", language);
-    document.documentElement.dir = language === "he" ? "rtl" : "ltr";
-    document.documentElement.lang = language;
+    document.documentElement.dir = "rtl"; // Always RTL for Hebrew site
+    document.documentElement.lang = "he";
+    document.body.dir = "rtl";
+    document.body.style.direction = "rtl";
+    document.body.style.textAlign = "right";
   }, [language]);
 
   const setLanguage = (lang: Language) => {

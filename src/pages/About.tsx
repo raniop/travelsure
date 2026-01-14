@@ -21,7 +21,7 @@ const About = () => {
   ];
 
   return (
-    <div className="min-h-screen font-heebo" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="min-h-screen font-heebo" dir="rtl">
       <Header />
       <div className="h-16 md:h-20" />
       

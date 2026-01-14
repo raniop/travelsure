@@ -27,7 +27,7 @@ const CarInsurance = () => {
   ];
 
   return (
-    <div className="min-h-screen font-heebo" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="min-h-screen font-heebo" dir="rtl">
       <Header />
       
       {/* Hero Section */}

@@ -208,6 +208,14 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  async updateUser(id: string, data: any): Promise<any> {
+    // Use POST with action=update instead of PUT to avoid IIS restrictions
+    return this.request(`entity=users&id=${id}&action=update`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
