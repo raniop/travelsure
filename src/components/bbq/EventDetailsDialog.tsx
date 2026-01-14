@@ -10,14 +10,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
-import { Users, UserPlus, DollarSign, CheckCircle2, XCircle, Edit2 } from "lucide-react";
+import { Users, UserPlus, DollarSign, CheckCircle2, XCircle, Edit2, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface EventDetailsDialogProps {
@@ -525,20 +524,25 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                             הגיע
                           </Badge>
                         )}
-                        <div className="flex items-center gap-3 border-r pr-3">
-                          <div className="flex flex-col items-end gap-1">
-                            <Label className="text-xs text-muted-foreground">
-                              {guest.should_pay ? "משלם" : "חינם"}
-                            </Label>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">חינם</span>
-                              <Switch
-                                checked={!guest.should_pay}
-                                onCheckedChange={(checked) => toggleGuestPaymentStatus(guest.id, !checked)}
-                              />
-                              <span className="text-xs text-muted-foreground">משלם</span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-2 border-r pr-3">
+                          <Button
+                            variant={guest.should_pay ? "default" : "secondary"}
+                            size="sm"
+                            onClick={() => toggleGuestPaymentStatus(guest.id, !guest.should_pay)}
+                            className="flex items-center gap-2"
+                          >
+                            {guest.should_pay ? (
+                              <>
+                                <DollarSign className="w-3 h-3" />
+                                משלם
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3 h-3" />
+                                חינם
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </div>
