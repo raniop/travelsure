@@ -41,10 +41,10 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
   useEffect(() => {
     loadPayments();
     
-    // Auto-refresh payments every 10 seconds to check for PayBox updates
+    // Auto-refresh payments every minute to check for PayBox updates
     const interval = setInterval(() => {
       loadPayments();
-    }, 10000); // 10 seconds
+    }, 60000); // 60 seconds (1 minute)
     
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,39 +100,73 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         })
       );
 
-      // Filter payments by user if not admin
+      // Filter payments by user if not admin - only show payments for events user attended
       if (!isAdmin && userId) {
         const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
         
-        // Get all members to match user
+        // Get all members to find user's member_id
         const members = await apiClient.getMembers(groupId);
-        const userMember = members.find(m => {
-          // Match by phone or name
-          return m.phone === userData.phone || m.name === userData.name;
-        });
-
-        // Get all guests from all events to match user
-        const allGuests = await Promise.all(
-          events.map(e => apiClient.getGuests(e.id))
+        const userMember = members.find((m: any) => m.phone === userData.phone);
+        
+        if (!userMember) {
+          // If user is not a member, show no payments
+          setPayments([]);
+          setSummary({ total: 0, paid: 0, pending: 0 });
+          return;
+        }
+        
+        const userMemberId = userMember.id;
+        
+        // Check which events the user attended
+        const eventsUserAttended = await Promise.all(
+          events.map(async (event) => {
+            try {
+              const attendees = await apiClient.getAttendees(event.id);
+              const userAttended = attendees.some((a: any) => a.member_id === userMemberId && a.attended);
+              return userAttended ? event.id : null;
+            } catch {
+              return null;
+            }
+          })
         );
-        const flatGuests = allGuests.flat();
-        const userGuests = flatGuests.filter(g => g.phone === userData.phone);
-
-        // Filter payments - show only payments for this user
+        
+        const attendedEventIds = eventsUserAttended.filter(id => id !== null);
+        
+        // Get all guests for all attended events to check guest payments
+        const allGuestsForAttendedEvents = await Promise.all(
+          events
+            .filter(e => attendedEventIds.includes(e.id))
+            .map(async (event) => {
+              try {
+                const guests = await apiClient.getGuests(event.id);
+                return { eventId: event.id, guests };
+              } catch {
+                return { eventId: event.id, guests: [] };
+              }
+            })
+        );
+        
+        const guestsByEvent = allGuestsForAttendedEvents.reduce((acc, item) => {
+          acc[item.eventId] = item.guests;
+          return acc;
+        }, {} as Record<string, any[]>);
+        
+        // Filter payments - show only payments for events user attended AND payments for this user
         enrichedPayments = enrichedPayments.filter((payment: any) => {
-          // If payment has user_id, use it
-          if (payment.user_id) {
-            return payment.user_id === userId;
+          // Only show payments for events user attended
+          if (!attendedEventIds.includes(payment.event_id)) {
+            return false;
           }
           
-          // Otherwise, try to match by payer (member or guest)
+          // Show payments for this user (member or guest)
           if (payment.payer_type === "member" && userMember) {
             return payment.payer_id === userMember.id;
           }
           
           // For guests, check if guest phone matches user phone
           if (payment.payer_type === "guest") {
-            const matchingGuest = userGuests.find(g => g.id === payment.payer_id);
+            const eventGuests = guestsByEvent[payment.event_id] || [];
+            const matchingGuest = eventGuests.find(g => g.id === payment.payer_id && g.phone === userData.phone);
             return !!matchingGuest;
           }
           
@@ -363,21 +397,23 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                                         
                                         toast({
                                           title: "קישור קבוצת PayBox נפתח",
-                                          description: `הצטרף לקבוצה ושלם ${payment.amount.toFixed(2)} ₪. המערכת תתעדכן אוטומטית תוך 10 שניות אחרי התשלום.`,
+                                          description: `הצטרף לקבוצה ושלם ${payment.amount.toFixed(2)} ₪. המערכת תתעדכן אוטומטית תוך דקה אחרי התשלום.`,
                                         });
                                       }}
                                     >
                                       <ExternalLink className="w-4 h-4 mr-2" />
                                       שלם עכשיו
                                     </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => markAsPaid(payment.id)}
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                                      סמן כמשולם
-                                    </Button>
+                                    {isAdmin && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => markAsPaid(payment.id)}
+                                      >
+                                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                                        סמן כמשולם
+                                      </Button>
+                                    )}
                                   </div>
                                 )}
                               </div>
