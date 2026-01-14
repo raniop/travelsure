@@ -325,21 +325,29 @@ public class BBQHandler : IHttpHandler
                 break;
 
             case "users":
-                string usersJson = LoadAllJson("users", dataFolder);
-                if (!string.IsNullOrEmpty(id))
+                try
                 {
-                    string json = LoadEntityJson("users", id, dataFolder);
-                    if (!string.IsNullOrEmpty(json))
-                        context.Response.Write(json);
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        string json = LoadEntityJson("users", id, dataFolder);
+                        if (!string.IsNullOrEmpty(json))
+                            context.Response.Write(json);
+                        else
+                        {
+                            context.Response.StatusCode = 404;
+                            context.Response.Write("{\"error\":\"Not found\"}");
+                        }
+                    }
                     else
                     {
-                        context.Response.StatusCode = 404;
-                        context.Response.Write("{\"error\":\"Not found\"}");
+                        string usersJson = LoadAllJson("users", dataFolder);
+                        context.Response.Write(usersJson);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Response.Write(usersJson);
+                    // If error loading users, return empty array
+                    context.Response.Write("[]");
                 }
                 break;
 
