@@ -41,9 +41,14 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       const allEvents = await apiClient.getEvents(groupId);
       
       console.log('EventsList - isAdmin:', isAdmin, 'userId:', userId, 'allEvents count:', allEvents.length);
+      console.log('EventsList - allEvents:', allEvents.map(e => ({ id: e.id, date: e.event_date })));
       
       // Admin sees all events, non-admin only sees events they attended (for past events)
-      if (!isAdmin) {
+      if (isAdmin) {
+        // Admin sees all events - no filtering
+        console.log('EventsList - Admin user, showing all events:', allEvents.length);
+        setEvents(allEvents);
+      } else {
         // Get user's phone from localStorage
         const savedUser = localStorage.getItem('bbq_current_user');
         const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
@@ -93,10 +98,6 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
         );
         
         setEvents(filteredEvents.filter(e => e !== null) as Event[]);
-      } else {
-        // Admin sees all events - no filtering
-        console.log('EventsList - Admin user, showing all events:', allEvents.length);
-        setEvents(allEvents);
       }
     } catch (error: any) {
       console.error("Error loading events:", error);
