@@ -517,22 +517,27 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {guestAttended && (
                           <Badge variant="default">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             הגיע
                           </Badge>
                         )}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 border-r pr-3">
                           <Checkbox
+                            id={`guest-free-${guest.id}`}
                             checked={!guest.should_pay}
                             onCheckedChange={(checked) => toggleGuestPaymentStatus(guest.id, !(checked as boolean))}
-                            className="ml-2"
                           />
-                          <Badge variant={guest.should_pay ? "default" : "secondary"}>
-                            {guest.should_pay ? "משלם" : "חינם"}
-                          </Badge>
+                          <Label 
+                            htmlFor={`guest-free-${guest.id}`} 
+                            className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                          >
+                            <Badge variant={guest.should_pay ? "default" : "secondary"}>
+                              {guest.should_pay ? "משלם" : "חינם"}
+                            </Badge>
+                          </Label>
                         </div>
                       </div>
                     </div>
