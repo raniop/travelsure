@@ -85,8 +85,8 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
     })
     .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()); // Descending - most recent first
 
-  // Limit past events if not showing full history
-  const displayPastEvents = showHistory ? pastEvents : pastEvents.slice(0, 5);
+  // Show all past events (no limit)
+  const displayPastEvents = pastEvents;
 
   return (
     <div className="space-y-6">

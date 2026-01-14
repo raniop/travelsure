@@ -3,7 +3,7 @@ import { apiClient } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Calendar, DollarSign, History, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw } from "lucide-react";
+import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CreateEventDialog from "@/components/bbq/CreateEventDialog";
 import EventsList from "@/components/bbq/EventsList";
@@ -452,7 +452,7 @@ const BBQManager = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               אירועים
@@ -464,10 +464,6 @@ const BBQManager = () => {
             <TabsTrigger value="payments" className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               תשלומים
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <History className="w-4 h-4" />
-              היסטוריה
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -511,15 +507,6 @@ const BBQManager = () => {
               {user.isAdmin ? "סקירת תשלומים (כל התשלומים)" : "התשלומים שלי"}
             </h2>
             <PaymentsOverview groupId={group.id} userId={user.id} isAdmin={user.isAdmin} />
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            <h2 className="text-2xl font-semibold mb-4">היסטוריית תשלומים</h2>
-            <EventsList 
-              groupId={group.id} 
-              showHistory={true}
-              onPaymentsCalculated={() => setActiveTab("payments")}
-            />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
