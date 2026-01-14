@@ -83,7 +83,10 @@ public class BBQHandler : IHttpHandler
         }
         
         // Normalize entity to lowercase
-        entity = entity.ToLower();
+        if (!string.IsNullOrEmpty(entity))
+        {
+            entity = entity.ToLower();
+        }
         
         // If entity is still empty, return error
         if (string.IsNullOrEmpty(entity))
