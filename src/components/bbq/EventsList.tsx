@@ -42,6 +42,29 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       
       // If not admin, filter past events to only show ones where user was present
       if (!isAdmin) {
+        // Get user's phone from localStorage
+        const savedUser = localStorage.getItem('bbq_current_user');
+        const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+        
+        // Get all members to find user's member_id
+        const members = await apiClient.getMembers(groupId);
+        const userMember = members.find((m: any) => m.phone === userPhone);
+        
+        if (!userMember) {
+          // If user is not a member, show all future events only
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const futureEvents = allEvents.filter(event => {
+            const eventDate = new Date(event.event_date);
+            eventDate.setHours(0, 0, 0, 0);
+            return eventDate >= today;
+          });
+          setEvents(futureEvents);
+          return;
+        }
+        
+        const userMemberId = userMember.id;
+        
         const filteredEvents = await Promise.all(
           allEvents.map(async (event) => {
             const eventDate = new Date(event.event_date);
@@ -57,9 +80,11 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
             // Past events - only show if user was present
             try {
               const attendees = await apiClient.getAttendees(event.id);
-              const userAttended = attendees.some((a: any) => a.member_id === userId && a.attended);
+              const userAttended = attendees.some((a: any) => a.member_id === userMemberId && a.attended);
+              console.log(`Event ${event.id} (${event.event_date}): userAttended=${userAttended}, userMemberId=${userMemberId}`, attendees);
               return userAttended ? event : null;
-            } catch {
+            } catch (error) {
+              console.error(`Error checking attendees for event ${event.id}:`, error);
               return null;
             }
           })
