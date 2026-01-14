@@ -372,8 +372,11 @@ public class BBQHandler : IHttpHandler
                 break;
 
             default:
+                // Debug: return entity value to see what we got
                 context.Response.StatusCode = 400;
-                context.Response.Write("{\"error\":\"Invalid entity\"}");
+                string debugEntity = HttpUtility.JavaScriptStringEncode(entity ?? "");
+                string debugQuery = HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString());
+                context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + debugEntity + "\",\"queryString\":\"" + debugQuery + "\"}");
                 break;
         }
     }
