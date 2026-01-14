@@ -33,72 +33,80 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
 
   useEffect(() => {
     loadEvents();
-  }, [groupId]);
+  }, [groupId, isAdmin, userId]);
 
   const loadEvents = async () => {
     try {
       setLoading(true);
       const allEvents = await apiClient.getEvents(groupId);
       
-      console.log('EventsList - isAdmin:', isAdmin, 'userId:', userId, 'allEvents count:', allEvents.length);
+      console.log('EventsList - loadEvents called');
+      console.log('EventsList - isAdmin:', isAdmin, 'typeof isAdmin:', typeof isAdmin);
+      console.log('EventsList - userId:', userId);
+      console.log('EventsList - allEvents count:', allEvents.length);
       console.log('EventsList - allEvents:', allEvents.map(e => ({ id: e.id, date: e.event_date })));
       
       // Admin sees all events, non-admin only sees events they attended (for past events)
-      if (isAdmin) {
+      if (isAdmin === true) {
         // Admin sees all events - no filtering
-        console.log('EventsList - Admin user, showing all events:', allEvents.length);
+        console.log('EventsList - Admin user detected, showing all events:', allEvents.length);
         setEvents(allEvents);
-      } else {
-        // Get user's phone from localStorage
-        const savedUser = localStorage.getItem('bbq_current_user');
-        const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
-        
-        // Get all members to find user's member_id
-        const members = await apiClient.getMembers(groupId);
-        const userMember = members.find((m: any) => m.phone === userPhone);
-        
-        if (!userMember) {
-          // If user is not a member, show all future events only
+        return;
+      }
+      
+      console.log('EventsList - Non-admin user, filtering events...');
+      
+      // Get user's phone from localStorage
+      const savedUser = localStorage.getItem('bbq_current_user');
+      const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+      
+      // Get all members to find user's member_id
+      const members = await apiClient.getMembers(groupId);
+      const userMember = members.find((m: any) => m.phone === userPhone);
+      
+      if (!userMember) {
+        // If user is not a member, show all future events only
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const futureEvents = allEvents.filter(event => {
+          const eventDate = new Date(event.event_date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= today;
+        });
+        setEvents(futureEvents);
+        return;
+      }
+      
+      const userMemberId = userMember.id;
+      
+      const filteredEvents = await Promise.all(
+        allEvents.map(async (event) => {
+          const eventDate = new Date(event.event_date);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          const futureEvents = allEvents.filter(event => {
-            const eventDate = new Date(event.event_date);
-            eventDate.setHours(0, 0, 0, 0);
-            return eventDate >= today;
-          });
-          setEvents(futureEvents);
-          return;
-        }
-        
-        const userMemberId = userMember.id;
-        
-        const filteredEvents = await Promise.all(
-          allEvents.map(async (event) => {
-            const eventDate = new Date(event.event_date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            eventDate.setHours(0, 0, 0, 0);
-            
-            // Future events - always show
-            if (eventDate >= today) {
-              return event;
-            }
-            
-            // Past events - only show if user was present
-            try {
-              const attendees = await apiClient.getAttendees(event.id);
-              const userAttended = attendees.some((a: any) => a.member_id === userMemberId && a.attended);
-              console.log(`Event ${event.id} (${event.event_date}): userAttended=${userAttended}, userMemberId=${userMemberId}`, attendees);
-              return userAttended ? event : null;
-            } catch (error) {
-              console.error(`Error checking attendees for event ${event.id}:`, error);
-              return null;
-            }
-          })
-        );
-        
-        setEvents(filteredEvents.filter(e => e !== null) as Event[]);
-      }
+          eventDate.setHours(0, 0, 0, 0);
+          
+          // Future events - always show
+          if (eventDate >= today) {
+            return event;
+          }
+          
+          // Past events - only show if user was present
+          try {
+            const attendees = await apiClient.getAttendees(event.id);
+            const userAttended = attendees.some((a: any) => a.member_id === userMemberId && a.attended);
+            console.log(`Event ${event.id} (${event.event_date}): userAttended=${userAttended}, userMemberId=${userMemberId}`, attendees);
+            return userAttended ? event : null;
+          } catch (error) {
+            console.error(`Error checking attendees for event ${event.id}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      const finalEvents = filteredEvents.filter(e => e !== null) as Event[];
+      console.log('EventsList - Filtered events count:', finalEvents.length);
+      setEvents(finalEvents);
     } catch (error: any) {
       console.error("Error loading events:", error);
       toast({
