@@ -66,6 +66,7 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
   const [newGuestIsFirstTime, setNewGuestIsFirstTime] = useState(true);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [hasPayments, setHasPayments] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,6 +102,14 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
       // Load guests
       const guestsData = await apiClient.getGuests(eventId);
       setGuests(guestsData);
+
+      // Check if payments exist for this event
+      try {
+        const paymentsData = await apiClient.getPayments(eventId);
+        setHasPayments(paymentsData && paymentsData.length > 0);
+      } catch (error) {
+        setHasPayments(false);
+      }
     } catch (error: any) {
       console.error("Error loading event details:", error);
       toast({
@@ -378,18 +387,20 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
         }
       }
 
+      // Mark that payments have been calculated
+      setHasPayments(true);
+
       toast({
         title: "הצלחה!",
         description: `חושבו תשלומים: ${costPerPerson.toFixed(2)} ₪ לכל משתתף`
       });
 
-      // Close dialog and navigate to payments tab
-      setOpen(false);
+      // Reload event details to show updated payments
+      await loadEventDetails();
+
+      // Navigate to payments tab (but keep dialog open)
       if (onPaymentsCalculated) {
-        // Small delay to ensure dialog closes smoothly
-        setTimeout(() => {
-          onPaymentsCalculated();
-        }, 100);
+        onPaymentsCalculated();
       }
     } catch (error: any) {
       console.error("Error calculating payments:", error);
@@ -578,14 +589,33 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
             <Separator />
 
             {/* Calculate Payments */}
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button
                 onClick={calculatePayments}
                 disabled={calculating || totalPaying === 0}
-                className="w-full"
+                className="flex-1"
+                variant={hasPayments ? "outline" : "default"}
               >
-                {calculating ? "מחשב..." : "חשב תשלומים"}
+                {calculating 
+                  ? "מחשב..." 
+                  : hasPayments 
+                    ? "חשב מחדש תשלומים" 
+                    : "חשב תשלומים"}
               </Button>
+              {hasPayments && (
+                <Button
+                  onClick={() => {
+                    setOpen(false);
+                    if (onPaymentsCalculated) {
+                      onPaymentsCalculated();
+                    }
+                  }}
+                  variant="default"
+                  className="flex-1"
+                >
+                  צפה בתשלומים
+                </Button>
+              )}
             </div>
           </div>
         )}
