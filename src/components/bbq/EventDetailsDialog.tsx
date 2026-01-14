@@ -475,49 +475,70 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                 חברים קבועים
               </h3>
               <div className="space-y-2">
-                {members.map((member) => {
-                  const attendee = attendees.find(a => a.member_id === member.id);
-                  const attended = attendee?.attended || false;
-                  
-                  // Check if this is the current user - compare by member_id with userId
-                  // userId format is "user_0524444244", member.id might be different
-                  // So we compare by phone number from localStorage
+                {(() => {
+                  // Get current user phone
                   const savedUser = localStorage.getItem('bbq_current_user');
                   const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
-                  const isCurrentUser = member.phone === userPhone;
                   
-                  // Only allow editing if admin or if it's the current user
-                  const canEdit = isAdmin || isCurrentUser;
+                  // Sort members: current user first, then by attendance status (attended first), then alphabetically
+                  const sortedMembers = [...members].sort((a, b) => {
+                    const aAttendee = attendees.find(att => att.member_id === a.id);
+                    const bAttendee = attendees.find(att => att.member_id === b.id);
+                    const aAttended = aAttendee?.attended || false;
+                    const bAttended = bAttendee?.attended || false;
+                    const aIsCurrentUser = a.phone === userPhone;
+                    const bIsCurrentUser = b.phone === userPhone;
+                    
+                    // Current user always first
+                    if (aIsCurrentUser && !bIsCurrentUser) return -1;
+                    if (!aIsCurrentUser && bIsCurrentUser) return 1;
+                    
+                    // If both are current user or both are not, sort by attendance
+                    if (aAttended && !bAttended) return -1;
+                    if (!aAttended && bAttended) return 1;
+                    
+                    // If same attendance status, sort alphabetically
+                    return a.name.localeCompare(b.name, 'he');
+                  });
+                  
+                  return sortedMembers.map((member) => {
+                    const attendee = attendees.find(a => a.member_id === member.id);
+                    const attended = attendee?.attended || false;
+                    const isCurrentUser = member.phone === userPhone;
+                    
+                    // Only allow editing if admin or if it's the current user
+                    const canEdit = isAdmin || isCurrentUser;
 
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={attended}
-                          disabled={!canEdit}
-                          onCheckedChange={(checked) =>
-                            toggleMemberAttendance(member.id, checked as boolean)
-                          }
-                        />
-                        <span className={attended ? "font-medium" : "text-muted-foreground"}>
-                          {member.name}
-                          {isCurrentUser && !isAdmin && (
-                            <span className="text-xs text-muted-foreground mr-2">(אתה)</span>
-                          )}
-                        </span>
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={attended}
+                            disabled={!canEdit}
+                            onCheckedChange={(checked) =>
+                              toggleMemberAttendance(member.id, checked as boolean)
+                            }
+                          />
+                          <span className={attended ? "font-medium" : "text-muted-foreground"}>
+                            {member.name}
+                            {isCurrentUser && !isAdmin && (
+                              <span className="text-xs text-muted-foreground mr-2">(אתה)</span>
+                            )}
+                          </span>
+                        </div>
+                        {attended && (
+                          <Badge variant="default">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            {attendanceLabel}
+                          </Badge>
+                        )}
                       </div>
-                      {attended && (
-                        <Badge variant="default">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          {attendanceLabel}
-                        </Badge>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </div>
 
