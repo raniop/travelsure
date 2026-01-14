@@ -421,6 +421,14 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const payingGuests = guests.filter(g => g.should_pay);
   const totalPaying = payingAttendees.length + payingGuests.length;
   const costPerPerson = totalPaying > 0 && event ? event.total_cost / totalPaying : 0;
+  
+  // Check if event is in the future or past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDateOnly = event ? new Date(event.event_date) : new Date();
+  eventDateOnly.setHours(0, 0, 0, 0);
+  const isFutureEvent = eventDateOnly >= today;
+  const attendanceLabel = isFutureEvent ? "מגיע" : "הגיע";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -504,7 +512,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                       {attended && (
                         <Badge variant="default">
                           <CheckCircle2 className="w-3 h-3 mr-1" />
-                          הגיע
+                          {attendanceLabel}
                         </Badge>
                       )}
                     </div>
@@ -550,7 +558,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                         {guestAttended && (
                           <Badge variant="default">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
-                            הגיע
+                            {attendanceLabel}
                           </Badge>
                         )}
                         {isAdmin && (
