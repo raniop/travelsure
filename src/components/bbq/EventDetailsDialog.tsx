@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -524,20 +525,20 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                             הגיע
                           </Badge>
                         )}
-                        <div className="flex items-center gap-2 border-r pr-3">
-                          <Checkbox
-                            id={`guest-free-${guest.id}`}
-                            checked={!guest.should_pay}
-                            onCheckedChange={(checked) => toggleGuestPaymentStatus(guest.id, !(checked as boolean))}
-                          />
-                          <Label 
-                            htmlFor={`guest-free-${guest.id}`} 
-                            className="text-sm font-normal cursor-pointer flex items-center gap-2"
-                          >
-                            <Badge variant={guest.should_pay ? "default" : "secondary"}>
+                        <div className="flex items-center gap-3 border-r pr-3">
+                          <div className="flex flex-col items-end gap-1">
+                            <Label className="text-xs text-muted-foreground">
                               {guest.should_pay ? "משלם" : "חינם"}
-                            </Badge>
-                          </Label>
+                            </Label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">חינם</span>
+                              <Switch
+                                checked={!guest.should_pay}
+                                onCheckedChange={(checked) => toggleGuestPaymentStatus(guest.id, !checked)}
+                              />
+                              <span className="text-xs text-muted-foreground">משלם</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
