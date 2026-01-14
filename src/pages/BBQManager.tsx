@@ -442,10 +442,6 @@ const BBQManager = () => {
               {user.isAdmin && (
                 <div className="text-xs text-primary font-semibold">מנהל</div>
               )}
-              {/* Debug info */}
-              <div className="text-xs text-muted-foreground" style={{fontSize: '10px'}}>
-                isAdmin: {String(user.isAdmin)}, userId: {user.id}
-              </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
