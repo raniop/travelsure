@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, ChevronLeft } from "lucide-react";
+import { Calendar, Users, ChevronLeft, Clock, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import EventDetailsDialog from "./EventDetailsDialog";
 
@@ -37,9 +37,7 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
     try {
       setLoading(true);
       const events = await apiClient.getEvents(groupId);
-      // Sort by date descending and limit
-      const sorted = events.sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
-      setEvents(showHistory ? sorted.slice(0, 50) : sorted.slice(0, 10));
+      setEvents(events);
     } catch (error: any) {
       console.error("Error loading events:", error);
       toast({
@@ -66,16 +64,73 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
     );
   }
 
+  // Separate events into future and past
+  const now = new Date();
+  const futureEvents = events
+    .filter(event => new Date(event.event_date) >= now)
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()); // Ascending - closest first
+  
+  const pastEvents = events
+    .filter(event => new Date(event.event_date) < now)
+    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()); // Descending - most recent first
+
+  // Limit past events if not showing full history
+  const displayPastEvents = showHistory ? pastEvents : pastEvents.slice(0, 5);
+
   return (
-    <div className="space-y-4">
-      {events.map((event) => (
-        <EventCard 
-          key={event.id} 
-          event={event} 
-          groupId={groupId} 
-          onPaymentsCalculated={onPaymentsCalculated}
-        />
-      ))}
+    <div className="space-y-6">
+      {/* Future Events */}
+      {futureEvents.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">אירועים קרובים</h2>
+            <Badge variant="default" className="mr-auto">{futureEvents.length}</Badge>
+          </div>
+          <div className="space-y-4">
+            {futureEvents.map((event) => (
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                groupId={groupId} 
+                onPaymentsCalculated={onPaymentsCalculated}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Past Events */}
+      {displayPastEvents.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <History className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">אירועים שעברו</h2>
+            <Badge variant="secondary" className="mr-auto">
+              {displayPastEvents.length}{!showHistory && pastEvents.length > 5 && ` מתוך ${pastEvents.length}`}
+            </Badge>
+          </div>
+          <div className="space-y-4">
+            {displayPastEvents.map((event) => (
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                groupId={groupId} 
+                onPaymentsCalculated={onPaymentsCalculated}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Show message if no events in either category */}
+      {futureEvents.length === 0 && displayPastEvents.length === 0 && (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            עדיין אין אירועים. צור אירוע ראשון!
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
