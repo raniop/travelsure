@@ -33,6 +33,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
 
   useEffect(() => {
     loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, isAdmin, userId]);
 
   const loadEvents = async () => {
@@ -47,10 +48,14 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       console.log('EventsList - allEvents:', allEvents.map(e => ({ id: e.id, date: e.event_date })));
       
       // Admin sees all events, non-admin only sees events they attended (for past events)
-      if (isAdmin === true) {
-        // Admin sees all events - no filtering
+      // Check isAdmin more safely - handle both boolean true and string "true"
+      const isAdminUser = isAdmin === true || isAdmin === "true" || String(isAdmin).toLowerCase() === "true";
+      
+      if (isAdminUser) {
+        // Admin sees all events - no filtering, show everything
         console.log('EventsList - Admin user detected, showing all events:', allEvents.length);
         setEvents(allEvents);
+        setLoading(false);
         return;
       }
       
