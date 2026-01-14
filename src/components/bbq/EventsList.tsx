@@ -20,11 +20,13 @@ interface Event {
 
 interface EventsListProps {
   groupId: string;
+  userId: string;
+  isAdmin: boolean;
   showHistory?: boolean;
   onPaymentsCalculated?: () => void;
 }
 
-const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: EventsListProps) => {
+const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsCalculated }: EventsListProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -36,8 +38,37 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const events = await apiClient.getEvents(groupId);
-      setEvents(events);
+      const allEvents = await apiClient.getEvents(groupId);
+      
+      // If not admin, filter past events to only show ones where user was present
+      if (!isAdmin) {
+        const filteredEvents = await Promise.all(
+          allEvents.map(async (event) => {
+            const eventDate = new Date(event.event_date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            eventDate.setHours(0, 0, 0, 0);
+            
+            // Future events - always show
+            if (eventDate >= today) {
+              return event;
+            }
+            
+            // Past events - only show if user was present
+            try {
+              const attendees = await apiClient.getAttendees(event.id);
+              const userAttended = attendees.some((a: any) => a.member_id === userId && a.attended);
+              return userAttended ? event : null;
+            } catch {
+              return null;
+            }
+          })
+        );
+        
+        setEvents(filteredEvents.filter(e => e !== null) as Event[]);
+      } else {
+        setEvents(allEvents);
+      }
     } catch (error: any) {
       console.error("Error loading events:", error);
       toast({
@@ -103,7 +134,9 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
               <EventCard 
                 key={event.id} 
                 event={event} 
-                groupId={groupId} 
+                groupId={groupId}
+                userId={userId}
+                isAdmin={isAdmin}
                 onPaymentsCalculated={onPaymentsCalculated}
               />
             ))}
@@ -126,7 +159,9 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
               <EventCard 
                 key={event.id} 
                 event={event} 
-                groupId={groupId} 
+                groupId={groupId}
+                userId={userId}
+                isAdmin={isAdmin}
                 onPaymentsCalculated={onPaymentsCalculated}
               />
             ))}
@@ -149,10 +184,12 @@ const EventsList = ({ groupId, showHistory = false, onPaymentsCalculated }: Even
 interface EventCardProps {
   event: Event;
   groupId: string;
+  userId: string;
+  isAdmin: boolean;
   onPaymentsCalculated?: () => void;
 }
 
-const EventCard = ({ event, groupId, onPaymentsCalculated }: EventCardProps) => {
+const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: EventCardProps) => {
   const eventDate = new Date(event.event_date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -185,7 +222,7 @@ const EventCard = ({ event, groupId, onPaymentsCalculated }: EventCardProps) => 
               <span className="font-semibold text-foreground">{event.total_cost.toFixed(2)} ₪</span>
             </div>
           </div>
-          <EventDetailsDialog eventId={event.id} groupId={groupId} onPaymentsCalculated={onPaymentsCalculated}>
+          <EventDetailsDialog eventId={event.id} groupId={groupId} userId={userId} isAdmin={isAdmin} onPaymentsCalculated={onPaymentsCalculated}>
             <Button 
               variant="default" 
               size="sm" 

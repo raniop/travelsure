@@ -23,6 +23,8 @@ import { Separator } from "@/components/ui/separator";
 interface EventDetailsDialogProps {
   eventId: string;
   groupId: string;
+  userId: string;
+  isAdmin: boolean;
   children: React.ReactNode;
   onPaymentsCalculated?: () => void;
 }
@@ -55,7 +57,7 @@ interface Event {
   description: string | null;
 }
 
-const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }: EventDetailsDialogProps) => {
+const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPaymentsCalculated }: EventDetailsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -468,6 +470,16 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                 {members.map((member) => {
                   const attendee = attendees.find(a => a.member_id === member.id);
                   const attended = attendee?.attended || false;
+                  
+                  // Check if this is the current user - compare by member_id with userId
+                  // userId format is "user_0524444244", member.id might be different
+                  // So we compare by phone number from localStorage
+                  const savedUser = localStorage.getItem('bbq_current_user');
+                  const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+                  const isCurrentUser = member.phone === userPhone;
+                  
+                  // Only allow editing if admin or if it's the current user
+                  const canEdit = isAdmin || isCurrentUser;
 
                   return (
                     <div
@@ -477,12 +489,16 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={attended}
+                          disabled={!canEdit}
                           onCheckedChange={(checked) =>
                             toggleMemberAttendance(member.id, checked as boolean)
                           }
                         />
                         <span className={attended ? "font-medium" : "text-muted-foreground"}>
                           {member.name}
+                          {isCurrentUser && !isAdmin && (
+                            <span className="text-xs text-muted-foreground mr-2">(אתה)</span>
+                          )}
                         </span>
                       </div>
                       {attended && (
@@ -516,6 +532,7 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                       <div className="flex items-center gap-3 flex-1">
                         <Checkbox
                           checked={guestAttended}
+                          disabled={!isAdmin}
                           onCheckedChange={(checked) => toggleGuestAttendance(guest.id, checked as boolean)}
                         />
                         <div>
@@ -536,24 +553,32 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                             הגיע
                           </Badge>
                         )}
-                        <div className="flex items-center gap-2 border-r pr-3">
-                          <Toggle
-                            pressed={guest.should_pay}
-                            onPressedChange={(pressed) => toggleGuestPaymentStatus(guest.id, pressed)}
-                            variant={guest.should_pay ? "default" : "outline"}
-                            size="sm"
-                            className="min-w-[80px]"
-                          >
+                        {isAdmin && (
+                          <div className="flex items-center gap-2 border-r pr-3">
+                            <Toggle
+                              pressed={guest.should_pay}
+                              onPressedChange={(pressed) => toggleGuestPaymentStatus(guest.id, pressed)}
+                              variant={guest.should_pay ? "default" : "outline"}
+                              size="sm"
+                              className="min-w-[80px]"
+                            >
+                              {guest.should_pay ? "משלם" : "חינם"}
+                            </Toggle>
+                          </div>
+                        )}
+                        {!isAdmin && (
+                          <Badge variant={guest.should_pay ? "default" : "secondary"}>
                             {guest.should_pay ? "משלם" : "חינם"}
-                          </Toggle>
-                        </div>
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Add Guest */}
+              {/* Add Guest - Only for admin */}
+              {isAdmin && (
               <div className="space-y-3 p-3 border rounded-lg bg-muted/50">
                 <Label>הוסף אורח</Label>
                 <div className="flex gap-2">
@@ -584,11 +609,13 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                   </Label>
                 </div>
               </div>
+              )}
             </div>
 
             <Separator />
 
-            {/* Calculate Payments */}
+            {/* Calculate Payments - Only for admin */}
+            {isAdmin && (
             <div className="flex justify-end gap-2">
               <Button
                 onClick={calculatePayments}
@@ -617,6 +644,7 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                 </Button>
               )}
             </div>
+            )}
           </div>
         )}
       </DialogContent>

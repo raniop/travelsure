@@ -485,6 +485,8 @@ const BBQManager = () => {
             </div>
             <EventsList 
               groupId={group.id} 
+              userId={user.id}
+              isAdmin={user.isAdmin}
               onPaymentsCalculated={() => setActiveTab("payments")}
             />
           </TabsContent>
