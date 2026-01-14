@@ -955,6 +955,38 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(guestJson);
                 break;
 
+            case "users":
+                string userJson = body;
+                // Preserve created_at if exists
+                string existingUserJson = LoadEntityJson("users", id, dataFolder);
+                if (!string.IsNullOrEmpty(existingUserJson) && existingUserJson.Contains("\"created_at\""))
+                {
+                    int createdIdx = existingUserJson.IndexOf("\"created_at\"");
+                    if (createdIdx > 0)
+                    {
+                        int startQuote = existingUserJson.IndexOf("\"", createdIdx + 12);
+                        int endQuote = existingUserJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string createdAt = existingUserJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                            userJson = userJson.Trim();
+                            if (userJson.StartsWith("{") && userJson.EndsWith("}"))
+                            {
+                                userJson = userJson.Substring(1, userJson.Length - 2);
+                                if (!userJson.Contains("\"created_at\""))
+                                {
+                                    userJson = userJson + ",\"created_at\":\"" + createdAt + "\"";
+                                }
+                                userJson = "{" + userJson + "}";
+                            }
+                        }
+                    }
+                }
+                
+                SaveEntityJson("users", id, userJson, dataFolder);
+                context.Response.Write(userJson);
+                break;
+
             default:
                 context.Response.StatusCode = 400;
                 string originalEntity = context.Request.QueryString["entity"] ?? "";

@@ -106,6 +106,25 @@ if (Test-Path $dataDir) {
 # Special handling for api-bbq.ashx - upload to both /TravSure and root
 $apiFiles = @("api-bbq.ashx", "api-bbq.php", "api-shatap.ashx", "api-shatap.php")
 
+# Upload API files from project root (not from dist)
+$projectRoot = $PSScriptRoot
+foreach ($apiFile in $apiFiles) {
+    $localApiFile = Join-Path $projectRoot $apiFile
+    if (Test-Path $localApiFile) {
+        Write-Host "  $apiFile (from root)" -ForegroundColor Cyan
+        # Upload to /TravSure
+        if (Upload-FileToFtp -LocalFile $localApiFile -RemotePath $apiFile -FtpUri $ftpUri -Username $Username -Password $Password) {
+            $uploadedFiles++
+            # Also upload to root
+            $rootFtpUri = "ftp://${FtpServer}"
+            Write-Host "  /$apiFile (root)" -ForegroundColor Cyan
+            if (Upload-FileToFtp -LocalFile $localApiFile -RemotePath $apiFile -FtpUri $rootFtpUri -Username $Username -Password $Password) {
+                $uploadedFiles++
+            }
+        }
+    }
+}
+
 foreach ($file in $files) {
     $relativePath = $file.FullName.Substring($sourceDir.Length + 1)
     $remotePath = $relativePath.Replace('\', '/')
