@@ -10,13 +10,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Toggle } from "@/components/ui/toggle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
-import { Users, UserPlus, DollarSign, CheckCircle2, XCircle, Edit2, Check } from "lucide-react";
+import { Users, UserPlus, CheckCircle2, XCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface EventDetailsDialogProps {
@@ -525,24 +526,15 @@ const EventDetailsDialog = ({ eventId, groupId, children, onPaymentsCalculated }
                           </Badge>
                         )}
                         <div className="flex items-center gap-2 border-r pr-3">
-                          <Button
-                            variant={guest.should_pay ? "default" : "secondary"}
+                          <Toggle
+                            pressed={guest.should_pay}
+                            onPressedChange={(pressed) => toggleGuestPaymentStatus(guest.id, pressed)}
+                            variant={guest.should_pay ? "default" : "outline"}
                             size="sm"
-                            onClick={() => toggleGuestPaymentStatus(guest.id, !guest.should_pay)}
-                            className="flex items-center gap-2"
+                            className="min-w-[80px]"
                           >
-                            {guest.should_pay ? (
-                              <>
-                                <DollarSign className="w-3 h-3" />
-                                משלם
-                              </>
-                            ) : (
-                              <>
-                                <Check className="w-3 h-3" />
-                                חינם
-                              </>
-                            )}
-                          </Button>
+                            {guest.should_pay ? "משלם" : "חינם"}
+                          </Toggle>
                         </div>
                       </div>
                     </div>

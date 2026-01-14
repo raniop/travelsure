@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle2, XCircle, Clock, ExternalLink } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 
@@ -230,7 +230,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">סה״כ תשלומים</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.total.toFixed(2)} ₪</div>

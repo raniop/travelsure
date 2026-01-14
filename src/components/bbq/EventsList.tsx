@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, DollarSign, ChevronLeft } from "lucide-react";
+import { Calendar, Users, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import EventDetailsDialog from "./EventDetailsDialog";
 
@@ -112,7 +112,6 @@ const EventCard = ({ event, groupId, onPaymentsCalculated }: EventCardProps) => 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <DollarSign className="w-4 h-4" />
               <span className="font-semibold text-foreground">{event.total_cost.toFixed(2)} ₪</span>
             </div>
           </div>
