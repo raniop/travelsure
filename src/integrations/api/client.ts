@@ -187,6 +187,27 @@ class ApiClient {
     const payments = await this.getPayments(eventId);
     return payments.find((p: any) => p.payer_id === payerId && p.payer_type === payerType) || null;
   }
+
+  // Users
+  async getUsers(): Promise<any[]> {
+    return this.request('entity=users');
+  }
+
+  async getUser(id: string): Promise<any> {
+    return this.request(`entity=users&id=${id}`);
+  }
+
+  async getUserByPhone(phone: string): Promise<any | null> {
+    const users = await this.getUsers();
+    return users.find((u: any) => u.phone === phone) || null;
+  }
+
+  async createUser(data: any): Promise<any> {
+    return this.request('entity=users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

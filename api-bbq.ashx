@@ -324,6 +324,25 @@ public class BBQHandler : IHttpHandler
                 }
                 break;
 
+            case "users":
+                string usersJson = LoadAllJson("users", dataFolder);
+                if (!string.IsNullOrEmpty(id))
+                {
+                    string json = LoadEntityJson("users", id, dataFolder);
+                    if (!string.IsNullOrEmpty(json))
+                        context.Response.Write(json);
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        context.Response.Write("{\"error\":\"Not found\"}");
+                    }
+                }
+                else
+                {
+                    context.Response.Write(usersJson);
+                }
+                break;
+
             default:
                 context.Response.StatusCode = 400;
                 context.Response.Write("{\"error\":\"Invalid entity\"}");
@@ -470,6 +489,74 @@ public class BBQHandler : IHttpHandler
                 
                 SaveEntityJson("payments", paymentNewId, paymentJson, dataFolder);
                 context.Response.Write(paymentJson);
+                break;
+
+            case "users":
+                string userNewId = Guid.NewGuid().ToString();
+                string userCreatedAt = DateTime.UtcNow.ToString("o");
+                
+                string userJson = body;
+                // Check if user already exists by phone
+                string phone = "";
+                if (userJson.Contains("\"phone\""))
+                {
+                    int phoneStart = userJson.IndexOf("\"phone\":\"") + 9;
+                    int phoneEnd = userJson.IndexOf("\"", phoneStart);
+                    if (phoneEnd > phoneStart)
+                    {
+                        phone = userJson.Substring(phoneStart, phoneEnd - phoneStart);
+                    }
+                }
+                
+                // If phone provided, check if user exists
+                if (!string.IsNullOrEmpty(phone))
+                {
+                    string allUsersJson = LoadAllJson("users", dataFolder);
+                    if (!string.IsNullOrEmpty(allUsersJson) && allUsersJson != "[]")
+                    {
+                        string trimmed = allUsersJson.Trim('[', ']');
+                        if (!string.IsNullOrEmpty(trimmed))
+                        {
+                            string[] parts = trimmed.Split(new string[] { "},{" }, StringSplitOptions.None);
+                            foreach (string part in parts)
+                            {
+                                string clean = part.Trim();
+                                if (!clean.StartsWith("{")) clean = "{" + clean;
+                                if (!clean.EndsWith("}")) clean = clean + "}";
+                                if (clean.Contains("\"phone\":\"" + phone + "\""))
+                                {
+                                    // User exists, return existing user
+                                    context.Response.Write(clean);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Extract id from userJson if provided (for user_0524444244 format)
+                if (userJson.Contains("\"id\""))
+                {
+                    int idStart = userJson.IndexOf("\"id\":\"") + 6;
+                    int idEnd = userJson.IndexOf("\"", idStart);
+                    if (idEnd > idStart)
+                    {
+                        userNewId = userJson.Substring(idStart, idEnd - idStart);
+                    }
+                }
+                
+                if (!userJson.Contains("\"id\""))
+                {
+                    userJson = userJson.Trim();
+                    if (userJson.StartsWith("{") && userJson.EndsWith("}"))
+                    {
+                        userJson = userJson.Substring(1, userJson.Length - 2);
+                        userJson = "{\"id\":\"" + userNewId + "\",\"created_at\":\"" + userCreatedAt + "\"," + userJson + "}";
+                    }
+                }
+                
+                SaveEntityJson("users", userNewId, userJson, dataFolder);
+                context.Response.Write(userJson);
                 break;
 
             default:

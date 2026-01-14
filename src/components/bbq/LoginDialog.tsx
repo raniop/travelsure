@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Lock, User } from "lucide-react";
+import { apiClient } from "@/integrations/api/client";
 
 interface LoginDialogProps {
   open: boolean;
@@ -64,9 +65,8 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       // Generate user ID from phone
       const userId = `user_${cleanPhone}`;
       
-      // Check if user exists in localStorage
-      const existingUsers = JSON.parse(localStorage.getItem('bbq_users') || '[]');
-      const existingUser = existingUsers.find((u: any) => u.phone === cleanPhone);
+      // Check if user exists in server
+      let existingUser = await apiClient.getUserByPhone(cleanPhone);
       
       if (isRegistering) {
         // Register new user
@@ -89,8 +89,8 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
           created_at: new Date().toISOString()
         };
         
-        existingUsers.push(newUser);
-        localStorage.setItem('bbq_users', JSON.stringify(existingUsers));
+        // Save to server
+        existingUser = await apiClient.createUser(newUser);
         
         toast({
           title: "הצלחה!",
@@ -124,25 +124,17 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       // Check if user is admin (owner of the group)
       const isAdmin = groupOwnerId === userId;
       
-      // Save current user
-      const currentUser = existingUser || {
-        id: userId,
-        name: fullName.trim() || cleanPhone, // Use full name if provided, otherwise phone
-        phone: cleanPhone,
-        password: password,
-        created_at: new Date().toISOString()
-      };
-      
+      // Save current user to localStorage (for quick access, but data is on server)
       localStorage.setItem('bbq_current_user', JSON.stringify({
-        id: currentUser.id,
-        name: currentUser.name,
-        phone: currentUser.phone
+        id: existingUser.id,
+        name: existingUser.name,
+        phone: existingUser.phone
       }));
       
       onLogin({
-        id: currentUser.id,
-        name: currentUser.name,
-        phone: currentUser.phone,
+        id: existingUser.id,
+        name: existingUser.name,
+        phone: existingUser.phone,
         isAdmin
       });
       
