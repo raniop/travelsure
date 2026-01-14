@@ -76,11 +76,28 @@ public class BBQHandler : IHttpHandler
 
     private void HandleGet(HttpContext context, string entity, string dataFolder)
     {
+        // Re-read entity from query string to ensure we have it
+        if (string.IsNullOrEmpty(entity))
+        {
+            entity = context.Request.QueryString["entity"] ?? "";
+        }
+        
+        // Normalize entity to lowercase
+        entity = entity.ToLower();
+        
+        // If entity is still empty, return error
+        if (string.IsNullOrEmpty(entity))
+        {
+            context.Response.StatusCode = 400;
+            context.Response.Write("{\"error\":\"Missing entity parameter\"}");
+            return;
+        }
+        
         string id = context.Request.QueryString["id"] ?? "";
         string groupId = context.Request.QueryString["group_id"] ?? "";
         string eventId = context.Request.QueryString["event_id"] ?? "";
 
-        switch (entity.ToLower())
+        switch (entity)
         {
             case "groups":
                 if (!string.IsNullOrEmpty(id))
