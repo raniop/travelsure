@@ -1885,23 +1885,15 @@ export default function BuyInsNew() {
                 const isValid = validateForm();
                 if (isValid) {
                   const params = new URLSearchParams(window.location.search);
-                  const shatapId = getQueryParam(params, ["aff", "shatapId", "id"]);
-                  const fromDate = getQueryParam(params, ["from", "From", "start", "startDate"]);
-                  const toDate = getQueryParam(params, ["to", "To", "end", "endDate"]);
-                  const docket = getQueryParam(params, ["docket", "Docket"]);
+                  const shatapId = getQueryParam(params, ["aff", "shatapId", "id"]) || "709";
+                  const fromDate =
+                    getQueryParam(params, ["from", "From", "start", "startDate"]) ||
+                    normalizeDateForHarel(new Date().toISOString());
+                  const toDate =
+                    getQueryParam(params, ["to", "To", "end", "endDate"]) ||
+                    normalizeDateForHarel(new Date().toISOString());
+                  const docket = getQueryParam(params, ["docket", "Docket"]) || "0";
                   const returnUrl = getQueryParam(params, ["return", "Return"]);
-
-                  const missing: string[] = [];
-                  if (!shatapId) missing.push("aid (aff)");
-                  if (!fromDate) missing.push("From");
-                  if (!toDate) missing.push("To");
-                  if (!docket) missing.push("Docket");
-                  if (!returnUrl) missing.push("Return");
-
-                  if (missing.length > 0) {
-                    window.alert(`חסרים פרטים לשליחת הראל: ${missing.join(", ")}`);
-                    return;
-                  }
 
                   const activeCustomers = customers.filter((c) => c.id && c.id.trim());
                   const harelParams = new URLSearchParams();
@@ -1911,7 +1903,9 @@ export default function BuyInsNew() {
                   harelParams.set("From", normalizeDateForHarel(fromDate));
                   harelParams.set("To", normalizeDateForHarel(toDate));
                   harelParams.set("Docket", docket);
-                  harelParams.set("Return", returnUrl);
+                  if (returnUrl) {
+                    harelParams.set("Return", returnUrl);
+                  }
 
                   activeCustomers.forEach((customer, index) => {
                     const idx = index + 1;
