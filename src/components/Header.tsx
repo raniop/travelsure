@@ -177,59 +177,7 @@ const Header = () => {
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container-wide">
         <div className={`flex items-center justify-between h-20 md:h-24 ${isRTL ? "flex-row-reverse" : ""}`}>
-          {/* Right side - Logo */}
-          <Link to="/" className="flex-shrink-0">
-            <img src={logo} alt="TravelSure" className="h-14 md:h-16 w-auto" />
-          </Link>
-
-          {/* Center - Desktop Navigation */}
-          <nav className="hidden md:flex items-center justify-center gap-6 flex-1">
-            <Link
-              to="/"
-              className="text-foreground hover:text-primary transition-colors font-medium"
-            >
-              {t("nav.home")}
-            </Link>
-            
-            {/* Services Dropdown for Desktop */}
-            <div 
-              className="relative"
-              onMouseEnter={() => setIsServicesOpen(true)}
-              onMouseLeave={() => setIsServicesOpen(false)}
-            >
-              <button className="flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium">
-                {t("nav.services")}
-                <ChevronDown className={`w-4 h-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isServicesOpen && (
-                <div className="absolute top-full pt-2 right-0 z-50">
-                  <div className="bg-background border border-border rounded-lg shadow-lg py-2 min-w-[180px]">
-                    {serviceLinks.map((service) => (
-                      <Link
-                        key={service.href}
-                        to={service.href}
-                        className="block px-4 py-2 text-foreground hover:bg-muted hover:text-primary transition-colors"
-                      >
-                        {service.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {navLinks.filter(link => link.href !== "/").map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="text-foreground hover:text-primary transition-colors font-medium"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Left side - Language, Search, CTA & Mobile Menu */}
+          {/* Right side - Controls */}
           <div className="flex items-center gap-2 md:gap-3">
             {/* Mobile Menu Button */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -457,6 +405,58 @@ const Header = () => {
               </Button>
             </Link>
           </div>
+
+          {/* Center - Desktop Navigation */}
+          <nav className="hidden md:flex items-center justify-center gap-6 flex-1">
+            <Link
+              to="/"
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t("nav.home")}
+            </Link>
+            
+            {/* Services Dropdown for Desktop */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsServicesOpen(true)}
+              onMouseLeave={() => setIsServicesOpen(false)}
+            >
+              <button className="flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium">
+                {t("nav.services")}
+                <ChevronDown className={`w-4 h-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isServicesOpen && (
+                <div className="absolute top-full pt-2 right-0 z-50">
+                  <div className="bg-background border border-border rounded-lg shadow-lg py-2 min-w-[180px]">
+                    {serviceLinks.map((service) => (
+                      <Link
+                        key={service.href}
+                        to={service.href}
+                        className="block px-4 py-2 text-foreground hover:bg-muted hover:text-primary transition-colors"
+                      >
+                        {service.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {navLinks.filter(link => link.href !== "/").map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="text-foreground hover:text-primary transition-colors font-medium"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Left side - Logo */}
+          <Link to="/" className="flex-shrink-0">
+            <img src={logo} alt="TravelSure" className="h-14 md:h-16 w-auto" />
+          </Link>
         </div>
       </div>
     </header>
