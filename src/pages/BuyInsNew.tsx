@@ -539,6 +539,42 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
   return { primaryCustomer, additionalCustomers: uniqueAdditional };
 };
 
+const getQueryParam = (params: URLSearchParams, keys: string[]) => {
+  for (const key of keys) {
+    const value = params.get(key);
+    if (value && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+};
+
+const normalizeDateForHarel = (value: string) => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (trimmed.includes("/")) {
+    return trimmed;
+  }
+  const iso = fmtDateToInput(trimmed);
+  return iso ? isoToDDMMYYYY(iso) : trimmed;
+};
+
+const birthDateParts = (value: string) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const iso = trimmed.includes("/") ? ddmmyyyyToISO(trimmed) : fmtDateToInput(trimmed);
+  if (!iso) return null;
+  const [year, month, day] = iso.split("-");
+  if (!year || !month || !day) return null;
+  return { day, month, year };
+};
+
+const genderToHarel = (gender: "M" | "F" | "") => {
+  if (gender === "F") return "1";
+  if (gender === "M") return "2";
+  return "";
+};
+
 /** ========= Page ========= */
 export default function BuyInsNew() {
   const [id, setId] = useState("");
@@ -1848,7 +1884,59 @@ export default function BuyInsNew() {
               onClick={() => {
                 const isValid = validateForm();
                 if (isValid) {
-                  window.open("https://www.harel-group.co.il", "_blank");
+                  const params = new URLSearchParams(window.location.search);
+                  const shatapId = getQueryParam(params, ["aff", "shatapId", "id"]);
+                  const fromDate = getQueryParam(params, ["from", "From", "start", "startDate"]);
+                  const toDate = getQueryParam(params, ["to", "To", "end", "endDate"]);
+                  const docket = getQueryParam(params, ["docket", "Docket"]);
+                  const returnUrl = getQueryParam(params, ["return", "Return"]);
+
+                  const missing: string[] = [];
+                  if (!shatapId) missing.push("aid (aff)");
+                  if (!fromDate) missing.push("From");
+                  if (!toDate) missing.push("To");
+                  if (!docket) missing.push("Docket");
+                  if (!returnUrl) missing.push("Return");
+
+                  if (missing.length > 0) {
+                    window.alert(`חסרים פרטים לשליחת הראל: ${missing.join(", ")}`);
+                    return;
+                  }
+
+                  const activeCustomers = customers.filter((c) => c.id && c.id.trim());
+                  const harelParams = new URLSearchParams();
+                  harelParams.set("goto", "true");
+                  harelParams.set("aid", shatapId);
+                  harelParams.set("Nosim", String(activeCustomers.length));
+                  harelParams.set("From", normalizeDateForHarel(fromDate));
+                  harelParams.set("To", normalizeDateForHarel(toDate));
+                  harelParams.set("Docket", docket);
+                  harelParams.set("Return", returnUrl);
+
+                  activeCustomers.forEach((customer, index) => {
+                    const idx = index + 1;
+                    const normalizedId = normalizeIdValue(customer.id);
+                    const birthParts = birthDateParts(customer.birthDate);
+                    const gender = genderToHarel(customer.gender);
+                    const phone = String(customer.phone || "").replace(/[^\d]/g, "");
+
+                    harelParams.set(`NosGndr${idx}`, gender);
+                    harelParams.set(`NoshTz${idx}`, normalizedId);
+                    if (birthParts) {
+                      harelParams.set(`NosDay${idx}`, birthParts.day);
+                      harelParams.set(`NosMonth${idx}`, birthParts.month);
+                      harelParams.set(`NosYear${idx}`, birthParts.year);
+                    }
+                    harelParams.set(`NosPhone${idx}`, phone);
+                    harelParams.set(`NosMail${idx}`, customer.email || "");
+                    harelParams.set(`NosHebNameF${idx}`, customer.firstNameHe || "");
+                    harelParams.set(`NosHebNameL${idx}`, customer.lastNameHe || "");
+                    harelParams.set(`NosEngNameF${idx}`, customer.firstNameEn || "");
+                    harelParams.set(`NosEngNameL${idx}`, customer.lastNameEn || "");
+                  });
+
+                  const harelUrl = `https://ophirbit.co.il/harel/?${harelParams.toString()}`;
+                  window.open(harelUrl, "_blank");
                 } else {
                   const firstErrorIndex = Number(Object.keys(validationErrors)[0]);
                   const element = document.querySelector(`[data-customer-index="${firstErrorIndex}"]`);
