@@ -176,7 +176,7 @@ const Header = () => {
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="container-wide">
-        <div className="flex items-center justify-between h-20 md:h-24">
+        <div className={`flex items-center justify-between h-20 md:h-24 ${isRTL ? "flex-row-reverse" : ""}`}>
           {/* Right side - Logo */}
           <Link to="/" className="flex-shrink-0">
             <img src={logo} alt="TravelSure" className="h-14 md:h-16 w-auto" />
