@@ -580,6 +580,7 @@ export default function BuyInsNew() {
   const [id, setId] = useState("");
   const [loading, setLoading] = useState<Record<number, boolean>>({});
   const [shatapName, setShatapName] = useState<string>("");
+  const [shatapId, setShatapId] = useState<string>("");
   const [status, setStatus] = useState<
     | { type: "idle"; text: string }
     | { type: "checking"; text: string }
@@ -653,9 +654,10 @@ export default function BuyInsNew() {
   useEffect(() => {
     const loadShatapName = async () => {
       const params = new URLSearchParams(window.location.search);
-      const shatapId = params.get("aff") || params.get("shatapId") || params.get("id");
+      const parsedShatapId = params.get("aff") || params.get("shatapId") || params.get("id");
+      setShatapId(parsedShatapId ? parsedShatapId.trim() : "");
 
-      if (!shatapId) {
+      if (!parsedShatapId) {
         setShatapName("");
         return;
       }
@@ -1885,7 +1887,10 @@ export default function BuyInsNew() {
                 const isValid = validateForm();
                 if (isValid) {
                   const params = new URLSearchParams(window.location.search);
-                  const shatapId = getQueryParam(params, ["aff", "shatapId", "id"]) || "709";
+                  const resolvedShatapId =
+                    shatapId ||
+                    getQueryParam(params, ["aff", "shatapId", "id"]) ||
+                    "709";
                   const fromDate =
                     getQueryParam(params, ["from", "From", "start", "startDate"]) ||
                     normalizeDateForHarel(new Date().toISOString());
@@ -1898,7 +1903,7 @@ export default function BuyInsNew() {
                   const activeCustomers = customers.filter((c) => c.id && c.id.trim());
                   const harelParams = new URLSearchParams();
                   harelParams.set("goto", "true");
-                  harelParams.set("aid", shatapId);
+                  harelParams.set("aid", resolvedShatapId);
                   harelParams.set("Nosim", String(activeCustomers.length));
                   harelParams.set("From", normalizeDateForHarel(fromDate));
                   harelParams.set("To", normalizeDateForHarel(toDate));
