@@ -183,7 +183,7 @@ const Header = () => {
           </Link>
 
           {/* Center - Desktop Navigation */}
-          <nav className="hidden md:flex items-center justify-center gap-6 flex-1">
+          <nav className={`hidden md:flex items-center justify-center gap-6 flex-1 ${isRTL ? "flex-row-reverse" : ""}`}>
             <Link
               to="/"
               className="text-foreground hover:text-primary transition-colors font-medium"
@@ -230,7 +230,7 @@ const Header = () => {
           </nav>
 
           {/* Left side - Language, Search, CTA & Mobile Menu */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
             {/* Mobile Menu Button */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -254,22 +254,45 @@ const Header = () => {
 
                 {/* Language Toggle in Mobile Menu */}
                 <div className="flex items-center justify-center gap-4 mt-6 mb-4 py-3 bg-muted rounded-lg">
-                  <button
-                    onClick={() => setLanguage("he")}
-                    className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
-                      language === "he" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    עברית
-                  </button>
-                  <button
-                    onClick={() => setLanguage("en")}
-                    className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
-                      language === "en" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    English
-                  </button>
+                  {isRTL ? (
+                    <>
+                      <button
+                        onClick={() => setLanguage("he")}
+                        className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
+                          language === "he" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        עברית
+                      </button>
+                      <button
+                        onClick={() => setLanguage("en")}
+                        className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
+                          language === "en" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        English
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setLanguage("en")}
+                        className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
+                          language === "en" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        English
+                      </button>
+                      <button
+                        onClick={() => setLanguage("he")}
+                        className={`text-base font-medium transition-colors px-4 py-2 rounded-md ${
+                          language === "he" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        עברית
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 <nav className="flex flex-col gap-4">
@@ -368,23 +391,47 @@ const Header = () => {
             {/* Language Toggle - Hidden on Purchase page */}
             {!isPurchasePage && !isSearchOpen && (
               <div className="hidden sm:flex items-center bg-background border border-border rounded-full px-4 py-2 shadow-sm">
-                <button
-                  onClick={() => setLanguage("en")}
-                  className={`text-sm font-medium transition-colors ${
-                    language === "en" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  En
-                </button>
-                <span className="text-muted-foreground/50 mx-2">|</span>
-                <button
-                  onClick={() => setLanguage("he")}
-                  className={`text-sm font-medium transition-colors ${
-                    language === "he" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  עב
-                </button>
+                {isRTL ? (
+                  <>
+                    <button
+                      onClick={() => setLanguage("he")}
+                      className={`text-sm font-medium transition-colors ${
+                        language === "he" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      עב
+                    </button>
+                    <span className="text-muted-foreground/50 mx-2">|</span>
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`text-sm font-medium transition-colors ${
+                        language === "en" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      En
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setLanguage("en")}
+                      className={`text-sm font-medium transition-colors ${
+                        language === "en" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      En
+                    </button>
+                    <span className="text-muted-foreground/50 mx-2">|</span>
+                    <button
+                      onClick={() => setLanguage("he")}
+                      className={`text-sm font-medium transition-colors ${
+                        language === "he" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      עב
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
