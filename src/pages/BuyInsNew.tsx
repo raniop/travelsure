@@ -1902,7 +1902,7 @@ export default function BuyInsNew() {
 
                   const activeCustomers = customers.filter((c) => c.id && c.id.trim());
                   const harelParams = new URLSearchParams();
-                  harelParams.set("goto", "true");
+                  harelParams.set("Goto", "true");
                   harelParams.set("aid", resolvedShatapId);
                   harelParams.set("Nosim", String(activeCustomers.length));
                   harelParams.set("From", normalizeDateForHarel(fromDate));
