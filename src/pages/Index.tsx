@@ -93,7 +93,7 @@ const HeroSection = () => {
       <AnimatedBackground />
       
       <div className="container-wide relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
           {/* Main Title */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight mb-2 drop-shadow-lg">
             TravelSure
