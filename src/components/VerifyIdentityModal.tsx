@@ -215,36 +215,140 @@ const VerifyIdentityModal = ({ open, onOpenChange }: VerifyIdentityModalProps) =
     }
   };
 
-  const generateOTP = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  const API_BASE_URL = "https://mobile.ophirins.co.il";
+
+  const normalizeIdValue = (value: unknown) => {
+    const digits = String(value || "").replace(/[^\d]/g, "");
+    if (!digits) return "";
+    return digits.padStart(9, "0");
   };
 
-  const storeOTP = (key: string, code: string, expiresAt: number) => {
-    try {
-      localStorage.setItem(`otp_${key}`, JSON.stringify({ code, expiresAt }));
-    } catch (error) {
-      console.error("Failed to store OTP:", error);
-    }
-  };
-
-  const getOTP = (key: string): { code: string; expiresAt: number } | null => {
-    try {
-      const stored = localStorage.getItem(`otp_${key}`);
-      if (!stored) return null;
-      const parsed = JSON.parse(stored);
-      if (Date.now() > parsed.expiresAt) {
-        localStorage.removeItem(`otp_${key}`);
-        return null;
+  const pickString = (obj: Record<string, unknown> | null | undefined, keys: string[]) => {
+    for (const key of keys) {
+      const value = obj?.[key];
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
       }
-      return parsed;
-    } catch (error) {
-      console.error("Failed to get OTP:", error);
-      return null;
     }
+    return "";
+  };
+
+  const normalizeGender = (value: unknown): "M" | "F" | "" => {
+    if (!value) return "";
+    const v = String(value).trim().toLowerCase();
+    if (v === "m" || v === "male") return "M";
+    if (v === "f" || v === "female") return "F";
+    if (v === "1") return "M";
+    if (v === "2") return "F";
+    return "";
+  };
+
+  const extractPersonEntriesFromPolicies = (policies: unknown): Array<Record<string, unknown>> => {
+    if (!Array.isArray(policies)) return [];
+    const entries: Array<Record<string, unknown>> = [];
+    const arrayKeys = [
+      "persons",
+      "people",
+      "insureds",
+      "insuredPersons",
+      "policyPersons",
+      "customers",
+      "insuredPersonsList",
+    ];
+
+    for (const policy of policies) {
+      if (policy && typeof policy === "object") {
+        entries.push(policy as Record<string, unknown>);
+        for (const key of arrayKeys) {
+          const maybeArray = (policy as Record<string, unknown>)[key];
+          if (Array.isArray(maybeArray)) {
+            maybeArray.forEach((item) => {
+              if (item && typeof item === "object") {
+                entries.push(item as Record<string, unknown>);
+              }
+            });
+          }
+        }
+      }
+    }
+
+    return entries;
+  };
+
+  const buildCustomerFromEntry = (entry: Record<string, unknown>, fallbackId: string) => {
+    const personId =
+      normalizeIdValue(
+        entry.personId ||
+          entry.PersonId ||
+          entry.personID ||
+          entry.PersonID ||
+          entry.id ||
+          entry.ID
+      ) || fallbackId;
+
+    const fullName =
+      pickString(entry, [
+        "primaryName",
+        "fullName",
+        "FullName",
+        "clientName",
+        "ClientName",
+        "name",
+        "Name",
+        "customerName",
+        "insuredName",
+      ]) || "";
+    const firstNameHe = pickString(entry, [
+      "firstNameHe",
+      "FirstNameHe",
+      "firstNameHebrew",
+      "firstName",
+      "hebFname",
+      "hebFirstName",
+    ]);
+    const lastNameHe = pickString(entry, [
+      "lastNameHe",
+      "LastNameHe",
+      "lastNameHebrew",
+      "lastName",
+      "hebLname",
+      "hebLastName",
+    ]);
+    const split = (!firstNameHe && !lastNameHe && fullName) ? splitNameHe(fullName) : { first: firstNameHe, last: lastNameHe };
+
+    const firstNameEn = pickString(entry, [
+      "firstNameEn",
+      "FirstNameEn",
+      "firstNameEnglish",
+      "engFname",
+      "engFirstName",
+    ]);
+    const lastNameEn = pickString(entry, [
+      "lastNameEn",
+      "LastNameEn",
+      "lastNameEnglish",
+      "engLname",
+      "engLastName",
+    ]);
+
+    return {
+      id: personId,
+      gender: normalizeGender(
+        entry.gender || entry.Gender || entry.sex || entry.Sex || entry.sexType || entry.SexType
+      ),
+      firstNameHe: split.first || "",
+      lastNameHe: split.last || "",
+      firstNameEn: firstNameEn || "",
+      lastNameEn: lastNameEn || "",
+      birthDate: pickString(entry, ["birthDate", "BirthDate", "dateOfBirth", "DateOfBirth", "dob"]),
+      email: pickString(entry, ["email", "Email", "mail", "Mail"]),
+      phone: pickString(entry, ["phone", "Phone", "phoneNumber", "PhoneNumber", "mobile", "Mobile", "cell", "Cell"]),
+    };
   };
 
   const handleSendOTP = async () => {
     const cleanId = id.replace(/[^\d]/g, "");
+    const normalizedId = cleanId.padStart(9, "0");
     const cleanPhone = phone.replace(/[^\d]/g, "");
 
     if (!validateId(cleanId) || !validatePhone(cleanPhone)) {
@@ -253,14 +357,34 @@ const VerifyIdentityModal = ({ open, onOpenChange }: VerifyIdentityModalProps) =
 
     setLoading(true);
     try {
-      const otpCode = generateOTP();
-      const expiresAt = Date.now() + 5 * 60 * 1000;
-      const storageKey = `${cleanId}-${cleanPhone}`;
-      storeOTP(storageKey, otpCode, expiresAt);
+      const response = await fetch(`${API_BASE_URL}/api/auth/sendotp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          personId: normalizedId,
+          phoneNumber: cleanPhone,
+        }),
+      });
+      const text = await response.text();
+      let data: { isSuccess?: boolean; message?: string } | null = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok || data?.isSuccess === false) {
+        throw new Error(
+          data?.message ||
+            (text && text.length < 200 ? text : "שליחת קוד האימות נכשלה")
+        );
+      }
 
       toast({
-        title: "קוד אימות נשמר",
-        description: `קוד אימות נשמר. אנא הזן את הקוד להמשך.`,
+        title: "קוד אימות נשלח",
+        description: data?.message || "אנא הזן את הקוד שנשלח למספר הטלפון שלך",
       });
       setStep("otp");
       setCountdown(60);
@@ -268,7 +392,7 @@ const VerifyIdentityModal = ({ open, onOpenChange }: VerifyIdentityModalProps) =
       console.error("Error sending OTP:", error);
       toast({
         title: "שגיאה בשליחת קוד האימות",
-        description: error.message || "אנא נסה שוב מאוחר יותר",
+        description: error.message || "שגיאת תקשורת עם השרת, נסה שוב",
         variant: "destructive",
       });
     } finally {
@@ -276,100 +400,107 @@ const VerifyIdentityModal = ({ open, onOpenChange }: VerifyIdentityModalProps) =
     }
   };
 
-  const searchCustomerAndNavigate = async (cleanId: string) => {
+  const searchCustomerAndNavigate = async (cleanId: string, accessToken?: string) => {
     try {
       setStep("verifying");
       setLoading(true);
 
-      // קביעת ה-URL הנכון בהתאם לסביבה
-      const isLocalhost = typeof window !== 'undefined' && 
-                         (window.location.hostname === 'localhost' || 
-                          window.location.hostname === '127.0.0.1' ||
-                          window.location.hostname.includes('lovable') ||
-                          window.location.hostname.includes('lovable.dev'));
-      
-      const apiUrl = isLocalhost 
-        ? `/api/policy-get-by-id?id=${encodeURIComponent(cleanId)}`
-        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-get-by-id?id=${encodeURIComponent(cleanId)}`;
+      const normalizedId = cleanId.padStart(9, "0");
+      const storedTokens = sessionStorage.getItem("auth_tokens");
+      const parsedTokens = storedTokens ? JSON.parse(storedTokens) : null;
+      const token = accessToken || parsedTokens?.accessToken;
 
-      const res = await fetch(apiUrl, {
+      if (!token) {
+        throw new Error("לא נמצא טוקן גישה לביצוע הבדיקה");
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/policy/GetMyPolicies`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         cache: "no-store",
       });
 
+      const text = await res.text();
+      let policies: unknown = null;
+      try {
+        policies = text ? JSON.parse(text) : null;
+      } catch {
+        policies = null;
+      }
+
       if (!res.ok) {
-        throw new Error("שגיאה בחיפוש במערכת");
+        throw new Error(
+          text && text.length < 200 ? text : "שגיאה בחיפוש במערכת"
+        );
       }
 
-      const json = await res.json() as Record<string, unknown> | null;
-      if (!json) {
-        throw new Error("תגובה לא תקינה מהשרת");
-      }
+      const entries = extractPersonEntriesFromPolicies(policies);
+      const primaryEntry =
+        entries.find((entry) => normalizeIdValue(entry.personId || entry.PersonId) === normalizedId) ||
+        entries[0];
 
-      const customer = json?.customer as Record<string, unknown> | undefined;
+      if (primaryEntry) {
+        const primaryCustomer = buildCustomerFromEntry(primaryEntry, normalizedId);
 
-      if (customer && json?.found) {
-        const fullName = (customer.primaryName as string) || "";
-        const firstNameHe = (customer.firstNameHe as string) || "";
-        const lastNameHe = (customer.lastNameHe as string) || "";
-        const split = (!firstNameHe && !lastNameHe && fullName) ? splitNameHe(fullName) : { first: firstNameHe, last: lastNameHe };
+        const additional = entries
+          .map((entry) => {
+            const personId = normalizeIdValue(
+              entry.personId || entry.PersonId || entry.personID || entry.PersonID || entry.id || entry.ID
+            );
+            if (!personId || personId === normalizedId) return null;
+            const customer = buildCustomerFromEntry(entry, personId);
+            return {
+              personId: customer.id,
+              primaryName: `${customer.firstNameHe} ${customer.lastNameHe}`.trim(),
+              firstNameHe: customer.firstNameHe,
+              lastNameHe: customer.lastNameHe,
+              firstNameEn: customer.firstNameEn,
+              lastNameEn: customer.lastNameEn,
+              gender: customer.gender,
+              birthDate: customer.birthDate,
+              email: customer.email,
+              phone: customer.phone,
+            };
+          })
+          .filter((item): item is Record<string, unknown> => Boolean(item));
 
-        const gender = (customer.gender as string) || "";
+        const uniqueAdditional = Array.from(
+          new Map(additional.map((item) => [String(item.personId), item])).values()
+        );
 
-        // הכנת נתוני הלקוח הראשי
-        const primaryCustomer = {
-          id: cleanId,
-          gender: (gender as "M" | "F" | "") || "",
-          firstNameHe: split.first || "",
-          lastNameHe: split.last || "",
-          firstNameEn: (customer.firstNameEn as string) || "",
-          lastNameEn: (customer.lastNameEn as string) || "",
-          birthDate: (customer.birthDate as string) || "",
-          email: (customer.email as string) || "",
-          phone: (customer.phone as string) || "",
-        };
-
-        // בדיקת לקוחות נוספים
-        const allCustomersFromApi = (json?.allCustomers as Array<Record<string, unknown>>) || [];
-        const normalizedCurrentId = cleanId.padStart(9, "0");
-        const additional = allCustomersFromApi.filter((c) => {
-          const custId = String(c.personId || "").padStart(9, "0");
-          return custId !== normalizedCurrentId && custId.length === 9;
-        });
-
-        // שמירת הנתונים ב-sessionStorage
         const customerData = {
           primaryCustomer,
-          additionalCustomers: additional,
-          cameFromVerifyIdentity: true,
-        };
-
-        sessionStorage.setItem("buyinsnew_customer_data", JSON.stringify(customerData));
-
-        // סגירת ה-modal וניווט
-        onOpenChange(false);
-        navigate("/buyinsnew");
-      } else {
-        // אם לא נמצא במערכת, עדיין נשמור את תעודת הזהות
-        const customerData = {
-          primaryCustomer: {
-            id: cleanId,
-            gender: "",
-            firstNameHe: "",
-            lastNameHe: "",
-            firstNameEn: "",
-            lastNameEn: "",
-            birthDate: "",
-            email: "",
-            phone: "",
-          },
-          additionalCustomers: [],
+          additionalCustomers: uniqueAdditional,
           cameFromVerifyIdentity: true,
         };
 
         sessionStorage.setItem("buyinsnew_customer_data", JSON.stringify(customerData));
         onOpenChange(false);
         navigate("/buyinsnew");
+        return;
       }
+
+      const customerData = {
+        primaryCustomer: {
+          id: normalizedId,
+          gender: "",
+          firstNameHe: "",
+          lastNameHe: "",
+          firstNameEn: "",
+          lastNameEn: "",
+          birthDate: "",
+          email: "",
+          phone: "",
+        },
+        additionalCustomers: [],
+        cameFromVerifyIdentity: true,
+      };
+
+      sessionStorage.setItem("buyinsnew_customer_data", JSON.stringify(customerData));
+      onOpenChange(false);
+      navigate("/buyinsnew");
     } catch (error: any) {
       console.error("Error searching customer:", error);
       toast({
@@ -389,28 +520,72 @@ const VerifyIdentityModal = ({ open, onOpenChange }: VerifyIdentityModalProps) =
     }
 
     const cleanId = id.replace(/[^\d]/g, "");
+    const normalizedId = cleanId.padStart(9, "0");
     const cleanPhone = phone.replace(/[^\d]/g, "");
-
-    // Temporary test code - for testing only
-    if (otp === "110886") {
-      await searchCustomerAndNavigate(cleanId);
+    if (!validatePhone(cleanPhone) || !validateId(cleanId)) {
       return;
     }
 
-    const storageKey = `${cleanId}-${cleanPhone}`;
-    const stored = getOTP(storageKey);
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verifyotp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          personId: normalizedId,
+          otpCode: otp,
+        }),
+      });
 
-    if (!stored) {
-      setErrors((prev) => ({ ...prev, otp: "קוד אימות לא נמצא או פג תוקף" }));
-      return;
+      const text = await response.text();
+      let data:
+        | {
+            accessToken?: string;
+            refreshToken?: string;
+            message?: string;
+            isSuccess?: boolean;
+          }
+        | null = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+
+      const parsed = data ?? {};
+      const accessToken = (parsed as any)?.accessToken;
+      const refreshToken = (parsed as any)?.refreshToken;
+
+      if (!response.ok || (parsed as any)?.isSuccess === false) {
+        throw new Error(
+          (parsed as any)?.message ||
+            (text && text.length < 200 ? text : "קוד האימות לא תקין")
+        );
+      }
+
+      if (accessToken || refreshToken) {
+        sessionStorage.setItem(
+          "auth_tokens",
+          JSON.stringify({
+            accessToken: accessToken || "",
+            refreshToken: refreshToken || "",
+          })
+        );
+      }
+
+      await searchCustomerAndNavigate(cleanId, accessToken);
+    } catch (error: any) {
+      console.error("Error verifying OTP:", error);
+      setErrors((prev) => ({ ...prev, otp: error.message || "קוד אימות לא תקין" }));
+      toast({
+        title: "שגיאה באימות הקוד",
+        description: error.message || "שגיאת תקשורת עם השרת, נסה שוב",
+        variant: "destructive",
+      });
+      setLoading(false);
     }
-
-    if (stored.code !== otp) {
-      setErrors((prev) => ({ ...prev, otp: "קוד אימות לא תקין" }));
-      return;
-    }
-
-    await searchCustomerAndNavigate(cleanId);
   };
 
   const handleResendOTP = async () => {

@@ -366,6 +366,179 @@ type AdditionalCustomer = {
   phone: string;
 };
 
+const API_BASE_URL = "https://mobile.ophirins.co.il";
+
+const normalizeIdValue = (value: unknown) => {
+  const digits = String(value || "").replace(/[^\d]/g, "");
+  if (!digits) return "";
+  return digits.padStart(9, "0");
+};
+
+const pickString = (obj: Record<string, unknown> | null | undefined, keys: string[]) => {
+  for (const key of keys) {
+    const value = obj?.[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+};
+
+const normalizeGender = (value: unknown): "M" | "F" | "" => {
+  if (!value) return "";
+  const v = String(value).trim().toLowerCase();
+  if (v === "m" || v === "male") return "M";
+  if (v === "f" || v === "female") return "F";
+  if (v === "1") return "M";
+  if (v === "2") return "F";
+  return "";
+};
+
+const extractPersonEntriesFromPolicies = (policies: unknown): Array<Record<string, unknown>> => {
+  if (!Array.isArray(policies)) return [];
+  const entries: Array<Record<string, unknown>> = [];
+  const arrayKeys = [
+    "persons",
+    "people",
+    "insureds",
+    "insuredPersons",
+    "policyPersons",
+    "customers",
+    "insuredPersonsList",
+  ];
+
+  for (const policy of policies) {
+    if (policy && typeof policy === "object") {
+      entries.push(policy as Record<string, unknown>);
+      for (const key of arrayKeys) {
+        const maybeArray = (policy as Record<string, unknown>)[key];
+        if (Array.isArray(maybeArray)) {
+          maybeArray.forEach((item) => {
+            if (item && typeof item === "object") {
+              entries.push(item as Record<string, unknown>);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  return entries;
+};
+
+const buildCustomerFromEntry = (entry: Record<string, unknown>, fallbackId: string): CustomerForm => {
+  const personId =
+    normalizeIdValue(
+      entry.personId ||
+        entry.PersonId ||
+        entry.personID ||
+        entry.PersonID ||
+        entry.id ||
+        entry.ID
+    ) || fallbackId;
+
+  const fullName =
+    pickString(entry, [
+      "primaryName",
+      "fullName",
+      "FullName",
+      "clientName",
+      "ClientName",
+      "name",
+      "Name",
+      "customerName",
+      "insuredName",
+    ]) || "";
+  const firstNameHe = pickString(entry, [
+    "firstNameHe",
+    "FirstNameHe",
+    "firstNameHebrew",
+    "firstName",
+    "hebFname",
+    "hebFirstName",
+  ]);
+  const lastNameHe = pickString(entry, [
+    "lastNameHe",
+    "LastNameHe",
+    "lastNameHebrew",
+    "lastName",
+    "hebLname",
+    "hebLastName",
+  ]);
+  const split = (!firstNameHe && !lastNameHe && fullName) ? splitNameHe(fullName) : { first: firstNameHe, last: lastNameHe };
+
+  const firstNameEn = pickString(entry, [
+    "firstNameEn",
+    "FirstNameEn",
+    "firstNameEnglish",
+    "engFname",
+    "engFirstName",
+  ]);
+  const lastNameEn = pickString(entry, [
+    "lastNameEn",
+    "LastNameEn",
+    "lastNameEnglish",
+    "engLname",
+    "engLastName",
+  ]);
+
+  return {
+    id: personId,
+    gender: normalizeGender(
+      entry.gender || entry.Gender || entry.sex || entry.Sex || entry.sexType || entry.SexType
+    ),
+    firstNameHe: split.first || "",
+    lastNameHe: split.last || "",
+    firstNameEn: firstNameEn || "",
+    lastNameEn: lastNameEn || "",
+    birthDate: pickString(entry, ["birthDate", "BirthDate", "dateOfBirth", "DateOfBirth", "dob"]),
+    email: pickString(entry, ["email", "Email", "mail", "Mail"]),
+    phone: pickString(entry, ["phone", "Phone", "phoneNumber", "PhoneNumber", "mobile", "Mobile", "cell", "Cell"]),
+  };
+};
+
+const buildAdditionalCustomer = (customer: CustomerForm): AdditionalCustomer => ({
+  personId: customer.id,
+  primaryName: `${customer.firstNameHe} ${customer.lastNameHe}`.trim(),
+  firstNameHe: customer.firstNameHe,
+  lastNameHe: customer.lastNameHe,
+  firstNameEn: customer.firstNameEn,
+  lastNameEn: customer.lastNameEn,
+  gender: customer.gender,
+  birthDate: customer.birthDate,
+  email: customer.email,
+  phone: customer.phone,
+});
+
+const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
+  const entries = extractPersonEntriesFromPolicies(policies);
+  if (entries.length === 0) {
+    return { primaryCustomer: null, additionalCustomers: [] as AdditionalCustomer[] };
+  }
+
+  const primaryEntry =
+    entries.find((entry) => normalizeIdValue(entry.personId || entry.PersonId) === normalizedId) ||
+    entries[0];
+
+  const primaryCustomer = primaryEntry ? buildCustomerFromEntry(primaryEntry, normalizedId) : null;
+
+  const additionalCustomers = entries
+    .map((entry) => {
+      const personId = normalizeIdValue(
+        entry.personId || entry.PersonId || entry.personID || entry.PersonID || entry.id || entry.ID
+      );
+      if (!personId || personId === normalizedId) return null;
+      return buildAdditionalCustomer(buildCustomerFromEntry(entry, personId));
+    })
+    .filter((item): item is AdditionalCustomer => Boolean(item));
+
+  const uniqueAdditional = Array.from(
+    new Map(additionalCustomers.map((item) => [String(item.personId), item])).values()
+  );
+
+  return { primaryCustomer, additionalCustomers: uniqueAdditional };
+};
+
 /** ========= Page ========= */
 export default function BuyInsNew() {
   const [id, setId] = useState("");
@@ -828,39 +1001,87 @@ export default function BuyInsNew() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        // קביעת ה-URL הנכון בהתאם לסביבה
-        const isLocalhost = typeof window !== 'undefined' && 
-                           (window.location.hostname === 'localhost' || 
-                            window.location.hostname === '127.0.0.1' ||
-                            window.location.hostname.includes('lovable') ||
-                            window.location.hostname.includes('lovable.dev'));
-        
-        const apiUrl = isLocalhost 
-          ? `/api/policy-get-by-id?id=${encodeURIComponent(clean)}`
-          : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-get-by-id?id=${encodeURIComponent(clean)}`;
-
-        const res = await fetch(apiUrl, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
+        const storedTokens = sessionStorage.getItem("auth_tokens");
+        const parsedTokens = storedTokens ? JSON.parse(storedTokens) : null;
+        const accessToken = parsedTokens?.accessToken;
 
         let json: Record<string, unknown> | null = null;
-        try {
-          json = await res.json();
-        } catch {
-          if (customerIndex === 0) {
-            setStatus({ type: "error", text: "תגובה לא תקינה מהשרת" });
-          }
-          return;
-        }
 
-        if (!res.ok) {
-          if (customerIndex === 0) {
-            setStatus({ type: "error", text: "שגיאה בבדיקה" });
+        if (accessToken) {
+          const res = await fetch(`${API_BASE_URL}/api/policy/GetMyPolicies`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            cache: "no-store",
+            signal: controller.signal,
+          });
+
+          const text = await res.text();
+          let policies: unknown = null;
+          try {
+            policies = text ? JSON.parse(text) : null;
+          } catch {
+            policies = null;
           }
-          return;
+
+          clearTimeout(timeoutId);
+
+          if (!res.ok) {
+            if (customerIndex === 0) {
+              setStatus({ type: "error", text: text && text.length < 200 ? text : "שגיאה בבדיקה" });
+            }
+            return;
+          }
+
+          const mapped = mapPoliciesToCustomers(policies, normalizedId);
+          if (mapped.primaryCustomer) {
+            const primaryName = `${mapped.primaryCustomer.firstNameHe} ${mapped.primaryCustomer.lastNameHe}`.trim();
+            json = {
+              found: true,
+              customer: {
+                ...mapped.primaryCustomer,
+                primaryName,
+              },
+              allCustomers: mapped.additionalCustomers,
+            };
+          } else {
+            json = { found: false };
+          }
+        } else {
+          // קביעת ה-URL הנכון בהתאם לסביבה
+          const isLocalhost = typeof window !== 'undefined' && 
+                             (window.location.hostname === 'localhost' || 
+                              window.location.hostname === '127.0.0.1' ||
+                              window.location.hostname.includes('lovable') ||
+                              window.location.hostname.includes('lovable.dev'));
+          
+          const apiUrl = isLocalhost 
+            ? `/api/policy-get-by-id?id=${encodeURIComponent(clean)}`
+            : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-get-by-id?id=${encodeURIComponent(clean)}`;
+
+          const res = await fetch(apiUrl, {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          try {
+            json = await res.json();
+          } catch {
+            if (customerIndex === 0) {
+              setStatus({ type: "error", text: "תגובה לא תקינה מהשרת" });
+            }
+            return;
+          }
+
+          if (!res.ok) {
+            if (customerIndex === 0) {
+              setStatus({ type: "error", text: "שגיאה בבדיקה" });
+            }
+            return;
+          }
         }
 
         const customer = json?.customer as Record<string, unknown> | undefined;
