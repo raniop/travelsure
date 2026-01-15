@@ -106,7 +106,7 @@ const HeroSection = () => {
             {t("hero.subtitle")}
           </h2>
           
-          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed">
+          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-6 leading-relaxed text-center">
             {t("hero.description")}
           </p>
 
