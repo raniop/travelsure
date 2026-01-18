@@ -703,9 +703,10 @@ export default function BuyInsNew() {
     const loadShatapName = async () => {
       const params = new URLSearchParams(window.location.search);
       const parsedShatapId = params.get("aff") || params.get("shatapId") || params.get("id");
-      setShatapId(parsedShatapId ? parsedShatapId.trim() : "");
+      const effectiveShatapId = parsedShatapId ? parsedShatapId.trim() : "";
+      setShatapId(effectiveShatapId);
 
-      if (!parsedShatapId) {
+      if (!effectiveShatapId) {
         setShatapName("");
         return;
       }
@@ -790,7 +791,7 @@ export default function BuyInsNew() {
             const itemId = match[1]?.trim() || "";
             const itemName = match[2]?.trim() || "";
 
-            if (itemId === shatapId && itemName) {
+            if (itemId === effectiveShatapId && itemName) {
               const decodedName = decodeHtmlEntities(itemName);
               console.log("Shatap name loaded directly from XML:", decodedName);
               setShatapName(decodedName);
@@ -805,7 +806,7 @@ export default function BuyInsNew() {
       // אם קריאה ישירה נכשלה (CORS), ננסה דרך proxy מקומי על IIS
       // ניסיון 2: ASHX handler (פתרון מקומי - רק על השרת שלך)
       try {
-        const ashxUrl = `/api-shatap.ashx?id=${encodeURIComponent(shatapId)}`;
+        const ashxUrl = `/api-shatap.ashx?id=${encodeURIComponent(effectiveShatapId)}`;
         const res = await fetch(ashxUrl, {
           method: 'GET',
           cache: "no-store",
@@ -833,7 +834,7 @@ export default function BuyInsNew() {
       }
       
       // אם נכשל, נציג את ה-ID במקום השם (פתרון זמני)
-      setShatapName(`שת"פ ${shatapId}`);
+      setShatapName(`שת"פ ${effectiveShatapId}`);
     };
 
     loadShatapName();
