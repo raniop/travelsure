@@ -1442,7 +1442,11 @@ export default function BuyInsNew() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/30 bg-white/85 backdrop-blur-xl">
         <div className="bg-[#0b4e86] px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-center w-full">
-          <div className="mx-auto max-w-4xl w-full flex items-center justify-between">
+          <div
+            className={`mx-auto max-w-4xl w-full flex items-center ${
+              shatapName ? "justify-between" : "justify-end"
+            }`}
+          >
             {shatapName && (
               <div className="text-white text-sm sm:text-base font-medium">{shatapName}</div>
             )}
