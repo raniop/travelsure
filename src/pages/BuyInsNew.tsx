@@ -1137,8 +1137,9 @@ export default function BuyInsNew() {
         } else {
           const params = new URLSearchParams(window.location.search);
           const hasAff = Boolean(getQueryParam(params, ["aff", "shatapId", "id"]));
-          const endpoint = hasAff ? "GetAllByPersonId" : "GetByPersonId";
-          const apiUrl = `${API_BASE_URL}/api/policy/${endpoint}?personId=${encodeURIComponent(normalizedId)}`;
+          const apiUrl = hasAff
+            ? `${API_BASE_URL}/api/policy/GetByIdU?id=${encodeURIComponent(normalizedId)}&pass=Admin$123`
+            : `${API_BASE_URL}/api/policy/GetByPersonId?personId=${encodeURIComponent(normalizedId)}`;
 
           const res = await fetch(apiUrl, {
             cache: "no-store",
@@ -1163,7 +1164,7 @@ export default function BuyInsNew() {
           }
 
           if (hasAff) {
-            const mapped = mapPeopleResponseToCustomers(payload, normalizedId);
+            const mapped = mapPoliciesToCustomers(payload, normalizedId);
             if (mapped.primaryCustomer) {
               const primaryName = `${mapped.primaryCustomer.firstNameHe} ${mapped.primaryCustomer.lastNameHe}`.trim();
               json = {
