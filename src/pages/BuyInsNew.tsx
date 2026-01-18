@@ -1543,8 +1543,8 @@ export default function BuyInsNew() {
                 )}
               >
                 <div className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between mb-3 flex-row-reverse">
+                    <div className="text-right w-full">
                       <div className="text-base sm:text-lg font-bold text-[#0b4e86]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                         {index === 0 ? "פרטי הנוסע הראשון" : `פרטי הנוסע ${index === 1 ? "השני" : index === 2 ? "השלישי" : `מספר ${index + 1}`}`}
                       </div>
