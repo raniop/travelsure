@@ -510,6 +510,54 @@ const buildAdditionalCustomer = (customer: CustomerForm): AdditionalCustomer => 
   phone: customer.phone,
 });
 
+const extractEntriesFromPeopleResponse = (payload: unknown): Array<Record<string, unknown>> => {
+  if (!payload) return [];
+  if (Array.isArray(payload)) {
+    return payload.filter((item) => item && typeof item === "object") as Array<Record<string, unknown>>;
+  }
+  if (typeof payload === "object") {
+    const obj = payload as Record<string, unknown>;
+    const listKeys = ["persons", "people", "customers", "insureds", "result", "data", "items"];
+    for (const key of listKeys) {
+      const maybeArray = obj[key];
+      if (Array.isArray(maybeArray)) {
+        return maybeArray.filter((item) => item && typeof item === "object") as Array<Record<string, unknown>>;
+      }
+    }
+    if (obj.personId || obj.PersonId || obj.personID || obj.PersonID || obj.id || obj.ID) {
+      return [obj];
+    }
+  }
+  return [];
+};
+
+const mapPeopleResponseToCustomers = (payload: unknown, normalizedId: string) => {
+  const entries = extractEntriesFromPeopleResponse(payload);
+  if (entries.length === 0) {
+    return { primaryCustomer: null, additionalCustomers: [] as AdditionalCustomer[] };
+  }
+
+  const primaryEntry =
+    entries.find((entry) => normalizeIdValue(entry.personId || entry.PersonId) === normalizedId) || entries[0];
+  const primaryCustomer = primaryEntry ? buildCustomerFromEntry(primaryEntry, normalizedId) : null;
+
+  const additionalCustomers = entries
+    .map((entry) => {
+      const personId = normalizeIdValue(
+        entry.personId || entry.PersonId || entry.personID || entry.PersonID || entry.id || entry.ID
+      );
+      if (!personId || personId === normalizedId) return null;
+      return buildAdditionalCustomer(buildCustomerFromEntry(entry, personId));
+    })
+    .filter((item): item is AdditionalCustomer => Boolean(item));
+
+  const uniqueAdditional = Array.from(
+    new Map(additionalCustomers.map((item) => [String(item.personId), item])).values()
+  );
+
+  return { primaryCustomer, additionalCustomers: uniqueAdditional };
+};
+
 const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
   const entries = extractPersonEntriesFromPolicies(policies);
   if (entries.length === 0) {
@@ -1087,38 +1135,77 @@ export default function BuyInsNew() {
             json = { found: false };
           }
         } else {
-          // קביעת ה-URL הנכון בהתאם לסביבה
-          const isLocalhost = typeof window !== 'undefined' && 
-                             (window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1' ||
-                              window.location.hostname.includes('lovable') ||
-                              window.location.hostname.includes('lovable.dev'));
-          
-          const apiUrl = isLocalhost 
-            ? `/api/policy-get-by-id?id=${encodeURIComponent(clean)}`
-            : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-get-by-id?id=${encodeURIComponent(clean)}`;
+          const params = new URLSearchParams(window.location.search);
+          const hasAff = Boolean(getQueryParam(params, ["aff", "shatapId", "id"]));
+          const endpoint = hasAff ? "GetAllByPersonId" : "GetByPersonId";
+          const apiUrl = `${API_BASE_URL}/api/policy/${endpoint}?personId=${encodeURIComponent(normalizedId)}`;
 
           const res = await fetch(apiUrl, {
             cache: "no-store",
             signal: controller.signal,
           });
 
+          const text = await res.text();
+          let payload: unknown = null;
+          try {
+            payload = text ? JSON.parse(text) : null;
+          } catch {
+            payload = null;
+          }
+
           clearTimeout(timeoutId);
 
-          try {
-            json = await res.json();
-          } catch {
+          if (!res.ok) {
             if (customerIndex === 0) {
-              setStatus({ type: "error", text: "תגובה לא תקינה מהשרת" });
+              setStatus({ type: "error", text: text && text.length < 200 ? text : "שגיאה בבדיקה" });
             }
             return;
           }
 
-          if (!res.ok) {
-            if (customerIndex === 0) {
-              setStatus({ type: "error", text: "שגיאה בבדיקה" });
+          if (hasAff) {
+            const mapped = mapPeopleResponseToCustomers(payload, normalizedId);
+            if (mapped.primaryCustomer) {
+              const primaryName = `${mapped.primaryCustomer.firstNameHe} ${mapped.primaryCustomer.lastNameHe}`.trim();
+              json = {
+                found: true,
+                customer: {
+                  ...mapped.primaryCustomer,
+                  primaryName,
+                },
+                allCustomers: mapped.additionalCustomers,
+              };
+            } else {
+              json = { found: false };
             }
-            return;
+          } else {
+            if (Array.isArray(payload)) {
+              const mapped = mapPeopleResponseToCustomers(payload, normalizedId);
+              if (mapped.primaryCustomer) {
+                const primaryName = `${mapped.primaryCustomer.firstNameHe} ${mapped.primaryCustomer.lastNameHe}`.trim();
+                json = {
+                  found: true,
+                  customer: {
+                    ...mapped.primaryCustomer,
+                    primaryName,
+                  },
+                  allCustomers: mapped.additionalCustomers,
+                };
+              } else {
+                json = { found: false };
+              }
+            } else if (payload && typeof payload === "object") {
+              const customerData = buildCustomerFromEntry(payload as Record<string, unknown>, normalizedId);
+              json = {
+                found: Boolean(customerData.id),
+                customer: {
+                  ...customerData,
+                  primaryName: `${customerData.firstNameHe} ${customerData.lastNameHe}`.trim(),
+                },
+                allCustomers: [],
+              };
+            } else {
+              json = { found: false };
+            }
           }
         }
 
