@@ -11,6 +11,8 @@ public class ShatapHandler : IHttpHandler
     public void ProcessRequest(HttpContext context)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
+        context.Response.ContentEncoding = Encoding.UTF8;
+        context.Response.Charset = "utf-8";
         context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
         context.Response.AppendHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
         context.Response.AppendHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -42,11 +44,43 @@ public class ShatapHandler : IHttpHandler
             
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream stream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-            string xmlText = reader.ReadToEnd();
-            reader.Close();
+            byte[] bytes = null;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                stream.CopyTo(ms);
+                bytes = ms.ToArray();
+            }
             stream.Close();
             response.Close();
+
+            string header = Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 2000));
+            string detectedEncoding = null;
+            int encIndex = header.IndexOf("encoding=");
+            if (encIndex >= 0 && encIndex + 10 < header.Length)
+            {
+                char quote = header[encIndex + 9];
+                int start = encIndex + 10;
+                int end = header.IndexOf(quote, start);
+                if (end > start)
+                {
+                    detectedEncoding = header.Substring(start, end - start);
+                }
+            }
+
+            Encoding xmlEncoding = Encoding.UTF8;
+            if (!string.IsNullOrEmpty(detectedEncoding))
+            {
+                try
+                {
+                    xmlEncoding = Encoding.GetEncoding(detectedEncoding);
+                }
+                catch
+                {
+                    xmlEncoding = Encoding.UTF8;
+                }
+            }
+
+            string xmlText = xmlEncoding.GetString(bytes);
 
             // חיפוש פשוט
             string searchPattern = "<Id>" + id + "</Id>";
