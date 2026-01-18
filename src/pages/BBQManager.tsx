@@ -14,6 +14,7 @@ import UserSettings from "@/components/bbq/UserSettings";
 import LoginDialog from "@/components/bbq/LoginDialog";
 import Reports from "@/components/bbq/Reports";
 import UsersList from "@/components/bbq/UsersList";
+import BottomNavigation from "@/components/bbq/BottomNavigation";
 
 interface Group {
   id: string;
@@ -491,7 +492,8 @@ const BBQManager = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} mb-6`} dir="rtl">
+          {/* Desktop Tabs - Hidden on Mobile */}
+          <TabsList className={`hidden md:grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} mb-6`} dir="rtl">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               אירועים
@@ -520,6 +522,14 @@ const BBQManager = () => {
             </TabsTrigger>
           </TabsList>
 
+          {/* Mobile Bottom Navigation */}
+          <BottomNavigation 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab}
+            isAdmin={user.isAdmin}
+            hasUsersTab={true}
+          />
+
           <TabsContent value="events" className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold">אירועים</h2>
@@ -540,29 +550,29 @@ const BBQManager = () => {
             />
           </TabsContent>
 
-          <TabsContent value="members" className="space-y-4">
+          <TabsContent value="members" className="space-y-4 pb-20 md:pb-4">
             <h2 className="text-2xl font-semibold mb-4">חברים קבועים</h2>
             <MembersList groupId={group.id} isAdmin={user.isAdmin} />
           </TabsContent>
 
-          <TabsContent value="payments" className="space-y-4">
+          <TabsContent value="payments" className="space-y-4 pb-20 md:pb-4">
             <h2 className="text-2xl font-semibold mb-4">
               {user.isAdmin ? "סקירת תשלומים (כל התשלומים)" : "התשלומים שלי"}
             </h2>
             <PaymentsOverview groupId={group.id} userId={user.id} isAdmin={user.isAdmin} />
           </TabsContent>
 
-          <TabsContent value="reports" className="space-y-4">
+          <TabsContent value="reports" className="space-y-4 pb-20 md:pb-4">
             <Reports groupId={group.id} />
           </TabsContent>
 
           {user.isAdmin && (
-            <TabsContent value="users" className="space-y-4">
+            <TabsContent value="users" className="space-y-4 pb-20 md:pb-4">
               <UsersList groupId={group.id} />
             </TabsContent>
           )}
 
-          <TabsContent value="settings" className="space-y-4">
+          <TabsContent value="settings" className="space-y-4 pb-20 md:pb-4">
             <div className="space-y-6">
               {/* User Settings - for all users */}
               <div>

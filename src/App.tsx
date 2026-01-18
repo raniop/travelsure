@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccessibilityMenu from "@/components/AccessibilityMenu";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -26,36 +26,47 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const location = useLocation();
+  const isBBQPage = location.pathname === "/bbq" || location.pathname === "/on-the-fire";
+  
+  return (
+    <>
+      {!isBBQPage && <AccessibilityMenu />}
+      <ScrollToTop />
+      <ScrollIndicator />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/purchase" element={<Purchase />} />
+        <Route path="/buyinsnew" element={<BuyInsNew />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/services/travel" element={<TravelInsurance />} />
+        <Route path="/travel-policy" element={<TravelPolicy />} />
+        <Route path="/verify-identity" element={<VerifyIdentity />} />
+        <Route path="/services/car" element={<CarInsurance />} />
+        <Route path="/services/home" element={<HomeInsurance />} />
+        <Route path="/services/business" element={<BusinessInsurance />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/on-the-fire" element={<BBQManager />} />
+        <Route path="/bbq" element={<BBQManager />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AccessibilityMenu />
         <BrowserRouter>
-          <ScrollToTop />
-          <ScrollIndicator />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/purchase" element={<Purchase />} />
-            <Route path="/buyinsnew" element={<BuyInsNew />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/services/travel" element={<TravelInsurance />} />
-            <Route path="/travel-policy" element={<TravelPolicy />} />
-            <Route path="/verify-identity" element={<VerifyIdentity />} />
-            <Route path="/services/car" element={<CarInsurance />} />
-            <Route path="/services/home" element={<HomeInsurance />} />
-            <Route path="/services/business" element={<BusinessInsurance />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/on-the-fire" element={<BBQManager />} />
-            <Route path="/bbq" element={<BBQManager />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppContent />
         </BrowserRouter>
       </TooltipProvider>
     </LanguageProvider>
