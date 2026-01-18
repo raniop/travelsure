@@ -22,6 +22,7 @@ interface Group {
   description: string | null;
   created_at: string;
   owner_id?: string;
+  group_image?: string | null;
 }
 
 interface User {
@@ -482,11 +483,24 @@ const BBQManager = () => {
               )}
             </div>
           </div>
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{group.name}</h1>
-            {group.description && (
-              <p className="text-gray-600">{group.description}</p>
+          <div className="flex items-center gap-3">
+            {group.group_image ? (
+              <img 
+                src={group.group_image} 
+                alt={group.name}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xl">
+                {group.name.charAt(0).toUpperCase()}
+              </div>
             )}
+            <div>
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{group.name}</h1>
+              {group.description && (
+                <p className="text-sm md:text-base text-gray-600">{group.description}</p>
+              )}
+            </div>
           </div>
         </div>
 

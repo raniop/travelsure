@@ -138,7 +138,13 @@ const UsersList = ({ groupId }: UsersListProps) => {
                       )}
                       {user.created_at && (
                         <div className="text-xs text-muted-foreground mt-2">
-                          נרשם: {new Date(user.created_at).toLocaleDateString('he-IL')}
+                          נרשם: {new Date(user.created_at).toLocaleString('he-IL', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </div>
                       )}
                     </div>

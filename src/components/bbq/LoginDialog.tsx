@@ -90,12 +90,21 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
         };
         
         // Save to server
-        existingUser = await apiClient.createUser(newUser);
-        
-        toast({
-          title: "הצלחה!",
-          description: "נרשמת בהצלחה"
-        });
+        try {
+          existingUser = await apiClient.createUser(newUser);
+          
+          if (!existingUser || existingUser.error) {
+            throw new Error(existingUser?.error || "שגיאה ביצירת המשתמש");
+          }
+          
+          toast({
+            title: "הצלחה!",
+            description: "נרשמת בהצלחה"
+          });
+        } catch (createError: any) {
+          console.error("Error creating user:", createError);
+          throw new Error(createError.message || "לא הצלחנו ליצור משתמש. נסה שוב מאוחר יותר.");
+        }
       } else {
         // Login
         if (!existingUser) {
@@ -176,10 +185,13 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
       setFullName("");
       setIsRegistering(false);
     } catch (error: any) {
+      console.error("Login/Register error:", error);
+      const errorMessage = error.message || error.error || "אירעה שגיאה";
       toast({
         title: "שגיאה",
-        description: error.message || "אירעה שגיאה",
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
+        duration: 10000
       });
     } finally {
       setLoading(false);
