@@ -1137,8 +1137,10 @@ export default function BuyInsNew() {
           }
         } else {
           const params = new URLSearchParams(window.location.search);
-          const hasAff = Boolean(getQueryParam(params, ["aff", "shatapId", "id"]));
-          const apiUrl = hasAff
+          const affValue = getQueryParam(params, ["aff", "shatapId", "id"]);
+          const getByIdUAffiliates = new Set(["902", "1282", "1283", "1284"]);
+          const useGetByIdU = affValue ? getByIdUAffiliates.has(affValue) : false;
+          const apiUrl = useGetByIdU
             ? `${API_BASE_URL}/api/policy/GetByIdU?id=${encodeURIComponent(normalizedId)}&pass=Admin$123`
             : `${API_BASE_URL}/api/policy/GetByPersonId?personId=${encodeURIComponent(normalizedId)}`;
 
@@ -1164,7 +1166,7 @@ export default function BuyInsNew() {
             return;
           }
 
-          if (hasAff) {
+          if (useGetByIdU) {
             const mapped = mapPoliciesToCustomers(payload, normalizedId);
             if (mapped.primaryCustomer) {
               const primaryName = `${mapped.primaryCustomer.firstNameHe} ${mapped.primaryCustomer.lastNameHe}`.trim();
