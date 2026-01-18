@@ -1,0 +1,31 @@
+{
+  "name": "על האש - ניהול אירועים",
+  "short_name": "על האש",
+  "description": "ניהול אירועי על האש, חברים, תשלומים ודוחות",
+  "start_url": "/bbq",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#ea580c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/uploads/1767182158604-לוגו אופיר חדש.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/uploads/1767182158604-לוגו אופיר חדש.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "dir": "rtl",
+  "lang": "he"
+}
