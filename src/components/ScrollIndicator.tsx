@@ -3,11 +3,6 @@ import { useLocation } from "react-router-dom";
 
 const ScrollIndicator = () => {
   const location = useLocation();
-  
-  // הצג רק בדף הראשי
-  if (location.pathname !== "/") {
-    return null;
-  }
   const [activeSection, setActiveSection] = useState(0);
 
   const sections = [
@@ -16,6 +11,11 @@ const ScrollIndicator = () => {
     { id: "about", label: "אודות" },
     { id: "contact", label: "צור קשר" },
   ];
+
+  // הצג רק בדף הראשי
+  if (location.pathname !== "/") {
+    return null;
+  }
 
   useEffect(() => {
     const handleScroll = () => {
