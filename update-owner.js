@@ -1,7 +1,7 @@
-// Run this in browser console on https://travsure.chatpilotapi.com/bbq
+// Run this in browser console on https://ophir.travelsure.co.il/bbq
 
 (async function() {
-  const apiUrl = 'https://travsure.chatpilotapi.com/api-bbq.ashx';
+  const apiUrl = 'https://ophir.travelsure.co.il/api-bbq.ashx';
   const userId = 'user_0524444244';
   
   try {

@@ -99,6 +99,13 @@ class ApiClient {
     });
   }
 
+  async updateMember(id: string, data: any): Promise<any> {
+    return this.request(`entity=members&id=${id}&action=update`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async deleteMember(id: string): Promise<void> {
     await this.request(`entity=members&id=${id}`, {
       method: 'DELETE',
@@ -119,6 +126,20 @@ class ApiClient {
     return this.request('entity=events', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateEvent(id: string, data: any): Promise<any> {
+    return this.request(`entity=events&id=${id}&action=update`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEvent(id: string): Promise<void> {
+    // Use POST with action=delete instead of DELETE to avoid IIS restrictions
+    await this.request(`entity=events&id=${id}&action=delete`, {
+      method: 'POST',
     });
   }
 

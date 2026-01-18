@@ -18,21 +18,41 @@ interface User {
 interface UserSettingsProps {
   user: User;
   onUserUpdated: (updatedUser: User) => void;
+  groupId?: string;
 }
 
-const UserSettings = ({ user, onUserUpdated }: UserSettingsProps) => {
+const UserSettings = ({ user, onUserUpdated, groupId }: UserSettingsProps) => {
   const [name, setName] = useState(user.name);
   const [profileImage, setProfileImage] = useState<string | null>(user.profile_image || null);
+  const [nickname, setNickname] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(user.profile_image || null);
+  const [loadingNickname, setLoadingNickname] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     setName(user.name);
     setProfileImage(user.profile_image || null);
     setImagePreview(user.profile_image || null);
-  }, [user]);
+    loadMemberNickname();
+  }, [user, groupId]);
+
+  const loadMemberNickname = async () => {
+    if (!groupId || !user.phone) return;
+    
+    try {
+      const members = await apiClient.getMembers(groupId);
+      const member = members.find((m: any) => m.phone === user.phone);
+      if (member && member.nickname) {
+        setNickname(member.nickname);
+      } else {
+        setNickname("");
+      }
+    } catch (error) {
+      console.error("Error loading member nickname:", error);
+    }
+  };
 
   const compressImage = (file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.8): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -134,6 +154,54 @@ const UserSettings = ({ user, onUserUpdated }: UserSettingsProps) => {
   const handleRemoveImage = () => {
     setProfileImage(null);
     setImagePreview(null);
+  };
+
+  const handleSaveNickname = async () => {
+    if (!groupId || !user.phone) {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לעדכן כינוי - חסר מידע על הקבוצה",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoadingNickname(true);
+
+      // Get current member data
+      const members = await apiClient.getMembers(groupId);
+      const member = members.find((m: any) => m.phone === user.phone);
+      
+      if (!member) {
+        toast({
+          title: "שגיאה",
+          description: "לא נמצא חבר עם הטלפון שלך בקבוצה",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update member with new nickname
+      await apiClient.updateMember(member.id, {
+        ...member,
+        nickname: nickname.trim() || null
+      });
+
+      toast({
+        title: "הצלחה!",
+        description: "הכינוי עודכן בהצלחה"
+      });
+    } catch (error: any) {
+      console.error("Error updating nickname:", error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן את הכינוי",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingNickname(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,6 +321,34 @@ const UserSettings = ({ user, onUserUpdated }: UserSettingsProps) => {
             />
             <p className="text-xs text-muted-foreground">מספר הטלפון לא ניתן לשינוי</p>
           </div>
+
+          {/* Nickname */}
+          {groupId && (
+            <div className="grid gap-2">
+              <Label htmlFor="nickname">כינוי</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="nickname"
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="הזן כינוי (אופציונלי)"
+                  dir="rtl"
+                  className="text-right flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveNickname}
+                  disabled={loadingNickname}
+                >
+                  {loadingNickname ? "שומר..." : "שמור כינוי"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">הכינוי יוצג ליד שמך בכל מקום במערכת</p>
+            </div>
+          )}
 
           <Button type="submit" disabled={loading} className="w-full">
             <Save className="w-4 h-4 ml-2" />

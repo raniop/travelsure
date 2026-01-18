@@ -3,7 +3,7 @@ import { apiClient } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw } from "lucide-react";
+import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CreateEventDialog from "@/components/bbq/CreateEventDialog";
 import EventsList from "@/components/bbq/EventsList";
@@ -12,6 +12,8 @@ import PaymentsOverview from "@/components/bbq/PaymentsOverview";
 import GroupSettings from "@/components/bbq/GroupSettings";
 import UserSettings from "@/components/bbq/UserSettings";
 import LoginDialog from "@/components/bbq/LoginDialog";
+import Reports from "@/components/bbq/Reports";
+import UsersList from "@/components/bbq/UsersList";
 
 interface Group {
   id: string;
@@ -489,7 +491,7 @@ const BBQManager = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6" dir="rtl">
+          <TabsList className={`grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} mb-6`} dir="rtl">
             <TabsTrigger value="events" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               אירועים
@@ -502,6 +504,16 @@ const BBQManager = () => {
               <DollarSign className="w-4 h-4" />
               תשלומים
             </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              דוחות
+            </TabsTrigger>
+            {user.isAdmin && (
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <UserIcon className="w-4 h-4" />
+                משתמשים
+              </TabsTrigger>
+            )}
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               הגדרות
@@ -540,6 +552,16 @@ const BBQManager = () => {
             <PaymentsOverview groupId={group.id} userId={user.id} isAdmin={user.isAdmin} />
           </TabsContent>
 
+          <TabsContent value="reports" className="space-y-4">
+            <Reports groupId={group.id} />
+          </TabsContent>
+
+          {user.isAdmin && (
+            <TabsContent value="users" className="space-y-4">
+              <UsersList groupId={group.id} />
+            </TabsContent>
+          )}
+
           <TabsContent value="settings" className="space-y-4">
             <div className="space-y-6">
               {/* User Settings - for all users */}
@@ -556,7 +578,8 @@ const BBQManager = () => {
                       phone: updatedUser.phone,
                       profile_image: updatedUser.profile_image
                     }));
-                  }} 
+                  }}
+                  groupId={group?.id}
                 />
               </div>
 

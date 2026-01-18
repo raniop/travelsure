@@ -1,5 +1,5 @@
 // Script to update group owner via API
-// Run this in browser console on https://travsure.chatpilotapi.com/bbq
+// Run this in browser console on https://ophir.travelsure.co.il/bbq
 
 (async () => {
   try {

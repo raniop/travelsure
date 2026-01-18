@@ -3,18 +3,22 @@ import { apiClient } from "@/integrations/api/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Toggle } from "@/components/ui/toggle";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, ChevronLeft, Clock, History } from "lucide-react";
+import { Calendar, Users, ChevronLeft, Clock, History, CheckCircle2, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import EventDetailsDialog from "./EventDetailsDialog";
 
 interface Event {
   id: string;
   event_date: string;
-  total_cost: number;
+  total_cost?: number;
+  butcher_cost?: number;
+  grocery_cost?: number;
   description: string | null;
+  host_member_id?: string | null;
   created_at: string;
 }
 
@@ -48,8 +52,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       console.log('EventsList - allEvents:', allEvents.map(e => ({ id: e.id, date: e.event_date })));
       
       // Admin sees all events, non-admin only sees events they attended (for past events)
-      // Check isAdmin more safely - handle both boolean true and string "true"
-      const isAdminUser = isAdmin === true || isAdmin === "true" || String(isAdmin).toLowerCase() === "true";
+      const isAdminUser = isAdmin === true;
       
       if (isAdminUser) {
         // Admin sees all events - no filtering, show everything
@@ -233,12 +236,99 @@ interface EventCardProps {
 }
 
 const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: EventCardProps) => {
+  const [members, setMembers] = useState<any[]>([]);
+  const [userMember, setUserMember] = useState<any>(null);
+  const [isAttending, setIsAttending] = useState<boolean | null>(null);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const { toast } = useToast();
   const eventDate = new Date(event.event_date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const eventDateOnly = new Date(eventDate);
   eventDateOnly.setHours(0, 0, 0, 0);
   const isPast = eventDateOnly < today;
+  const isFuture = eventDateOnly >= today;
+
+  useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        const membersData = await apiClient.getMembers(groupId);
+        const activeMembers = membersData.filter(m => m.is_active !== false);
+        setMembers(activeMembers);
+        
+        // Find current user's member record
+        const savedUser = localStorage.getItem('bbq_current_user');
+        const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+        const currentUserMember = activeMembers.find((m: any) => m.phone === userPhone);
+        setUserMember(currentUserMember);
+        
+        // Load attendance status for future events
+        if (isFuture && currentUserMember) {
+          try {
+            const attendees = await apiClient.getAttendees(event.id);
+            const userAttendee = attendees.find((a: any) => a.member_id === currentUserMember.id);
+            setIsAttending(userAttendee ? userAttendee.attended : false);
+          } catch (error) {
+            console.error("Error loading attendance:", error);
+            setIsAttending(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading members:", error);
+      }
+    };
+    loadMembers();
+  }, [groupId, event.id, isFuture]);
+
+  const handleToggleAttendance = async (attended: boolean) => {
+    if (!userMember || loadingAttendance) return;
+    
+    setLoadingAttendance(true);
+    setIsAttending(attended);
+    
+    try {
+      // Get existing attendees to check if user already has a record
+      const attendees = await apiClient.getAttendees(event.id);
+      const existingAttendee = attendees.find((a: any) => a.member_id === userMember.id);
+      
+      if (existingAttendee) {
+        // Update existing attendee
+        const updateData = {
+          id: existingAttendee.id,
+          event_id: existingAttendee.event_id,
+          member_id: existingAttendee.member_id,
+          attended: attended,
+          created_at: existingAttendee.created_at
+        };
+        await apiClient.updateAttendee(existingAttendee.id, updateData);
+      } else if (attended) {
+        // Create new attendee only if attended = true
+        await apiClient.createAttendee({
+          event_id: event.id,
+          member_id: userMember.id,
+          attended: true
+        });
+      }
+      
+      toast({
+        title: attended ? "נרשמת לאירוע" : "ביטלת את ההרשמה",
+        description: attended ? "אתה מסומן כמגיע לאירוע" : "אתה לא מסומן כמגיע לאירוע",
+      });
+    } catch (error: any) {
+      console.error("Error updating attendance:", error);
+      // Rollback on error
+      setIsAttending(!attended);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן את ההגעה",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
+
+  const hostMember = event.host_member_id ? members.find(m => m.id === event.host_member_id) : null;
 
   return (
     <Card className="hover:shadow-lg transition-shadow" dir="rtl">
@@ -252,6 +342,9 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
             {event.description && (
               <CardDescription className="mt-2">{event.description}</CardDescription>
             )}
+            {hostMember && (
+              <CardDescription className="mt-1">מיקום: {hostMember.name}</CardDescription>
+            )}
           </div>
           <Badge variant={isPast ? "secondary" : "default"} className="shrink-0">
             {isPast ? "עבר" : "קרוב"}
@@ -259,10 +352,41 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-foreground">{event.total_cost.toFixed(2)} ₪</span>
+            <span className="text-lg font-semibold text-foreground">
+              {(() => {
+                const total = (event.butcher_cost || 0) + (event.grocery_cost || 0) || (event.total_cost || 0);
+                return total.toFixed(2);
+              })()} ₪
+            </span>
           </div>
+          
+          {/* Attendance toggle for future events - only for non-admin users */}
+          {isFuture && !isAdmin && userMember && (
+            <div className="flex items-center gap-2">
+              <Toggle
+                pressed={isAttending === true}
+                onPressedChange={(pressed) => handleToggleAttendance(pressed)}
+                disabled={loadingAttendance || isAttending === null}
+                className="flex items-center gap-2"
+                aria-label={isAttending ? "מגיע" : "לא מגיע"}
+              >
+                {isAttending ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-sm">מגיע</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    <span className="text-sm">לא מגיע</span>
+                  </>
+                )}
+              </Toggle>
+            </div>
+          )}
+          
           <EventDetailsDialog eventId={event.id} groupId={groupId} userId={userId} isAdmin={isAdmin} onPaymentsCalculated={onPaymentsCalculated}>
             <Button 
               variant="default" 

@@ -110,7 +110,37 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
         }
         
         // Verify password
-        if (existingUser.password !== password) {
+        console.log('Login attempt:', {
+          phone: cleanPhone,
+          enteredPassword: password,
+          storedPassword: existingUser.password,
+          passwordMatch: existingUser.password === password,
+          userData: existingUser
+        });
+        
+        // If user has no password, allow setting it (for users registered before password was added)
+        if (!existingUser.password) {
+          // Update user with password
+          try {
+            const updatedUser = await apiClient.updateUser(existingUser.id, {
+              ...existingUser,
+              password: password
+            });
+            existingUser = updatedUser;
+            toast({
+              title: "סיסמה עודכנה",
+              description: "סיסמה נקבעה בהצלחה. מתחבר..."
+            });
+          } catch (error: any) {
+            toast({
+              title: "שגיאה",
+              description: "לא הצלחנו לעדכן את הסיסמה. נסה שוב או פנה למנהל",
+              variant: "destructive"
+            });
+            setLoading(false);
+            return;
+          }
+        } else if (existingUser.password !== password) {
           toast({
             title: "סיסמה שגויה",
             description: "הסיסמה שהזנת לא נכונה",

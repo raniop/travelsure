@@ -1,5 +1,5 @@
 # Set owner for BBQ group
-$apiUrl = "http://travsure.chatpilotapi.com/api-bbq.ashx"
+$apiUrl = "https://ophir.travelsure.co.il/api-bbq.ashx"
 $userId = "user_0524444244"
 
 Write-Host "Getting groups..." -ForegroundColor Cyan

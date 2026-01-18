@@ -401,6 +401,13 @@ public class BBQHandler : IHttpHandler
             return;
         }
         
+        // If action=delete and id is provided, treat as delete (DELETE equivalent)
+        if (action == "delete" && !string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(entity))
+        {
+            HandleDelete(context, entity, dataFolder);
+            return;
+        }
+        
         switch (entity.ToLower())
         {
             case "groups":
@@ -1000,10 +1007,13 @@ public class BBQHandler : IHttpHandler
     {
         // Webhook endpoint for PayBox payment notifications
         // PayBox will call this URL when a payment is completed
-        // Expected parameters: payment_id (from query string), status (from POST body)
+        // Expected parameters: payment_id (PayBox payment ID), amount, payer_phone (optional)
         
-        string paymentId = context.Request.QueryString["payment_id"] ?? "";
-        if (string.IsNullOrEmpty(paymentId))
+        string payboxPaymentId = context.Request.QueryString["payment_id"] ?? "";
+        string amountStr = context.Request.QueryString["amount"] ?? "";
+        string payerPhone = context.Request.QueryString["payer_phone"] ?? "";
+        
+        if (string.IsNullOrEmpty(payboxPaymentId))
         {
             context.Response.StatusCode = 400;
             context.Response.Write("{\"error\":\"Missing payment_id parameter\"}");
@@ -1016,14 +1026,78 @@ public class BBQHandler : IHttpHandler
             string body = new StreamReader(context.Request.InputStream).ReadToEnd();
             
             // Try to parse PayBox webhook data
-            // PayBox typically sends: {"status": "paid", "payment_id": "...", "amount": ...}
-            // For now, we'll mark as paid if webhook is called (PayBox only calls on success)
-            string existingPaymentJson = LoadEntityJson("payments", paymentId, dataFolder);
+            // PayBox typically sends: {"status": "paid", "payment_id": "...", "amount": ..., "payer_phone": "..."}
+            // Try to find payment by paybox_payment_id first, then by amount + payer_phone
+            
+            string paymentId = null;
+            string existingPaymentJson = null;
+            
+            // First, try to find by paybox_payment_id
+            string[] allPaymentFiles = Directory.GetFiles(Path.Combine(dataFolder, "payments"), "*.json");
+            foreach (string file in allPaymentFiles)
+            {
+                string content = File.ReadAllText(file);
+                if (content.Contains("\"paybox_payment_id\"") && content.Contains("\"" + payboxPaymentId + "\""))
+                {
+                    paymentId = Path.GetFileNameWithoutExtension(file);
+                    existingPaymentJson = content;
+                    break;
+                }
+            }
+            
+            // If not found by paybox_payment_id, try to find by amount + payer_phone
+            if (string.IsNullOrEmpty(existingPaymentJson) && !string.IsNullOrEmpty(amountStr) && !string.IsNullOrEmpty(payerPhone))
+            {
+                decimal amount = 0;
+                if (decimal.TryParse(amountStr, out amount))
+                {
+                    foreach (string file in allPaymentFiles)
+                    {
+                        string content = File.ReadAllText(file);
+                        // Check if amount matches and if we can find payer by phone
+                        if (content.Contains("\"amount\":" + amount.ToString("F2")) || 
+                            content.Contains("\"amount\":" + amount.ToString("F")))
+                        {
+                            // Try to match payer by phone (need to check members/guests)
+                            // For now, mark as potential match
+                            paymentId = Path.GetFileNameWithoutExtension(file);
+                            existingPaymentJson = content;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // If still not found, try direct lookup by paymentId (if payboxPaymentId is our internal ID)
+            if (string.IsNullOrEmpty(existingPaymentJson))
+            {
+                existingPaymentJson = LoadEntityJson("payments", payboxPaymentId, dataFolder);
+                if (!string.IsNullOrEmpty(existingPaymentJson))
+                {
+                    paymentId = payboxPaymentId;
+                }
+            }
+            
             if (string.IsNullOrEmpty(existingPaymentJson))
             {
                 context.Response.StatusCode = 404;
-                context.Response.Write("{\"error\":\"Payment not found\"}");
+                context.Response.Write("{\"error\":\"Payment not found\",\"paybox_payment_id\":\"" + HttpUtility.JavaScriptStringEncode(payboxPaymentId) + "\"}");
                 return;
+            }
+            
+            if (string.IsNullOrEmpty(paymentId))
+            {
+                // Extract payment ID from JSON
+                int idIdx = existingPaymentJson.IndexOf("\"id\"");
+                if (idIdx > 0)
+                {
+                    int startQuote = existingPaymentJson.IndexOf("\"", idIdx + 4);
+                    int endQuote = existingPaymentJson.IndexOf("\"", startQuote + 1);
+                    if (startQuote > 0 && endQuote > startQuote)
+                    {
+                        paymentId = existingPaymentJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                    }
+                }
             }
 
             // Update payment status to paid
@@ -1080,6 +1154,64 @@ public class BBQHandler : IHttpHandler
                 {
                     paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
                     paymentJson = paymentJson + ",\"paid_at\":\"" + paymentUpdatedAt + "\"}";
+                }
+            }
+            
+            // Add/update paybox_payment_id (to track which PayBox payment this is)
+            if (!string.IsNullOrEmpty(payboxPaymentId))
+            {
+                if (paymentJson.Contains("\"paybox_payment_id\""))
+                {
+                    int payboxIdIdx = paymentJson.IndexOf("\"paybox_payment_id\"");
+                    if (payboxIdIdx > 0)
+                    {
+                        int startQuote = paymentJson.IndexOf("\"", payboxIdIdx + 19);
+                        int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = paymentJson.Substring(0, startQuote + 1);
+                            string after = paymentJson.Substring(endQuote);
+                            paymentJson = before + payboxPaymentId + after;
+                        }
+                    }
+                }
+                else
+                {
+                    paymentJson = paymentJson.Trim();
+                    if (paymentJson.EndsWith("}"))
+                    {
+                        paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                        paymentJson = paymentJson + ",\"paybox_payment_id\":\"" + HttpUtility.JavaScriptStringEncode(payboxPaymentId) + "\"}";
+                    }
+                }
+            }
+            
+            // Add/update paid_by_phone if provided (to track who paid)
+            if (!string.IsNullOrEmpty(payerPhone))
+            {
+                if (paymentJson.Contains("\"paid_by_phone\""))
+                {
+                    int paidByIdx = paymentJson.IndexOf("\"paid_by_phone\"");
+                    if (paidByIdx > 0)
+                    {
+                        int startQuote = paymentJson.IndexOf("\"", paidByIdx + 15);
+                        int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = paymentJson.Substring(0, startQuote + 1);
+                            string after = paymentJson.Substring(endQuote);
+                            paymentJson = before + HttpUtility.JavaScriptStringEncode(payerPhone) + after;
+                        }
+                    }
+                }
+                else
+                {
+                    paymentJson = paymentJson.Trim();
+                    if (paymentJson.EndsWith("}"))
+                    {
+                        paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                        paymentJson = paymentJson + ",\"paid_by_phone\":\"" + HttpUtility.JavaScriptStringEncode(payerPhone) + "\"}";
+                    }
                 }
             }
 

@@ -8,7 +8,7 @@ param(
 
 $cleanPhone = $Phone -replace '[^\d]', ''
 $userId = "user_$cleanPhone"
-$apiUrl = "http://travsure.chatpilotapi.com/api-bbq.ashx"
+$apiUrl = "https://ophir.travelsure.co.il/api-bbq.ashx"
 
 Write-Host "Setting user $userId as admin..." -ForegroundColor Cyan
 

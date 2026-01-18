@@ -17,8 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
-import { Users, UserPlus, CheckCircle2, XCircle } from "lucide-react";
+import { Users, UserPlus, CheckCircle2, XCircle, Edit2, Trash2, Save, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface EventDetailsDialogProps {
   eventId: string;
@@ -53,8 +54,11 @@ interface Guest {
 interface Event {
   id: string;
   event_date: string;
-  total_cost: number;
+  total_cost?: number;
+  butcher_cost?: number;
+  grocery_cost?: number;
   description: string | null;
+  host_member_id?: string | null;
 }
 
 const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPaymentsCalculated }: EventDetailsDialogProps) => {
@@ -69,6 +73,12 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [hasPayments, setHasPayments] = useState(false);
+  const [isEditingCost, setIsEditingCost] = useState(false);
+  const [editedButcherCost, setEditedButcherCost] = useState("");
+  const [editedGroceryCost, setEditedGroceryCost] = useState("");
+  const [isEditingHost, setIsEditingHost] = useState(false);
+  const [editedHostMemberId, setEditedHostMemberId] = useState<string>("");
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,6 +121,13 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         setHasPayments(paymentsData && paymentsData.length > 0);
       } catch (error) {
         setHasPayments(false);
+      }
+
+      // Set edited costs and host to current values
+      if (eventData) {
+        setEditedButcherCost(eventData.butcher_cost?.toString() || "0");
+        setEditedGroceryCost(eventData.grocery_cost?.toString() || "0");
+        setEditedHostMemberId(eventData.host_member_id || "");
       }
     } catch (error: any) {
       console.error("Error loading event details:", error);
@@ -328,6 +345,108 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
     }
   };
 
+  const updateEventCost = async () => {
+    if (!event) return;
+
+    const butcherCost = parseFloat(editedButcherCost);
+    const groceryCost = parseFloat(editedGroceryCost);
+    
+    if (isNaN(butcherCost) || butcherCost < 0 || isNaN(groceryCost) || groceryCost < 0) {
+      toast({
+        title: "שגיאה",
+        description: "אנא הזן סכומים תקינים",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const totalCost = butcherCost + groceryCost;
+
+    try {
+      await apiClient.updateEvent(eventId, {
+        ...event,
+        butcher_cost: butcherCost,
+        grocery_cost: groceryCost,
+        total_cost: totalCost
+      });
+
+      await loadEventDetails();
+      setIsEditingCost(false);
+
+      toast({
+        title: "הצלחה!",
+        description: "הסכומים עודכנו בהצלחה"
+      });
+    } catch (error: any) {
+      console.error("Error updating event cost:", error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן את הסכומים",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateEventHost = async () => {
+    if (!event) return;
+
+    try {
+      await apiClient.updateEvent(eventId, {
+        ...event,
+        host_member_id: editedHostMemberId || null
+      });
+
+      await loadEventDetails();
+      setIsEditingHost(false);
+
+      toast({
+        title: "הצלחה!",
+        description: "המארח עודכן בהצלחה"
+      });
+    } catch (error: any) {
+      console.error("Error updating event host:", error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן את המארח",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteEvent = async () => {
+    if (!event) return;
+
+    if (!confirm("האם אתה בטוח שברצונך למחוק את האירוע הזה? פעולה זו לא ניתנת לביטול.")) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await apiClient.deleteEvent(eventId);
+
+      toast({
+        title: "הצלחה!",
+        description: "האירוע נמחק בהצלחה"
+      });
+
+      setOpen(false);
+      
+      // Reload events list by calling onPaymentsCalculated if available
+      if (onPaymentsCalculated) {
+        onPaymentsCalculated();
+      }
+    } catch (error: any) {
+      console.error("Error deleting event:", error);
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו למחוק את האירוע",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const calculatePayments = async () => {
     if (!event) return;
 
@@ -347,25 +466,59 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         return;
       }
 
-      const costPerPerson = event.total_cost / totalPaying;
+      const totalCost = event.butcher_cost && event.grocery_cost 
+        ? event.butcher_cost + event.grocery_cost 
+        : (event.total_cost || 0);
+      const costPerPerson = totalCost / totalPaying;
 
-      // Create/update payments for members
+      // Get all members to update their balance
+      const allMembers = await apiClient.getMembers(groupId);
+
+      // Deduct from member balance and create payment record for tracking
       for (const attendee of payingAttendees) {
-        const existingPayment = await apiClient.getPaymentByPayer(eventId, attendee.member_id, "member");
+        const member = allMembers.find((m: any) => m.id === attendee.member_id);
+        
+        if (member) {
+          // Check if payment already exists with "deducted" status
+          const existingPayment = await apiClient.getPaymentByPayer(eventId, attendee.member_id, "member");
+          
+          // Only deduct from balance if payment doesn't exist or hasn't been deducted yet
+          // IMPORTANT: If payment exists with "deducted" status, balance was already deducted, so don't deduct again
+          if (!existingPayment || existingPayment.payment_status !== "deducted") {
+            // Get fresh member data to ensure we have the latest balance
+            const freshMembers = await apiClient.getMembers(groupId);
+            const freshMember = freshMembers.find((m: any) => m.id === attendee.member_id);
+            const currentBalance = freshMember?.balance || member.balance || 0;
+            
+            // Calculate new balance (deduct costPerPerson)
+            const newBalance = Math.max(0, currentBalance - costPerPerson); // Don't go below 0
+            
+            // Update member balance
+            await apiClient.updateMember(member.id, {
+              ...member,
+              balance: newBalance
+            });
+          }
 
-        if (existingPayment) {
-          await apiClient.updatePayment(existingPayment.id, {
-            ...existingPayment,
-            amount: costPerPerson
-          });
-        } else {
-          await apiClient.createPayment({
-            event_id: eventId,
-            payer_id: attendee.member_id,
-            payer_type: "member",
-            amount: costPerPerson,
-            payment_status: "pending"
-          });
+          // Create or update payment record for tracking
+          if (existingPayment) {
+            // Only update if status is not already "deducted"
+            if (existingPayment.payment_status !== "deducted") {
+              await apiClient.updatePayment(existingPayment.id, {
+                ...existingPayment,
+                amount: costPerPerson,
+                payment_status: "deducted" // Mark as deducted from balance
+              });
+            }
+          } else {
+            await apiClient.createPayment({
+              event_id: eventId,
+              payer_id: attendee.member_id,
+              payer_type: "member",
+              amount: costPerPerson,
+              payment_status: "deducted" // Mark as deducted from balance
+            });
+          }
         }
       }
 
@@ -394,7 +547,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
 
       toast({
         title: "הצלחה!",
-        description: `חושבו תשלומים: ${costPerPerson.toFixed(2)} ₪ לכל משתתף`
+        description: `חושבו תשלומים: ${costPerPerson.toFixed(2)} ₪ לכל משתתף. הסכום נקזז מהיתרה החודשית של כל חבר`
       });
 
       // Reload event details to show updated payments
@@ -420,7 +573,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const payingAttendees = attendees.filter(a => a.attended);
   const payingGuests = guests.filter(g => g.should_pay);
   const totalPaying = payingAttendees.length + payingGuests.length;
-  const costPerPerson = totalPaying > 0 && event ? event.total_cost / totalPaying : 0;
+  const totalCost = event ? (event.butcher_cost || 0) + (event.grocery_cost || 0) : (event?.total_cost || 0);
+  const costPerPerson = totalPaying > 0 && totalCost > 0 ? totalCost / totalPaying : 0;
   
   // Check if event is in the future or past
   const today = new Date();
@@ -444,6 +598,83 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             {event?.description || "פרטי האירוע"}
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Location/Host Editor */}
+        {!isEditingHost && (event?.host_member_id && members.length > 0 ? (() => {
+          const hostMember = members.find(m => m.id === event.host_member_id);
+          return hostMember ? (
+            <div className="flex items-center justify-end gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">מיקום: {hostMember.name}</span>
+              {isAdmin && !hasPayments && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsEditingHost(true);
+                    setEditedHostMemberId(event.host_member_id || "");
+                  }}
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          ) : null;
+        })() : (
+          event && isAdmin && !hasPayments && (
+            <div className="flex items-center justify-end gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">אין מיקום מוגדר</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setIsEditingHost(true);
+                  setEditedHostMemberId("");
+                }}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+            </div>
+          )
+        ))}
+        {isEditingHost && isAdmin && !hasPayments && (
+          <div className="flex items-center justify-end gap-2 mb-4">
+              <Select value={editedHostMemberId || "none"} onValueChange={(value) => setEditedHostMemberId(value === "none" ? "" : value)}>
+                <SelectTrigger className="w-48 text-right" dir="rtl">
+                  <SelectValue placeholder="בחר מארח" />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="none" className="text-right">אין מארח</SelectItem>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id} className="text-right">
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setIsEditingHost(false);
+                setEditedHostMemberId(event?.host_member_id || "");
+              }}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              onClick={updateEventHost}
+            >
+              <Save className="w-3 h-3 ml-1" />
+              שמור
+            </Button>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-8">טוען...</div>
@@ -452,19 +683,107 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         ) : (
           <div className="space-y-6">
             {/* Summary */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">עלות כוללת</div>
-                <div className="text-2xl font-bold">{event.total_cost.toFixed(2)} ₪</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">משלמים</div>
-                <div className="text-2xl font-bold">{totalPaying}</div>
-                {totalPaying > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    {costPerPerson.toFixed(2)} ₪ לאדם
-                  </div>
+            <div className="p-4 bg-muted rounded-lg space-y-4">
+              {isAdmin && !hasPayments && (
+                <div className="flex items-center justify-end gap-2">
+                  {isEditingCost ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setIsEditingCost(false);
+                          setEditedButcherCost(event.butcher_cost?.toString() || "0");
+                          setEditedGroceryCost(event.grocery_cost?.toString() || "0");
+                        }}
+                      >
+                        <X className="w-4 h-4 ml-2" />
+                        ביטול
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="default"
+                        onClick={updateEventCost}
+                      >
+                        <Save className="w-4 h-4 ml-2" />
+                        שמור
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditingCost(true)}
+                    >
+                      <Edit2 className="w-4 h-4 ml-2" />
+                      ערוך סכומים
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                {isEditingCost && isAdmin && !hasPayments ? (
+                  <>
+                    <div className="text-right">
+                      <Label className="text-sm text-muted-foreground mb-2 block">קצבייה</Label>
+                      <Input
+                        type="number"
+                        value={editedButcherCost}
+                        onChange={(e) => setEditedButcherCost(e.target.value)}
+                        className="text-right text-xl font-bold"
+                        dir="rtl"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="text-right">
+                      <Label className="text-sm text-muted-foreground mb-2 block">סופר</Label>
+                      <Input
+                        type="number"
+                        value={editedGroceryCost}
+                        onChange={(e) => setEditedGroceryCost(e.target.value)}
+                        className="text-right text-xl font-bold"
+                        dir="rtl"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground mb-1">קצבייה</div>
+                      <div className="text-xl font-bold">{(event.butcher_cost || 0).toFixed(2)} ₪</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground mb-1">סופר</div>
+                      <div className="text-xl font-bold">{(event.grocery_cost || 0).toFixed(2)} ₪</div>
+                    </div>
+                  </>
                 )}
+              </div>
+              <div className="border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground mb-1">משלמים</div>
+                    <div className="text-2xl font-bold">{totalPaying}</div>
+                    {totalPaying > 0 && (
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {costPerPerson.toFixed(2)} ₪ לאדם
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground mb-1">סה״כ</div>
+                    <div className="text-2xl font-bold">{totalCost.toFixed(2)} ₪</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -533,12 +852,19 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                               toggleMemberAttendance(member.id, checked as boolean)
                             }
                           />
-                          <span className={`text-right ${attended ? "font-medium" : "text-muted-foreground"}`}>
-                            {member.name}
-                            {isCurrentUser && !isAdmin && (
-                              <span className="text-xs text-muted-foreground ml-2">(אתה)</span>
+                          <div className="flex flex-col items-end">
+                            <span className={`text-right ${attended ? "font-medium" : "text-muted-foreground"}`}>
+                              {member.name}
+                              {isCurrentUser && !isAdmin && (
+                                <span className="text-xs text-muted-foreground ml-2">(אתה)</span>
+                              )}
+                            </span>
+                            {member.nickname && (
+                              <span className="text-muted-foreground text-sm font-normal">
+                                {member.nickname}
+                              </span>
                             )}
-                          </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -648,7 +974,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
 
             <Separator />
 
-            {/* Calculate Payments - Only for admin */}
+            {/* Actions - Only for admin */}
             {isAdmin && (
             <div className="flex justify-start gap-2">
               <Button
@@ -663,20 +989,15 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                     ? "חשב מחדש תשלומים" 
                     : "חשב תשלומים"}
               </Button>
-              {hasPayments && (
-                <Button
-                  onClick={() => {
-                    setOpen(false);
-                    if (onPaymentsCalculated) {
-                      onPaymentsCalculated();
-                    }
-                  }}
-                  variant="default"
-                  className="flex-1"
-                >
-                  צפה בתשלומים
-                </Button>
-              )}
+              <Button
+                onClick={deleteEvent}
+                disabled={deleting}
+                variant="destructive"
+                className="flex-1"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                {deleting ? "מוחק..." : "מחק אירוע"}
+              </Button>
             </div>
             )}
           </div>

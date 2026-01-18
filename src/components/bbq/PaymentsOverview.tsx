@@ -20,6 +20,10 @@ interface Payment {
     total_cost: number;
   };
   payer_name?: string;
+  paid_by_phone?: string;
+  paid_by_name?: string;
+  paid_at?: string;
+  paybox_payment_id?: string;
 }
 
 interface PaymentsOverviewProps {
@@ -36,17 +40,11 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
     paid: 0,
     pending: 0
   });
+  const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPayments();
-    
-    // Auto-refresh payments every minute to check for PayBox updates
-    const interval = setInterval(() => {
-      loadPayments();
-    }, 60000); // 60 seconds (1 minute)
-    
-    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
 
@@ -70,15 +68,17 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       const paymentsData = allPayments.flat();
 
       // Enrich with event and payer names
+      const members = await apiClient.getMembers(groupId);
       let enrichedPayments = await Promise.all(
         paymentsData.map(async (payment: any) => {
           let payerName = "לא ידוע";
           const event = events.find(e => e.id === payment.event_id);
 
           if (payment.payer_type === "member") {
-            const members = await apiClient.getMembers(groupId);
             const member = members.find(m => m.id === payment.payer_id);
-            if (member) payerName = member.name;
+            if (member) {
+              payerName = member.nickname ? `${member.name} - ${member.nickname}` : member.name;
+            }
           } else if (payment.payer_type === "guest") {
             // For guests, we need to get from the event
             if (event) {
@@ -88,9 +88,31 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             }
           }
 
+          // Find who actually paid (if different from payer)
+          let paidByName = null;
+          if (payment.paid_by_phone && payment.paid_by_phone !== payment.payer_id) {
+            // Try to find by phone in members
+            const paidByMember = members.find(m => m.phone === payment.paid_by_phone);
+            if (paidByMember) {
+              paidByName = paidByMember.nickname ? `${paidByMember.name} - ${paidByMember.nickname}` : paidByMember.name;
+            } else if (event) {
+              // Try to find in guests
+              const guests = await apiClient.getGuests(event.id);
+              const paidByGuest = guests.find(g => g.phone === payment.paid_by_phone);
+              if (paidByGuest) {
+                paidByName = paidByGuest.name;
+              }
+            }
+            // If not found, use phone number
+            if (!paidByName) {
+              paidByName = payment.paid_by_phone;
+            }
+          }
+
           return {
             ...payment,
             payer_name: payerName,
+            paid_by_name: paidByName,
             event: event ? {
               id: event.id,
               event_date: event.event_date,
@@ -180,14 +202,37 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       );
       setPayments(enrichedPayments);
 
-      // Calculate summary
+      // Calculate summary - only show deducted payments (from balance)
       const total = enrichedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-      const paid = enrichedPayments
-        .filter(p => p.payment_status === "paid" || p.payment_status === "confirmed")
+      const deducted = enrichedPayments
+        .filter(p => p.payment_status === "deducted")
         .reduce((sum, p) => sum + (p.amount || 0), 0);
-      const pending = total - paid;
 
-      setSummary({ total, paid, pending });
+      setSummary({ total, paid: 0, pending: deducted });
+
+      // Load current balance for the logged-in user
+      try {
+        if (!isAdmin && userId) {
+          const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
+          const members = await apiClient.getMembers(groupId);
+          const userMember = members.find((m: any) => m.phone === userData.phone);
+          if (userMember) {
+            setCurrentBalance(userMember.balance || 0);
+          } else {
+            setCurrentBalance(0);
+          }
+        } else if (isAdmin) {
+          // For admin, show total balance of all members
+          const members = await apiClient.getMembers(groupId);
+          const totalBalance = members.reduce((sum: number, m: any) => sum + (m.balance || 0), 0);
+          setCurrentBalance(totalBalance);
+        } else {
+          setCurrentBalance(0);
+        }
+      } catch (balanceError) {
+        console.error("Error loading balance:", balanceError);
+        setCurrentBalance(0);
+      }
     } catch (error: any) {
       console.error("Error loading payments:", error);
       toast({
@@ -260,33 +305,43 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
+            <CardTitle className="text-sm font-medium text-right">יתרה נוכחית</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold text-right ${currentBalance !== null && currentBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {currentBalance !== null ? `${currentBalance.toFixed(2)} ₪` : "טוען..."}
+            </div>
+            <p className="text-xs text-muted-foreground text-right mt-1">
+              {isAdmin ? "סה\"כ יתרה" : "היתרה שלך"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
+            <CardTitle className="text-sm font-medium text-right">סה״כ נקזז מהיתרה</CardTitle>
+            <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600 text-right">
+              {summary.pending.toFixed(2)} ₪
+            </div>
+            <p className="text-xs text-muted-foreground text-right mt-1">
+              סך הכל שנקזז מהיתרות
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
             <CardTitle className="text-sm font-medium text-right">סה״כ תשלומים</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-right">{summary.total.toFixed(2)} ₪</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
-            <CardTitle className="text-sm font-medium text-right">שולם</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600 text-right">{summary.paid.toFixed(2)} ₪</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" style={{ flexDirection: 'row-reverse' }}>
-            <CardTitle className="text-sm font-medium text-right">ממתין לתשלום</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600 shrink-0" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600 text-right">{summary.pending.toFixed(2)} ₪</div>
+            <p className="text-xs text-muted-foreground text-right mt-1">
+              סך הכל תשלומים שנוצרו
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -326,11 +381,9 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
               <div className="space-y-6">
                 {sortedEvents.map((eventGroup) => {
                   const eventDate = new Date(eventGroup.event?.event_date || 0);
-                  const eventTotal = eventGroup.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-                  const eventPaid = eventGroup.payments
-                    .filter(p => p.payment_status === "paid" || p.payment_status === "confirmed")
+                  const eventDeducted = eventGroup.payments
+                    .filter(p => p.payment_status === "deducted")
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
-                  const eventPending = eventTotal - eventPaid;
 
                   return (
                     <Card key={eventGroup.event?.id || 'unknown'} className="overflow-hidden">
@@ -338,7 +391,13 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                         <div className="flex items-center justify-between" style={{ flexDirection: 'row-reverse' }}>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">סה״כ אירוע</div>
-                            <div className="text-xl font-bold">{eventGroup.event?.total_cost?.toFixed(2) || '0.00'} ₪</div>
+                            <div className="text-xl font-bold">
+                              {(() => {
+                                const event = eventGroup.event;
+                                const total = (event?.butcher_cost || 0) + (event?.grocery_cost || 0) || (event?.total_cost || 0);
+                                return total.toFixed(2);
+                              })()} ₪
+                            </div>
                           </div>
                           <div>
                             <CardTitle className="text-lg text-right">
@@ -353,20 +412,16 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                         </div>
                         <div className="flex gap-4 mt-4 text-sm justify-end">
                           <div className="text-right">
-                            <span className="text-muted-foreground">ממתין: </span>
-                            <span className="font-semibold text-orange-600">{eventPending.toFixed(2)} ₪</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-muted-foreground">שולם: </span>
-                            <span className="font-semibold text-green-600">{eventPaid.toFixed(2)} ₪</span>
+                            <span className="text-muted-foreground">נקזז מהיתרה: </span>
+                            <span className="font-semibold text-blue-600">{eventDeducted.toFixed(2)} ₪</span>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="p-4">
                         <div className="space-y-2">
-                          {eventGroup.payments.map((payment) => {
-                            const isPaid = payment.payment_status === "paid" || payment.payment_status === "confirmed";
-
+                          {eventGroup.payments
+                            .filter((p: any) => p.payment_status === "deducted")
+                            .map((payment) => {
                             return (
                               <div
                                 key={payment.id}
@@ -374,8 +429,8 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                               >
                                 <div className="flex-1 text-right">
                                   <div className="flex items-center gap-2 mb-1 justify-end">
-                                    <Badge variant={isPaid ? "default" : "secondary"}>
-                                      {isPaid ? "שולם" : "ממתין"}
+                                    <Badge variant="default" className="bg-blue-600">
+                                      נקזז מהיתרה
                                     </Badge>
                                     <span className="font-medium">{payment.payer_name}</span>
                                   </div>
@@ -383,39 +438,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                                     {payment.amount.toFixed(2)} ₪
                                   </div>
                                 </div>
-                                {!isPaid && (
-                                  <div className="flex gap-2">
-                                    {isAdmin && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => markAsPaid(payment.id)}
-                                      >
-                                        <CheckCircle2 className="w-4 h-4 ml-2" />
-                                        סמן כמשולם
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="default"
-                                      onClick={() => {
-                                        // PayBox group link - users join the group and pay there
-                                        // The group link: https://links.payboxapp.com/k5qia1URTZb
-                                        const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
-                                        
-                                        window.open(payboxGroupLink, '_blank');
-                                        
-                                        toast({
-                                          title: "קישור קבוצת PayBox נפתח",
-                                          description: `הצטרף לקבוצה ושלם ${payment.amount.toFixed(2)} ₪. המערכת תתעדכן אוטומטית תוך דקה אחרי התשלום.`,
-                                        });
-                                      }}
-                                    >
-                                      <ExternalLink className="w-4 h-4 ml-2" />
-                                      שלם עכשיו
-                                    </Button>
-                                  </div>
-                                )}
                               </div>
                             );
                           })}

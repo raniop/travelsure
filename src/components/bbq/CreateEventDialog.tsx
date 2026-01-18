@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiClient } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,17 +32,39 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
-  const [totalCost, setTotalCost] = useState("");
+  const [butcherCost, setButcherCost] = useState("");
+  const [groceryCost, setGroceryCost] = useState("");
   const [description, setDescription] = useState("");
+  const [hostMemberId, setHostMemberId] = useState<string>("");
+  const [members, setMembers] = useState<any[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      loadMembers();
+    }
+  }, [open, groupId]);
+
+  const loadMembers = async () => {
+    try {
+      const membersData = await apiClient.getMembers(groupId);
+      setMembers(membersData.filter(m => m.is_active !== false));
+    } catch (error: any) {
+      console.error("Error loading members:", error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!eventDate || !totalCost || parseFloat(totalCost) <= 0) {
+    const butcher = parseFloat(butcherCost) || 0;
+    const grocery = parseFloat(groceryCost) || 0;
+    const total = butcher + grocery;
+    
+    if (!eventDate) {
       toast({
         title: "שגיאה",
-        description: "אנא מלא את כל השדות הנדרשים",
+        description: "אנא בחר תאריך לאירוע",
         variant: "destructive"
       });
       return;
@@ -51,11 +74,20 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
       setLoading(true);
 
       // Create event
+      // Format date as YYYY-MM-DD in local timezone (not UTC)
+      const year = eventDate.getFullYear();
+      const month = String(eventDate.getMonth() + 1).padStart(2, '0');
+      const day = String(eventDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+      
       const event = await apiClient.createEvent({
         group_id: groupId,
-        event_date: eventDate.toISOString().split('T')[0],
-        total_cost: parseFloat(totalCost),
-        description: description || null
+        event_date: formattedDate,
+        butcher_cost: butcher,
+        grocery_cost: grocery,
+        total_cost: total,
+        description: description || null,
+        host_member_id: hostMemberId || null
       });
 
       toast({
@@ -65,8 +97,10 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
 
       setOpen(false);
       setEventDate(new Date());
-      setTotalCost("");
+      setButcherCost("");
+      setGroceryCost("");
       setDescription("");
+      setHostMemberId("");
       onEventCreated();
     } catch (error: any) {
       console.error("Error creating event:", error);
@@ -90,7 +124,7 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
           <DialogHeader>
             <DialogTitle>יצירת אירוע חדש</DialogTitle>
             <DialogDescription>
-              צור אירוע חדש וציין את העלות הכוללת
+              צור אירוע חדש. ניתן להוסיף עלויות מאוחר יותר בעריכה
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -120,17 +154,47 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
               </Popover>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cost">עלות כוללת (₪)</Label>
+              <Label htmlFor="butcher">קצבייה (₪) - אופציונלי</Label>
               <Input
-                id="cost"
+                id="butcher"
                 type="number"
                 step="0.01"
                 min="0"
-                value={totalCost}
-                onChange={(e) => setTotalCost(e.target.value)}
+                value={butcherCost}
+                onChange={(e) => setButcherCost(e.target.value)}
                 placeholder="0.00"
-                required
+                className="text-right"
+                dir="rtl"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="grocery">סופר (₪) - אופציונלי</Label>
+              <Input
+                id="grocery"
+                type="number"
+                step="0.01"
+                min="0"
+                value={groceryCost}
+                onChange={(e) => setGroceryCost(e.target.value)}
+                placeholder="0.00"
+                className="text-right"
+                dir="rtl"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="host">מיקום האירוע (בית המארח)</Label>
+              <Select value={hostMemberId} onValueChange={setHostMemberId}>
+                <SelectTrigger id="host" className="text-right" dir="rtl">
+                  <SelectValue placeholder="בחר מארח" />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id} className="text-right">
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">תיאור (אופציונלי)</Label>
@@ -140,6 +204,8 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="מה היה באירוע..."
                 rows={3}
+                className="text-right"
+                dir="rtl"
               />
             </div>
           </div>
