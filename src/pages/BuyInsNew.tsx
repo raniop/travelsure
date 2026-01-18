@@ -1442,22 +1442,29 @@ export default function BuyInsNew() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/30 bg-white/85 backdrop-blur-xl">
         <div className="bg-[#0b4e86] px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-center w-full">
-          <div
-            className={cn(
-              "mx-auto max-w-4xl w-full flex items-center flex-row-reverse",
-              shatapName ? "justify-between" : "justify-start"
+          <div className="mx-auto max-w-4xl w-full flex items-center justify-between">
+            {shatapName ? (
+              <>
+                <div className="text-white text-sm sm:text-base font-medium text-left">{shatapName}</div>
+                <div className="h-10 sm:h-12 flex items-center justify-end">
+                  <img
+                    src="/buyinsnew/HeaderLogo.png"
+                    alt="אופיר ביטוח"
+                    className="h-full w-auto object-contain"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="w-full flex items-center justify-end">
+                <div className="h-10 sm:h-12 flex items-center">
+                  <img
+                    src="/buyinsnew/HeaderLogo.png"
+                    alt="אופיר ביטוח"
+                    className="h-full w-auto object-contain"
+                  />
+                </div>
+              </div>
             )}
-          >
-            {shatapName && (
-              <div className="text-white text-sm sm:text-base font-medium">{shatapName}</div>
-            )}
-            <div className="h-10 sm:h-12 flex items-center">
-              <img
-                src="/buyinsnew/HeaderLogo.png"
-                alt="אופיר ביטוח"
-                className="h-full w-auto object-contain"
-              />
-            </div>
           </div>
         </div>
       </header>
