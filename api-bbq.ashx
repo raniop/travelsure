@@ -65,12 +65,26 @@ public class BBQHandler : IHttpHandler
         }
         catch (Exception ex)
         {
-            context.Response.StatusCode = 500;
-            string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
-            string errorType = HttpUtility.JavaScriptStringEncode(ex.GetType().ToString());
-            string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
-            string errorDetails = "{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"type\":\"" + errorType + "\",\"stack\":\"" + errorStack + "\"}";
-            context.Response.Write(errorDetails);
+            try
+            {
+                context.Response.StatusCode = 500;
+                context.Response.ContentType = "application/json; charset=utf-8";
+                string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                string errorType = HttpUtility.JavaScriptStringEncode(ex.GetType().ToString());
+                string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                string errorDetails = "{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"type\":\"" + errorType + "\",\"stack\":\"" + errorStack + "\"}";
+                context.Response.Write(errorDetails);
+            }
+            catch
+            {
+                // If we can't write the error, at least try to set status code
+                try
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.Write("{\"error\":\"Internal server error - could not write details\"}");
+                }
+                catch { }
+            }
         }
     }
 
@@ -92,7 +106,10 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(entity))
         {
             context.Response.StatusCode = 400;
-            context.Response.Write("{\"error\":\"Missing entity parameter\"}");
+            context.Response.ContentType = "application/json; charset=utf-8";
+            string debugQuery = HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString());
+            string debugEntity = HttpUtility.JavaScriptStringEncode(entity ?? "");
+            context.Response.Write("{\"error\":\"Missing entity parameter\",\"entity\":\"" + debugEntity + "\",\"queryString\":\"" + debugQuery + "\",\"rawEntity\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString["entity"] ?? "") + "\"}");
             return;
         }
         
@@ -371,12 +388,95 @@ public class BBQHandler : IHttpHandler
                 }
                 break;
 
+            case "group_invitations":
+                context.Response.ContentType = "application/json; charset=utf-8";
+                try
+                {
+                    string userPhone = context.Request.QueryString["user_phone"] ?? "";
+                    string invGroupId = context.Request.QueryString["group_id"] ?? "";
+                    
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        string json = LoadEntityJson("group_invitations", id, dataFolder);
+                        if (!string.IsNullOrEmpty(json))
+                            context.Response.Write(json);
+                        else
+                        {
+                            context.Response.StatusCode = 404;
+                            context.Response.Write("{\"error\":\"Not found\"}");
+                        }
+                    }
+                    else
+                    {
+                        string invitationsJson = LoadAllJson("group_invitations", dataFolder);
+                        
+                        // If no invitations exist, return empty array
+                        if (string.IsNullOrEmpty(invitationsJson) || invitationsJson == "[]")
+                        {
+                            context.Response.Write("[]");
+                            break;
+                        }
+                        
+                        // Filter by user_phone or group_id if provided
+                        if (!string.IsNullOrEmpty(userPhone) || !string.IsNullOrEmpty(invGroupId))
+                        {
+                            List<string> filteredInvitations = new List<string>();
+                            string trimmed = invitationsJson.Trim('[', ']');
+                            if (!string.IsNullOrEmpty(trimmed))
+                            {
+                                string[] invitations = trimmed.Split(new string[] { "},{" }, StringSplitOptions.None);
+                                foreach (string inv in invitations)
+                                {
+                                    try
+                                    {
+                                        string cleanInv = inv.Trim();
+                                        if (!cleanInv.StartsWith("{")) cleanInv = "{" + cleanInv;
+                                        if (!cleanInv.EndsWith("}")) cleanInv = cleanInv + "}";
+                                        
+                                        bool matches = true;
+                                        if (!string.IsNullOrEmpty(userPhone) && !cleanInv.Contains("\"user_phone\":\"" + userPhone + "\""))
+                                            matches = false;
+                                        if (!string.IsNullOrEmpty(invGroupId) && !cleanInv.Contains("\"group_id\":\"" + invGroupId + "\""))
+                                            matches = false;
+                                        
+                                        if (matches)
+                                            filteredInvitations.Add(cleanInv);
+                                    }
+                                    catch
+                                    {
+                                        // Skip invalid invitation entries
+                                        continue;
+                                    }
+                                }
+                            }
+                            context.Response.Write("[" + string.Join(",", filteredInvitations) + "]");
+                        }
+                        else
+                        {
+                            context.Response.Write(invitationsJson);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                    string stackTrace = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                    context.Response.Write("{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + stackTrace + "\"}");
+                }
+                break;
+
             default:
                 // Debug: return entity value to see what we got
                 context.Response.StatusCode = 400;
+                context.Response.ContentType = "application/json; charset=utf-8";
                 string debugEntity = HttpUtility.JavaScriptStringEncode(entity ?? "");
                 string debugQuery = HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString());
-                context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + debugEntity + "\",\"queryString\":\"" + debugQuery + "\"}");
+                string originalEntity = context.Request.QueryString["entity"] ?? "";
+                // List all available cases for debugging
+                string availableCases = "groups,events,members,payments,attendees,guests,users,group_invitations";
+                context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + debugEntity + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"queryString\":\"" + debugQuery + "\",\"availableCases\":\"" + availableCases + "\"}");
                 break;
         }
     }
@@ -626,6 +726,43 @@ public class BBQHandler : IHttpHandler
                 
                 SaveEntityJson("users", userNewId, userJson, dataFolder);
                 context.Response.Write(userJson);
+                break;
+
+            case "group_invitations":
+                try
+                {
+                    string invitationNewId = Guid.NewGuid().ToString();
+                    string invitationCreatedAt = DateTime.UtcNow.ToString("o");
+
+                    string invitationJson = body;
+                    if (string.IsNullOrEmpty(invitationJson) || !invitationJson.Trim().StartsWith("{") || !invitationJson.Trim().EndsWith("}"))
+                    {
+                        context.Response.StatusCode = 400;
+                        context.Response.Write("{\"error\":\"Invalid JSON format for group_invitations POST\"}");
+                        break;
+                    }
+
+                    if (!invitationJson.Contains("\"id\""))
+                    {
+                        invitationJson = invitationJson.Trim();
+                        if (invitationJson.StartsWith("{") && invitationJson.EndsWith("}"))
+                        {
+                            invitationJson = invitationJson.Substring(1, invitationJson.Length - 2);
+                            invitationJson = "{\"id\":\"" + invitationNewId + "\",\"created_at\":\"" + invitationCreatedAt + "\"," + invitationJson + "}";
+                        }
+                    }
+
+                    SaveEntityJson("group_invitations", invitationNewId, invitationJson, dataFolder);
+                    context.Response.Write(invitationJson);
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                    string stackTrace = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                    context.Response.Write("{\"error\":\"Error in HandlePost for group_invitations\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + stackTrace + "\"}");
+                }
                 break;
 
             default:
@@ -994,11 +1131,91 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(userJson);
                 break;
 
+            case "group_invitations":
+                try
+                {
+                    string invitationUpdatedAt = DateTime.UtcNow.ToString("o");
+                    string invitationJson = body;
+                    
+                    // Preserve created_at if exists
+                    string existingInvitationJson = LoadEntityJson("group_invitations", id, dataFolder);
+                    if (!string.IsNullOrEmpty(existingInvitationJson) && existingInvitationJson.Contains("\"created_at\""))
+                    {
+                        int createdIdx = existingInvitationJson.IndexOf("\"created_at\"");
+                        if (createdIdx > 0)
+                        {
+                            int startQuote = existingInvitationJson.IndexOf("\"", createdIdx + 12);
+                            int endQuote = existingInvitationJson.IndexOf("\"", startQuote + 1);
+                            if (startQuote > 0 && endQuote > startQuote)
+                            {
+                                string createdAt = existingInvitationJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                                invitationJson = invitationJson.Trim();
+                                if (invitationJson.StartsWith("{") && invitationJson.EndsWith("}"))
+                                {
+                                    invitationJson = invitationJson.Substring(1, invitationJson.Length - 2);
+                                    if (!invitationJson.Contains("\"created_at\""))
+                                    {
+                                        invitationJson = invitationJson + ",\"created_at\":\"" + createdAt + "\"";
+                                    }
+                                    invitationJson = "{" + invitationJson + "}";
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Ensure id and updated_at are in the JSON
+                    invitationJson = invitationJson.Trim();
+                    if (invitationJson.StartsWith("{") && invitationJson.EndsWith("}"))
+                    {
+                        invitationJson = invitationJson.Substring(1, invitationJson.Length - 2);
+                        // Add/update id
+                        if (!invitationJson.Contains("\"id\""))
+                        {
+                            invitationJson = "\"id\":\"" + id + "\"," + invitationJson;
+                        }
+                        // Add/update updated_at
+                        if (invitationJson.Contains("\"updated_at\""))
+                        {
+                            // Replace existing updated_at
+                            int updatedIdx = invitationJson.IndexOf("\"updated_at\"");
+                            if (updatedIdx > 0)
+                            {
+                                int startQuote = invitationJson.IndexOf("\"", updatedIdx + 13);
+                                int endQuote = invitationJson.IndexOf("\"", startQuote + 1);
+                                if (startQuote > 0 && endQuote > startQuote)
+                                {
+                                    string before = invitationJson.Substring(0, startQuote + 1);
+                                    string after = invitationJson.Substring(endQuote);
+                                    invitationJson = before + invitationUpdatedAt + after;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            invitationJson = invitationJson + ",\"updated_at\":\"" + invitationUpdatedAt + "\"";
+                        }
+                        invitationJson = "{" + invitationJson + "}";
+                    }
+                    
+                    SaveEntityJson("group_invitations", id, invitationJson, dataFolder);
+                    context.Response.Write(invitationJson);
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                    string stackTrace = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                    context.Response.Write("{\"error\":\"Error in HandlePutWithBody for group_invitations\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + stackTrace + "\"}");
+                }
+                break;
+
             default:
                 context.Response.StatusCode = 400;
+                context.Response.ContentType = "application/json; charset=utf-8";
                 string originalEntity = context.Request.QueryString["entity"] ?? "";
-                string errorMsg = "{\"error\":\"Invalid entity\",\"entity\":\"" + HttpUtility.JavaScriptStringEncode(entity ?? "") + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"id\":\"" + HttpUtility.JavaScriptStringEncode(id ?? "") + "\",\"queryString\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString()) + "\"}";
-                context.Response.Write(errorMsg);
+                string errorResponse = "{\"error\":\"Invalid entity\",\"entity\":\"" + HttpUtility.JavaScriptStringEncode(entity ?? "") + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"id\":\"" + HttpUtility.JavaScriptStringEncode(id ?? "") + "\",\"queryString\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString()) + "\"}";
+                context.Response.Write(errorResponse);
                 break;
         }
     }

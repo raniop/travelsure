@@ -1,6 +1,8 @@
 // API Client for BBQ Manager - works with your server
 // Using ASHX (C#) as PHP doesn't work on this server
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api-bbq.ashx';
+// In development, use proxy through Vite; in production, use full URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.DEV ? '/api-bbq.ashx' : 'https://ophir.travelsure.co.il/api-bbq.ashx');
 
 interface ApiResponse<T> {
   data?: T;
@@ -26,6 +28,12 @@ class ApiClient {
       let errorData;
       try {
         const text = await response.text();
+        console.error(`API Error [${response.status}]:`, {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          responseText: text.substring(0, 500)
+        });
         // Check if response is HTML (404 page) instead of JSON
         if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
           errorData = { 
@@ -35,9 +43,10 @@ class ApiClient {
         } else {
           errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
         }
-      } catch {
+      } catch (parseError) {
         // If parsing fails, show the raw text
         const text = await response.text().catch(() => '');
+        console.error('Failed to parse error response:', parseError, 'Raw text:', text.substring(0, 500));
         errorData = { 
           error: `HTTP ${response.status}: ${response.statusText}`, 
           details: text || 'Unknown error' 
@@ -241,6 +250,38 @@ class ApiClient {
     return this.request(`entity=users&id=${id}&action=update`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Group Invitations
+  async getGroupInvitations(userPhone?: string, groupId?: string): Promise<any[]> {
+    let query = 'entity=group_invitations';
+    if (userPhone) {
+      query += `&user_phone=${encodeURIComponent(userPhone)}`;
+    }
+    if (groupId) {
+      query += `&group_id=${encodeURIComponent(groupId)}`;
+    }
+    return this.request(query);
+  }
+
+  async createGroupInvitation(data: any): Promise<any> {
+    return this.request('entity=group_invitations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateGroupInvitation(id: string, data: any): Promise<any> {
+    return this.request(`entity=group_invitations&id=${id}&action=update`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteGroupInvitation(id: string): Promise<void> {
+    return this.request(`entity=group_invitations&id=${id}&action=delete`, {
+      method: 'POST',
     });
   }
 }

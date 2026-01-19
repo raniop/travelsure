@@ -76,11 +76,31 @@ public class BBQHandler : IHttpHandler
 
     private void HandleGet(HttpContext context, string entity, string dataFolder)
     {
+        // Re-read entity from query string to ensure we have it
+        if (string.IsNullOrEmpty(entity))
+        {
+            entity = context.Request.QueryString["entity"] ?? "";
+        }
+        
+        // Normalize entity to lowercase
+        if (!string.IsNullOrEmpty(entity))
+        {
+            entity = entity.ToLower();
+        }
+        
+        // If entity is still empty, return error
+        if (string.IsNullOrEmpty(entity))
+        {
+            context.Response.StatusCode = 400;
+            context.Response.Write("{\"error\":\"Missing entity parameter\"}");
+            return;
+        }
+        
         string id = context.Request.QueryString["id"] ?? "";
         string groupId = context.Request.QueryString["group_id"] ?? "";
         string eventId = context.Request.QueryString["event_id"] ?? "";
 
-        switch (entity.ToLower())
+        switch (entity)
         {
             case "groups":
                 if (!string.IsNullOrEmpty(id))
@@ -324,9 +344,39 @@ public class BBQHandler : IHttpHandler
                 }
                 break;
 
+            case "users":
+                try
+                {
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        string json = LoadEntityJson("users", id, dataFolder);
+                        if (!string.IsNullOrEmpty(json))
+                            context.Response.Write(json);
+                        else
+                        {
+                            context.Response.StatusCode = 404;
+                            context.Response.Write("{\"error\":\"Not found\"}");
+                        }
+                    }
+                    else
+                    {
+                        string usersJson = LoadAllJson("users", dataFolder);
+                        context.Response.Write(usersJson);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // If error loading users, return empty array
+                    context.Response.Write("[]");
+                }
+                break;
+
             default:
+                // Debug: return entity value to see what we got
                 context.Response.StatusCode = 400;
-                context.Response.Write("{\"error\":\"Invalid entity\"}");
+                string debugEntity = HttpUtility.JavaScriptStringEncode(entity ?? "");
+                string debugQuery = HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString());
+                context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + debugEntity + "\",\"queryString\":\"" + debugQuery + "\"}");
                 break;
         }
     }
@@ -348,6 +398,13 @@ public class BBQHandler : IHttpHandler
         if (action == "update" && !string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(entity))
         {
             HandlePutWithBody(context, entity, dataFolder, body);
+            return;
+        }
+        
+        // If action=delete and id is provided, treat as delete (DELETE equivalent)
+        if (action == "delete" && !string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(entity))
+        {
+            HandleDelete(context, entity, dataFolder);
             return;
         }
         
@@ -470,6 +527,105 @@ public class BBQHandler : IHttpHandler
                 
                 SaveEntityJson("payments", paymentNewId, paymentJson, dataFolder);
                 context.Response.Write(paymentJson);
+                break;
+
+            case "users":
+                string userNewId = Guid.NewGuid().ToString();
+                string userCreatedAt = DateTime.UtcNow.ToString("o");
+                
+                string userJson = body;
+                
+                // Extract id from userJson if provided (for user_0524444244 format)
+                if (userJson.Contains("\"id\""))
+                {
+                    int idStart = userJson.IndexOf("\"id\":\"") + 6;
+                    int idEnd = userJson.IndexOf("\"", idStart);
+                    if (idEnd > idStart)
+                    {
+                        userNewId = userJson.Substring(idStart, idEnd - idStart);
+                    }
+                }
+                
+                // Check if user already exists by id
+                string existingUserJson = LoadEntityJson("users", userNewId, dataFolder);
+                if (!string.IsNullOrEmpty(existingUserJson))
+                {
+                    // User exists, return existing user
+                    context.Response.Write(existingUserJson);
+                    return;
+                }
+                
+                // Check if user exists by phone (if phone is in the JSON)
+                string phone = "";
+                if (userJson.Contains("\"phone\""))
+                {
+                    int phoneStart = userJson.IndexOf("\"phone\":\"") + 9;
+                    int phoneEnd = userJson.IndexOf("\"", phoneStart);
+                    if (phoneEnd > phoneStart)
+                    {
+                        phone = userJson.Substring(phoneStart, phoneEnd - phoneStart);
+                    }
+                }
+                
+                // If phone provided, check if user exists by phone
+                if (!string.IsNullOrEmpty(phone))
+                {
+                    try
+                    {
+                        string allUsersJson = LoadAllJson("users", dataFolder);
+                        if (!string.IsNullOrEmpty(allUsersJson) && allUsersJson != "[]")
+                        {
+                            string trimmed = allUsersJson.Trim('[', ']');
+                            if (!string.IsNullOrEmpty(trimmed))
+                            {
+                                string[] parts = trimmed.Split(new string[] { "},{" }, StringSplitOptions.None);
+                                foreach (string part in parts)
+                                {
+                                    string clean = part.Trim();
+                                    if (!clean.StartsWith("{")) clean = "{" + clean;
+                                    if (!clean.EndsWith("}")) clean = clean + "}";
+                                    if (clean.Contains("\"phone\":\"" + phone + "\""))
+                                    {
+                                        // User exists, return existing user
+                                        context.Response.Write(clean);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // If error loading users, continue to create new user
+                    }
+                }
+                
+                // Create new user
+                if (!userJson.Contains("\"id\""))
+                {
+                    userJson = userJson.Trim();
+                    if (userJson.StartsWith("{") && userJson.EndsWith("}"))
+                    {
+                        userJson = userJson.Substring(1, userJson.Length - 2);
+                        userJson = "{\"id\":\"" + userNewId + "\",\"created_at\":\"" + userCreatedAt + "\"," + userJson + "}";
+                    }
+                }
+                else
+                {
+                    // Ensure created_at is in the JSON
+                    if (!userJson.Contains("\"created_at\""))
+                    {
+                        userJson = userJson.Trim();
+                        if (userJson.StartsWith("{") && userJson.EndsWith("}"))
+                        {
+                            userJson = userJson.Substring(1, userJson.Length - 2);
+                            userJson = "{" + userJson + ",\"created_at\":\"" + userCreatedAt + "\"}";
+                        }
+                    }
+                }
+                
+                SaveEntityJson("users", userNewId, userJson, dataFolder);
+                context.Response.Write(userJson);
                 break;
 
             default:
@@ -806,6 +962,38 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(guestJson);
                 break;
 
+            case "users":
+                string userJson = body;
+                // Preserve created_at if exists
+                string existingUserJson = LoadEntityJson("users", id, dataFolder);
+                if (!string.IsNullOrEmpty(existingUserJson) && existingUserJson.Contains("\"created_at\""))
+                {
+                    int createdIdx = existingUserJson.IndexOf("\"created_at\"");
+                    if (createdIdx > 0)
+                    {
+                        int startQuote = existingUserJson.IndexOf("\"", createdIdx + 12);
+                        int endQuote = existingUserJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string createdAt = existingUserJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                            userJson = userJson.Trim();
+                            if (userJson.StartsWith("{") && userJson.EndsWith("}"))
+                            {
+                                userJson = userJson.Substring(1, userJson.Length - 2);
+                                if (!userJson.Contains("\"created_at\""))
+                                {
+                                    userJson = userJson + ",\"created_at\":\"" + createdAt + "\"";
+                                }
+                                userJson = "{" + userJson + "}";
+                            }
+                        }
+                    }
+                }
+                
+                SaveEntityJson("users", id, userJson, dataFolder);
+                context.Response.Write(userJson);
+                break;
+
             default:
                 context.Response.StatusCode = 400;
                 string originalEntity = context.Request.QueryString["entity"] ?? "";
@@ -819,10 +1007,13 @@ public class BBQHandler : IHttpHandler
     {
         // Webhook endpoint for PayBox payment notifications
         // PayBox will call this URL when a payment is completed
-        // Expected parameters: payment_id (from query string), status (from POST body)
+        // Expected parameters: payment_id (PayBox payment ID), amount, payer_phone (optional)
         
-        string paymentId = context.Request.QueryString["payment_id"] ?? "";
-        if (string.IsNullOrEmpty(paymentId))
+        string payboxPaymentId = context.Request.QueryString["payment_id"] ?? "";
+        string amountStr = context.Request.QueryString["amount"] ?? "";
+        string payerPhone = context.Request.QueryString["payer_phone"] ?? "";
+        
+        if (string.IsNullOrEmpty(payboxPaymentId))
         {
             context.Response.StatusCode = 400;
             context.Response.Write("{\"error\":\"Missing payment_id parameter\"}");
@@ -835,14 +1026,78 @@ public class BBQHandler : IHttpHandler
             string body = new StreamReader(context.Request.InputStream).ReadToEnd();
             
             // Try to parse PayBox webhook data
-            // PayBox typically sends: {"status": "paid", "payment_id": "...", "amount": ...}
-            // For now, we'll mark as paid if webhook is called (PayBox only calls on success)
-            string existingPaymentJson = LoadEntityJson("payments", paymentId, dataFolder);
+            // PayBox typically sends: {"status": "paid", "payment_id": "...", "amount": ..., "payer_phone": "..."}
+            // Try to find payment by paybox_payment_id first, then by amount + payer_phone
+            
+            string paymentId = null;
+            string existingPaymentJson = null;
+            
+            // First, try to find by paybox_payment_id
+            string[] allPaymentFiles = Directory.GetFiles(Path.Combine(dataFolder, "payments"), "*.json");
+            foreach (string file in allPaymentFiles)
+            {
+                string content = File.ReadAllText(file);
+                if (content.Contains("\"paybox_payment_id\"") && content.Contains("\"" + payboxPaymentId + "\""))
+                {
+                    paymentId = Path.GetFileNameWithoutExtension(file);
+                    existingPaymentJson = content;
+                    break;
+                }
+            }
+            
+            // If not found by paybox_payment_id, try to find by amount + payer_phone
+            if (string.IsNullOrEmpty(existingPaymentJson) && !string.IsNullOrEmpty(amountStr) && !string.IsNullOrEmpty(payerPhone))
+            {
+                decimal amount = 0;
+                if (decimal.TryParse(amountStr, out amount))
+                {
+                    foreach (string file in allPaymentFiles)
+                    {
+                        string content = File.ReadAllText(file);
+                        // Check if amount matches and if we can find payer by phone
+                        if (content.Contains("\"amount\":" + amount.ToString("F2")) || 
+                            content.Contains("\"amount\":" + amount.ToString("F")))
+                        {
+                            // Try to match payer by phone (need to check members/guests)
+                            // For now, mark as potential match
+                            paymentId = Path.GetFileNameWithoutExtension(file);
+                            existingPaymentJson = content;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // If still not found, try direct lookup by paymentId (if payboxPaymentId is our internal ID)
+            if (string.IsNullOrEmpty(existingPaymentJson))
+            {
+                existingPaymentJson = LoadEntityJson("payments", payboxPaymentId, dataFolder);
+                if (!string.IsNullOrEmpty(existingPaymentJson))
+                {
+                    paymentId = payboxPaymentId;
+                }
+            }
+            
             if (string.IsNullOrEmpty(existingPaymentJson))
             {
                 context.Response.StatusCode = 404;
-                context.Response.Write("{\"error\":\"Payment not found\"}");
+                context.Response.Write("{\"error\":\"Payment not found\",\"paybox_payment_id\":\"" + HttpUtility.JavaScriptStringEncode(payboxPaymentId) + "\"}");
                 return;
+            }
+            
+            if (string.IsNullOrEmpty(paymentId))
+            {
+                // Extract payment ID from JSON
+                int idIdx = existingPaymentJson.IndexOf("\"id\"");
+                if (idIdx > 0)
+                {
+                    int startQuote = existingPaymentJson.IndexOf("\"", idIdx + 4);
+                    int endQuote = existingPaymentJson.IndexOf("\"", startQuote + 1);
+                    if (startQuote > 0 && endQuote > startQuote)
+                    {
+                        paymentId = existingPaymentJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                    }
+                }
             }
 
             // Update payment status to paid
@@ -899,6 +1154,64 @@ public class BBQHandler : IHttpHandler
                 {
                     paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
                     paymentJson = paymentJson + ",\"paid_at\":\"" + paymentUpdatedAt + "\"}";
+                }
+            }
+            
+            // Add/update paybox_payment_id (to track which PayBox payment this is)
+            if (!string.IsNullOrEmpty(payboxPaymentId))
+            {
+                if (paymentJson.Contains("\"paybox_payment_id\""))
+                {
+                    int payboxIdIdx = paymentJson.IndexOf("\"paybox_payment_id\"");
+                    if (payboxIdIdx > 0)
+                    {
+                        int startQuote = paymentJson.IndexOf("\"", payboxIdIdx + 19);
+                        int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = paymentJson.Substring(0, startQuote + 1);
+                            string after = paymentJson.Substring(endQuote);
+                            paymentJson = before + payboxPaymentId + after;
+                        }
+                    }
+                }
+                else
+                {
+                    paymentJson = paymentJson.Trim();
+                    if (paymentJson.EndsWith("}"))
+                    {
+                        paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                        paymentJson = paymentJson + ",\"paybox_payment_id\":\"" + HttpUtility.JavaScriptStringEncode(payboxPaymentId) + "\"}";
+                    }
+                }
+            }
+            
+            // Add/update paid_by_phone if provided (to track who paid)
+            if (!string.IsNullOrEmpty(payerPhone))
+            {
+                if (paymentJson.Contains("\"paid_by_phone\""))
+                {
+                    int paidByIdx = paymentJson.IndexOf("\"paid_by_phone\"");
+                    if (paidByIdx > 0)
+                    {
+                        int startQuote = paymentJson.IndexOf("\"", paidByIdx + 15);
+                        int endQuote = paymentJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = paymentJson.Substring(0, startQuote + 1);
+                            string after = paymentJson.Substring(endQuote);
+                            paymentJson = before + HttpUtility.JavaScriptStringEncode(payerPhone) + after;
+                        }
+                    }
+                }
+                else
+                {
+                    paymentJson = paymentJson.Trim();
+                    if (paymentJson.EndsWith("}"))
+                    {
+                        paymentJson = paymentJson.Substring(0, paymentJson.Length - 1);
+                        paymentJson = paymentJson + ",\"paid_by_phone\":\"" + HttpUtility.JavaScriptStringEncode(payerPhone) + "\"}";
+                    }
                 }
             }
 

@@ -16,6 +16,7 @@ import Reports from "@/components/bbq/Reports";
 import UsersList from "@/components/bbq/UsersList";
 import BottomNavigation from "@/components/bbq/BottomNavigation";
 import InstallPrompt from "@/components/bbq/InstallPrompt";
+import GroupsDashboard from "@/components/bbq/GroupsDashboard";
 import { usePWAConfig } from "@/hooks/usePWAConfig";
 
 interface Group {
@@ -41,6 +42,7 @@ const BBQManager = () => {
   const [activeTab, setActiveTab] = useState("events");
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false); // Will be set to true only if no user found
+  const [showDashboard, setShowDashboard] = useState(false);
   const [userNotInGroup, setUserNotInGroup] = useState(false);
   const [checkingGroups, setCheckingGroups] = useState(false);
   const { toast } = useToast();
@@ -89,8 +91,10 @@ const BBQManager = () => {
         };
         
         loadUserFromServer();
-        // Load group
-        loadGroup(userData.id, userData.phone);
+        // Show dashboard instead of loading group directly
+        setShowDashboard(true);
+        setGroup(null);
+        setLoading(false);
       } catch {
         setLoading(false);
         setShowLogin(true);
@@ -352,42 +356,37 @@ const BBQManager = () => {
   const handleLogin = (userData: User) => {
     setUser(userData);
     setShowLogin(false);
-    setLoading(true);
-    loadGroup(userData.id, userData.phone).then(() => {
-      // isAdmin will be updated by the useEffect when group loads
-      setLoading(false);
-    }).catch((error) => {
-      console.error("Error loading group after login:", error);
-      // Still allow user to proceed even if group fails
-      setLoading(false);
-      toast({
-        title: "אזהרה",
-        description: "התחברת בהצלחה, אבל לא הצלחנו לטעון את הקבוצה. נסה לרענן את הדף.",
-        variant: "destructive"
-      });
-    });
+    setLoading(false);
+    setShowDashboard(true);
+    setGroup(null);
+  };
+
+  const handleSelectGroup = (selectedGroup: Group) => {
+    setGroup(selectedGroup);
+    setShowDashboard(false);
+    localStorage.setItem('bbq_group_id', selectedGroup.id);
+    localStorage.setItem('bbq_current_group', JSON.stringify(selectedGroup));
+  };
+
+  const handleBackToDashboard = () => {
+    setGroup(null);
+    setShowDashboard(true);
+    localStorage.removeItem('bbq_group_id');
+    localStorage.removeItem('bbq_current_group');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('bbq_current_user');
+    localStorage.removeItem('bbq_group_id');
+    localStorage.removeItem('bbq_current_group');
     setUser(null);
+    setGroup(null);
+    setShowDashboard(false);
     setShowLogin(true);
   };
 
-  // Show loading only if we're loading AND we have a user (not during initial login check)
-  if (loading && user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">טוען...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show login dialog if no user
-  if (!user) {
+  if (!user && !loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center" dir="rtl">
         <LoginDialog 
@@ -402,6 +401,18 @@ const BBQManager = () => {
           onLogin={handleLogin}
           groupOwnerId={group?.owner_id}
         />
+      </div>
+    );
+  }
+
+  // Show loading only during initial load (before we know if user exists)
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">טוען...</p>
+        </div>
       </div>
     );
   }
@@ -451,6 +462,20 @@ const BBQManager = () => {
     );
   }
 
+  // Show dashboard if user exists but no group is selected
+  if (user && (showDashboard || !group)) {
+    return (
+      <GroupsDashboard
+        userId={user.id}
+        userPhone={user.phone}
+        userName={user.name}
+        userProfileImage={user.profile_image}
+        onSelectGroup={handleSelectGroup}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   // Show loading group message if user exists but no group yet (and not in "not in group" state)
   if (!group && !userNotInGroup) {
     return (
@@ -467,6 +492,11 @@ const BBQManager = () => {
     );
   }
 
+  // Main group view - only render if group is selected
+  if (!group) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
       {group && <InstallPrompt />}
@@ -474,6 +504,14 @@ const BBQManager = () => {
         {/* Header */}
         <div className="mb-8 flex items-start justify-between w-full" style={{ flexDirection: 'row-reverse' }}>
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToDashboard}
+              className="ml-2"
+            >
+              חזרה לדשבורד
+            </Button>
             {user.profile_image ? (
               <img 
                 src={user.profile_image} 
@@ -645,7 +683,13 @@ const BBQManager = () => {
           </TabsContent>
 
           <TabsContent value="members" className="space-y-4 pb-20 md:pb-4">
-            <MembersList groupId={group.id} isAdmin={user.isAdmin} />
+            <MembersList 
+              groupId={group.id} 
+              isAdmin={user.isAdmin}
+              userId={user.id}
+              userPhone={user.phone}
+              onLeaveGroup={handleBackToDashboard}
+            />
           </TabsContent>
 
           <TabsContent value="payments" className="space-y-4 pb-20 md:pb-4">

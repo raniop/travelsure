@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, User, Phone, Mail, Trash2, Wallet, MessageCircle, Users, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Plus, User, Phone, Mail, Trash2, Wallet, MessageCircle, Users, ArrowUpRight, ArrowDownRight, LogOut } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -34,7 +34,7 @@ interface MembersListProps {
   isAdmin?: boolean;
 }
 
-const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
+const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup }: MembersListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingNickname, setEditingNickname] = useState<string | null>(null);
@@ -191,13 +191,42 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
           
           if (isCurrentUser) {
             return (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditingNickname(member.id)}
-              >
-                {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingNickname(member.id)}
+                >
+                  {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={async () => {
+                    if (!confirm("האם אתה בטוח שברצונך לצאת מהקבוצה?")) return;
+                    
+                    try {
+                      await apiClient.deleteMember(member.id);
+                      toast({
+                        title: "הצלחה!",
+                        description: "יצאת מהקבוצה בהצלחה."
+                      });
+                      onLeaveGroup?.();
+                    } catch (error: any) {
+                      console.error("Error leaving group:", error);
+                      toast({
+                        title: "שגיאה",
+                        description: error.message || "לא הצלחנו לצאת מהקבוצה.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  צא מהקבוצה
+                </Button>
+              </>
             );
           }
           
@@ -370,19 +399,16 @@ interface AddMemberDialogProps {
 const AddMemberDialog = ({ groupId, onMemberAdded, children }: AddMemberDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [checkingUser, setCheckingUser] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!name.trim()) {
+    if (!phone.trim()) {
       toast({
         title: "שגיאה",
-        description: "אנא הזן שם",
+        description: "נא להזין מספר טלפון",
         variant: "destructive"
       });
       return;
@@ -390,35 +416,75 @@ const AddMemberDialog = ({ groupId, onMemberAdded, children }: AddMemberDialogPr
 
     try {
       setLoading(true);
+      setCheckingUser(true);
+      const cleanPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
+      
+      // Check if user exists with this phone
+      const user = await apiClient.getUserByPhone(cleanPhone);
+      
+      if (!user) {
+        toast({
+          title: "שגיאה",
+          description: "לא נמצא משתמש עם מספר טלפון זה. המשתמש צריך להירשם קודם.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      await apiClient.createMember({
+      // Check if user is already a member
+      const members = await apiClient.getMembers(groupId);
+      const existingMember = members.find((m: any) => m.phone === cleanPhone);
+      if (existingMember) {
+        toast({
+          title: "שגיאה",
+          description: "המשתמש כבר חבר בקבוצה זו.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if there's already a pending invitation
+      const existingInvitations = await apiClient.getGroupInvitations(cleanPhone, groupId);
+      const pendingInvitation = existingInvitations.find((inv: any) => inv.status === 'pending');
+      if (pendingInvitation) {
+        toast({
+          title: "שגיאה",
+          description: "כבר נשלחה הזמנה למשתמש זה והיא ממתינה לאישור.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get group details
+      const group = await apiClient.getGroup(groupId);
+      
+      // Create invitation
+      await apiClient.createGroupInvitation({
         group_id: groupId,
-        name: name.trim(),
-        phone: phone.trim() || null,
-        email: email.trim() || null,
-        nickname: nickname.trim() || null
+        user_phone: cleanPhone,
+        user_id: user.id,
+        user_name: user.name,
+        status: 'pending',
+        created_at: new Date().toISOString()
       });
 
       toast({
         title: "הצלחה!",
-        description: "החבר נוסף בהצלחה"
+        description: `נשלחה הזמנה ל-${user.name}. הוא יראה אותה בדשבורד שלו ויוכל לאשר או לדחות.`
       });
-
       setOpen(false);
-      setName("");
       setPhone("");
-      setEmail("");
-      setNickname("");
       onMemberAdded();
     } catch (error: any) {
       console.error("Error adding member:", error);
       toast({
         title: "שגיאה",
-        description: error.message || "לא הצלחנו להוסיף את החבר",
+        description: error.message || "לא הצלחנו לשלוח הזמנה.",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+      setCheckingUser(false);
     }
   };
 
@@ -430,50 +496,21 @@ const AddMemberDialog = ({ groupId, onMemberAdded, children }: AddMemberDialogPr
       <DialogContent className="sm:max-w-[425px]" dir="rtl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>הוסף חבר חדש</DialogTitle>
+            <DialogTitle>הזמן חבר חדש</DialogTitle>
             <DialogDescription>
-              הוסף חבר חדש לקבוצה
+              הזמן חבר חדש לקבוצה באמצעות מספר הטלפון שלו.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">שם *</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="שם החבר"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phone">טלפון</Label>
+              <Label htmlFor="phone">טלפון *</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="050-1234567"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">אימייל</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="nickname">כינוי (אופציונלי)</Label>
-              <Input
-                id="nickname"
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="כינוי שהחבר יבחר לעצמו"
+                required
               />
             </div>
           </div>
@@ -481,8 +518,8 @@ const AddMemberDialog = ({ groupId, onMemberAdded, children }: AddMemberDialogPr
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               ביטול
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "מוסיף..." : "הוסף"}
+            <Button type="submit" disabled={loading || checkingUser}>
+              {loading || checkingUser ? "שולח הזמנה..." : "שלח הזמנה"}
             </Button>
           </DialogFooter>
         </form>
