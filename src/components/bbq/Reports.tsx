@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/integrations/api/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, TrendingUp, BarChart3, PieChart, LineChart } from "lucide-react";
+import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, ArrowUpRight, ArrowDownRight, Coins } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart as RechartsLineChart, Pie, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 
@@ -306,83 +307,153 @@ const Reports = ({ groupId }: ReportsProps) => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">טוען דוחות...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">טוען דוחות...</p>
+        </div>
+      </div>
+    );
   }
 
   const monthYear = formatMonthYear(currentMonth);
-  // totalDeducted includes only "deducted" payments (from balance)
   const totalDeducted = reports.reduce((sum, r) => sum + r.totalPaid, 0);
-  
-  // Calculate total balance across all members
   const totalBalance = reports.reduce((sum, r) => sum + (r.currentBalance || 0), 0);
+  const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() && 
+                         currentMonth.getFullYear() === new Date().getFullYear();
+
+  // Color palette for charts
+  const CHART_COLORS = [
+    "hsl(170, 60%, 40%)",
+    "hsl(145, 70%, 45%)",
+    "hsl(200, 70%, 50%)",
+    "hsl(30, 80%, 55%)",
+    "hsl(280, 60%, 50%)",
+    "hsl(15, 85%, 55%)",
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Month Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        {/* כותרת בימין */}
-        <h2 className="text-xl sm:text-2xl font-semibold text-right">
-          דוחות - {monthYear}
-        </h2>
-        {/* כפתורים בשמאל */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => changeMonth(1)}
-            className="px-3 py-2 text-sm sm:text-base border rounded hover:bg-muted flex-1 sm:flex-initial min-w-[100px]"
-          >
-            חודש הבא
-          </button>
-          <button
-            onClick={() => changeMonth(-1)}
-            className="px-3 py-2 text-sm sm:text-base border rounded hover:bg-muted flex-1 sm:flex-initial min-w-[100px]"
-          >
-            חודש קודם
-          </button>
-          {currentMonth.getMonth() !== new Date().getMonth() || 
-           currentMonth.getFullYear() !== new Date().getFullYear() ? (
-            <button
-              onClick={() => setCurrentMonth(new Date())}
-              className="px-3 py-2 text-sm border rounded hover:bg-muted w-full sm:w-auto"
+    <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
+      {/* Header with Month Selector */}
+      <div className="sticky top-0 z-10 pb-4" dir="rtl" style={{ direction: "rtl" }}>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-end w-full" dir="rtl" style={{ direction: "rtl" }}>
+            <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style={{ textAlign: "right", marginLeft: "auto" }}>
+              דוחות וסטטיסטיקות
+            </h2>
+            {!isCurrentMonth && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentMonth(new Date())}
+                className="text-xs md:text-sm mr-auto"
+                style={{ marginRight: "auto", marginLeft: "0" }}
+              >
+                חודש נוכחי
+              </Button>
+            )}
+          </div>
+          
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between bg-card rounded-lg border p-3 shadow-sm" dir="rtl" style={{ direction: "rtl" }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => changeMonth(1)}
+              className="h-8 w-8"
             >
-              חזור לחודש הנוכחי
-            </button>
-          ) : null}
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-sm md:text-base font-semibold text-foreground">
+                {monthYear}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {totalEventsInMonth} אירועים
+              </span>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => changeMonth(-1)}
+              className="h-8 w-8"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3 text-right">
-            <CardTitle className="text-sm font-medium text-muted-foreground text-right">סה"כ אירועים</CardTitle>
+      {/* Summary Cards - Modern Design */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Events Card */}
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Calendar className="w-5 h-5 text-blue-600" />
+              </div>
+              <CardTitle className="text-sm font-medium text-muted-foreground text-right">
+                סה"כ אירועים
+              </CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="text-right">
-            <div className="text-xl sm:text-2xl font-bold flex items-center justify-end gap-2">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
-              {totalEventsInMonth}
+          <CardContent>
+            <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
+              <span className="text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-400">
+                {totalEventsInMonth}
+              </span>
+              <span className="text-sm text-muted-foreground">אירועים</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3 text-right">
-            <CardTitle className="text-sm font-medium text-muted-foreground text-right">סה"כ נקזז מהיתרה</CardTitle>
+        {/* Total Deducted Card */}
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-red-500 to-red-600"></div>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
+              <div className="p-2 rounded-lg bg-red-500/10">
+                <Coins className="w-5 h-5 text-red-600" />
+              </div>
+              <CardTitle className="text-sm font-medium text-muted-foreground text-right">
+                סה"כ נקזז מהיתרה
+              </CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="text-right">
-            <div className="text-xl sm:text-2xl font-bold text-red-600">
-              {totalDeducted.toFixed(2)} ₪
+          <CardContent>
+            <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
+              <span className="text-3xl md:text-4xl font-bold text-red-700 dark:text-red-400">
+                {totalDeducted.toFixed(2)}
+              </span>
+              <span className="text-sm text-muted-foreground">שקל</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3 text-right">
-            <CardTitle className="text-sm font-medium text-muted-foreground text-right">סה"כ יתרה נוכחית</CardTitle>
+        {/* Total Balance Card */}
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 sm:col-span-2 lg:col-span-1">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+              <CardTitle className="text-sm font-medium text-muted-foreground text-right">
+                סה"כ יתרה נוכחית
+              </CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="text-right">
-            <div className="text-xl sm:text-2xl font-bold flex items-center justify-end gap-2 text-green-600">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-              {totalBalance.toFixed(2)} ₪
+          <CardContent>
+            <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
+              <span className="text-3xl md:text-4xl font-bold text-green-700 dark:text-green-400">
+                {totalBalance.toFixed(2)}
+              </span>
+              <span className="text-sm text-muted-foreground">שקל</span>
             </div>
           </CardContent>
         </Card>
@@ -391,182 +462,221 @@ const Reports = ({ groupId }: ReportsProps) => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 gap-6">
         {/* Monthly Events Chart */}
-        <Card>
-          <CardHeader className="text-right">
-            <CardTitle className="flex items-center gap-2 justify-end text-right">
-              <BarChart3 className="w-5 h-5" />
-              אירועים לפי חודש (6 חודשים אחרונים)
-            </CardTitle>
+        <Card className="border-2 shadow-md">
+          <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-secondary/5">
+            <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
+              <BarChart3 className="w-6 h-6 text-primary" />
+              <CardTitle className="text-lg md:text-xl text-right">אירועים לפי חודש</CardTitle>
+            </div>
+            <CardDescription className="text-right">6 חודשים אחרונים</CardDescription>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
+          <CardContent className="pt-6">
             <div className="w-full min-w-0" dir="ltr" style={{ direction: "ltr" }}>
               <ChartContainer
                 config={{
                   events: {
                     label: "אירועים",
-                    color: "hsl(var(--chart-1))",
+                    color: "hsl(var(--primary))",
                   },
                 }}
-                className="h-[250px] sm:h-[300px] w-full"
+                className="h-[250px] md:h-[300px] w-full"
                 dir="ltr"
               >
                 <BarChart data={[...monthlyData].reverse()} margin={{ top: 10, right: 20, left: 5, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 10, textAnchor: 'end' }}
-                  angle={-45}
-                  height={60}
-                />
-                <YAxis orientation="right" tick={{ fontSize: 10, textAnchor: 'start' }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="events" fill="var(--color-events)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    angle={-45}
+                    height={60}
+                  />
+                  <YAxis 
+                    orientation="right" 
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} 
+                  />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    cursor={{ fill: "hsl(var(--primary) / 0.1)" }}
+                  />
+                  <Bar 
+                    dataKey="events" 
+                    fill="hsl(var(--primary))" 
+                    radius={[8, 8, 0, 0]}
+                    animationDuration={1000}
+                  />
+                </BarChart>
+              </ChartContainer>
             </div>
           </CardContent>
         </Card>
 
         {/* Monthly Payments Chart */}
-        <Card>
-          <CardHeader className="text-right">
-            <CardTitle className="flex items-center gap-2 justify-end text-right">
-              <LineChart className="w-5 h-5" />
-              תשלומים לפי חודש (6 חודשים אחרונים)
-            </CardTitle>
+        <Card className="border-2 shadow-md">
+          <CardHeader className="border-b bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20">
+            <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
+              <LineChart className="w-6 h-6 text-red-600" />
+              <CardTitle className="text-lg md:text-xl text-right">תשלומים לפי חודש</CardTitle>
+            </div>
+            <CardDescription className="text-right">6 חודשים אחרונים</CardDescription>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
+          <CardContent className="pt-6">
             <div className="w-full min-w-0" dir="ltr" style={{ direction: "ltr" }}>
               <ChartContainer
-              config={{
-                paid: {
-                  label: "נקזז מהיתרה",
-                  color: "hsl(0, 84%, 60%)",
-                },
-              }}
-                className="h-[250px] sm:h-[300px] w-full"
+                config={{
+                  paid: {
+                    label: "נקזז מהיתרה",
+                    color: "hsl(0, 84%, 60%)",
+                  },
+                }}
+                className="h-[250px] md:h-[300px] w-full"
                 dir="ltr"
               >
                 <RechartsLineChart data={[...monthlyData].reverse()} margin={{ top: 10, right: 20, left: 5, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 10, textAnchor: 'end' }}
-                  angle={-45}
-                  height={60}
-                />
-                <YAxis orientation="right" tick={{ fontSize: 10, textAnchor: 'start' }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="paid" 
-                  stroke="hsl(0, 84%, 60%)" 
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-              </RechartsLineChart>
-            </ChartContainer>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    angle={-45}
+                    height={60}
+                  />
+                  <YAxis 
+                    orientation="right" 
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} 
+                  />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    cursor={{ stroke: "hsl(0, 84%, 60%)", strokeWidth: 2 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="paid" 
+                    stroke="hsl(0, 84%, 60%)" 
+                    strokeWidth={3}
+                    dot={{ r: 5, fill: "hsl(0, 84%, 60%)" }}
+                    activeDot={{ r: 7 }}
+                    animationDuration={1000}
+                  />
+                </RechartsLineChart>
+              </ChartContainer>
             </div>
           </CardContent>
         </Card>
 
         {/* Member Attendance Chart */}
-        <Card>
-          <CardHeader className="text-right">
-            <CardTitle className="flex items-center gap-2 justify-end text-right">
-              <PieChart className="w-5 h-5" />
-              נוכחות חברים בחודש {monthYear}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <div className="text-right">
-              {/* הכותרות/טקסט מסביב */}
-            </div>
-            <div className="flex flex-col lg:flex-row gap-4 items-start w-full min-w-0">
-              <div className="flex-1 min-w-0 w-full" dir="ltr" style={{ direction: "ltr" }}>
-                <ChartContainer
-                  config={memberAttendanceData.reduce((acc, member, index) => {
-                    acc[member.name] = {
-                      label: member.name,
-                      color: `hsl(${(index * 60) % 360}, 70%, 50%)`,
-                    };
-                    return acc;
-                  }, {} as Record<string, { label: string; color: string }>)}
-                  className="h-[200px] sm:h-[250px] lg:h-[300px] w-full"
-                  dir="ltr"
-                >
-                  <RechartsPieChart>
-                    <Pie
-                      data={memberAttendanceData}
-                      dataKey="events"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={50}
-                      label={false}
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {memberAttendanceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={`hsl(${(index * 60) % 360}, 70%, 50%)`} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value, name) => [`${value} אירועים`, name]}
-                    />
-                  </RechartsPieChart>
-                </ChartContainer>
+        {memberAttendanceData.length > 0 && (
+          <Card className="border-2 shadow-md">
+            <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+              <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
+                <PieChart className="w-6 h-6 text-purple-600" />
+                <CardTitle className="text-lg md:text-xl text-right">נוכחות חברים</CardTitle>
               </div>
-              <div className="flex-shrink-0 w-full sm:min-w-[200px]">
-                <div className="flex flex-col gap-2 text-right">
-                  {memberAttendanceData.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-2 justify-end">
-                      <div
-                        className="w-3 h-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: `hsl(${(index * 60) % 360}, 70%, 50%)` }}
+              <CardDescription className="text-right">חודש {monthYear}</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex flex-col lg:flex-row gap-6 items-start w-full" dir="rtl" style={{ direction: "rtl" }}>
+                <div className="flex-shrink-0 w-full lg:w-auto lg:min-w-[200px]">
+                  <div className="flex flex-col gap-3">
+                    {memberAttendanceData.map((entry, index) => (
+                      <div 
+                        key={index} 
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        dir="rtl"
+                        style={{ direction: "rtl" }}
+                      >
+                        <div
+                          className="w-4 h-4 rounded-full shrink-0 border-2 border-white shadow-sm"
+                          style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                        />
+                        <div className="flex flex-col items-end flex-1">
+                          <span className="text-sm font-medium">{entry.name}</span>
+                          <span className="text-xs text-muted-foreground">{entry.events} אירועים</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0 w-full" dir="ltr" style={{ direction: "ltr" }}>
+                  <ChartContainer
+                    config={memberAttendanceData.reduce((acc, member, index) => {
+                      acc[member.name] = {
+                        label: member.name,
+                        color: CHART_COLORS[index % CHART_COLORS.length],
+                      };
+                      return acc;
+                    }, {} as Record<string, { label: string; color: string }>)}
+                    className="h-[250px] md:h-[300px] w-full"
+                    dir="ltr"
+                  >
+                    <RechartsPieChart>
+                      <Pie
+                        data={memberAttendanceData}
+                        dataKey="events"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        innerRadius={40}
+                        label={false}
+                        startAngle={90}
+                        endAngle={-270}
+                        animationDuration={1000}
+                      >
+                        {memberAttendanceData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            stroke="white"
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </Pie>
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value, name) => [`${value} אירועים`, name]}
                       />
-                      <span className="text-xs sm:text-sm text-right">
-                        {entry.name}: {entry.events}
-                      </span>
-                    </div>
-                  ))}
+                    </RechartsPieChart>
+                  </ChartContainer>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Host Statistics */}
         {hostStats.length > 0 && (
-          <Card>
-            <CardHeader className="text-right">
-              <CardTitle className="flex items-center gap-2 justify-end text-right">
-                <BarChart3 className="w-5 h-5" />
-                אירועים לפי מארח (סה"כ)
-              </CardTitle>
-              <CardDescription className="text-right">מי אירח הכי הרבה אירועים</CardDescription>
+          <Card className="border-2 shadow-md">
+            <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20">
+              <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
+                <Award className="w-6 h-6 text-amber-600" />
+                <CardTitle className="text-lg md:text-xl text-right">אירועים לפי מארח</CardTitle>
+              </div>
+              <CardDescription className="text-right">מי אירח הכי הרבה אירועים (סה"כ)</CardDescription>
             </CardHeader>
-            <CardContent className="text-right">
+            <CardContent className="pt-6">
               <div className="space-y-3">
                 {hostStats.map((host, index) => (
                   <div
                     key={host.memberId}
-                    className="flex flex-row items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors gap-2"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 hover:border-primary/50 hover:shadow-md transition-all bg-gradient-to-r from-background to-muted/30"
+                    dir="rtl"
+                    style={{ direction: "rtl" }}
                   >
-                    {/* שם בימין */}
-                    <div className="flex items-center gap-2 flex-1 justify-end">
+                    <div className="flex items-center gap-2 shrink-0" dir="ltr" style={{ direction: "ltr" }}>
+                      <span className="text-xs text-muted-foreground">אירועים</span>
+                      <Badge variant="secondary" className="text-lg md:text-xl font-bold px-3 py-1">
+                        {host.eventCount}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 flex-1" dir="rtl" style={{ direction: "rtl" }}>
+                      {index === 0 && (
+                        <Award className="w-5 h-5 text-amber-500 shrink-0" />
+                      )}
                       <div className="flex flex-col items-end">
-                        <span className="text-base sm:text-lg font-medium text-right">{host.memberName}</span>
+                        <span className="text-base md:text-lg font-semibold">{host.memberName}</span>
                         {host.memberNickname && (
-                          <span className="text-muted-foreground text-xs sm:text-sm text-right">{host.memberNickname}</span>
+                          <span className="text-xs md:text-sm text-muted-foreground">{host.memberNickname}</span>
                         )}
                       </div>
-                    </div>
-                    {/* אירועים בשמאל */}
-                    <div className="flex items-center gap-2 shrink-0 justify-start">
-                      <span className="text-xs sm:text-sm text-muted-foreground">אירועים</span>
-                      <span className="text-xl sm:text-2xl font-bold text-primary">{host.eventCount}</span>
                     </div>
                   </div>
                 ))}
@@ -574,60 +684,104 @@ const Reports = ({ groupId }: ReportsProps) => {
             </CardContent>
           </Card>
         )}
-
       </div>
 
-      {/* Member Reports */}
-      <Card>
-        <CardHeader className="text-right">
-          <CardTitle className="text-right">דוחות לפי אנשים</CardTitle>
+      {/* Member Reports - Modern List Design */}
+      <Card className="border-2 shadow-md">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-secondary/5">
+          <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
+            <Users className="w-6 h-6 text-primary" />
+            <CardTitle className="text-lg md:text-xl text-right">דוחות לפי אנשים</CardTitle>
+          </div>
           <CardDescription className="text-right">סטטיסטיקה לכל חבר בחודש {monthYear}</CardDescription>
         </CardHeader>
-        <CardContent className="text-right">
-          <div className="space-y-3">
-            {reports.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                אין דוחות לחודש זה
-              </div>
-            ) : (
-              reports.map((report) => (
+        <CardContent className="pt-6">
+          {reports.length === 0 ? (
+            <div className="text-center py-12">
+              <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground">אין דוחות לחודש זה</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reports.map((report, index) => (
                 <div
                   key={report.memberId}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-3"
+                  className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                  dir="rtl"
                 >
-                  {/* Name on the right */}
-                  <div className="flex-shrink-0 text-right w-full sm:w-auto">
-                    <div className="flex flex-col items-end">
-                      <div className="font-medium text-base sm:text-lg text-right">{report.memberName}</div>
-                      {report.memberNickname && (
-                        <div className="text-muted-foreground text-xs sm:text-sm text-right">
-                          {report.memberNickname}
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    {/* RIGHT: Member info (pinned to the right edge) */}
+                    <div className="flex items-center gap-3 ml-auto text-right">
+                      {/* avatar MUST be first in RTL so it sits at the far right */}
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                        {report.memberName.charAt(0).toUpperCase()}
+                      </div>
+
+                      <div className="flex flex-col items-end">
+                        <div className="font-semibold text-base md:text-lg text-right">{report.memberName}</div>
+                        {report.memberNickname && (
+                          <div className="text-xs md:text-sm text-muted-foreground text-right">{report.memberNickname}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* LEFT: Stats */}
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start" dir="rtl" style={{ direction: "rtl" }}>
+                      {/* Balance */}
+                      {report.currentBalance !== undefined && (
+                        <div
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                            report.currentBalance >= 0
+                              ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+                              : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+                          }`}
+                          dir="rtl"
+                        >
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground">יתרה</span>
+                            <span className="text-sm md:text-base font-bold">
+                              <span dir="ltr" className="tabular-nums">
+                                {Math.abs(report.currentBalance).toFixed(2)}
+                              </span>{" "}
+                              שקל
+                            </span>
+                          </div>
+                          {report.currentBalance >= 0 ? (
+                            <ArrowUpRight className="w-4 h-4 shrink-0" />
+                          ) : (
+                            <ArrowDownRight className="w-4 h-4 shrink-0" />
+                          )}
                         </div>
                       )}
-                    </div>
-                  </div>
-                  {/* Events and paid on the left */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 shrink-0 flex-1 w-full sm:w-auto justify-start">
-                    {report.currentBalance !== undefined && (
-                      <div className="flex items-center gap-1 text-xs sm:text-sm text-green-600 shrink-0">
-                        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                        <span>יתרה: {report.currentBalance.toFixed(2)} ₪</span>
+
+                      {/* Paid */}
+                      {report.totalPaid > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400" dir="rtl">
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground">שולם</span>
+                            <span className="text-sm md:text-base font-semibold">
+                              <span dir="ltr" className="tabular-nums">{report.totalPaid.toFixed(2)}</span> שקל
+                            </span>
+                          </div>
+                          <Coins className="w-4 h-4 shrink-0" />
+                        </div>
+                      )}
+
+                      {/* Events */}
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400" dir="rtl">
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs text-muted-foreground">אירועים</span>
+                          <span className="text-sm md:text-base font-semibold">{report.eventsAttended}</span>
+                        </div>
+                        <Calendar className="w-4 h-4 shrink-0" />
                       </div>
-                    )}
-                    {report.totalPaid > 0 && (
-                      <div className="flex items-center gap-1 text-xs sm:text-sm text-red-600 shrink-0">
-                        <span>שולם: {report.totalPaid.toFixed(2)} ₪</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground shrink-0">
-                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                      <span>{report.eventsAttended} אירועים</span>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
