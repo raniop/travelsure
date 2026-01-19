@@ -209,6 +209,12 @@ class ApiClient {
     return payments.find((p: any) => p.payer_id === payerId && p.payer_type === payerType) || null;
   }
 
+  async deletePayment(id: string): Promise<void> {
+    return this.request(`entity=payments&id=${id}&action=delete`, {
+      method: 'POST',
+    });
+  }
+
   // Users
   async getUsers(): Promise<any[]> {
     return this.request('entity=users');

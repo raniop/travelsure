@@ -422,11 +422,11 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
             </div>
 
             {/* Total Cost */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-blue-600" : "text-gray-600"}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-cyan-50 dark:bg-cyan-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-cyan-600" : "text-gray-600"}`} />
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-muted-foreground leading-tight">עלות סה"כ</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-blue-700 dark:text-blue-400" : "text-gray-700 dark:text-gray-400"}`}>
+                <span className={`text-xs font-bold ${isFuture ? "text-cyan-700 dark:text-cyan-400" : "text-gray-700 dark:text-gray-400"}`}>
                   {totalCost.toFixed(2)} ₪
                 </span>
               </div>
@@ -446,11 +446,11 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
             )}
 
             {/* Time */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-amber-50 dark:bg-amber-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-              <Clock className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-gray-600"}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-indigo-50 dark:bg-indigo-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+              <Clock className={`w-3.5 h-3.5 ${isFuture ? "text-indigo-600" : "text-gray-600"}`} />
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-muted-foreground leading-tight">שעה</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-amber-700 dark:text-amber-400" : "text-gray-700 dark:text-gray-400"}`}>
+                <span className={`text-xs font-bold ${isFuture ? "text-indigo-700 dark:text-indigo-400" : "text-gray-700 dark:text-gray-400"}`}>
                   {format(eventDate, "HH:mm", { locale: he })}
                 </span>
               </div>

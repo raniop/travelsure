@@ -49,12 +49,20 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
       setLoading(true);
       const members = await apiClient.getMembers(groupId);
       
+      // Round all balances to 2 decimal places
+      const membersWithRoundedBalances = members.map((member: any) => ({
+        ...member,
+        balance: member.balance !== undefined && member.balance !== null 
+          ? Math.round(member.balance * 100) / 100 
+          : member.balance
+      }));
+      
       // Load all users to get profile images
       try {
         const allUsers = await apiClient.getUsers();
         
         // Match members with users by phone to get profile images
-        const membersWithImages = members.map((member: any) => {
+        const membersWithImages = membersWithRoundedBalances.map((member: any) => {
           if (member.phone) {
             const user = allUsers.find((u: any) => u.phone === member.phone);
             if (user && user.profile_image) {
@@ -69,7 +77,7 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
       } catch (userError) {
         // If can't load users, just use members without images
         console.error("Error loading users for profile images:", userError);
-        setMembers(members.sort((a, b) => a.name.localeCompare(b.name)));
+        setMembers(membersWithRoundedBalances.sort((a, b) => a.name.localeCompare(b.name)));
       }
     } catch (error: any) {
       console.error("Error loading members:", error);
@@ -520,10 +528,11 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
         throw new Error("חבר לא נמצא");
       }
 
-      // Update member with new balance
+      // Update member with new balance (round to 2 decimal places)
+      const roundedBalance = Math.round(balanceValue * 100) / 100;
       await apiClient.updateMember(member.id, {
         ...currentMember,
-        balance: balanceValue
+        balance: roundedBalance
       });
 
       toast({

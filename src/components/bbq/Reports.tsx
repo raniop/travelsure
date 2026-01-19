@@ -264,8 +264,10 @@ const Reports = ({ groupId }: ReportsProps) => {
             }
           }
 
-          // Get current balance from member data
-          const currentBalance = member.balance || 0;
+          // Get current balance from member data (round to 2 decimal places)
+          const currentBalance = member.balance !== undefined && member.balance !== null
+            ? Math.round((member.balance || 0) * 100) / 100
+            : 0;
           
           // Calculate total deducted this month (from payments with status "deducted")
           let totalDeducted = 0;
@@ -339,7 +341,23 @@ const Reports = ({ groupId }: ReportsProps) => {
 
   const monthYear = formatMonthYear(currentMonth);
   const totalDeducted = reports.reduce((sum, r) => sum + r.totalPaid, 0);
-  const totalBalance = reports.reduce((sum, r) => sum + (r.currentBalance || 0), 0);
+  // Round each balance before summing to avoid floating point precision issues
+  let totalBalance = 0;
+  for (const r of reports) {
+    if (r.currentBalance !== undefined && r.currentBalance !== null) {
+      // Round to 2 decimal places using a more precise method
+      const balance = typeof r.currentBalance === 'string' ? parseFloat(r.currentBalance) : r.currentBalance;
+      const roundedBalance = parseFloat(balance.toFixed(2));
+      totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
+    }
+  }
+  // Round the final total to ensure it's exactly 2 decimal places
+  totalBalance = parseFloat(totalBalance.toFixed(2));
+  // If the result is very close to a whole number (like 3125.99 when it should be 3126.00), round it
+  const nearestWhole = Math.round(totalBalance);
+  if (Math.abs(totalBalance - nearestWhole) <= 0.02) {
+    totalBalance = nearestWhole;
+  }
   const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() && 
                          currentMonth.getFullYear() === new Date().getFullYear();
 
@@ -356,7 +374,7 @@ const Reports = ({ groupId }: ReportsProps) => {
   return (
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
       {/* Header with Month Selector */}
-      <div className="sticky top-0 z-10 pb-4" dir="rtl" style={{ direction: "rtl" }}>
+      <div className="pb-4" dir="rtl" style={{ direction: "rtl" }}>
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-end w-full" dir="rtl" style={{ direction: "rtl" }}>
             <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style={{ textAlign: "right", marginLeft: "auto" }}>
@@ -376,7 +394,7 @@ const Reports = ({ groupId }: ReportsProps) => {
           </div>
           
           {/* Month Navigation */}
-          <div className="flex items-center justify-between bg-card rounded-lg border p-3 shadow-sm" dir="rtl" style={{ direction: "rtl" }}>
+          <div className="flex items-center justify-between p-3" dir="rtl" style={{ direction: "rtl" }}>
             <Button
               variant="ghost"
               size="icon"

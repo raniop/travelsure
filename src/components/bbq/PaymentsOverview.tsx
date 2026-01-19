@@ -301,15 +301,39 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           const members = await apiClient.getMembers(groupId);
           const userMember = members.find((m: any) => m.phone === userData.phone);
           if (userMember) {
-            setCurrentBalance(userMember.balance || 0);
+            // Round balance to 2 decimal places
+            const roundedBalance = userMember.balance !== undefined && userMember.balance !== null
+              ? Math.round((userMember.balance || 0) * 100) / 100
+              : 0;
+            setCurrentBalance(roundedBalance);
           } else {
             setCurrentBalance(0);
           }
         } else if (isAdmin) {
           // For admin, show total balance of all members
           const members = await apiClient.getMembers(groupId);
-          const totalBalance = members.reduce((sum: number, m: any) => sum + (m.balance || 0), 0);
-          setCurrentBalance(totalBalance);
+          // Round each balance before summing to avoid floating point precision issues
+          // Use a more precise rounding method
+          let totalBalance = 0;
+          for (const m of members) {
+            if (m.balance !== undefined && m.balance !== null) {
+              // Round to 2 decimal places using a more precise method
+              const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
+              // Use toFixed(2) and parseFloat for precise rounding
+              const roundedBalance = parseFloat(balance.toFixed(2));
+              totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
+            }
+          }
+          // Round the final total to ensure it's exactly 2 decimal places
+          const finalBalance = parseFloat(totalBalance.toFixed(2));
+          // If the result is very close to a whole number (like 3125.99 when it should be 3126.00), round it
+          const nearestWhole = Math.round(finalBalance);
+          // Check if difference is less than 0.02 (to catch 3125.99 -> 3126.00)
+          if (Math.abs(finalBalance - nearestWhole) <= 0.02) {
+            setCurrentBalance(nearestWhole);
+          } else {
+            setCurrentBalance(finalBalance);
+          }
         } else {
           setCurrentBalance(0);
         }

@@ -132,9 +132,15 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         setEditedHostMemberId(eventData.host_member_id || "");
         // Extract time from event_date (format: YYYY-MM-DD HH:mm or YYYY-MM-DD)
         const eventDate = new Date(eventData.event_date);
-        const hours = String(eventDate.getHours()).padStart(2, '0');
-        const minutes = String(eventDate.getMinutes()).padStart(2, '0');
-        setEditedTime(`${hours}:${minutes}`);
+        // If event_date doesn't have time, default to 21:00
+        let hours = eventDate.getHours();
+        let minutes = eventDate.getMinutes();
+        // Check if time is 00:00 (likely means no time was set)
+        if (hours === 0 && minutes === 0) {
+          hours = 21;
+          minutes = 0;
+        }
+        setEditedTime(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
       }
     } catch (error: any) {
       console.error("Error loading event details:", error);
@@ -512,77 +518,91 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       const totalCost = event.butcher_cost && event.grocery_cost 
         ? event.butcher_cost + event.grocery_cost 
         : (event.total_cost || 0);
-      const costPerPerson = totalCost / totalPaying;
+      // Round to 2 decimal places to avoid floating point precision issues
+      const costPerPerson = Math.round((totalCost / totalPaying) * 100) / 100;
 
       // Get all members to update their balance
       const allMembers = await apiClient.getMembers(groupId);
-
-      // Deduct from member balance and create payment record for tracking
-      for (const attendee of payingAttendees) {
-        const member = allMembers.find((m: any) => m.id === attendee.member_id);
-        
-        if (member) {
-          // Check if payment already exists with "deducted" status
-          const existingPayment = await apiClient.getPaymentByPayer(eventId, attendee.member_id, "member");
-          
-          // Only deduct from balance if payment doesn't exist or hasn't been deducted yet
-          // IMPORTANT: If payment exists with "deducted" status, balance was already deducted, so don't deduct again
-          if (!existingPayment || existingPayment.payment_status !== "deducted") {
-            // Get fresh member data to ensure we have the latest balance
-            const freshMembers = await apiClient.getMembers(groupId);
-            const freshMember = freshMembers.find((m: any) => m.id === attendee.member_id);
-            const currentBalance = freshMember?.balance || member.balance || 0;
-            
-            // Calculate new balance (deduct costPerPerson)
-            const newBalance = Math.max(0, currentBalance - costPerPerson); // Don't go below 0
-            
-            // Update member balance
-            await apiClient.updateMember(member.id, {
-              ...member,
-              balance: newBalance
-            });
-          }
-
-          // Create or update payment record for tracking
-          if (existingPayment) {
-            // Only update if status is not already "deducted"
-            if (existingPayment.payment_status !== "deducted") {
-              await apiClient.updatePayment(existingPayment.id, {
-                ...existingPayment,
-                amount: costPerPerson,
-                payment_status: "deducted" // Mark as deducted from balance
+      
+      // Get all existing payments for this event
+      const existingPayments = await apiClient.getPayments(eventId);
+      
+      // If recalculating (hasPayments is true), first return old amounts to balances
+      if (hasPayments) {
+        // Return old deducted amounts to member balances
+        for (const payment of existingPayments) {
+          if (payment.payer_type === "member" && payment.payment_status === "deducted") {
+            const member = allMembers.find((m: any) => m.id === payment.payer_id);
+            if (member) {
+              // Get fresh member data
+              const freshMembers = await apiClient.getMembers(groupId);
+              const freshMember = freshMembers.find((m: any) => m.id === payment.payer_id);
+              const currentBalance = freshMember?.balance || member.balance || 0;
+              
+              // Return the old amount to balance (round to 2 decimal places)
+              const paymentAmount = Math.round((payment.amount || 0) * 100) / 100;
+              const newBalance = Math.round((currentBalance + paymentAmount) * 100) / 100;
+              
+              // Update member balance
+              await apiClient.updateMember(member.id, {
+                ...member,
+                balance: newBalance
               });
             }
-          } else {
-            await apiClient.createPayment({
-              event_id: eventId,
-              payer_id: attendee.member_id,
-              payer_type: "member",
-              amount: costPerPerson,
-              payment_status: "deducted" // Mark as deducted from balance
-            });
+          }
+        }
+        
+        // Delete all existing payments for this event
+        for (const payment of existingPayments) {
+          try {
+            await apiClient.deletePayment(payment.id);
+          } catch (error) {
+            console.error(`Error deleting payment ${payment.id}:`, error);
           }
         }
       }
 
-      // Create/update payments for guests
-      for (const guest of payingGuests) {
-        const existingPayment = await apiClient.getPaymentByPayer(eventId, guest.id, "guest");
+      // Get fresh members data after returning balances
+      const freshMembers = await apiClient.getMembers(groupId);
 
-        if (existingPayment) {
-          await apiClient.updatePayment(existingPayment.id, {
-            ...existingPayment,
-            amount: costPerPerson
+      // Calculate new payments and deduct from balances
+      for (const attendee of payingAttendees) {
+        const member = freshMembers.find((m: any) => m.id === attendee.member_id);
+        
+        if (member) {
+          const currentBalance = member.balance || 0;
+          
+          // Calculate new balance (deduct costPerPerson) - round to 2 decimal places
+          const roundedCostPerPerson = Math.round(costPerPerson * 100) / 100;
+          const newBalance = Math.round(Math.max(0, currentBalance - roundedCostPerPerson) * 100) / 100; // Don't go below 0
+          
+          // Update member balance
+          await apiClient.updateMember(member.id, {
+            ...member,
+            balance: newBalance
           });
-        } else {
+
+          // Create new payment record (use rounded amount)
           await apiClient.createPayment({
             event_id: eventId,
-            payer_id: guest.id,
-            payer_type: "guest",
-            amount: costPerPerson,
-            payment_status: "pending"
+            payer_id: attendee.member_id,
+            payer_type: "member",
+            amount: roundedCostPerPerson,
+            payment_status: "deducted" // Mark as deducted from balance
           });
         }
+      }
+
+      // Create payments for guests (use rounded amount)
+      const roundedCostPerPerson = Math.round(costPerPerson * 100) / 100;
+      for (const guest of payingGuests) {
+        await apiClient.createPayment({
+          event_id: eventId,
+          payer_id: guest.id,
+          payer_type: "guest",
+          amount: roundedCostPerPerson,
+          payment_status: "pending"
+        });
       }
 
       // Mark that payments have been calculated
@@ -648,7 +668,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             <span className="text-sm text-muted-foreground">
               שעה: {format(eventDate, "HH:mm", { locale: he })}
             </span>
-            {isAdmin && !hasPayments && (
+            {isAdmin && (
               <Button
                 type="button"
                 size="sm"
@@ -666,7 +686,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             )}
           </div>
         )}
-        {isEditingTime && isAdmin && !hasPayments && (
+        {isEditingTime && isAdmin && (
           <div className="flex items-center justify-end gap-2 mb-4">
             <Input
               type="time"
@@ -700,7 +720,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           return hostMember ? (
             <div className="flex items-center justify-end gap-2 mb-4">
               <span className="text-sm text-muted-foreground">מיקום: {hostMember.name}</span>
-              {isAdmin && !hasPayments && (
+              {isAdmin && (
                 <Button
                   type="button"
                   size="sm"
@@ -716,7 +736,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             </div>
           ) : null;
         })() : (
-          event && isAdmin && !hasPayments && (
+          event && isAdmin && (
             <div className="flex items-center justify-end gap-2 mb-4">
               <span className="text-sm text-muted-foreground">אין מיקום מוגדר</span>
               <Button
@@ -733,7 +753,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             </div>
           )
         ))}
-        {isEditingHost && isAdmin && !hasPayments && (
+        {isEditingHost && isAdmin && (
           <div className="flex items-center justify-end gap-2 mb-4">
               <Select value={editedHostMemberId || "none"} onValueChange={(value) => setEditedHostMemberId(value === "none" ? "" : value)}>
                 <SelectTrigger className="w-48 text-right" dir="rtl">
@@ -779,7 +799,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           <div className="space-y-6">
             {/* Summary */}
             <div className="p-4 bg-muted rounded-lg space-y-4">
-              {isAdmin && !hasPayments && (
+              {isAdmin && (
                 <div className="flex items-center justify-end gap-2">
                   {isEditingCost ? (
                     <>
@@ -820,7 +840,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
-                {isEditingCost && isAdmin && !hasPayments ? (
+                {isEditingCost && isAdmin ? (
                   <>
                     <div className="text-right">
                       <Label className="text-sm text-muted-foreground mb-2 block">קצבייה</Label>
