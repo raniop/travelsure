@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, ArrowUpRight, ArrowDownRight, Coins } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart as RechartsLineChart, Pie, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface ReportsProps {
   groupId: string;
@@ -18,6 +19,7 @@ interface MemberReport {
   memberId: string;
   memberName: string;
   memberNickname?: string | null;
+  profileImage?: string | null;
   eventsAttended: number;
   totalPaid: number;
   totalPending: number;
@@ -204,9 +206,26 @@ const Reports = ({ groupId }: ReportsProps) => {
       const membersData = await apiClient.getMembers(groupId);
       setMembers(membersData);
 
+      // Load all users to get profile images
+      let usersWithImages: any[] = [];
+      try {
+        const allUsers = await apiClient.getUsers();
+        usersWithImages = allUsers;
+      } catch (userError) {
+        console.error("Error loading users for profile images:", userError);
+      }
+
       // Build reports for each member
       const memberReports: MemberReport[] = await Promise.all(
         membersData.filter(m => m.is_active !== false).map(async (member: any) => {
+          // Find matching user by phone to get profile image
+          let profileImage: string | null = null;
+          if (member.phone) {
+            const user = usersWithImages.find((u: any) => u.phone === member.phone);
+            if (user && user.profile_image) {
+              profileImage = user.profile_image;
+            }
+          }
           // Count events attended in this month
           let eventsAttended = 0;
           let totalPaid = 0;
@@ -268,6 +287,7 @@ const Reports = ({ groupId }: ReportsProps) => {
             memberId: member.id,
             memberName: member.name,
             memberNickname: member.nickname || null,
+            profileImage: profileImage || null,
             eventsAttended,
             totalPaid, // This is now total deducted from balance
             totalPending: 0, // No pending in balance model
@@ -714,9 +734,15 @@ const Reports = ({ groupId }: ReportsProps) => {
                     {/* RIGHT: Member info (pinned to the right edge) */}
                     <div className="flex items-center gap-3 ml-auto text-right">
                       {/* avatar MUST be first in RTL so it sits at the far right */}
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary font-bold text-lg shrink-0">
-                        {report.memberName.charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar className="w-12 h-12 shrink-0">
+                        {report.profileImage ? (
+                          <AvatarImage src={report.profileImage} alt={report.memberName} />
+                        ) : (
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
+                            {report.memberName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
 
                       <div className="flex flex-col items-end">
                         <div className="font-semibold text-base md:text-lg text-right">{report.memberName}</div>
