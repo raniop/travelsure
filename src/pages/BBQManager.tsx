@@ -15,6 +15,8 @@ import LoginDialog from "@/components/bbq/LoginDialog";
 import Reports from "@/components/bbq/Reports";
 import UsersList from "@/components/bbq/UsersList";
 import BottomNavigation from "@/components/bbq/BottomNavigation";
+import InstallPrompt from "@/components/bbq/InstallPrompt";
+import { usePWAConfig } from "@/hooks/usePWAConfig";
 
 interface Group {
   id: string;
@@ -42,6 +44,12 @@ const BBQManager = () => {
   const [userNotInGroup, setUserNotInGroup] = useState(false);
   const [checkingGroups, setCheckingGroups] = useState(false);
   const { toast } = useToast();
+
+  // Update PWA config with group name and image (must be before any conditional returns)
+  usePWAConfig({
+    name: group?.name || "על האש",
+    groupImage: group?.group_image || null
+  });
 
   useEffect(() => {
     // Check if user is logged in
@@ -461,6 +469,7 @@ const BBQManager = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
+      {group && <InstallPrompt />}
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between w-full" style={{ flexDirection: 'row-reverse' }}>
@@ -594,7 +603,10 @@ const BBQManager = () => {
                 <UserSettings 
                   user={user} 
                   onUserUpdated={(updatedUser) => {
-                    setUser(updatedUser);
+                    setUser({
+                      ...updatedUser,
+                      isAdmin: user.isAdmin // Preserve admin status
+                    });
                     // Update localStorage
                     localStorage.setItem('bbq_current_user', JSON.stringify({
                       id: updatedUser.id,

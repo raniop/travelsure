@@ -24,7 +24,7 @@ export const usePWAConfig = ({ name, groupImage }: PWAConfig) => {
 
           // Create new manifest with group data
           const manifestData = {
-            name: `${name} - על האש`,
+            name: name,
             short_name: name.length > 12 ? name.substring(0, 12) : name,
             description: `ניהול אירועי על האש - ${name}`,
             start_url: "/bbq",
@@ -123,7 +123,7 @@ export const usePWAConfig = ({ name, groupImage }: PWAConfig) => {
       // Update document title
       const updateTitle = () => {
         try {
-          document.title = `${name} - על האש`;
+          document.title = name;
         } catch (error) {
           console.error("Error updating title:", error);
         }

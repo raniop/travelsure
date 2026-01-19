@@ -77,12 +77,16 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request, { cache: 'no-cache' })
       .then((response) => {
-        // Only cache if it's not an old file
+        // Only cache if it's not an old file and URL is cacheable (not chrome-extension, data:, blob:, etc.)
         const isOld = OLD_FILE_HASHES.some((hash) => url.includes(hash));
-        if (!isOld && response.status === 200) {
+        const isCacheable = url.startsWith('http://') || url.startsWith('https://');
+        if (!isOld && response.status === 200 && isCacheable) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
+            cache.put(event.request, responseToCache).catch((err) => {
+              // Silently ignore cache errors (e.g., chrome-extension URLs)
+              console.warn('Cache put failed:', err);
+            });
           });
         }
         return response;
