@@ -348,7 +348,7 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
   const totalCost = (event.butcher_cost || 0) + (event.grocery_cost || 0) || (event.total_cost || 0);
 
   return (
-    <Card className={`relative overflow-hidden border shadow-md hover:shadow-lg transition-all duration-200 ${isFuture ? 'bg-white dark:bg-gray-900 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'}`} dir="rtl">
+    <Card className={`w-full relative overflow-hidden border shadow-md hover:shadow-lg transition-all duration-200 ${isFuture ? 'bg-white dark:bg-gray-900 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'}`} dir="rtl">
       {/* Top accent bar */}
       <div className={`absolute top-0 right-0 w-full h-1 ${isFuture ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
       
@@ -381,32 +381,22 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
       
       <CardContent className="pt-0 pb-4">
         {/* Bottom row: Stats and Actions */}
-        <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl" style={{ direction: "rtl" }}>
-          {/* Right side: Details Button */}
-          <EventDetailsDialog eventId={event.id} groupId={groupId} userId={userId} isAdmin={isAdmin} onPaymentsCalculated={onPaymentsCalculated}>
-            <Button 
-              variant="default" 
-              size="sm" 
-              className={`min-w-[80px] h-7 text-xs px-3 ${isFuture ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''}`}
-              type="button"
-            >
-              <ChevronLeft className="w-3 h-3 ml-1" />
-              פרטים
-            </Button>
-          </EventDetailsDialog>
-          
-          {/* Left side: Stats */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Attendance toggle for future events */}
+        <div
+          dir="rtl"
+          className="w-full flex flex-col gap-3 items-end sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+        >
+          {/* Stats (משמאל) */}
+          <div className="flex flex-wrap justify-start gap-2 w-full sm:w-auto" dir="rtl" style={{ direction: "rtl" }}>
+            {/* Attendance toggle */}
             {isFuture && !isAdmin && userMember && (
               <Toggle
                 pressed={isAttending === true}
                 onPressedChange={(pressed) => handleToggleAttendance(pressed)}
                 disabled={loadingAttendance || isAttending === null}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs h-auto ${
-                  isAttending 
-                    ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-950/50' 
-                    : 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50'
+                  isAttending
+                    ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-950/50"
+                    : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50"
                 }`}
                 aria-label={isAttending ? "מגיע" : "לא מגיע"}
               >
@@ -423,41 +413,62 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
                 )}
               </Toggle>
             )}
-            
-            {/* Confirmed attendees */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? 'bg-green-50 dark:bg-green-950/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
-              <Users className={`w-3.5 h-3.5 ${isFuture ? 'text-green-600' : 'text-gray-600'}`} />
+
+            {/* Confirmed */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-green-50 dark:bg-green-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+              <Users className={`w-3.5 h-3.5 ${isFuture ? "text-green-600" : "text-gray-600"}`} />
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-muted-foreground leading-tight">מאשרים</span>
-                <span className={`text-xs font-bold ${isFuture ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-400'}`}>
+                <span className={`text-xs font-bold ${isFuture ? "text-green-700 dark:text-green-400" : "text-gray-700 dark:text-gray-400"}`}>
                   {confirmedCount}
                 </span>
               </div>
             </div>
-            
+
             {/* Cost */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? 'bg-blue-50 dark:bg-blue-950/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
-              <Coins className={`w-3.5 h-3.5 ${isFuture ? 'text-blue-600' : 'text-gray-600'}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-blue-600" : "text-gray-600"}`} />
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-muted-foreground leading-tight">עלות</span>
-                <span className={`text-xs font-bold ${isFuture ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-400'}`}>
+                <span className={`text-xs font-bold ${isFuture ? "text-blue-700 dark:text-blue-400" : "text-gray-700 dark:text-gray-400"}`}>
                   {totalCost.toFixed(2)} ₪
                 </span>
               </div>
             </div>
-            
+
             {/* Location */}
             {hostMember && (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? 'bg-purple-50 dark:bg-purple-950/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
-                <MapPin className={`w-3.5 h-3.5 ${isFuture ? 'text-purple-600' : 'text-gray-600'}`} />
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-purple-50 dark:bg-purple-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+                <MapPin className={`w-3.5 h-3.5 ${isFuture ? "text-purple-600" : "text-gray-600"}`} />
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] text-muted-foreground leading-tight">מיקום</span>
-                  <span className={`text-xs font-bold truncate max-w-[100px] ${isFuture ? 'text-purple-700 dark:text-purple-400' : 'text-gray-700 dark:text-gray-400'}`}>
+                  <span className={`text-xs font-bold truncate max-w-[100px] ${isFuture ? "text-purple-700 dark:text-purple-400" : "text-gray-700 dark:text-gray-400"}`}>
                     {hostMember.name}
                   </span>
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Button (מימין) */}
+          <div className="self-end sm:self-auto">
+            <EventDetailsDialog
+              eventId={event.id}
+              groupId={groupId}
+              userId={userId}
+              isAdmin={isAdmin}
+              onPaymentsCalculated={onPaymentsCalculated}
+            >
+              <Button
+                variant="default"
+                size="sm"
+                className={`min-w-[80px] h-7 text-xs px-3 ${isFuture ? "bg-blue-500 hover:bg-blue-600 text-white" : ""}`}
+                type="button"
+              >
+                <ChevronLeft className="w-3 h-3 ml-1" />
+                פרטים
+              </Button>
+            </EventDetailsDialog>
           </div>
         </div>
       </CardContent>

@@ -553,7 +553,7 @@ const BBQManager = () => {
             hasUsersTab={true}
           />
 
-          <TabsContent value="events" className="space-y-4">
+          <TabsContent value="events" className="w-full text-right !block space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold">אירועים</h2>
               {user.isAdmin && (
@@ -565,12 +565,14 @@ const BBQManager = () => {
                 </CreateEventDialog>
               )}
             </div>
-            <EventsList 
-              groupId={group.id} 
-              userId={user.id}
-              isAdmin={user.isAdmin}
-              onPaymentsCalculated={() => setActiveTab("payments")}
-            />
+            <div className="w-full text-right" dir="rtl" style={{ direction: "rtl" }}>
+              <EventsList 
+                groupId={group.id} 
+                userId={user.id}
+                isAdmin={user.isAdmin}
+                onPaymentsCalculated={() => setActiveTab("payments")}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="members" className="space-y-4 pb-20 md:pb-4">
