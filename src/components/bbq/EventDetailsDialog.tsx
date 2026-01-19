@@ -275,6 +275,11 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       // Reload to ensure consistency
       await loadEventDetails();
       
+      // Notify parent to refresh events list
+      if (onPaymentsCalculated) {
+        onPaymentsCalculated();
+      }
+      
       toast({
         title: "הצלחה!",
         description: `האורח עודכן ל-${shouldPay ? "משלם" : "חינם"}`
@@ -344,6 +349,11 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       setNewGuestPhone("");
       setNewGuestIsFirstTime(true);
       await loadEventDetails();
+
+      // Notify parent to refresh events list
+      if (onPaymentsCalculated) {
+        onPaymentsCalculated();
+      }
 
       toast({
         title: "הצלחה!",
@@ -518,8 +528,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       const totalCost = event.butcher_cost && event.grocery_cost 
         ? event.butcher_cost + event.grocery_cost 
         : (event.total_cost || 0);
-      // Round to 2 decimal places to avoid floating point precision issues
-      const costPerPerson = Math.round((totalCost / totalPaying) * 100) / 100;
+      // Use exact value for calculation (no rounding)
+      const costPerPerson = totalCost / totalPaying;
 
       // Get all members to update their balance
       const allMembers = await apiClient.getMembers(groupId);
@@ -539,14 +549,20 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
               const freshMember = freshMembers.find((m: any) => m.id === payment.payer_id);
               const currentBalance = freshMember?.balance || member.balance || 0;
               
-              // Return the old amount to balance (round to 2 decimal places)
-              const paymentAmount = Math.round((payment.amount || 0) * 100) / 100;
-              const newBalance = Math.round((currentBalance + paymentAmount) * 100) / 100;
+              // Return the old amount to balance
+              // IMPORTANT: Round both values to 2 decimal places before adding to avoid floating point precision issues
+              const roundedCurrentBalance = parseFloat((currentBalance || 0).toFixed(2));
+              const roundedPaymentAmount = parseFloat((payment.amount || 0).toFixed(2));
+              const newBalance = roundedCurrentBalance + roundedPaymentAmount;
+              
+              // Round only when saving to database (to prevent floating point precision issues)
+              // Use parseFloat with toFixed to ensure exactly 2 decimal places
+              const roundedNewBalance = parseFloat(newBalance.toFixed(2));
               
               // Update member balance
               await apiClient.updateMember(member.id, {
                 ...member,
-                balance: newBalance
+                balance: roundedNewBalance
               });
             }
           }
@@ -565,24 +581,38 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       // Get fresh members data after returning balances
       const freshMembers = await apiClient.getMembers(groupId);
 
+      // Round costPerPerson once for all members to ensure consistency
+      // Use parseFloat with toFixed to ensure exactly 2 decimal places
+      const roundedCostPerPerson = parseFloat(costPerPerson.toFixed(2));
+      
       // Calculate new payments and deduct from balances
       for (const attendee of payingAttendees) {
         const member = freshMembers.find((m: any) => m.id === attendee.member_id);
         
         if (member) {
-          const currentBalance = member.balance || 0;
+          // Get current balance and ensure it's a number
+          // IMPORTANT: Round to 2 decimal places before calculation to avoid floating point precision issues
+          const currentBalance = typeof member.balance === 'string' 
+            ? parseFloat(member.balance) 
+            : (member.balance || 0);
+          const roundedCurrentBalance = parseFloat(currentBalance.toFixed(2));
           
-          // Calculate new balance (deduct costPerPerson) - round to 2 decimal places
-          const roundedCostPerPerson = Math.round(costPerPerson * 100) / 100;
-          const newBalance = Math.round(Math.max(0, currentBalance - roundedCostPerPerson) * 100) / 100; // Don't go below 0
+          // Calculate new balance (deduct rounded costPerPerson)
+          // Both values are already rounded to 2 decimal places
+          const newBalance = Math.max(0, roundedCurrentBalance - roundedCostPerPerson); // Don't go below 0
+          
+          // Round only when saving to database (to prevent floating point precision issues)
+          // Use parseFloat with toFixed to ensure exactly 2 decimal places
+          const roundedNewBalance = parseFloat(newBalance.toFixed(2));
           
           // Update member balance
           await apiClient.updateMember(member.id, {
             ...member,
-            balance: newBalance
+            balance: roundedNewBalance
           });
 
-          // Create new payment record (use rounded amount)
+          // Create new payment record (round only when saving)
+          // IMPORTANT: Use the same rounded value for payment amount
           await apiClient.createPayment({
             event_id: eventId,
             payer_id: attendee.member_id,
@@ -593,8 +623,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         }
       }
 
-      // Create payments for guests (use rounded amount)
-      const roundedCostPerPerson = Math.round(costPerPerson * 100) / 100;
+      // Create payments for guests (round only when saving to database)
+      // Use the same rounded value as for members to ensure consistency
       for (const guest of payingGuests) {
         await apiClient.createPayment({
           event_id: eventId,

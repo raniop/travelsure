@@ -32,28 +32,46 @@ interface Member {
 interface MembersListProps {
   groupId: string;
   isAdmin?: boolean;
+  userId?: string;
+  userPhone?: string;
+  onLeaveGroup?: () => void;
+  refreshTrigger?: number; // Add refresh trigger prop
 }
 
-const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup }: MembersListProps) => {
+interface GuestWithEvent {
+  id: string;
+  name: string;
+  phone: string | null;
+  should_pay: boolean;
+  event_id: string;
+  event_name: string;
+  event_date: string;
+  cost_per_person: number;
+}
+
+const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup, refreshTrigger }: MembersListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
+  const [guests, setGuests] = useState<GuestWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingGuests, setLoadingGuests] = useState(false);
   const [editingNickname, setEditingNickname] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadMembers();
-  }, [groupId]);
+    loadGuests();
+  }, [groupId, refreshTrigger]); // Add refreshTrigger to dependencies
 
   const loadMembers = async () => {
     try {
       setLoading(true);
       const members = await apiClient.getMembers(groupId);
       
-      // Round all balances to 2 decimal places
+      // Round all balances to 2 decimal places (for display only, keep exact values in calculation)
       const membersWithRoundedBalances = members.map((member: any) => ({
         ...member,
         balance: member.balance !== undefined && member.balance !== null 
-          ? Math.round(member.balance * 100) / 100 
+          ? parseFloat((member.balance).toFixed(2))
           : member.balance
       }));
       
@@ -88,6 +106,91 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGuests = async () => {
+    try {
+      setLoadingGuests(true);
+      
+      // Get all events for this group
+      const allEvents = await apiClient.getEvents(groupId);
+      
+      // Filter only future events
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const futureEvents = allEvents.filter((event: any) => {
+        const eventDate = new Date(event.event_date);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate >= today;
+      });
+      
+      if (futureEvents.length === 0) {
+        setGuests([]);
+        return;
+      }
+      
+      // Load guests and attendees for each future event
+      const guestsWithEvents: GuestWithEvent[] = [];
+      
+      for (const event of futureEvents) {
+        try {
+          // Get guests for this event
+          const eventGuests = await apiClient.getGuests(event.id);
+          
+          // Get attendees for this event
+          const attendees = await apiClient.getAttendees(event.id);
+          const payingAttendees = attendees.filter((a: any) => a.attended);
+          const payingGuests = eventGuests.filter((g: any) => g.should_pay);
+          const totalPaying = payingAttendees.length + payingGuests.length;
+          
+          // Calculate cost per person
+          const totalCost = event.butcher_cost && event.grocery_cost 
+            ? event.butcher_cost + event.grocery_cost 
+            : (event.total_cost || 0);
+          const costPerPerson = totalPaying > 0 && totalCost > 0 
+            ? Math.round((totalCost / totalPaying) * 100) / 100 
+            : 0;
+          
+          // Format event date for display
+          const eventDate = new Date(event.event_date);
+          const formattedDate = eventDate.toLocaleDateString('he-IL', { 
+            day: 'numeric', 
+            month: 'numeric',
+            year: 'numeric'
+          });
+          
+          // Add guests with event info
+          for (const guest of eventGuests) {
+            guestsWithEvents.push({
+              id: guest.id,
+              name: guest.name,
+              phone: guest.phone,
+              should_pay: guest.should_pay,
+              event_id: event.id,
+              event_name: event.description || `אירוע ${formattedDate}`,
+              event_date: event.event_date,
+              cost_per_person: costPerPerson
+            });
+          }
+        } catch (error) {
+          console.error(`Error loading guests for event ${event.id}:`, error);
+        }
+      }
+      
+      // Sort by event date, then by name
+      guestsWithEvents.sort((a, b) => {
+        const dateCompare = new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+        if (dateCompare !== 0) return dateCompare;
+        return a.name.localeCompare(b.name);
+      });
+      
+      setGuests(guestsWithEvents);
+    } catch (error: any) {
+      console.error("Error loading guests:", error);
+      // Don't show error toast for guests, just log it
+    } finally {
+      setLoadingGuests(false);
     }
   };
 
@@ -381,6 +484,60 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
                     </div>
                   </div>
                 )}
+                
+                {/* Guests Section */}
+                {guests.length > 0 && (
+                  <div className="mt-8">
+                    <h3 className="text-lg md:text-xl font-semibold mb-3 text-right bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">
+                      נספחים
+                    </h3>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {guests.map((guest, index) => {
+                        const eventDate = new Date(guest.event_date);
+                        const formattedDate = eventDate.toLocaleDateString('he-IL', { 
+                          day: 'numeric', 
+                          month: 'numeric',
+                          year: 'numeric'
+                        });
+                        
+                        return (
+                          <div
+                            key={guest.id}
+                            className="group relative p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-purple-50 via-purple-50 to-pink-50"
+                            style={{ animationDelay: `${index * 50}ms` }}
+                            dir="rtl"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold">
+                                  {guest.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 text-right">
+                                  <div className="font-semibold text-gray-900">{guest.name}</div>
+                                  <div className="text-sm text-gray-600">{formattedDate}</div>
+                                  {guest.phone && (
+                                    <div className="text-xs text-gray-500">{guest.phone}</div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                {guest.should_pay && guest.cost_per_person > 0 ? (
+                                  <Badge className="bg-purple-600 text-white text-sm px-3 py-1">
+                                    {guest.cost_per_person.toFixed(2)} ₪
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-sm px-3 py-1">
+                                    פטור
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             );
           })()}
@@ -565,8 +722,9 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
         throw new Error("חבר לא נמצא");
       }
 
-      // Update member with new balance (round to 2 decimal places)
-      const roundedBalance = Math.round(balanceValue * 100) / 100;
+      // Round only when saving to database (to prevent floating point precision issues)
+      // Use parseFloat with toFixed to ensure exactly 2 decimal places
+      const roundedBalance = parseFloat(balanceValue.toFixed(2));
       await apiClient.updateMember(member.id, {
         ...currentMember,
         balance: roundedBalance

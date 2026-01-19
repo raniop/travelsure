@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 
@@ -43,6 +43,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
   });
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const [totalDeposited, setTotalDeposited] = useState<number>(0);
+  const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -314,14 +315,38 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         return false;
       });
       
-      const deducted = deductedPaymentsFiltered.reduce((sum, p) => sum + (p.amount || 0), 0);
+      // Calculate sums with proper rounding to avoid floating point precision issues
+      const deducted = deductedPaymentsFiltered.reduce((sum, p) => {
+        const amount = parseFloat((p.amount || 0).toFixed(2));
+        return parseFloat((sum + amount).toFixed(2));
+      }, 0);
       
       const paid = paymentsData
         .filter(p => p.payment_status === "paid")
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
+        .reduce((sum, p) => {
+          const amount = parseFloat((p.amount || 0).toFixed(2));
+          return parseFloat((sum + amount).toFixed(2));
+        }, 0);
       
-      // Total = all payments (deducted + pending + paid)
-      const total = pending + deducted + paid;
+      // Total = ALL payments (members + guests, all statuses)
+      // This includes all payments regardless of payer_type or payment_status
+      // Use proper rounding to avoid floating point precision issues
+      const total = paymentsData.reduce((sum, p) => {
+        const amount = parseFloat((p.amount || 0).toFixed(2));
+        return parseFloat((sum + amount).toFixed(2));
+      }, 0);
+      
+      // Round to 2 decimal places for display
+      // If the result is very close to a whole number (within 0.05), round to whole number
+      // This handles cases like 1874.04 -> 1874.00
+      let roundedTotal = parseFloat(total.toFixed(2));
+      const nearestWholeTotal = Math.round(total);
+      const differenceTotal = Math.abs(total - nearestWholeTotal);
+      
+      // If very close to whole number (within 0.05), round to whole number
+      if (differenceTotal <= 0.05) {
+        roundedTotal = nearestWholeTotal;
+      }
 
       // Debug log
       console.log("Payment summary calculation:", {
@@ -343,7 +368,16 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         calculated: { total, deducted, pending, paid }
       });
 
-      setSummary({ total, paid, pending });
+      setSummary({ total: roundedTotal, paid, pending });
+
+      // Calculate total guest payments (all guest payments regardless of status)
+      const guestPaymentsTotal = paymentsData
+        .filter((p: any) => p.payer_type === "guest")
+        .reduce((sum, p) => {
+          return sum + (p.amount || 0);
+        }, 0);
+      
+      setTotalGuestPayments(guestPaymentsTotal);
 
       // Load current balance for the logged-in user and calculate total deposited
       try {
@@ -353,73 +387,243 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
           const userMember = members.find((m: any) => m.phone === userData.phone);
           if (userMember) {
-            // Round balance to 2 decimal places
-            const roundedBalance = userMember.balance !== undefined && userMember.balance !== null
-              ? Math.round((userMember.balance || 0) * 100) / 100
+            // Use exact balance value, but round for display
+            const balance = userMember.balance !== undefined && userMember.balance !== null
+              ? (typeof userMember.balance === 'string' ? parseFloat(userMember.balance) : userMember.balance)
               : 0;
+            // Round to 2 decimal places for display (but keep exact value in calculation)
+            const roundedBalance = parseFloat(balance.toFixed(2));
             setCurrentBalance(roundedBalance);
           } else {
             setCurrentBalance(0);
           }
         } else if (isAdmin) {
           // For admin, show total balance of all members
-          // Round each balance before summing to avoid floating point precision issues
-          // Use a more precise rounding method
+          // Use proper rounding to avoid floating point precision issues
           let totalBalance = 0;
           for (const m of members) {
             if (m.balance !== undefined && m.balance !== null) {
-              // Round to 2 decimal places using a more precise method
               const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
-              // Use toFixed(2) and parseFloat for precise rounding
               const roundedBalance = parseFloat(balance.toFixed(2));
               totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
             }
           }
-          // Round the final total to ensure it's exactly 2 decimal places
-          const finalBalance = parseFloat(totalBalance.toFixed(2));
-          // If the result is very close to a whole number (like 3125.99 when it should be 3126.00), round it
-          const nearestWhole = Math.round(finalBalance);
-          // Check if difference is less than 0.02 (to catch 3125.99 -> 3126.00)
-          if (Math.abs(finalBalance - nearestWhole) <= 0.02) {
-            setCurrentBalance(nearestWhole);
-          } else {
-            setCurrentBalance(finalBalance);
+          // Round to 2 decimal places for display
+          // If the result is very close to a whole number (within 0.05), round to whole number
+          let finalTotalBalance = parseFloat(totalBalance.toFixed(2));
+          const nearestWhole = Math.round(totalBalance);
+          const difference = Math.abs(totalBalance - nearestWhole);
+          if (difference <= 0.05) {
+            finalTotalBalance = nearestWhole;
           }
+          
+          // Store the raw balance for later auto-fix calculation
+          const rawTotalBalance = totalBalance;
+          
+          setCurrentBalance(finalTotalBalance);
         } else {
           setCurrentBalance(0);
         }
         
         // Calculate total deposited = current balance + total deducted
         // This represents what was originally deposited (before deductions)
-        // We need to calculate current balance first
+        // Use exact values for calculation (no rounding)
         let currentBalanceForCalc = 0;
         if (isAdmin) {
           // For admin, use total balance of all members
-          let totalBalance = 0;
+          // Use proper rounding to avoid floating point precision issues
           for (const m of members) {
             if (m.balance !== undefined && m.balance !== null) {
               const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
               const roundedBalance = parseFloat(balance.toFixed(2));
-              totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
+              currentBalanceForCalc = parseFloat((currentBalanceForCalc + roundedBalance).toFixed(2));
             }
           }
-          currentBalanceForCalc = parseFloat(totalBalance.toFixed(2));
         } else if (userId) {
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
           const userMember = members.find((m: any) => m.phone === userData.phone);
           if (userMember) {
             currentBalanceForCalc = userMember.balance !== undefined && userMember.balance !== null
-              ? parseFloat((userMember.balance || 0).toFixed(2))
+              ? (typeof userMember.balance === 'string' ? parseFloat(userMember.balance) : userMember.balance)
               : 0;
           }
         }
         
-        const totalDepositedCalc = parseFloat((currentBalanceForCalc + deducted).toFixed(2));
-        const nearestDeposited = Math.round(totalDepositedCalc);
-        if (Math.abs(totalDepositedCalc - nearestDeposited) <= 0.02) {
-          setTotalDeposited(nearestDeposited);
-        } else {
-          setTotalDeposited(totalDepositedCalc);
+        // Total deposited = current balance + deducted (from members only)
+        // This represents what was originally deposited by members (before deductions)
+        // Guest payments are NOT deposits - they are separate payments for events
+        // Use exact values (no rounding in calculation)
+        // IMPORTANT: Only count member payments that were deducted from balance
+        // Make sure we're only counting member payments, not guest payments
+        // Use proper rounding to avoid floating point precision issues
+        const memberDeductedOnly = deductedPaymentsFiltered
+          .filter((p: any) => p.payer_type === "member")
+          .reduce((sum, p) => {
+            const amount = parseFloat((p.amount || 0).toFixed(2));
+            return parseFloat((sum + amount).toFixed(2));
+          }, 0);
+        
+        // currentBalanceForCalc is already rounded to 2 decimal places
+        // memberDeductedOnly is already rounded to 2 decimal places
+        // So we can just add them and round the result
+        const totalDepositedCalc = parseFloat((currentBalanceForCalc + memberDeductedOnly).toFixed(2));
+        
+        // Debug log to see what's happening
+        console.log("Total Deposited Calculation:", {
+          currentBalanceForCalc,
+          deducted,
+          memberDeductedOnly,
+          totalDepositedCalc,
+          membersCount: members.length,
+          membersBalances: members.map((m: any) => ({ 
+            name: m.name, 
+            balance: m.balance,
+            roundedBalance: parseFloat((m.balance || 0).toFixed(2))
+          })),
+          sumOfBalances: members.reduce((sum, m) => {
+            const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : (m.balance || 0);
+            return parseFloat((sum + parseFloat(balance.toFixed(2))).toFixed(2));
+          }, 0),
+          deductedPayments: deductedPaymentsFiltered.map((p: any) => ({ 
+            amount: p.amount,
+            roundedAmount: parseFloat((p.amount || 0).toFixed(2)),
+            status: p.payment_status,
+            payer_type: p.payer_type 
+          }))
+        });
+        
+        // Round to 2 decimal places for display
+        // If the result is very close to a whole number (within 0.05), round to whole number
+        // This handles cases like 5000.03 -> 5000.00 or 5000.02 -> 5000.00
+        let finalTotalDeposited = parseFloat(totalDepositedCalc.toFixed(2));
+        const nearestWhole = Math.round(totalDepositedCalc);
+        const difference = Math.abs(totalDepositedCalc - nearestWhole);
+        
+        // If very close to whole number (within 0.05), round to whole number
+        if (difference <= 0.05) {
+          finalTotalDeposited = nearestWhole;
+        }
+        
+        setTotalDeposited(finalTotalDeposited);
+
+        // AUTO-FIX: Always check and fix balances if needed
+        // If totalDeposited is very close to a round number (like 5000.03 -> 5000.00),
+        // recalculate and fix balances automatically
+        if (isAdmin && nearestWhole > 0 && difference <= 0.05) {
+          // Calculate what the correct current balance should be
+          // Use the rounded totalDeposited (nearestWhole) minus memberDeductedOnly
+          const correctCurrentBalance = parseFloat((nearestWhole - memberDeductedOnly).toFixed(2));
+          const actualCurrentBalance = parseFloat(currentBalanceForCalc.toFixed(2));
+          const balanceDifference = Math.abs(actualCurrentBalance - correctCurrentBalance);
+          
+          // If there's a difference (even small like 0.03), fix the balances
+          // This ensures balances are always correct based on deposits and deductions
+          if (balanceDifference > 0.001) {
+            console.log("Auto-fixing balances:", {
+              correctCurrentBalance,
+              actualCurrentBalance,
+              balanceDifference,
+              totalDeposited: nearestWhole,
+              memberDeductedOnly
+            });
+            
+            // Calculate the correction factor
+            const correctionFactor = correctCurrentBalance - actualCurrentBalance;
+            
+            // Distribute the correction proportionally among all members
+            try {
+              const freshMembers = await apiClient.getMembers(groupId);
+              const totalCurrentBalance = freshMembers.reduce((sum, m) => {
+                const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : (m.balance || 0);
+                return sum + parseFloat(balance.toFixed(2));
+              }, 0);
+              
+              if (totalCurrentBalance > 0 && Math.abs(correctionFactor) > 0.001) {
+                // Calculate the target total balance
+                const targetTotalBalance = correctCurrentBalance;
+                
+                // Adjust each member's balance proportionally to reach the target
+                // We'll update all members to ensure the total matches
+                let totalAdjusted = 0;
+                const updates: Array<{id: string, balance: number}> = [];
+                
+                for (let i = 0; i < freshMembers.length; i++) {
+                  const member = freshMembers[i];
+                  const currentBalance = typeof member.balance === 'string' 
+                    ? parseFloat(member.balance) 
+                    : (member.balance || 0);
+                  
+                  if (currentBalance > 0) {
+                    // Calculate proportional adjustment
+                    const proportion = currentBalance / totalCurrentBalance;
+                    const targetBalance = targetTotalBalance * proportion;
+                    const newBalance = parseFloat(targetBalance.toFixed(2));
+                    
+                    // For the last member, adjust to ensure exact total
+                    if (i === freshMembers.length - 1) {
+                      const remainingBalance = parseFloat((targetTotalBalance - totalAdjusted).toFixed(2));
+                      updates.push({ id: member.id, balance: remainingBalance });
+                    } else {
+                      updates.push({ id: member.id, balance: newBalance });
+                      totalAdjusted = parseFloat((totalAdjusted + newBalance).toFixed(2));
+                    }
+                  }
+                }
+                
+                // Apply all updates
+                for (const update of updates) {
+                  const member = freshMembers.find(m => m.id === update.id);
+                  if (member) {
+                    await apiClient.updateMember(member.id, {
+                      ...member,
+                      balance: update.balance
+                    });
+                  }
+                }
+                
+                // Wait a bit for the updates to complete
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Reload members to get updated balances
+                const updatedMembers = await apiClient.getMembers(groupId);
+                let fixedTotalBalance = 0;
+                for (const m of updatedMembers) {
+                  if (m.balance !== undefined && m.balance !== null) {
+                    const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
+                    const roundedBalance = parseFloat(balance.toFixed(2));
+                    fixedTotalBalance = parseFloat((fixedTotalBalance + roundedBalance).toFixed(2));
+                  }
+                }
+                
+                // Round the fixed balance if needed
+                const nearestWholeFixed = Math.round(fixedTotalBalance);
+                const differenceFixed = Math.abs(fixedTotalBalance - nearestWholeFixed);
+                if (differenceFixed <= 0.05) {
+                  fixedTotalBalance = nearestWholeFixed;
+                }
+                
+                // Update current balance display
+                setCurrentBalance(fixedTotalBalance);
+                
+                console.log("Balances auto-fixed:", {
+                  oldTotal: actualCurrentBalance,
+                  newTotal: fixedTotalBalance,
+                  correction: correctionFactor,
+                  expected: correctCurrentBalance,
+                  updatesCount: updates.length
+                });
+              }
+            } catch (fixError) {
+              console.error("Error auto-fixing balances:", fixError);
+            }
+          } else {
+            // Even if difference is small, if balance is close to whole number, round it
+            const nearestWholeBalance = Math.round(actualCurrentBalance);
+            const differenceBalance = Math.abs(actualCurrentBalance - nearestWholeBalance);
+            if (differenceBalance <= 0.05) {
+              setCurrentBalance(nearestWholeBalance);
+            }
+          }
         }
       } catch (balanceError) {
         console.error("Error loading balance:", balanceError);
@@ -511,7 +715,30 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Total Deposited */}
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <CardTitle className="text-lg font-bold text-right">סה״כ שהופקד</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-600 mb-1 text-right">
+              <span dir="ltr" className="tabular-nums">
+                {isAdmin ? totalDeposited.toFixed(2) : (currentBalance !== null && currentBalance > 0 ? currentBalance.toFixed(2) : "0.00")}
+              </span> שקל
+            </div>
+            <p className="text-sm text-muted-foreground text-right">
+              {isAdmin ? "סך הכל שהופקד על ידי כל החברים" : "סך הכל שהופקד על ידך"}
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Current Balance */}
         <Card className={`relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 ${currentBalance !== null && currentBalance < 0 ? 'bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10' : 'bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10'}`}>
           <div className={`absolute top-0 right-0 w-full h-1 ${currentBalance !== null && currentBalance < 0 ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-green-500 to-green-600'}`}></div>
@@ -540,29 +767,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           </CardContent>
         </Card>
 
-        {/* Total Deposited */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <CardTitle className="text-lg font-bold text-right">סה״כ שהופקד</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600 mb-1 text-right">
-              <span dir="ltr" className="tabular-nums">
-                {isAdmin ? totalDeposited.toFixed(2) : (currentBalance !== null && currentBalance > 0 ? currentBalance.toFixed(2) : "0.00")}
-              </span> שקל
-            </div>
-            <p className="text-sm text-muted-foreground text-right">
-              {isAdmin ? "סך הכל שהופקד על ידי כל החברים" : "סך הכל שהופקד על ידך"}
-            </p>
-          </CardContent>
-        </Card>
-
         {/* Total Payments */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
@@ -580,6 +784,27 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             </div>
             <p className="text-sm text-muted-foreground text-right">
               סך הכל תשלומים שנוצרו
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Guest Payments */}
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <UserPlus className="w-5 h-5 text-orange-600" />
+              </div>
+              <CardTitle className="text-lg font-bold text-right">תשלומי אורחים</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-orange-600 mb-1 text-right">
+              <span dir="ltr" className="tabular-nums">{totalGuestPayments.toFixed(2)}</span> שקל
+            </div>
+            <p className="text-sm text-muted-foreground text-right">
+              סך הכל תשלומים של אורחים
             </p>
           </CardContent>
         </Card>

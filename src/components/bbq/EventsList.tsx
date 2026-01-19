@@ -33,12 +33,21 @@ interface EventsListProps {
 const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsCalculated }: EventsListProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
     loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, isAdmin, userId]);
+  }, [groupId, isAdmin, userId, refreshTrigger]);
+
+  // Create a wrapper callback that refreshes events list
+  const handlePaymentsCalculated = () => {
+    setRefreshTrigger(prev => prev + 1);
+    if (onPaymentsCalculated) {
+      onPaymentsCalculated();
+    }
+  };
 
   const loadEvents = async () => {
     try {
@@ -175,9 +184,10 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
                 groupId={groupId}
                 userId={userId}
                 isAdmin={isAdmin}
-                onPaymentsCalculated={onPaymentsCalculated}
+                onPaymentsCalculated={handlePaymentsCalculated}
                 index={index}
                 isFuture={true}
+                refreshTrigger={refreshTrigger}
               />
             ))}
           </div>
@@ -202,9 +212,10 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
                 groupId={groupId}
                 userId={userId}
                 isAdmin={isAdmin}
-                onPaymentsCalculated={onPaymentsCalculated}
+                onPaymentsCalculated={handlePaymentsCalculated}
                 index={index}
                 isFuture={false}
+                refreshTrigger={refreshTrigger}
               />
             ))}
           </div>
@@ -238,9 +249,10 @@ interface EventCardProps {
   onPaymentsCalculated?: () => void;
   index: number;
   isFuture: boolean;
+  refreshTrigger?: number;
 }
 
-const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, index, isFuture }: EventCardProps) => {
+const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, index, isFuture, refreshTrigger }: EventCardProps) => {
   const [members, setMembers] = useState<any[]>([]);
   const [userMember, setUserMember] = useState<any>(null);
   const [isAttending, setIsAttending] = useState<boolean | null>(null);
@@ -279,8 +291,17 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
         
         try {
           const attendees = await apiClient.getAttendees(event.id);
-          const confirmed = attendees.filter((a: any) => a.attended === true).length;
-          setConfirmedCount(confirmed);
+          const confirmedAttendees = attendees.filter((a: any) => a.attended === true).length;
+          
+          // Also count paying guests
+          try {
+            const guests = await apiClient.getGuests(event.id);
+            const payingGuests = guests.filter((g: any) => g.should_pay === true).length;
+            setConfirmedCount(confirmedAttendees + payingGuests);
+          } catch (guestError) {
+            console.error("Error loading guests:", guestError);
+            setConfirmedCount(confirmedAttendees);
+          }
         } catch (error) {
           console.error("Error loading confirmed attendees:", error);
           setConfirmedCount(0);
@@ -290,7 +311,7 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
       }
     };
     loadMembers();
-  }, [groupId, event.id, isFuture]);
+  }, [groupId, event.id, isFuture, refreshTrigger]);
 
   const handleToggleAttendance = async (attended: boolean) => {
     if (!userMember || loadingAttendance) return;
@@ -321,8 +342,17 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
       
       try {
         const attendees = await apiClient.getAttendees(event.id);
-        const confirmed = attendees.filter((a: any) => a.attended === true).length;
-        setConfirmedCount(confirmed);
+        const confirmedAttendees = attendees.filter((a: any) => a.attended === true).length;
+        
+        // Also count paying guests
+        try {
+          const guests = await apiClient.getGuests(event.id);
+          const payingGuests = guests.filter((g: any) => g.should_pay === true).length;
+          setConfirmedCount(confirmedAttendees + payingGuests);
+        } catch (guestError) {
+          console.error("Error loading guests:", guestError);
+          setConfirmedCount(confirmedAttendees);
+        }
       } catch (error) {
         console.error("Error refreshing confirmed count:", error);
       }

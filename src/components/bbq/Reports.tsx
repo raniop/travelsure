@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, ArrowUpRight, ArrowDownRight, Coins } from "lucide-react";
+import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, ArrowUpRight, ArrowDownRight, Coins, UserPlus } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart as RechartsLineChart, Pie, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -56,6 +56,7 @@ const Reports = ({ groupId }: ReportsProps) => {
   const [monthEvents, setMonthEvents] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [hostStats, setHostStats] = useState<HostStats[]>([]);
+  const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -264,9 +265,9 @@ const Reports = ({ groupId }: ReportsProps) => {
             }
           }
 
-          // Get current balance from member data (round to 2 decimal places)
+          // Get current balance from member data (use exact value)
           const currentBalance = member.balance !== undefined && member.balance !== null
-            ? Math.round((member.balance || 0) * 100) / 100
+            ? (typeof member.balance === 'string' ? parseFloat(member.balance) : member.balance)
             : 0;
           
           // Calculate total deducted this month (from payments with status "deducted")
@@ -308,6 +309,21 @@ const Reports = ({ groupId }: ReportsProps) => {
       });
 
       setReports(memberReports);
+
+      // Calculate total guest payments for this month (use exact values)
+      let guestPaymentsTotal = 0;
+      for (const event of monthEvents) {
+        try {
+          const payments = await apiClient.getPayments(event.id);
+          const guestPayments = payments.filter((p: any) => p.payer_type === "guest");
+          for (const payment of guestPayments) {
+            guestPaymentsTotal += payment.amount || 0;
+          }
+        } catch (error) {
+          console.error(`Error loading guest payments for event ${event.id}:`, error);
+        }
+      }
+      setTotalGuestPayments(guestPaymentsTotal);
     } catch (error: any) {
       console.error("Error loading reports:", error);
       toast({
@@ -341,22 +357,13 @@ const Reports = ({ groupId }: ReportsProps) => {
 
   const monthYear = formatMonthYear(currentMonth);
   const totalDeducted = reports.reduce((sum, r) => sum + r.totalPaid, 0);
-  // Round each balance before summing to avoid floating point precision issues
+  // Calculate exact total balance without rounding
   let totalBalance = 0;
   for (const r of reports) {
     if (r.currentBalance !== undefined && r.currentBalance !== null) {
-      // Round to 2 decimal places using a more precise method
       const balance = typeof r.currentBalance === 'string' ? parseFloat(r.currentBalance) : r.currentBalance;
-      const roundedBalance = parseFloat(balance.toFixed(2));
-      totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
+      totalBalance += balance;
     }
-  }
-  // Round the final total to ensure it's exactly 2 decimal places
-  totalBalance = parseFloat(totalBalance.toFixed(2));
-  // If the result is very close to a whole number (like 3125.99 when it should be 3126.00), round it
-  const nearestWhole = Math.round(totalBalance);
-  if (Math.abs(totalBalance - nearestWhole) <= 0.02) {
-    totalBalance = nearestWhole;
   }
   const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() && 
                          currentMonth.getFullYear() === new Date().getFullYear();
@@ -426,7 +433,7 @@ const Reports = ({ groupId }: ReportsProps) => {
       </div>
 
       {/* Summary Cards - Modern Design */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Events Card */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
@@ -490,6 +497,29 @@ const Reports = ({ groupId }: ReportsProps) => {
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
               <span className="text-3xl md:text-4xl font-bold text-green-700 dark:text-green-400">
                 {totalBalance.toFixed(2)}
+              </span>
+              <span className="text-sm text-muted-foreground">שקל</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Guest Payments Card */}
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <UserPlus className="w-5 h-5 text-orange-600" />
+              </div>
+              <CardTitle className="text-sm font-medium text-muted-foreground text-right">
+                תשלומי אורחים
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
+              <span className="text-3xl md:text-4xl font-bold text-orange-700 dark:text-orange-400">
+                {totalGuestPayments.toFixed(2)}
               </span>
               <span className="text-sm text-muted-foreground">שקל</span>
             </div>

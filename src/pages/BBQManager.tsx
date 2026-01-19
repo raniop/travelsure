@@ -40,6 +40,7 @@ const BBQManager = () => {
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("events");
+  const [membersRefreshTrigger, setMembersRefreshTrigger] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false); // Will be set to true only if no user found
   const [showDashboard, setShowDashboard] = useState(false);
@@ -159,6 +160,13 @@ const BBQManager = () => {
       findUserNameFromMembers();
     }
   }, [group, user]);
+
+  // Refresh members list when switching to members tab
+  useEffect(() => {
+    if (activeTab === "members" && group) {
+      setMembersRefreshTrigger(prev => prev + 1);
+    }
+  }, [activeTab, group]);
 
   // Check if user is in any group
   const checkUserInGroups = async (userPhone: string): Promise<Group | null> => {
@@ -692,6 +700,7 @@ const BBQManager = () => {
               userId={user.id}
               userPhone={user.phone}
               onLeaveGroup={handleBackToDashboard}
+              refreshTrigger={membersRefreshTrigger}
             />
           </TabsContent>
 
