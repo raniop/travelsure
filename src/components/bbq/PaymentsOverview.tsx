@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, Coins, Calendar, ArrowDownRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 
@@ -42,6 +42,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
     pending: 0
   });
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [totalDeposited, setTotalDeposited] = useState<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,6 +68,15 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         events.map(e => apiClient.getPayments(e.id))
       );
       const paymentsData = allPayments.flat();
+      
+      // Debug: log all payments to see what we have
+      console.log("All payments loaded:", paymentsData);
+      console.log("Payment statuses:", paymentsData.map((p: any) => ({ 
+        id: p.id, 
+        payer_type: p.payer_type, 
+        payment_status: p.payment_status, 
+        amount: p.amount 
+      })));
       
       // Check which events are future events
       const today = new Date();
@@ -286,19 +296,61 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       );
       setPayments(enrichedPayments);
 
-      // Calculate summary - only show deducted payments (from balance)
-      const total = enrichedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-      const deducted = enrichedPayments
-        .filter(p => p.payment_status === "deducted")
+      // Calculate summary - use all payments (paymentsData) not just filtered ones
+      // Pending = guest payments with status "pending"
+      const pending = paymentsData
+        .filter(p => p.payer_type === "guest" && p.payment_status === "pending")
         .reduce((sum, p) => sum + (p.amount || 0), 0);
+      
+      // Deducted = ALL member payments (because they are always deducted from balance when created)
+      // This includes payments with status "deducted", "pending", "confirmed", or any other status
+      // The only exception is "paid" which means it was paid separately (not from balance)
+      const memberPayments = paymentsData.filter((p: any) => p.payer_type === "member");
+      const deductedPaymentsFiltered = memberPayments.filter((p: any) => {
+        // All member payments are deducted from balance (except if explicitly marked as "paid")
+        if (p.payment_status !== "paid") {
+          return true;
+        }
+        return false;
+      });
+      
+      const deducted = deductedPaymentsFiltered.reduce((sum, p) => sum + (p.amount || 0), 0);
+      
+      const paid = paymentsData
+        .filter(p => p.payment_status === "paid")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      
+      // Total = all payments (deducted + pending + paid)
+      const total = pending + deducted + paid;
 
-      setSummary({ total, paid: 0, pending: deducted });
+      // Debug log
+      console.log("Payment summary calculation:", {
+        totalPayments: paymentsData.length,
+        paymentsData: paymentsData,
+        byStatus: paymentsData.reduce((acc: any, p: any) => {
+          acc[p.payment_status] = (acc[p.payment_status] || 0) + 1;
+          return acc;
+        }, {}),
+        byType: paymentsData.reduce((acc: any, p: any) => {
+          acc[p.payer_type] = (acc[p.payer_type] || 0) + 1;
+          return acc;
+        }, {}),
+        memberPayments: memberPayments,
+        memberPaymentsCount: memberPayments.length,
+        deductedPaymentsFiltered: deductedPaymentsFiltered,
+        deductedPaymentsCount: deductedPaymentsFiltered.length,
+        guestPayments: paymentsData.filter((p: any) => p.payer_type === "guest"),
+        calculated: { total, deducted, pending, paid }
+      });
 
-      // Load current balance for the logged-in user
+      setSummary({ total, paid, pending });
+
+      // Load current balance for the logged-in user and calculate total deposited
       try {
+        const members = await apiClient.getMembers(groupId);
+        
         if (!isAdmin && userId) {
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
-          const members = await apiClient.getMembers(groupId);
           const userMember = members.find((m: any) => m.phone === userData.phone);
           if (userMember) {
             // Round balance to 2 decimal places
@@ -311,7 +363,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           }
         } else if (isAdmin) {
           // For admin, show total balance of all members
-          const members = await apiClient.getMembers(groupId);
           // Round each balance before summing to avoid floating point precision issues
           // Use a more precise rounding method
           let totalBalance = 0;
@@ -336,6 +387,39 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           }
         } else {
           setCurrentBalance(0);
+        }
+        
+        // Calculate total deposited = current balance + total deducted
+        // This represents what was originally deposited (before deductions)
+        // We need to calculate current balance first
+        let currentBalanceForCalc = 0;
+        if (isAdmin) {
+          // For admin, use total balance of all members
+          let totalBalance = 0;
+          for (const m of members) {
+            if (m.balance !== undefined && m.balance !== null) {
+              const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
+              const roundedBalance = parseFloat(balance.toFixed(2));
+              totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
+            }
+          }
+          currentBalanceForCalc = parseFloat(totalBalance.toFixed(2));
+        } else if (userId) {
+          const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
+          const userMember = members.find((m: any) => m.phone === userData.phone);
+          if (userMember) {
+            currentBalanceForCalc = userMember.balance !== undefined && userMember.balance !== null
+              ? parseFloat((userMember.balance || 0).toFixed(2))
+              : 0;
+          }
+        }
+        
+        const totalDepositedCalc = parseFloat((currentBalanceForCalc + deducted).toFixed(2));
+        const nearestDeposited = Math.round(totalDepositedCalc);
+        if (Math.abs(totalDepositedCalc - nearestDeposited) <= 0.02) {
+          setTotalDeposited(nearestDeposited);
+        } else {
+          setTotalDeposited(totalDepositedCalc);
         }
       } catch (balanceError) {
         console.error("Error loading balance:", balanceError);
@@ -456,23 +540,25 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           </CardContent>
         </Card>
 
-        {/* Total Deducted */}
+        {/* Total Deposited */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
               <div className="p-2 rounded-lg bg-blue-500/10">
-                <TrendingDown className="w-5 h-5 text-blue-600" />
+                <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
-              <CardTitle className="text-lg font-bold text-right">סה״כ נקזז</CardTitle>
+              <CardTitle className="text-lg font-bold text-right">סה״כ שהופקד</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600 mb-1 text-right">
-              <span dir="ltr" className="tabular-nums">{summary.pending.toFixed(2)}</span> שקל
+              <span dir="ltr" className="tabular-nums">
+                {isAdmin ? totalDeposited.toFixed(2) : (currentBalance !== null && currentBalance > 0 ? currentBalance.toFixed(2) : "0.00")}
+              </span> שקל
             </div>
             <p className="text-sm text-muted-foreground text-right">
-              סך הכל שנקזז מהיתרות
+              {isAdmin ? "סך הכל שהופקד על ידי כל החברים" : "סך הכל שהופקד על ידך"}
             </p>
           </CardContent>
         </Card>

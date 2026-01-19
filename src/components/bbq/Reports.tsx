@@ -617,7 +617,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                     {memberAttendanceData.map((entry, index) => (
                       <div 
                         key={index} 
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-1.5 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                         dir="rtl"
                         style={{ direction: "rtl" }}
                       >
