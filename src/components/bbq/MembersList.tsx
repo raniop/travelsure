@@ -104,6 +104,157 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
     }
   };
 
+  const renderMemberCard = (member: Member, index: number) => (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      {/* RIGHT: Member info (pinned to the right edge) */}
+      <div className="flex items-center gap-3 ml-auto text-right" dir="rtl" style={{ direction: "rtl" }}>
+        <Avatar className="w-12 h-12 shrink-0">
+          {member.profile_image ? (
+            <AvatarImage src={member.profile_image} alt={member.name} />
+          ) : null}
+          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
+            {member.name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex flex-col items-end">
+          <div className="font-semibold text-base md:text-lg text-right">{member.name}</div>
+          {member.nickname && (
+            <div className="text-xs md:text-sm text-muted-foreground text-right">{member.nickname}</div>
+          )}
+          {member.phone && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <Phone className="w-3 h-3" />
+              <span>{member.phone}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* LEFT: Stats and Actions */}
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start" dir="rtl" style={{ direction: "rtl" }}>
+        {/* Balance */}
+        <div
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+            (member.balance || 0) >= 0
+              ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+              : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+          }`}
+          dir="rtl"
+        >
+          <div className="flex flex-col items-end">
+            <span className="text-xs text-muted-foreground">יתרה</span>
+            <span className="text-sm md:text-base font-bold">
+              <span dir="ltr" className="tabular-nums">
+                {Math.abs(member.balance || 0).toFixed(2)}
+              </span>{" "}
+              שקל
+            </span>
+          </div>
+          {(member.balance || 0) >= 0 ? (
+            <ArrowUpRight className="w-4 h-4 shrink-0" />
+          ) : (
+            <ArrowDownRight className="w-4 h-4 shrink-0" />
+          )}
+        </div>
+
+        {/* Actions */}
+        {(() => {
+          const savedUser = localStorage.getItem('bbq_current_user');
+          const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+          const isCurrentUser = member.phone === userPhone;
+          
+          if (editingNickname === member.id) {
+            return (
+              <EditNicknameDialog
+                member={member}
+                groupId={groupId}
+                currentNickname={member.nickname || ""}
+                onNicknameUpdated={(newNickname) => {
+                  setMembers(prev => prev.map(m => 
+                    m.id === member.id ? { ...m, nickname: newNickname } : m
+                  ));
+                  setEditingNickname(null);
+                }}
+                onCancel={() => setEditingNickname(null)}
+              />
+            );
+          }
+          
+          if (isCurrentUser) {
+            return (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingNickname(member.id)}
+              >
+                {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
+              </Button>
+            );
+          }
+          
+          return null;
+        })()}
+
+        {isAdmin && (
+          <>
+            {(member.balance || 0) < 100 && member.phone && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  // Send WhatsApp message requesting deposit
+                  const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
+                  const currentBalance = member.balance || 0;
+                  const message = `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה שלך.`;
+                  
+                  // Convert Israeli phone number to international format (+972)
+                  let phoneNumber = member.phone.replace(/[^0-9]/g, '');
+                  if (phoneNumber.startsWith('0')) {
+                    phoneNumber = '972' + phoneNumber.substring(1);
+                  } else if (!phoneNumber.startsWith('972')) {
+                    phoneNumber = '972' + phoneNumber;
+                  }
+                  
+                  // Create WhatsApp link
+                  const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                  
+                  // Open WhatsApp in new window
+                  window.open(whatsappLink, '_blank');
+                  
+                  toast({
+                    title: "נשלחה הודעת WhatsApp",
+                    description: `נשלחה בקשה להפקדה ל-${member.name}`
+                  });
+                }}
+              >
+                <MessageCircle className="w-4 h-4 ml-2" />
+                בקש הפקדה
+              </Button>
+            )}
+            <UpdateBalanceDialog 
+              member={member} 
+              groupId={groupId}
+              onBalanceUpdated={loadMembers}
+            >
+              <Button variant="outline" size="sm">
+                עדכן יתרה
+              </Button>
+            </UpdateBalanceDialog>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => deleteMember(member.id)}
+            >
+              <Trash2 className="w-4 h-4 ml-2" />
+              מחק
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -153,165 +304,50 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {members.map((member, index) => (
-            <div
-              key={member.id}
-              className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
-              style={{ animationDelay: `${index * 50}ms` }}
-              dir="rtl"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                {/* RIGHT: Member info (pinned to the right edge) */}
-                <div className="flex items-center gap-3 ml-auto text-right" dir="rtl" style={{ direction: "rtl" }}>
-                  <Avatar className="w-12 h-12 shrink-0">
-                    {member.profile_image ? (
-                      <AvatarImage src={member.profile_image} alt={member.name} />
-                    ) : null}
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
-                      {member.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex flex-col items-end">
-                    <div className="font-semibold text-base md:text-lg text-right">{member.name}</div>
-                    {member.nickname && (
-                      <div className="text-xs md:text-sm text-muted-foreground text-right">{member.nickname}</div>
-                    )}
-                    {member.phone && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                        <Phone className="w-3 h-3" />
-                        <span>{member.phone}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* LEFT: Stats and Actions */}
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start" dir="rtl" style={{ direction: "rtl" }}>
-                  {/* Balance */}
+        <>
+          {/* Current logged in user - separate at top */}
+          {(() => {
+            const savedUser = localStorage.getItem('bbq_current_user');
+            const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+            const currentUserMember = members.find(m => m.phone === userPhone);
+            
+            if (!currentUserMember) return null;
+            
+            const otherMembers = members.filter(m => m.phone !== userPhone);
+            
+            return (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-lg md:text-xl font-semibold mb-3 text-right">אני</h3>
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                      (member.balance || 0) >= 0
-                        ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-                        : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-                    }`}
+                    className="group relative p-4 rounded-xl border-2 border-primary/30 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-primary/5 via-primary/5 to-muted/20"
                     dir="rtl"
                   >
-                    <div className="flex flex-col items-end">
-                      <span className="text-xs text-muted-foreground">יתרה</span>
-                      <span className="text-sm md:text-base font-bold">
-                        <span dir="ltr" className="tabular-nums">
-                          {Math.abs(member.balance || 0).toFixed(2)}
-                        </span>{" "}
-                        שקל
-                      </span>
-                    </div>
-                    {(member.balance || 0) >= 0 ? (
-                      <ArrowUpRight className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <ArrowDownRight className="w-4 h-4 shrink-0" />
-                    )}
+                    {renderMemberCard(currentUserMember, 0)}
                   </div>
-
-                  {/* Actions */}
-                  {(() => {
-                    const savedUser = localStorage.getItem('bbq_current_user');
-                    const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
-                    const isCurrentUser = member.phone === userPhone;
-                    
-                    if (editingNickname === member.id) {
-                      return (
-                        <EditNicknameDialog
-                          member={member}
-                          groupId={groupId}
-                          currentNickname={member.nickname || ""}
-                          onNicknameUpdated={(newNickname) => {
-                            setMembers(prev => prev.map(m => 
-                              m.id === member.id ? { ...m, nickname: newNickname } : m
-                            ));
-                            setEditingNickname(null);
-                          }}
-                          onCancel={() => setEditingNickname(null)}
-                        />
-                      );
-                    }
-                    
-                    if (isCurrentUser) {
-                      return (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingNickname(member.id)}
-                        >
-                          {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
-                        </Button>
-                      );
-                    }
-                    
-                    return null;
-                  })()}
-
-                  {isAdmin && (
-                    <>
-                      {(member.balance || 0) < 100 && member.phone && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            // Send WhatsApp message requesting deposit
-                            const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
-                            const currentBalance = member.balance || 0;
-                            const message = `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה שלך.`;
-                            
-                            // Convert Israeli phone number to international format (+972)
-                            let phoneNumber = member.phone.replace(/[^0-9]/g, '');
-                            if (phoneNumber.startsWith('0')) {
-                              phoneNumber = '972' + phoneNumber.substring(1);
-                            } else if (!phoneNumber.startsWith('972')) {
-                              phoneNumber = '972' + phoneNumber;
-                            }
-                            
-                            // Create WhatsApp link
-                            const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-                            
-                            // Open WhatsApp in new window
-                            window.open(whatsappLink, '_blank');
-                            
-                            toast({
-                              title: "נשלחה הודעת WhatsApp",
-                              description: `נשלחה בקשה להפקדה ל-${member.name}`
-                            });
-                          }}
-                        >
-                          <MessageCircle className="w-4 h-4 ml-2" />
-                          בקש הפקדה
-                        </Button>
-                      )}
-                      <UpdateBalanceDialog 
-                        member={member} 
-                        groupId={groupId}
-                        onBalanceUpdated={loadMembers}
-                      >
-                        <Button variant="outline" size="sm">
-                          עדכן יתרה
-                        </Button>
-                      </UpdateBalanceDialog>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => deleteMember(member.id)}
-                      >
-                        <Trash2 className="w-4 h-4 ml-2" />
-                        מחק
-                      </Button>
-                    </>
-                  )}
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                
+                {otherMembers.length > 0 && (
+                  <div>
+                    <h3 className="text-lg md:text-xl font-semibold mb-3 text-right">חברים נוספים</h3>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {otherMembers.map((member, index) => (
+                        <div
+                          key={member.id}
+                          className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                          dir="rtl"
+                        >
+                          {renderMemberCard(member, index)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </>
       )}
     </div>
   );
