@@ -512,22 +512,25 @@ const BBQManager = () => {
             >
               חזרה לדשבורד
             </Button>
-            {user.profile_image ? (
-              <img 
-                src={user.profile_image} 
-                alt={user.name}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">שלום, {user.name}</div>
-              {user.isAdmin && (
-                <div className="text-xs text-primary font-semibold">מנהל</div>
+            {/* Hide user info on mobile, show only on desktop */}
+            <div className="hidden md:flex items-center gap-3">
+              {user.profile_image ? (
+                <img 
+                  src={user.profile_image} 
+                  alt={user.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
               )}
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground">שלום, {user.name}</div>
+                {user.isAdmin && (
+                  <div className="text-xs text-primary font-semibold">מנהל</div>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
