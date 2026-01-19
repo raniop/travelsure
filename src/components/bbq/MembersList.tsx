@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, User, Phone, Mail, Trash2, Wallet, MessageCircle } from "lucide-react";
+import { Plus, User, Phone, Mail, Trash2, Wallet, MessageCircle, Users, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -104,75 +105,116 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">טוען חברים...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">טוען חברים...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      {isAdmin && (
-        <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
-          <Button>
-            <Plus className="w-4 h-4 ml-2" />
-            הוסף חבר
-          </Button>
-        </AddMemberDialog>
-      )}
+    <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between w-full mb-6" dir="rtl" style={{ direction: "rtl" }}>
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
+              <Button>
+                <Plus className="w-4 h-4 ml-2" />
+                הוסף חבר
+              </Button>
+            </AddMemberDialog>
+          )}
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-500 to-teal-600 bg-clip-text text-transparent text-right">
+          חברים
+        </h2>
+      </div>
 
       {members.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {isAdmin ? "עדיין אין חברים. הוסף חבר ראשון!" : "עדיין אין חברים בקבוצה."}
+        <Card className="border-2 shadow-md">
+          <CardContent className="py-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 rounded-full bg-primary/10">
+                <Users className="w-12 h-12 text-primary opacity-50" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">
+                  {isAdmin ? "עדיין אין חברים" : "עדיין אין חברים בקבוצה"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {isAdmin ? "הוסף חבר ראשון כדי להתחיל!" : "החברים יופיעו כאן לאחר שיתווספו לקבוצה"}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {members.map((member) => (
-            <Card key={member.id}>
-              <CardHeader>
-                <div className="flex items-center gap-3 justify-end">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="flex flex-col items-end gap-1">
-                      <span className="text-right truncate">
-                        {member.name}
-                      </span>
-                      {member.nickname && (
-                        <span className="text-muted-foreground text-sm font-normal">
-                          {member.nickname}
-                        </span>
-                      )}
-                    </CardTitle>
-                  </div>
+        <div className="space-y-3">
+          {members.map((member, index) => (
+            <div
+              key={member.id}
+              className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
+              style={{ animationDelay: `${index * 50}ms` }}
+              dir="rtl"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                {/* RIGHT: Member info (pinned to the right edge) */}
+                <div className="flex items-center gap-3 ml-auto text-right" dir="rtl" style={{ direction: "rtl" }}>
                   <Avatar className="w-12 h-12 shrink-0">
                     {member.profile_image ? (
                       <AvatarImage src={member.profile_image} alt={member.name} />
-                    ) : (
-                      <AvatarFallback className="text-lg">
-                        {member.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    )}
+                    ) : null}
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
+                      {member.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {member.phone && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
-                      <span className="text-right">{member.phone}</span>
-                      <Phone className="w-4 h-4 shrink-0" />
-                    </div>
-                  )}
-                  {member.email && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
-                      <span className="text-right">{member.email}</span>
-                      <Mail className="w-4 h-4 shrink-0" />
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-sm font-semibold justify-end">
-                    <span className={`text-right ${(member.balance || 0) < 0 ? 'text-red-600' : (member.balance || 0) < 100 ? 'text-orange-600' : ''}`}>
-                      יתרה: {(member.balance || 0).toFixed(2)} ₪
-                    </span>
+
+                  <div className="flex flex-col items-end">
+                    <div className="font-semibold text-base md:text-lg text-right">{member.name}</div>
+                    {member.nickname && (
+                      <div className="text-xs md:text-sm text-muted-foreground text-right">{member.nickname}</div>
+                    )}
+                    {member.phone && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                        <Phone className="w-3 h-3" />
+                        <span>{member.phone}</span>
+                      </div>
+                    )}
                   </div>
-                  {/* Allow member to edit their own nickname */}
+                </div>
+
+                {/* LEFT: Stats and Actions */}
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start" dir="rtl" style={{ direction: "rtl" }}>
+                  {/* Balance */}
+                  <div
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                      (member.balance || 0) >= 0
+                        ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+                        : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+                    }`}
+                    dir="rtl"
+                  >
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-muted-foreground">יתרה</span>
+                      <span className="text-sm md:text-base font-bold">
+                        <span dir="ltr" className="tabular-nums">
+                          {Math.abs(member.balance || 0).toFixed(2)}
+                        </span>{" "}
+                        שקל
+                      </span>
+                    </div>
+                    {(member.balance || 0) >= 0 ? (
+                      <ArrowUpRight className="w-4 h-4 shrink-0" />
+                    ) : (
+                      <ArrowDownRight className="w-4 h-4 shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Actions */}
                   {(() => {
                     const savedUser = localStorage.getItem('bbq_current_user');
                     const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
@@ -200,7 +242,6 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full mt-2"
                           onClick={() => setEditingNickname(member.id)}
                         >
                           {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
@@ -210,13 +251,13 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
                     
                     return null;
                   })()}
+
                   {isAdmin && (
-                    <div className="flex flex-col gap-2 mt-4">
+                    <>
                       {(member.balance || 0) < 100 && member.phone && (
                         <Button
                           variant="default"
                           size="sm"
-                          className="w-full"
                           onClick={() => {
                             // Send WhatsApp message requesting deposit
                             const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
@@ -247,31 +288,28 @@ const MembersList = ({ groupId, isAdmin = false }: MembersListProps) => {
                           בקש הפקדה
                         </Button>
                       )}
-                      <div className="flex gap-2">
-                        <UpdateBalanceDialog 
-                          member={member} 
-                          groupId={groupId}
-                          onBalanceUpdated={loadMembers}
-                        >
-                          <Button variant="outline" size="sm" className="flex-1">
-                            עדכן יתרה
-                          </Button>
-                        </UpdateBalanceDialog>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => deleteMember(member.id)}
-                        >
-                          <Trash2 className="w-4 h-4 ml-2" />
-                          מחק
+                      <UpdateBalanceDialog 
+                        member={member} 
+                        groupId={groupId}
+                        onBalanceUpdated={loadMembers}
+                      >
+                        <Button variant="outline" size="sm">
+                          עדכן יתרה
                         </Button>
-                      </div>
-                    </div>
+                      </UpdateBalanceDialog>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteMember(member.id)}
+                      >
+                        <Trash2 className="w-4 h-4 ml-2" />
+                        מחק
+                      </Button>
+                    </>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}

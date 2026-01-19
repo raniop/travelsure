@@ -164,7 +164,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
             <div className="p-2 rounded-lg bg-blue-500/10">
               <Clock className="w-5 h-5 text-blue-600" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold">אירועים קרובים</h2>
+            <h2 className="text-xl md:text-2xl font-semibold">אירועים קרובים</h2>
             <Badge variant="default" className="text-sm px-3 py-1">{futureEvents.length}</Badge>
           </div>
           <div className="space-y-4">
@@ -191,7 +191,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
             <div className="p-2 rounded-lg bg-gray-500/10">
               <History className="w-5 h-5 text-gray-600" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold">אירועים שעברו</h2>
+            <h2 className="text-xl md:text-2xl font-semibold">אירועים שעברו</h2>
             <Badge variant="secondary" className="text-sm px-3 py-1">{pastEvents.length}</Badge>
           </div>
           <div className="space-y-4">
@@ -385,8 +385,8 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
           dir="rtl"
           className="w-full flex flex-col gap-3 items-end sm:flex-row sm:items-center sm:justify-between sm:gap-2"
         >
-          {/* Stats (משמאל) */}
-          <div className="flex flex-wrap justify-start gap-2 w-full sm:w-auto" dir="rtl" style={{ direction: "rtl" }}>
+          {/* Stats (משמאל בדסקטופ) */}
+          <div className="flex flex-wrap justify-start gap-2 w-full sm:w-auto sm:order-2" dir="rtl" style={{ direction: "rtl" }}>
             {/* Attendance toggle */}
             {isFuture && !isAdmin && userMember && (
               <Toggle
@@ -450,8 +450,8 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
             )}
           </div>
 
-          {/* Button (מימין) */}
-          <div className="self-end sm:self-auto">
+          {/* Button (מימין בדסקטופ) */}
+          <div className="self-end sm:self-auto sm:order-1">
             <EventDetailsDialog
               eventId={event.id}
               groupId={groupId}

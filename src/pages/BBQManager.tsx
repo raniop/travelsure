@@ -555,7 +555,7 @@ const BBQManager = () => {
 
           <TabsContent value="events" className="w-full text-right !block space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold">אירועים</h2>
+              <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">אירועים</h2>
               {user.isAdmin && (
                 <CreateEventDialog groupId={group.id} onEventCreated={() => loadGroup(user.id)}>
                   <Button>
@@ -576,14 +576,10 @@ const BBQManager = () => {
           </TabsContent>
 
           <TabsContent value="members" className="space-y-4 pb-20 md:pb-4">
-            <h2 className="text-2xl font-semibold mb-4">חברים קבועים</h2>
             <MembersList groupId={group.id} isAdmin={user.isAdmin} />
           </TabsContent>
 
           <TabsContent value="payments" className="space-y-4 pb-20 md:pb-4">
-            <h2 className="text-2xl font-semibold mb-4">
-              {user.isAdmin ? "סקירת תשלומים (כל התשלומים)" : "התשלומים שלי"}
-            </h2>
             <PaymentsOverview groupId={group.id} userId={user.id} isAdmin={user.isAdmin} />
           </TabsContent>
 
