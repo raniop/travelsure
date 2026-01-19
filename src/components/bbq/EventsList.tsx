@@ -7,7 +7,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, ChevronLeft, Clock, History, CheckCircle2, XCircle } from "lucide-react";
+import { Calendar, Users, ChevronLeft, Clock, History, CheckCircle2, XCircle, MapPin, Coins } from "lucide-react";
 import { Link } from "react-router-dom";
 import EventDetailsDialog from "./EventDetailsDialog";
 
@@ -45,35 +45,20 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       setLoading(true);
       const allEvents = await apiClient.getEvents(groupId);
       
-      console.log('EventsList - loadEvents called');
-      console.log('EventsList - isAdmin:', isAdmin, 'typeof isAdmin:', typeof isAdmin);
-      console.log('EventsList - userId:', userId);
-      console.log('EventsList - allEvents count:', allEvents.length);
-      console.log('EventsList - allEvents:', allEvents.map(e => ({ id: e.id, date: e.event_date })));
-      
-      // Admin sees all events, non-admin only sees events they attended (for past events)
       const isAdminUser = isAdmin === true;
       
       if (isAdminUser) {
-        // Admin sees all events - no filtering, show everything
-        console.log('EventsList - Admin user detected, showing all events:', allEvents.length);
         setEvents(allEvents);
         setLoading(false);
         return;
       }
       
-      console.log('EventsList - Non-admin user, filtering events...');
-      
-      // Get user's phone from localStorage
       const savedUser = localStorage.getItem('bbq_current_user');
       const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
-      
-      // Get all members to find user's member_id
       const members = await apiClient.getMembers(groupId);
       const userMember = members.find((m: any) => m.phone === userPhone);
       
       if (!userMember) {
-        // If user is not a member, show all future events only
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const futureEvents = allEvents.filter(event => {
@@ -86,7 +71,6 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       }
       
       const userMemberId = userMember.id;
-      
       const filteredEvents = await Promise.all(
         allEvents.map(async (event) => {
           const eventDate = new Date(event.event_date);
@@ -94,16 +78,13 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
           today.setHours(0, 0, 0, 0);
           eventDate.setHours(0, 0, 0, 0);
           
-          // Future events - always show
           if (eventDate >= today) {
             return event;
           }
           
-          // Past events - only show if user was present
           try {
             const attendees = await apiClient.getAttendees(event.id);
             const userAttended = attendees.some((a: any) => a.member_id === userMemberId && a.attended);
-            console.log(`Event ${event.id} (${event.event_date}): userAttended=${userAttended}, userMemberId=${userMemberId}`, attendees);
             return userAttended ? event : null;
           } catch (error) {
             console.error(`Error checking attendees for event ${event.id}:`, error);
@@ -113,7 +94,6 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       );
       
       const finalEvents = filteredEvents.filter(e => e !== null) as Event[];
-      console.log('EventsList - Filtered events count:', finalEvents.length);
       setEvents(finalEvents);
     } catch (error: any) {
       console.error("Error loading events:", error);
@@ -128,21 +108,34 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
   };
 
   if (loading) {
-    return <div className="text-center py-8">טוען אירועים...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">טוען אירועים...</p>
+        </div>
+      </div>
+    );
   }
 
   if (events.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          עדיין אין אירועים. צור אירוע ראשון!
+      <Card className="border-2 shadow-md">
+        <CardContent className="py-16 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 rounded-full bg-primary/10">
+              <Calendar className="w-12 h-12 text-primary opacity-50" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">עדיין אין אירועים</h3>
+              <p className="text-muted-foreground">צור אירוע ראשון כדי להתחיל!</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Separate events into future and past
-  // Use start of today (00:00:00) to compare - events today are considered future
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
@@ -152,7 +145,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       eventDate.setHours(0, 0, 0, 0);
       return eventDate >= today;
     })
-    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()); // Ascending - closest first
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
   
   const pastEvents = events
     .filter(event => {
@@ -160,23 +153,22 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       eventDate.setHours(0, 0, 0, 0);
       return eventDate < today;
     })
-    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime()); // Descending - most recent first
-
-  // Show all past events (no limit)
-  const displayPastEvents = pastEvents;
+    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-8 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
       {/* Future Events */}
       {futureEvents.length > 0 && (
         <div>
-          <div className="flex items-center gap-3 mb-4">
-            <Clock className="w-5 h-5 text-primary shrink-0" />
-            <h2 className="text-xl font-semibold">אירועים קרובים</h2>
-            <Badge variant="default">{futureEvents.length}</Badge>
+          <div className="flex items-center gap-3 mb-6" dir="rtl" style={{ direction: "rtl" }}>
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Clock className="w-5 h-5 text-blue-600" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold">אירועים קרובים</h2>
+            <Badge variant="default" className="text-sm px-3 py-1">{futureEvents.length}</Badge>
           </div>
           <div className="space-y-4">
-            {futureEvents.map((event) => (
+            {futureEvents.map((event, index) => (
               <EventCard 
                 key={event.id} 
                 event={event} 
@@ -184,6 +176,8 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
                 userId={userId}
                 isAdmin={isAdmin}
                 onPaymentsCalculated={onPaymentsCalculated}
+                index={index}
+                isFuture={true}
               />
             ))}
           </div>
@@ -191,17 +185,17 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       )}
 
       {/* Past Events */}
-      {displayPastEvents.length > 0 && (
+      {pastEvents.length > 0 && (
         <div>
-          <div className="flex items-center gap-3 mb-4">
-            <History className="w-5 h-5 text-muted-foreground shrink-0" />
-            <h2 className="text-xl font-semibold">אירועים שעברו</h2>
-            <Badge variant="secondary">
-              {displayPastEvents.length}{!showHistory && pastEvents.length > 5 && ` מתוך ${pastEvents.length}`}
-            </Badge>
+          <div className="flex items-center gap-3 mb-6" dir="rtl" style={{ direction: "rtl" }}>
+            <div className="p-2 rounded-lg bg-gray-500/10">
+              <History className="w-5 h-5 text-gray-600" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold">אירועים שעברו</h2>
+            <Badge variant="secondary" className="text-sm px-3 py-1">{pastEvents.length}</Badge>
           </div>
           <div className="space-y-4">
-            {displayPastEvents.map((event) => (
+            {pastEvents.map((event, index) => (
               <EventCard 
                 key={event.id} 
                 event={event} 
@@ -209,17 +203,26 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
                 userId={userId}
                 isAdmin={isAdmin}
                 onPaymentsCalculated={onPaymentsCalculated}
+                index={index}
+                isFuture={false}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* Show message if no events in either category */}
-      {futureEvents.length === 0 && displayPastEvents.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            עדיין אין אירועים. צור אירוע ראשון!
+      {futureEvents.length === 0 && pastEvents.length === 0 && (
+        <Card className="border-2 shadow-md">
+          <CardContent className="py-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 rounded-full bg-primary/10">
+                <Calendar className="w-12 h-12 text-primary opacity-50" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">עדיין אין אירועים</h3>
+                <p className="text-muted-foreground">צור אירוע ראשון כדי להתחיל!</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -233,13 +236,16 @@ interface EventCardProps {
   userId: string;
   isAdmin: boolean;
   onPaymentsCalculated?: () => void;
+  index: number;
+  isFuture: boolean;
 }
 
-const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: EventCardProps) => {
+const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, index, isFuture }: EventCardProps) => {
   const [members, setMembers] = useState<any[]>([]);
   const [userMember, setUserMember] = useState<any>(null);
   const [isAttending, setIsAttending] = useState<boolean | null>(null);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [confirmedCount, setConfirmedCount] = useState<number>(0);
   const { toast } = useToast();
   const eventDate = new Date(event.event_date);
   const today = new Date();
@@ -247,7 +253,6 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
   const eventDateOnly = new Date(eventDate);
   eventDateOnly.setHours(0, 0, 0, 0);
   const isPast = eventDateOnly < today;
-  const isFuture = eventDateOnly >= today;
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -256,13 +261,11 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
         const activeMembers = membersData.filter(m => m.is_active !== false);
         setMembers(activeMembers);
         
-        // Find current user's member record
         const savedUser = localStorage.getItem('bbq_current_user');
         const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
         const currentUserMember = activeMembers.find((m: any) => m.phone === userPhone);
         setUserMember(currentUserMember);
         
-        // Load attendance status for future events
         if (isFuture && currentUserMember) {
           try {
             const attendees = await apiClient.getAttendees(event.id);
@@ -272,6 +275,15 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
             console.error("Error loading attendance:", error);
             setIsAttending(false);
           }
+        }
+        
+        try {
+          const attendees = await apiClient.getAttendees(event.id);
+          const confirmed = attendees.filter((a: any) => a.attended === true).length;
+          setConfirmedCount(confirmed);
+        } catch (error) {
+          console.error("Error loading confirmed attendees:", error);
+          setConfirmedCount(0);
         }
       } catch (error) {
         console.error("Error loading members:", error);
@@ -287,12 +299,10 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
     setIsAttending(attended);
     
     try {
-      // Get existing attendees to check if user already has a record
       const attendees = await apiClient.getAttendees(event.id);
       const existingAttendee = attendees.find((a: any) => a.member_id === userMember.id);
       
       if (existingAttendee) {
-        // Update existing attendee
         const updateData = {
           id: existingAttendee.id,
           event_id: existingAttendee.event_id,
@@ -302,12 +312,19 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
         };
         await apiClient.updateAttendee(existingAttendee.id, updateData);
       } else if (attended) {
-        // Create new attendee only if attended = true
         await apiClient.createAttendee({
           event_id: event.id,
           member_id: userMember.id,
           attended: true
         });
+      }
+      
+      try {
+        const attendees = await apiClient.getAttendees(event.id);
+        const confirmed = attendees.filter((a: any) => a.attended === true).length;
+        setConfirmedCount(confirmed);
+      } catch (error) {
+        console.error("Error refreshing confirmed count:", error);
       }
       
       toast({
@@ -316,7 +333,6 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
       });
     } catch (error: any) {
       console.error("Error updating attendance:", error);
-      // Rollback on error
       setIsAttending(!attended);
       toast({
         title: "שגיאה",
@@ -329,75 +345,120 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated }: Ev
   };
 
   const hostMember = event.host_member_id ? members.find(m => m.id === event.host_member_id) : null;
+  const totalCost = (event.butcher_cost || 0) + (event.grocery_cost || 0) || (event.total_cost || 0);
 
   return (
-    <Card className="hover:shadow-lg transition-shadow" dir="rtl">
-      <CardHeader>
-        <div className="flex items-center gap-4">
+    <Card className={`relative overflow-hidden border shadow-md hover:shadow-lg transition-all duration-200 ${isFuture ? 'bg-white dark:bg-gray-900 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'}`} dir="rtl">
+      {/* Top accent bar */}
+      <div className={`absolute top-0 right-0 w-full h-1 ${isFuture ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
+      
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-4" dir="rtl" style={{ direction: "rtl" }}>
           <div className="flex-1 min-w-0">
-            <CardTitle className="flex items-center gap-3 text-lg">
-              <Calendar className="w-5 h-5 text-primary shrink-0" />
-              <span className="truncate">{format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}</span>
-            </CardTitle>
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-1.5 rounded ${isFuture ? 'bg-blue-100 dark:bg-blue-950/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                <Calendar className={`w-4 h-4 ${isFuture ? 'text-blue-600' : 'text-gray-600'}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-lg md:text-xl font-bold truncate">
+                  {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
+                </CardTitle>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                  <Clock className="w-3 h-3" />
+                  <span>{format(eventDate, "HH:mm", { locale: he })}</span>
+                </div>
+              </div>
+            </div>
+            
             {event.description && (
-              <CardDescription className="mt-2">{event.description}</CardDescription>
-            )}
-            {hostMember && (
-              <CardDescription className="mt-1">מיקום: {hostMember.name}</CardDescription>
+              <CardDescription className="mt-2 text-sm text-right line-clamp-2">
+                {event.description}
+              </CardDescription>
             )}
           </div>
-          <Badge variant={isPast ? "secondary" : "default"} className="shrink-0">
-            {isPast ? "עבר" : "קרוב"}
-          </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-foreground">
-              {(() => {
-                const total = (event.butcher_cost || 0) + (event.grocery_cost || 0) || (event.total_cost || 0);
-                return total.toFixed(2);
-              })()} ₪
-            </span>
-          </div>
-          
-          {/* Attendance toggle for future events - only for non-admin users */}
-          {isFuture && !isAdmin && userMember && (
-            <div className="flex items-center gap-2">
-              <Toggle
-                pressed={isAttending === true}
-                onPressedChange={(pressed) => handleToggleAttendance(pressed)}
-                disabled={loadingAttendance || isAttending === null}
-                className="flex items-center gap-2"
-                aria-label={isAttending ? "מגיע" : "לא מגיע"}
-              >
-                {isAttending ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-sm">מגיע</span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-4 h-4 text-red-600" />
-                    <span className="text-sm">לא מגיע</span>
-                  </>
-                )}
-              </Toggle>
-            </div>
-          )}
-          
+      
+      <CardContent className="pt-0 pb-4">
+        {/* Bottom row: Stats and Actions */}
+        <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl" style={{ direction: "rtl" }}>
+          {/* Right side: Details Button */}
           <EventDetailsDialog eventId={event.id} groupId={groupId} userId={userId} isAdmin={isAdmin} onPaymentsCalculated={onPaymentsCalculated}>
             <Button 
               variant="default" 
               size="sm" 
-              className="min-w-[100px] shrink-0"
+              className={`min-w-[80px] h-7 text-xs px-3 ${isFuture ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''}`}
               type="button"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
+              <ChevronLeft className="w-3 h-3 ml-1" />
               פרטים
             </Button>
           </EventDetailsDialog>
+          
+          {/* Left side: Stats */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Attendance toggle for future events */}
+            {isFuture && !isAdmin && userMember && (
+              <Toggle
+                pressed={isAttending === true}
+                onPressedChange={(pressed) => handleToggleAttendance(pressed)}
+                disabled={loadingAttendance || isAttending === null}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs h-auto ${
+                  isAttending 
+                    ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-950/50' 
+                    : 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50'
+                }`}
+                aria-label={isAttending ? "מגיע" : "לא מגיע"}
+              >
+                {isAttending ? (
+                  <>
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span className="font-medium">מגיע</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3 h-3" />
+                    <span className="font-medium">לא מגיע</span>
+                  </>
+                )}
+              </Toggle>
+            )}
+            
+            {/* Confirmed attendees */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? 'bg-green-50 dark:bg-green-950/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+              <Users className={`w-3.5 h-3.5 ${isFuture ? 'text-green-600' : 'text-gray-600'}`} />
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground leading-tight">מאשרים</span>
+                <span className={`text-xs font-bold ${isFuture ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-400'}`}>
+                  {confirmedCount}
+                </span>
+              </div>
+            </div>
+            
+            {/* Cost */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? 'bg-blue-50 dark:bg-blue-950/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+              <Coins className={`w-3.5 h-3.5 ${isFuture ? 'text-blue-600' : 'text-gray-600'}`} />
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground leading-tight">עלות</span>
+                <span className={`text-xs font-bold ${isFuture ? 'text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-400'}`}>
+                  {totalCost.toFixed(2)} ₪
+                </span>
+              </div>
+            </div>
+            
+            {/* Location */}
+            {hostMember && (
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? 'bg-purple-50 dark:bg-purple-950/20' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+                <MapPin className={`w-3.5 h-3.5 ${isFuture ? 'text-purple-600' : 'text-gray-600'}`} />
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-muted-foreground leading-tight">מיקום</span>
+                  <span className={`text-xs font-bold truncate max-w-[100px] ${isFuture ? 'text-purple-700 dark:text-purple-400' : 'text-gray-700 dark:text-gray-400'}`}>
+                    {hostMember.name}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
