@@ -78,6 +78,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const [editedGroceryCost, setEditedGroceryCost] = useState("");
   const [isEditingHost, setIsEditingHost] = useState(false);
   const [editedHostMemberId, setEditedHostMemberId] = useState<string>("");
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [editedTime, setEditedTime] = useState<string>("21:00");
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
@@ -123,11 +125,16 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         setHasPayments(false);
       }
 
-      // Set edited costs and host to current values
+      // Set edited costs, host, and time to current values
       if (eventData) {
         setEditedButcherCost(eventData.butcher_cost?.toString() || "0");
         setEditedGroceryCost(eventData.grocery_cost?.toString() || "0");
         setEditedHostMemberId(eventData.host_member_id || "");
+        // Extract time from event_date (format: YYYY-MM-DD HH:mm or YYYY-MM-DD)
+        const eventDate = new Date(eventData.event_date);
+        const hours = String(eventDate.getHours()).padStart(2, '0');
+        const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+        setEditedTime(`${hours}:${minutes}`);
       }
     } catch (error: any) {
       console.error("Error loading event details:", error);
@@ -413,6 +420,42 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
     }
   };
 
+  const updateEventTime = async () => {
+    if (!event) return;
+
+    try {
+      // Parse the event date and update the time
+      const eventDate = new Date(event.event_date);
+      const [hours, minutes] = editedTime.split(':');
+      eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Format as YYYY-MM-DD HH:mm
+      const year = eventDate.getFullYear();
+      const month = String(eventDate.getMonth() + 1).padStart(2, '0');
+      const day = String(eventDate.getDate()).padStart(2, '0');
+      const formattedDateTime = `${year}-${month}-${day} ${editedTime}`;
+
+      await apiClient.updateEvent(eventId, {
+        ...event,
+        event_date: formattedDateTime
+      });
+
+      await loadEventDetails();
+      setIsEditingTime(false);
+      
+      toast({
+        title: "הצלחה!",
+        description: "שעת האירוע עודכנה בהצלחה"
+      });
+    } catch (error: any) {
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן את שעת האירוע",
+        variant: "destructive"
+      });
+    }
+  };
+
   const deleteEvent = async () => {
     if (!event) return;
 
@@ -599,6 +642,58 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           </DialogDescription>
         </DialogHeader>
         
+        {/* Time Editor */}
+        {!isEditingTime && event && (
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <span className="text-sm text-muted-foreground">
+              שעה: {format(eventDate, "HH:mm", { locale: he })}
+            </span>
+            {isAdmin && !hasPayments && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setIsEditingTime(true);
+                  const eventDate = new Date(event.event_date);
+                  const hours = String(eventDate.getHours()).padStart(2, '0');
+                  const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+                  setEditedTime(`${hours}:${minutes}`);
+                }}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+        )}
+        {isEditingTime && isAdmin && !hasPayments && (
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <Input
+              type="time"
+              value={editedTime}
+              onChange={(e) => setEditedTime(e.target.value)}
+              className="w-32 text-right"
+              dir="rtl"
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={updateEventTime}
+            >
+              <Save className="w-3 h-3 ml-1" />
+              שמור
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsEditingTime(false)}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
+
         {/* Location/Host Editor */}
         {!isEditingHost && (event?.host_member_id && members.length > 0 ? (() => {
           const hostMember = members.find(m => m.id === event.host_member_id);

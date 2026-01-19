@@ -32,6 +32,7 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [eventTime, setEventTime] = useState<string>("21:00");
   const [butcherCost, setButcherCost] = useState("");
   const [groceryCost, setGroceryCost] = useState("");
   const [description, setDescription] = useState("");
@@ -74,11 +75,11 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
       setLoading(true);
 
       // Create event
-      // Format date as YYYY-MM-DD in local timezone (not UTC)
+      // Format date as YYYY-MM-DD HH:mm in local timezone (not UTC)
       const year = eventDate.getFullYear();
       const month = String(eventDate.getMonth() + 1).padStart(2, '0');
       const day = String(eventDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
+      const formattedDate = `${year}-${month}-${day} ${eventTime}`;
       
       const event = await apiClient.createEvent({
         group_id: groupId,
@@ -97,6 +98,7 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
 
       setOpen(false);
       setEventDate(new Date());
+      setEventTime("21:00");
       setButcherCost("");
       setGroceryCost("");
       setDescription("");
@@ -152,6 +154,17 @@ const CreateEventDialog = ({ groupId, onEventCreated, children }: CreateEventDia
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="time">שעת האירוע</Label>
+              <Input
+                id="time"
+                type="time"
+                value={eventTime}
+                onChange={(e) => setEventTime(e.target.value)}
+                className="text-right"
+                dir="rtl"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="butcher">קצבייה (₪) - אופציונלי</Label>

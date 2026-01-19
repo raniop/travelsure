@@ -165,7 +165,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
               <Clock className="w-5 h-5 text-blue-600" />
             </div>
             <h2 className="text-xl md:text-2xl font-semibold">אירועים קרובים</h2>
-            <Badge variant="default" className="text-sm px-3 py-1">{futureEvents.length}</Badge>
+            <Badge variant="default" className="text-sm px-3 py-1 bg-blue-600 text-white hover:bg-blue-700">{futureEvents.length}</Badge>
           </div>
           <div className="space-y-4">
             {futureEvents.map((event, index) => (
@@ -192,7 +192,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
               <History className="w-5 h-5 text-gray-600" />
             </div>
             <h2 className="text-xl md:text-2xl font-semibold">אירועים שעברו</h2>
-            <Badge variant="secondary" className="text-sm px-3 py-1">{pastEvents.length}</Badge>
+            <Badge variant="secondary" className="text-sm px-3 py-1 bg-green-800 text-white hover:bg-green-900">{pastEvents.length}</Badge>
           </div>
           <div className="space-y-4">
             {pastEvents.map((event, index) => (
@@ -363,10 +363,6 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
                 <CardTitle className="text-lg md:text-xl font-bold truncate">
                   {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
                 </CardTitle>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                  <Clock className="w-3 h-3" />
-                  <span>{format(eventDate, "HH:mm", { locale: he })}</span>
-                </div>
               </div>
             </div>
             
@@ -425,13 +421,37 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
               </div>
             </div>
 
-            {/* Cost */}
+            {/* Total Cost */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-blue-50 dark:bg-blue-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
               <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-blue-600" : "text-gray-600"}`} />
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-muted-foreground leading-tight">עלות</span>
+                <span className="text-[10px] text-muted-foreground leading-tight">עלות סה"כ</span>
                 <span className={`text-xs font-bold ${isFuture ? "text-blue-700 dark:text-blue-400" : "text-gray-700 dark:text-gray-400"}`}>
                   {totalCost.toFixed(2)} ₪
+                </span>
+              </div>
+            </div>
+
+            {/* Cost Per Person */}
+            {confirmedCount > 0 && (
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-amber-50 dark:bg-amber-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+                <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-gray-600"}`} />
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-muted-foreground leading-tight">עלות למשתתף</span>
+                  <span className={`text-xs font-bold ${isFuture ? "text-amber-700 dark:text-amber-400" : "text-gray-700 dark:text-gray-400"}`}>
+                    {(totalCost / confirmedCount).toFixed(2)} ₪
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Time */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-amber-50 dark:bg-amber-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+              <Clock className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-gray-600"}`} />
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground leading-tight">שעה</span>
+                <span className={`text-xs font-bold ${isFuture ? "text-amber-700 dark:text-amber-400" : "text-gray-700 dark:text-gray-400"}`}>
+                  {format(eventDate, "HH:mm", { locale: he })}
                 </span>
               </div>
             </div>

@@ -441,7 +441,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                 <Coins className="w-5 h-5 text-red-600" />
               </div>
               <CardTitle className="text-sm font-medium text-muted-foreground text-right">
-                סה"כ נקזז מהיתרה
+                סה"כ קוזז מהיתרה
               </CardTitle>
             </div>
           </CardHeader>
@@ -544,7 +544,7 @@ const Reports = ({ groupId }: ReportsProps) => {
               <ChartContainer
                 config={{
                   paid: {
-                    label: "נקזז מהיתרה",
+                    label: "קוזז מהיתרה",
                     color: "hsl(0, 84%, 60%)",
                   },
                 }}

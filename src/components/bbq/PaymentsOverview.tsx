@@ -67,7 +67,28 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         events.map(e => apiClient.getPayments(e.id))
       );
       const paymentsData = allPayments.flat();
-
+      
+      // Check which events are future events
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const futureEventIds = events
+        .filter(e => {
+          const eventDate = new Date(e.event_date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= today;
+        })
+        .map(e => e.id);
+      
+      // Filter to show deducted payments OR all payments for future events
+      const deductedPayments = paymentsData.filter((p: any) => {
+        // For future events, show all payments
+        if (futureEventIds.includes(p.event_id)) {
+          return true;
+        }
+        // For past events, only show deducted payments
+        return p.payment_status === "deducted";
+      });
+      
       // Enrich with event and payer names
       const members = await apiClient.getMembers(groupId);
       
@@ -80,7 +101,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       }
       
       let enrichedPayments = await Promise.all(
-        paymentsData.map(async (payment: any) => {
+        deductedPayments.map(async (payment: any) => {
           let payerName = "לא ידוע";
           let profileImage: string | null = null;
           const event = events.find(e => e.id === payment.event_id);
@@ -135,7 +156,10 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             event: event ? {
               id: event.id,
               event_date: event.event_date,
-              total_cost: event.total_cost
+              total_cost: event.total_cost,
+              butcher_cost: event.butcher_cost,
+              grocery_cost: event.grocery_cost,
+              description: event.description
             } : null
           };
         })
@@ -158,10 +182,23 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         
         const userMemberId = userMember.id;
         
-        // Check which events the user attended
+        // Check which events the user attended, and also get future events
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
         const eventsUserAttended = await Promise.all(
           events.map(async (event) => {
             try {
+              const eventDate = new Date(event.event_date);
+              eventDate.setHours(0, 0, 0, 0);
+              const isFutureEvent = eventDate >= today;
+              
+              // For future events, include them if user is a member
+              if (isFutureEvent) {
+                return event.id;
+              }
+              
+              // For past events, only include if user attended
               const attendees = await apiClient.getAttendees(event.id);
               const userAttended = attendees.some((a: any) => a.member_id === userMemberId && a.attended);
               return userAttended ? event.id : null;
@@ -173,8 +210,8 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         
         const attendedEventIds = eventsUserAttended.filter(id => id !== null);
         
-        // Get all guests for all attended events to check guest payments
-        const allGuestsForAttendedEvents = await Promise.all(
+        // Get all guests for all events (including future events) to check guest payments
+        const allGuestsForEvents = await Promise.all(
           events
             .filter(e => attendedEventIds.includes(e.id))
             .map(async (event) => {
@@ -187,14 +224,42 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             })
         );
         
-        const guestsByEvent = allGuestsForAttendedEvents.reduce((acc, item) => {
+        const guestsByEvent = allGuestsForEvents.reduce((acc, item) => {
           acc[item.eventId] = item.guests;
           return acc;
         }, {} as Record<string, any[]>);
         
-        // Filter payments - show only payments for events user attended AND payments for this user
+        // Filter payments - show payments for events user attended OR future events with payments
         enrichedPayments = enrichedPayments.filter((payment: any) => {
-          // Only show payments for events user attended
+          // Check if this is a future event
+          const paymentEvent = events.find(e => e.id === payment.event_id);
+          let isFutureEvent = false;
+          
+          if (paymentEvent) {
+            const eventDate = new Date(paymentEvent.event_date);
+            eventDate.setHours(0, 0, 0, 0);
+            isFutureEvent = eventDate >= today;
+          }
+          
+          // For future events, show all payments for this user (member)
+          if (isFutureEvent) {
+            // Show payments for this user (member)
+            if (payment.payer_type === "member" && userMember) {
+              return payment.payer_id === userMember.id;
+            }
+            
+            // For guests in future events, try to get guests for this event
+            if (payment.payer_type === "guest") {
+              // Try to get guests for this event if not already loaded
+              const eventGuests = guestsByEvent[payment.event_id] || [];
+              const matchingGuest = eventGuests.find(g => g.id === payment.payer_id && g.phone === userData.phone);
+              return !!matchingGuest;
+            }
+            
+            return false;
+          }
+          
+          // For past events, only show payments for events user attended
           if (!attendedEventIds.includes(payment.event_id)) {
             return false;
           }
@@ -456,9 +521,31 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
               <div className="space-y-4">
                 {sortedEvents.map((eventGroup) => {
                   const eventDate = new Date(eventGroup.event?.event_date || 0);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const eventDateOnly = new Date(eventDate);
+                  eventDateOnly.setHours(0, 0, 0, 0);
+                  const isFutureEvent = eventDateOnly >= today;
+                  
                   const eventDeducted = eventGroup.payments
                     .filter(p => p.payment_status === "deducted")
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
+                  
+                  // Check if event has deducted payments
+                  const hasDeductedPayments = eventGroup.payments.some(p => p.payment_status === "deducted");
+                  
+                  // Check if event has any payments (for future events, show even if not deducted yet)
+                  const hasPayments = eventGroup.payments.length > 0;
+                  
+                  // Only show if there are deducted payments (for past events) OR any payments (for future events)
+                  if (!hasDeductedPayments && !isFutureEvent) {
+                    return null;
+                  }
+                  
+                  // For future events, show if there are any payments
+                  if (isFutureEvent && !hasPayments) {
+                    return null;
+                  }
                   
                   const event = eventGroup.event;
                   const totalCost = (event?.butcher_cost || 0) + (event?.grocery_cost || 0) || (event?.total_cost || 0);
@@ -550,7 +637,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
                                     <div className="flex flex-col items-end text-right" dir="rtl" style={{ direction: "rtl" }}>
                                       <div className="font-semibold text-base md:text-lg text-right">{payment.payer_name}</div>
                                       <Badge variant="default" className="bg-blue-600 text-xs mt-1">
-                                        נקזז מהיתרה
+                                        {isFutureEvent ? "נקזז מהיתרה" : "קוזז מהיתרה"}
                                       </Badge>
                                     </div>
                                   </div>
