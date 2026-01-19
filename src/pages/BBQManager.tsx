@@ -515,35 +515,104 @@ const BBQManager = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Desktop Tabs - Hidden on Mobile */}
-          <TabsList className={`hidden md:grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} mb-6`} dir="rtl">
-            <TabsTrigger value="events" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              אירועים
-            </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              חברים
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              תשלומים
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              דוחות
-            </TabsTrigger>
-            {user.isAdmin && (
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <UserIcon className="w-4 h-4" />
-                משתמשים
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              הגדרות
-            </TabsTrigger>
-          </TabsList>
+          {/* Desktop Tabs - Modern Design */}
+          <div className="hidden md:block mb-8" dir="rtl">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+              <div className={`grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} gap-2`} dir="rtl">
+                <button
+                  onClick={() => setActiveTab("events")}
+                  className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === "events"
+                      ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/30 scale-105"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                  }`}
+                >
+                  <Calendar className={`w-5 h-5 transition-transform ${activeTab === "events" ? "scale-110" : "group-hover:scale-110"}`} />
+                  <span>אירועים</span>
+                  {activeTab === "events" && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/20 to-red-500/20 blur-sm -z-10"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab("members")}
+                  className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === "members"
+                      ? "bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg shadow-green-500/30 scale-105"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                  }`}
+                >
+                  <Users className={`w-5 h-5 transition-transform ${activeTab === "members" ? "scale-110" : "group-hover:scale-110"}`} />
+                  <span>חברים</span>
+                  {activeTab === "members" && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400/20 to-teal-500/20 blur-sm -z-10"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab("payments")}
+                  className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === "payments"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                  }`}
+                >
+                  <DollarSign className={`w-5 h-5 transition-transform ${activeTab === "payments" ? "scale-110" : "group-hover:scale-110"}`} />
+                  <span>תשלומים</span>
+                  {activeTab === "payments" && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-purple-500/20 blur-sm -z-10"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab("reports")}
+                  className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === "reports"
+                      ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 scale-105"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                  }`}
+                >
+                  <BarChart3 className={`w-5 h-5 transition-transform ${activeTab === "reports" ? "scale-110" : "group-hover:scale-110"}`} />
+                  <span>דוחות</span>
+                  {activeTab === "reports" && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 to-secondary/20 blur-sm -z-10"></div>
+                  )}
+                </button>
+                
+                {user.isAdmin && (
+                  <button
+                    onClick={() => setActiveTab("users")}
+                    className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                      activeTab === "users"
+                        ? "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/30 scale-105"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                    }`}
+                  >
+                    <UserIcon className={`w-5 h-5 transition-transform ${activeTab === "users" ? "scale-110" : "group-hover:scale-110"}`} />
+                    <span>משתמשים</span>
+                    {activeTab === "users" && (
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-400/20 to-blue-500/20 blur-sm -z-10"></div>
+                    )}
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => setActiveTab("settings")}
+                  className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === "settings"
+                      ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg shadow-gray-500/30 scale-105"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                  }`}
+                >
+                  <Settings className={`w-5 h-5 transition-transform ${activeTab === "settings" ? "scale-110" : "group-hover:scale-110"}`} />
+                  <span>הגדרות</span>
+                  {activeTab === "settings" && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-gray-500/20 to-gray-600/20 blur-sm -z-10"></div>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Mobile Bottom Navigation */}
           <BottomNavigation 
