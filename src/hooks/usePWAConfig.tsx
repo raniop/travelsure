@@ -26,7 +26,7 @@ export const usePWAConfig = ({ name, groupImage }: PWAConfig) => {
           const manifestData = {
             name: name,
             short_name: name.length > 12 ? name.substring(0, 12) : name,
-            description: `ניהול אירועי על האש - ${name}`,
+            description: `כלי לניהול קבוצות ותשלומים - ${name}`,
             start_url: "/bbq",
             display: "standalone",
             background_color: "#fff7ed",
@@ -129,11 +129,71 @@ export const usePWAConfig = ({ name, groupImage }: PWAConfig) => {
         }
       };
 
+      // Update Open Graph and social media meta tags
+      const updateOpenGraphTags = () => {
+        try {
+          const description = `כלי לניהול קבוצות ותשלומים - ${name}`;
+          const imageUrl = groupImage || "https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/social-images/social-1767182146432-לוגו אופיר חדש.png";
+          const currentUrl = window.location.href;
+
+          // Helper function to get or create meta tag
+          const getOrCreateMeta = (property: string, attribute: 'property' | 'name' = 'property') => {
+            let meta = document.querySelector(`meta[${attribute}="${property}"]`);
+            if (!meta) {
+              meta = document.createElement("meta");
+              meta.setAttribute(attribute, property);
+              document.head.appendChild(meta);
+            }
+            return meta;
+          };
+
+          // Update og:title
+          const ogTitle = getOrCreateMeta("og:title");
+          ogTitle.setAttribute("content", name);
+
+          // Update og:description
+          const ogDescription = getOrCreateMeta("og:description");
+          ogDescription.setAttribute("content", description);
+
+          // Update og:image
+          const ogImage = getOrCreateMeta("og:image");
+          ogImage.setAttribute("content", imageUrl);
+
+          // Update og:url
+          const ogUrl = getOrCreateMeta("og:url");
+          ogUrl.setAttribute("content", currentUrl);
+
+          // Update og:type
+          const ogType = getOrCreateMeta("og:type");
+          ogType.setAttribute("content", "website");
+
+          // Update Twitter Card tags
+          const twitterTitle = getOrCreateMeta("twitter:title", "name");
+          twitterTitle.setAttribute("content", name);
+
+          const twitterDescription = getOrCreateMeta("twitter:description", "name");
+          twitterDescription.setAttribute("content", description);
+
+          const twitterImage = getOrCreateMeta("twitter:image", "name");
+          twitterImage.setAttribute("content", imageUrl);
+
+          const twitterCard = getOrCreateMeta("twitter:card", "name");
+          twitterCard.setAttribute("content", "summary_large_image");
+
+          // Update regular meta description
+          const metaDescription = getOrCreateMeta("description", "name");
+          metaDescription.setAttribute("content", description);
+        } catch (error) {
+          console.error("Error updating Open Graph tags:", error);
+        }
+      };
+
       // Execute all updates
       updateManifest();
       updateAppleMetaTags();
       updateFavicon();
       updateTitle();
+      updateOpenGraphTags();
     } catch (error) {
       console.error("Error in usePWAConfig:", error);
     }
