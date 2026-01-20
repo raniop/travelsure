@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { apiClient } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +38,8 @@ interface User {
 }
 
 const BBQManager = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("events");
@@ -53,6 +56,41 @@ const BBQManager = () => {
     name: group?.name || "על האש",
     groupImage: group?.group_image || null
   });
+
+  // Read URL parameters on mount and when they change
+  useEffect(() => {
+    const groupIdFromUrl = searchParams.get('group');
+    const tabFromUrl = searchParams.get('tab');
+    
+    // If tab is in URL and different from current, set it
+    if (tabFromUrl && ['events', 'members', 'payments', 'reports', 'users', 'settings'].includes(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+    
+    // If group ID is in URL and we don't have a group loaded (or different group), try to load it
+    if (groupIdFromUrl && user && (!group || group.id !== groupIdFromUrl)) {
+      const loadGroupFromUrl = async () => {
+        try {
+          const groups = await apiClient.getGroups();
+          const foundGroup = groups.find(g => g.id === groupIdFromUrl);
+          if (foundGroup) {
+            // Check if user is a member
+            const members = await apiClient.getMembers(foundGroup.id);
+            const isMember = members.some((m: any) => m.phone === user.phone);
+            if (isMember) {
+              setGroup(foundGroup);
+              setShowDashboard(false);
+              localStorage.setItem('bbq_group_id', foundGroup.id);
+              localStorage.setItem('bbq_current_group', JSON.stringify(foundGroup));
+            }
+          }
+        } catch (error) {
+          console.error("Error loading group from URL:", error);
+        }
+      };
+      loadGroupFromUrl();
+    }
+  }, [searchParams, user, group, activeTab]);
 
   useEffect(() => {
     // Check if user is logged in
@@ -252,6 +290,13 @@ const BBQManager = () => {
         });
         setGroup(targetGroup);
         setUserNotInGroup(false);
+        // Update URL with group ID
+        const newParams = new URLSearchParams();
+        newParams.set('group', targetGroup.id);
+        if (activeTab) {
+          newParams.set('tab', activeTab);
+        }
+        setSearchParams(newParams, { replace: true });
         return;
       }
       
@@ -286,6 +331,13 @@ const BBQManager = () => {
         localStorage.setItem('bbq_group_id', targetGroup.id);
         localStorage.setItem('bbq_current_group', JSON.stringify(targetGroup));
         setGroup(targetGroup);
+        // Update URL with group ID
+        const newParams = new URLSearchParams();
+        newParams.set('group', targetGroup.id);
+        if (activeTab) {
+          newParams.set('tab', activeTab);
+        }
+        setSearchParams(newParams, { replace: true });
       } else {
         setUserNotInGroup(true);
         setGroup(null);
@@ -374,6 +426,13 @@ const BBQManager = () => {
     setShowDashboard(false);
     localStorage.setItem('bbq_group_id', selectedGroup.id);
     localStorage.setItem('bbq_current_group', JSON.stringify(selectedGroup));
+    // Update URL with group ID
+    const newParams = new URLSearchParams();
+    newParams.set('group', selectedGroup.id);
+    if (activeTab) {
+      newParams.set('tab', activeTab);
+    }
+    setSearchParams(newParams, { replace: true });
   };
 
   const handleBackToDashboard = () => {
@@ -381,6 +440,8 @@ const BBQManager = () => {
     setShowDashboard(true);
     localStorage.removeItem('bbq_group_id');
     localStorage.removeItem('bbq_current_group');
+    // Clear URL parameters
+    setSearchParams({}, { replace: true });
   };
 
   const handleLogout = () => {
@@ -563,13 +624,30 @@ const BBQManager = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          // Update URL with tab
+          if (group) {
+            const newParams = new URLSearchParams();
+            newParams.set('group', group.id);
+            newParams.set('tab', value);
+            setSearchParams(newParams, { replace: true });
+          }
+        }} className="w-full">
           {/* Desktop Tabs - Modern Design */}
           <div className="hidden md:block mb-8" dir="rtl">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
               <div className={`grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} gap-2`} dir="rtl">
                 <button
-                  onClick={() => setActiveTab("events")}
+                  onClick={() => {
+                    setActiveTab("events");
+                    if (group) {
+                      const newParams = new URLSearchParams();
+                      newParams.set('group', group.id);
+                      newParams.set('tab', 'events');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                     activeTab === "events"
                       ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/30 scale-105"
@@ -584,7 +662,15 @@ const BBQManager = () => {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab("members")}
+                  onClick={() => {
+                    setActiveTab("members");
+                    if (group) {
+                      const newParams = new URLSearchParams();
+                      newParams.set('group', group.id);
+                      newParams.set('tab', 'members');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                     activeTab === "members"
                       ? "bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg shadow-green-500/30 scale-105"
@@ -599,7 +685,15 @@ const BBQManager = () => {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab("payments")}
+                  onClick={() => {
+                    setActiveTab("payments");
+                    if (group) {
+                      const newParams = new URLSearchParams();
+                      newParams.set('group', group.id);
+                      newParams.set('tab', 'payments');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                     activeTab === "payments"
                       ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
@@ -614,7 +708,15 @@ const BBQManager = () => {
                 </button>
                 
                 <button
-                  onClick={() => setActiveTab("reports")}
+                  onClick={() => {
+                    setActiveTab("reports");
+                    if (group) {
+                      const newParams = new URLSearchParams();
+                      newParams.set('group', group.id);
+                      newParams.set('tab', 'reports');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                     activeTab === "reports"
                       ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 scale-105"
@@ -630,7 +732,15 @@ const BBQManager = () => {
                 
                 {user.isAdmin && (
                   <button
-                    onClick={() => setActiveTab("users")}
+                    onClick={() => {
+                      setActiveTab("users");
+                      if (group) {
+                        const newParams = new URLSearchParams();
+                        newParams.set('group', group.id);
+                        newParams.set('tab', 'users');
+                        setSearchParams(newParams, { replace: true });
+                      }
+                    }}
                     className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                       activeTab === "users"
                         ? "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/30 scale-105"
@@ -646,7 +756,15 @@ const BBQManager = () => {
                 )}
                 
                 <button
-                  onClick={() => setActiveTab("settings")}
+                  onClick={() => {
+                    setActiveTab("settings");
+                    if (group) {
+                      const newParams = new URLSearchParams();
+                      newParams.set('group', group.id);
+                      newParams.set('tab', 'settings');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
                     activeTab === "settings"
                       ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg shadow-gray-500/30 scale-105"
@@ -666,7 +784,15 @@ const BBQManager = () => {
           {/* Mobile Bottom Navigation */}
           <BottomNavigation 
             activeTab={activeTab} 
-            onTabChange={setActiveTab}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              if (group) {
+                const newParams = new URLSearchParams();
+                newParams.set('group', group.id);
+                newParams.set('tab', tab);
+                setSearchParams(newParams, { replace: true });
+              }
+            }}
             isAdmin={user.isAdmin}
             hasUsersTab={true}
           />
@@ -688,7 +814,15 @@ const BBQManager = () => {
                 groupId={group.id} 
                 userId={user.id}
                 isAdmin={user.isAdmin}
-                onPaymentsCalculated={() => setActiveTab("payments")}
+                onPaymentsCalculated={() => {
+                  setActiveTab("payments");
+                  if (group) {
+                    const newParams = new URLSearchParams();
+                    newParams.set('group', group.id);
+                    newParams.set('tab', 'payments');
+                    setSearchParams(newParams, { replace: true });
+                  }
+                }}
               />
             </div>
           </TabsContent>
