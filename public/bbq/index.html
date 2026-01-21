@@ -20,22 +20,88 @@
     <meta name="twitter:title" content="כלי לניהול קבוצות ותשלומים">
     <meta name="twitter:description" content="כלי לניהול תשלומים, חברים וקבוצות. ניהול פשוט ויעיל לכל האירועים שלכם.">
     
-    <script type="module" crossorigin src="/assets/index-BfrMZZUM.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Birc2aEF.css">
     <script>
-      // Redirect to main app with hash routing as fallback
-      if (window.location.pathname === '/bbq/' || window.location.pathname === '/bbq') {
-        window.location.href = '/#/bbq';
+      // Update meta tags dynamically based on pathname and localStorage
+      function updateMetaTagsFromStorage() {
+        try {
+          const pathname = window.location.pathname;
+          const isBBQPage = pathname === '/bbq' || pathname === '/on-the-fire' || pathname.startsWith('/bbq/') || pathname.startsWith('/on-the-fire/');
+          
+          // Helper function to update or create meta tag
+          const updateMeta = (property, content, attribute = 'property') => {
+            let meta = document.querySelector(`meta[${attribute}="${property}"]`);
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute(attribute, property);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+          };
+          
+          if (isBBQPage) {
+            // BBQ page - check for group in localStorage
+            const savedGroup = localStorage.getItem('bbq_current_group');
+            
+            if (savedGroup) {
+              try {
+                const group = JSON.parse(savedGroup);
+                if (group && group.name) {
+                  // Update with group-specific data
+                  const title = group.name;
+                  const description = `כלי לניהול קבוצות ותשלומים - ${group.name}`;
+                  const imageUrl = group.group_image || 'https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/social-images/social-1767182146432-לוגו אופיר חדש.png';
+                  
+                  document.title = title;
+                  updateMeta('og:title', title);
+                  updateMeta('twitter:title', title, 'name');
+                  updateMeta('og:description', description);
+                  updateMeta('twitter:description', description, 'name');
+                  updateMeta('description', description, 'name');
+                  updateMeta('og:image', imageUrl);
+                  updateMeta('twitter:image', imageUrl, 'name');
+                  updateMeta('og:url', window.location.href);
+                  return;
+                }
+              } catch (e) {
+                // If parsing fails, continue with default BBQ meta
+              }
+            }
+            
+            // Default BBQ meta tags (no group found) - already set by static tags, no need to update
+          } else {
+            // Home page or other pages - keep Ophir & Partners meta tags
+            const ophirTitle = 'אופיר ושות׳ סוכנות לביטוח | ביטוח נסיעות לחו״ל, עסקים, דירות ורכב';
+            const ophirDescription = 'ביטוח נסיעות לחו״ל עם סוכן אישי וצמוד. כיסוי עד 5 מיליון דולר, שירות 24/7. ביטוח עסקים, דירות ורכב.';
+            const ophirImage = 'https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/social-images/social-1767182146432-לוגו אופיר חדש.png';
+            
+            document.title = ophirTitle;
+            updateMeta('og:title', ophirTitle);
+            updateMeta('twitter:title', ophirTitle, 'name');
+            updateMeta('og:description', ophirDescription);
+            updateMeta('twitter:description', ophirDescription, 'name');
+            updateMeta('description', ophirDescription, 'name');
+            updateMeta('og:image', ophirImage);
+            updateMeta('twitter:image', ophirImage, 'name');
+            updateMeta('og:url', window.location.href);
+          }
+        } catch (e) {
+          // Silently fail if localStorage is not available or parsing fails
+          console.error('Error updating meta tags:', e);
+        }
+      }
+      
+      // Run immediately if DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateMetaTagsFromStorage);
+      } else {
+        updateMetaTagsFromStorage();
       }
     </script>
+    <link rel="icon" type="image/png" href="https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/uploads/1767182158604-לוגו אופיר חדש.png">
+    <script type="module" crossorigin src="/assets/index-BfrMZZUM.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Birc2aEF.css">
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      // Fallback: if hash routing doesn't work, try direct navigation
-      if (!window.location.hash) {
-        window.location.replace('/#/bbq');
-      }
-    </script>
   </body>
 </html>
