@@ -3,18 +3,30 @@
 $isBBQPage = strpos($_SERVER['REQUEST_URI'], '/bbq') !== false || strpos($_SERVER['REQUEST_URI'], '/on-the-fire') !== false;
 
 // Find the JS and CSS files dynamically
-$assetsDir = __DIR__ . '/assets';
+// Try multiple possible locations
+$possibleDirs = [
+  __DIR__ . '/assets',
+  __DIR__ . '/dist/assets',
+  dirname(__DIR__) . '/assets',
+  dirname(__DIR__) . '/dist/assets'
+];
+
 $jsFile = null;
 $cssFile = null;
 
-if (is_dir($assetsDir)) {
-  $files = scandir($assetsDir);
-  foreach ($files as $file) {
-    if (preg_match('/^index-.*\.js$/', $file)) {
-      $jsFile = '/assets/' . $file;
+foreach ($possibleDirs as $assetsDir) {
+  if (is_dir($assetsDir)) {
+    $files = scandir($assetsDir);
+    foreach ($files as $file) {
+      if (preg_match('/^index-.*\.js$/', $file)) {
+        $jsFile = '/assets/' . $file;
+      }
+      if (preg_match('/^index-.*\.css$/', $file)) {
+        $cssFile = '/assets/' . $file;
+      }
     }
-    if (preg_match('/^index-.*\.css$/', $file)) {
-      $cssFile = '/assets/' . $file;
+    if ($jsFile && $cssFile) {
+      break;
     }
   }
 }
