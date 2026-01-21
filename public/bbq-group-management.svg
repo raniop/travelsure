@@ -1,0 +1,51 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff7ed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fed7aa;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Title background -->
+  <rect x="0" y="0" width="1200" height="200" fill="#ea580c" opacity="0.9"/>
+  
+  <!-- Main title -->
+  <text x="600" y="80" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="white" text-anchor="middle" direction="rtl">
+    כלי לניהול קבוצות ותשלומים
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="140" font-family="Arial, sans-serif" font-size="32" fill="white" text-anchor="middle" direction="rtl">
+    ניהול פשוט ויעיל לכל האירועים שלכם
+  </text>
+  
+  <!-- Icons representing group management -->
+  <!-- Users icon -->
+  <circle cx="300" cy="350" r="60" fill="#ea580c" opacity="0.2"/>
+  <circle cx="280" cy="330" r="25" fill="#ea580c"/>
+  <circle cx="320" cy="330" r="25" fill="#ea580c"/>
+  <circle cx="300" cy="360" r="30" fill="#ea580c"/>
+  <text x="300" y="420" font-family="Arial, sans-serif" font-size="24" fill="#ea580c" text-anchor="middle" font-weight="bold">חברים</text>
+  
+  <!-- Money/Payment icon -->
+  <circle cx="600" cy="350" r="60" fill="#ea580c" opacity="0.2"/>
+  <circle cx="600" cy="350" r="40" fill="none" stroke="#ea580c" stroke-width="4"/>
+  <text x="600" y="360" font-family="Arial, sans-serif" font-size="36" fill="#ea580c" text-anchor="middle" font-weight="bold">₪</text>
+  <text x="600" y="420" font-family="Arial, sans-serif" font-size="24" fill="#ea580c" text-anchor="middle" font-weight="bold">תשלומים</text>
+  
+  <!-- Calendar/Events icon -->
+  <circle cx="900" cy="350" r="60" fill="#ea580c" opacity="0.2"/>
+  <rect x="870" y="320" width="60" height="50" fill="none" stroke="#ea580c" stroke-width="4" rx="5"/>
+  <line x1="870" y1="340" x2="930" y2="340" stroke="#ea580c" stroke-width="3"/>
+  <line x1="885" y1="355" x2="885" y2="365" stroke="#ea580c" stroke-width="2"/>
+  <line x1="900" y1="355" x2="900" y2="365" stroke="#ea580c" stroke-width="2"/>
+  <line x1="915" y1="355" x2="915" y2="365" stroke="#ea580c" stroke-width="2"/>
+  <text x="900" y="420" font-family="Arial, sans-serif" font-size="24" fill="#ea580c" text-anchor="middle" font-weight="bold">אירועים</text>
+  
+  <!-- Bottom decorative line -->
+  <line x1="100" y1="550" x2="1100" y2="550" stroke="#ea580c" stroke-width="4" opacity="0.3"/>
+</svg>
