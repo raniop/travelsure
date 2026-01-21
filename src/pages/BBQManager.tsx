@@ -53,7 +53,7 @@ const BBQManager = () => {
 
   // Update PWA config with group name and image (must be before any conditional returns)
   usePWAConfig({
-    name: group?.name || "על האש",
+    name: group?.name || "כלי לניהול קבוצות ותשלומים",
     groupImage: group?.group_image || null
   });
 
@@ -380,8 +380,8 @@ const BBQManager = () => {
     setLoading(true);
     try {
       const newGroup = await apiClient.createGroup({
-        name: "העל האש שלנו",
-        description: "חבורת העל האש השבועית",
+        name: "הקבוצה שלנו",
+        description: "קבוצה חדשה לניהול תשלומים ואירועים",
         owner_id: user.id
       });
       
