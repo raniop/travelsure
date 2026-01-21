@@ -1,0 +1,12 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#ea580c"/>
+  
+  <!-- Users icon -->
+  <circle cx="22" cy="25" r="6" fill="white"/>
+  <circle cx="42" cy="25" r="6" fill="white"/>
+  <circle cx="32" cy="35" r="8" fill="white"/>
+  
+  <!-- Payment symbol -->
+  <text x="32" y="50" font-family="Arial, sans-serif" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">₪</text>
+</svg>
