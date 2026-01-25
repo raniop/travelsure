@@ -4,7 +4,7 @@ import { apiClient } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw, BarChart3 } from "lucide-react";
+import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw, BarChart3, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CreateEventDialog from "@/components/bbq/CreateEventDialog";
 import EventsList from "@/components/bbq/EventsList";
@@ -18,6 +18,7 @@ import UsersList from "@/components/bbq/UsersList";
 import BottomNavigation from "@/components/bbq/BottomNavigation";
 import InstallPrompt from "@/components/bbq/InstallPrompt";
 import GroupsDashboard from "@/components/bbq/GroupsDashboard";
+import PollsList from "@/components/bbq/PollsList";
 import { usePWAConfig } from "@/hooks/usePWAConfig";
 
 interface Group {
@@ -63,7 +64,7 @@ const BBQManager = () => {
     const tabFromUrl = searchParams.get('tab');
     
     // If tab is in URL and different from current, set it
-    if (tabFromUrl && ['events', 'members', 'payments', 'reports', 'users', 'settings'].includes(tabFromUrl) && tabFromUrl !== activeTab) {
+    if (tabFromUrl && ['events', 'members', 'payments', 'polls', 'reports', 'users', 'settings'].includes(tabFromUrl) && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
     }
     
@@ -637,7 +638,7 @@ const BBQManager = () => {
           {/* Desktop Tabs - Modern Design */}
           <div className="hidden md:block mb-8" dir="rtl">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-              <div className={`grid w-full ${user.isAdmin ? 'grid-cols-6' : 'grid-cols-5'} gap-2`} dir="rtl">
+              <div className={`grid w-full ${user.isAdmin ? 'grid-cols-7' : 'grid-cols-6'} gap-2`} dir="rtl">
                 <button
                   onClick={() => {
                     setActiveTab("events");
@@ -704,6 +705,29 @@ const BBQManager = () => {
                   <span>תשלומים</span>
                   {activeTab === "payments" && (
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-purple-500/20 blur-sm -z-10"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setActiveTab("polls");
+                    if (group) {
+                      const newParams = new URLSearchParams();
+                      newParams.set('group', group.id);
+                      newParams.set('tab', 'polls');
+                      setSearchParams(newParams, { replace: true });
+                    }
+                  }}
+                  className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
+                    activeTab === "polls"
+                      ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/30 scale-105"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
+                  }`}
+                >
+                  <MessageSquare className={`w-5 h-5 transition-transform ${activeTab === "polls" ? "scale-110" : "group-hover:scale-110"}`} />
+                  <span>סקרים</span>
+                  {activeTab === "polls" && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-400/20 to-rose-500/20 blur-sm -z-10"></div>
                   )}
                 </button>
                 
@@ -840,6 +864,15 @@ const BBQManager = () => {
 
           <TabsContent value="payments" className="space-y-4 pb-20 md:pb-4">
             <PaymentsOverview groupId={group.id} userId={user.id} isAdmin={user.isAdmin} />
+          </TabsContent>
+
+          <TabsContent value="polls" className="space-y-4 pb-20 md:pb-4">
+            <PollsList 
+              groupId={group.id} 
+              userId={user.id} 
+              userPhone={user.phone}
+              isAdmin={user.isAdmin} 
+            />
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4 pb-20 md:pb-4">

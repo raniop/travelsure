@@ -1,4 +1,4 @@
-import { Calendar, Users, DollarSign, BarChart3, Settings, User as UserIcon } from "lucide-react";
+import { Calendar, Users, DollarSign, BarChart3, Settings, User as UserIcon, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavigationProps {
@@ -24,6 +24,11 @@ const BottomNavigation = ({ activeTab, onTabChange, isAdmin, hasUsersTab = false
       id: "payments",
       label: "תשלומים",
       icon: DollarSign,
+    },
+    {
+      id: "polls",
+      label: "סקרים",
+      icon: MessageSquare,
     },
     {
       id: "reports",
@@ -59,7 +64,8 @@ const BottomNavigation = ({ activeTab, onTabChange, isAdmin, hasUsersTab = false
           "grid w-full h-16 text-right",
           tabCount === 4 && "grid-cols-4",
           tabCount === 5 && "grid-cols-5",
-          tabCount === 6 && "grid-cols-6"
+          tabCount === 6 && "grid-cols-6",
+          tabCount === 7 && "grid-cols-7"
         )}
       >
         {tabs.map((tab) => {

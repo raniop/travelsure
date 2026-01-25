@@ -284,6 +284,47 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // Polls
+  async getPolls(groupId?: string): Promise<any[]> {
+    const params = groupId ? `entity=polls&group_id=${groupId}` : 'entity=polls';
+    return this.request(params);
+  }
+
+  async getPoll(id: string): Promise<any> {
+    return this.request(`entity=polls&id=${id}`);
+  }
+
+  async createPoll(data: any): Promise<any> {
+    return this.request('entity=polls', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePoll(id: string, data: any): Promise<any> {
+    return this.request(`entity=polls&id=${id}&action=update`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePoll(id: string): Promise<void> {
+    return this.request(`entity=polls&id=${id}&action=delete`, {
+      method: 'POST',
+    });
+  }
+
+  async votePoll(pollId: string, optionId: string, memberId: string): Promise<any> {
+    return this.request('entity=polls&action=vote', {
+      method: 'POST',
+      body: JSON.stringify({
+        poll_id: pollId,
+        option_id: optionId,
+        member_id: memberId
+      }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -43,7 +43,22 @@ try {
     }
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Internal server error', 'details' => $e->getMessage()]);
+    $errorDetails = [
+        'error' => 'Internal server error',
+        'details' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ];
+    echo json_encode($errorDetails, JSON_UNESCAPED_UNICODE);
+} catch (Error $e) {
+    http_response_code(500);
+    $errorDetails = [
+        'error' => 'Internal server error',
+        'details' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ];
+    echo json_encode($errorDetails, JSON_UNESCAPED_UNICODE);
 }
 
 function handleGet($entity, $id, $groupId, $eventId, $dataFolder) {
@@ -52,13 +67,14 @@ function handleGet($entity, $id, $groupId, $eventId, $dataFolder) {
             if (!empty($id)) {
                 $group = loadEntity($dataFolder, 'groups', $id);
                 if ($group) {
-                    echo json_encode($group);
+                    echo json_encode($group, JSON_UNESCAPED_UNICODE);
                 } else {
                     http_response_code(404);
+                    echo json_encode(['error' => 'Not found'], JSON_UNESCAPED_UNICODE);
                 }
             } else {
                 $groups = loadAll($dataFolder, 'groups');
-                echo json_encode($groups);
+                echo json_encode($groups, JSON_UNESCAPED_UNICODE);
             }
             break;
 
@@ -123,6 +139,30 @@ function handleGet($entity, $id, $groupId, $eventId, $dataFolder) {
             echo json_encode($payments);
             break;
 
+        case 'polls':
+            $polls = loadAll($dataFolder, 'polls');
+            if (!empty($groupId)) {
+                $polls = array_filter($polls, function($p) use ($groupId) {
+                    return $p['group_id'] === $groupId;
+                });
+                $polls = array_values($polls);
+            }
+            if (!empty($id)) {
+                $polls = array_filter($polls, function($p) use ($id) {
+                    return $p['id'] === $id;
+                });
+                $polls = array_values($polls);
+                if (count($polls) > 0) {
+                    echo json_encode($polls[0], JSON_UNESCAPED_UNICODE);
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Not found'], JSON_UNESCAPED_UNICODE);
+                }
+            } else {
+                echo json_encode($polls, JSON_UNESCAPED_UNICODE);
+            }
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Invalid entity']);
@@ -131,8 +171,20 @@ function handleGet($entity, $id, $groupId, $eventId, $dataFolder) {
 }
 
 function handlePost($entity, $dataFolder) {
+    global $action;
     $body = file_get_contents('php://input');
     $data = json_decode($body, true);
+
+    // Handle action=update and action=delete via POST
+    if ($action === 'update' && !empty($_GET['id'])) {
+        handlePut($entity, $_GET['id'], $dataFolder);
+        return;
+    }
+    
+    if ($action === 'delete' && !empty($_GET['id'])) {
+        handleDelete($entity, $_GET['id'], $dataFolder);
+        return;
+    }
 
     switch (strtolower($entity)) {
         case 'groups':
@@ -180,6 +232,66 @@ function handlePost($entity, $dataFolder) {
             echo json_encode($data);
             break;
 
+        case 'polls':
+            // Handle vote action
+            if ($action === 'vote') {
+                $pollId = $data['poll_id'] ?? '';
+                $optionId = $data['option_id'] ?? '';
+                $memberId = $data['member_id'] ?? '';
+                
+                if (empty($pollId) || empty($optionId) || empty($memberId)) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Missing required fields: poll_id, option_id, member_id']);
+                    return;
+                }
+                
+                $poll = loadEntity($dataFolder, 'polls', $pollId);
+                if (!$poll) {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Poll not found']);
+                    return;
+                }
+                
+                // Initialize votes array if not exists
+                if (!isset($poll['votes'])) {
+                    $poll['votes'] = [];
+                }
+                
+                // Remove existing vote from this member (if any)
+                $poll['votes'] = array_filter($poll['votes'], function($v) use ($memberId) {
+                    return $v['member_id'] !== $memberId;
+                });
+                $poll['votes'] = array_values($poll['votes']);
+                
+                // Add new vote
+                $poll['votes'][] = [
+                    'id' => uniqid(),
+                    'option_id' => $optionId,
+                    'member_id' => $memberId,
+                    'voted_at' => date('c')
+                ];
+                
+                saveEntity($dataFolder, 'polls', $pollId, $poll);
+                echo json_encode($poll, JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            
+            // Create new poll
+            $data['id'] = uniqid();
+            $data['created_at'] = date('c');
+            if (!isset($data['options'])) {
+                $data['options'] = [];
+            }
+            if (!isset($data['votes'])) {
+                $data['votes'] = [];
+            }
+            if (!isset($data['is_active'])) {
+                $data['is_active'] = true;
+            }
+            saveEntity($dataFolder, 'polls', $data['id'], $data);
+            echo json_encode($data, JSON_UNESCAPED_UNICODE);
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['error' => 'Invalid entity']);
@@ -216,6 +328,14 @@ function handlePut($entity, $id, $dataFolder) {
             $data['updated_at'] = date('c');
             saveEntity($dataFolder, $entity, $id, $data);
             echo json_encode($data);
+            break;
+
+        case 'polls':
+            if (isset($data['updated_at'])) {
+                $data['updated_at'] = date('c');
+            }
+            saveEntity($dataFolder, 'polls', $id, $data);
+            echo json_encode($data, JSON_UNESCAPED_UNICODE);
             break;
 
         default:
