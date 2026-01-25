@@ -618,8 +618,8 @@ const birthDateParts = (value: string) => {
 };
 
 const genderToHarel = (gender: "M" | "F" | "") => {
-  if (gender === "F") return "1";
-  if (gender === "M") return "2";
+  if (gender === "M") return "1";
+  if (gender === "F") return "2";
   return "";
 };
 

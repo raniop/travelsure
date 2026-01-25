@@ -33,10 +33,10 @@ foreach ($possibleDirs as $assetsDir) {
 
 // Fallback to known filenames if not found
 if (!$jsFile) {
-  $jsFile = '/assets/index-BfrMZZUM.js';
+  $jsFile = '/assets/index-Dgfs010Z.js';
 }
 if (!$cssFile) {
-  $cssFile = '/assets/index-Birc2aEF.css';
+  $cssFile = '/assets/index-DtaJk1Ge.css';
 }
 
 if ($isBBQPage) {

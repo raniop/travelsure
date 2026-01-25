@@ -233,7 +233,7 @@ function handlePost($entity, $dataFolder) {
             break;
 
         case 'polls':
-            // Handle vote action
+            // Handle vote action (toggle - add or remove vote)
             if ($action === 'vote') {
                 $pollId = $data['poll_id'] ?? '';
                 $optionId = $data['option_id'] ?? '';
@@ -257,19 +257,27 @@ function handlePost($entity, $dataFolder) {
                     $poll['votes'] = [];
                 }
                 
-                // Remove existing vote from this member (if any)
-                $poll['votes'] = array_filter($poll['votes'], function($v) use ($memberId) {
-                    return $v['member_id'] !== $memberId;
-                });
-                $poll['votes'] = array_values($poll['votes']);
+                // Check if this member already voted for this option
+                $existingVoteIndex = null;
+                foreach ($poll['votes'] as $index => $vote) {
+                    if ($vote['member_id'] === $memberId && $vote['option_id'] === $optionId) {
+                        $existingVoteIndex = $index;
+                        break;
+                    }
+                }
                 
-                // Add new vote
-                $poll['votes'][] = [
-                    'id' => uniqid(),
-                    'option_id' => $optionId,
-                    'member_id' => $memberId,
-                    'voted_at' => date('c')
-                ];
+                if ($existingVoteIndex !== null) {
+                    // Remove vote (toggle off)
+                    array_splice($poll['votes'], $existingVoteIndex, 1);
+                } else {
+                    // Add vote (toggle on)
+                    $poll['votes'][] = [
+                        'id' => uniqid(),
+                        'option_id' => $optionId,
+                        'member_id' => $memberId,
+                        'voted_at' => date('c')
+                    ];
+                }
                 
                 saveEntity($dataFolder, 'polls', $pollId, $poll);
                 echo json_encode($poll, JSON_UNESCAPED_UNICODE);

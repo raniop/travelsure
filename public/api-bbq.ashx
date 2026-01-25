@@ -59,18 +59,33 @@ public class BBQHandler : IHttpHandler
                             break;
                         default:
                             context.Response.StatusCode = 405;
+                            context.Response.ContentType = "application/json; charset=utf-8";
                             context.Response.Write("{\"error\":\"Method not allowed\"}");
                             break;
                     }
         }
         catch (Exception ex)
         {
-            context.Response.StatusCode = 500;
-            string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
-            string errorType = HttpUtility.JavaScriptStringEncode(ex.GetType().ToString());
-            string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
-            string errorDetails = "{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"type\":\"" + errorType + "\",\"stack\":\"" + errorStack + "\"}";
-            context.Response.Write(errorDetails);
+            try
+            {
+                context.Response.StatusCode = 500;
+                context.Response.ContentType = "application/json; charset=utf-8";
+                string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                string errorType = HttpUtility.JavaScriptStringEncode(ex.GetType().ToString());
+                string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                string errorDetails = "{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"type\":\"" + errorType + "\",\"stack\":\"" + errorStack + "\"}";
+                context.Response.Write(errorDetails);
+            }
+            catch
+            {
+                // If we can't write the error, at least try to set status code
+                try
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.Write("{\"error\":\"Internal server error - could not write details\"}");
+                }
+                catch { }
+            }
         }
     }
 
@@ -92,7 +107,10 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(entity))
         {
             context.Response.StatusCode = 400;
-            context.Response.Write("{\"error\":\"Missing entity parameter\"}");
+            context.Response.ContentType = "application/json; charset=utf-8";
+            string debugQuery = HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString());
+            string debugEntity = HttpUtility.JavaScriptStringEncode(entity ?? "");
+            context.Response.Write("{\"error\":\"Missing entity parameter\",\"entity\":\"" + debugEntity + "\",\"queryString\":\"" + debugQuery + "\",\"rawEntity\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString["entity"] ?? "") + "\"}");
             return;
         }
         
@@ -258,6 +276,111 @@ public class BBQHandler : IHttpHandler
                 }
                 break;
 
+            case "polls":
+                try
+                {
+                    string pollsJson = LoadAllJson("polls", dataFolder);
+                    // Filter by group_id if provided
+                    if (!string.IsNullOrEmpty(groupId))
+                    {
+                        if (pollsJson == "[]" || string.IsNullOrEmpty(pollsJson))
+                        {
+                            context.Response.Write("[]");
+                        }
+                        else
+                        {
+                            // Parse JSON properly instead of string splitting
+                            try
+                            {
+                                List<string> filteredPolls = new List<string>();
+                                string trimmed = pollsJson.Trim('[', ']');
+                                if (!string.IsNullOrEmpty(trimmed))
+                                {
+                                    // Use a more robust JSON parsing approach
+                                    // Find complete JSON objects by matching braces
+                                    int braceCount = 0;
+                                    int startIndex = 0;
+                                    for (int i = 0; i < trimmed.Length; i++)
+                                    {
+                                        if (trimmed[i] == '{')
+                                        {
+                                            if (braceCount == 0) startIndex = i;
+                                            braceCount++;
+                                        }
+                                        else if (trimmed[i] == '}')
+                                        {
+                                            braceCount--;
+                                            if (braceCount == 0)
+                                            {
+                                                // Found complete JSON object
+                                                string jsonObj = trimmed.Substring(startIndex, i - startIndex + 1);
+                                                if (jsonObj.Contains("\"group_id\":\"" + groupId + "\"") || jsonObj.Contains("\"group_id\": \"" + groupId + "\""))
+                                                {
+                                                    filteredPolls.Add(jsonObj);
+                                                }
+                                                // Skip comma if exists
+                                                if (i + 1 < trimmed.Length && trimmed[i + 1] == ',')
+                                                    i++;
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if (filteredPolls.Count == 0)
+                                {
+                                    context.Response.Write("[]");
+                                }
+                                else
+                                {
+                                    string result = "[" + string.Join(",", filteredPolls.ToArray()) + "]";
+                                    context.Response.Write(result);
+                                }
+                            }
+                            catch
+                            {
+                                // If parsing fails, return empty array
+                                context.Response.Write("[]");
+                            }
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(id))
+                    {
+                        string json = LoadEntityJson("polls", id, dataFolder);
+                        if (!string.IsNullOrEmpty(json))
+                        {
+                            // Remove BOM if present
+                            if (json.Length > 0 && json[0] == '\uFEFF')
+                            {
+                                json = json.Substring(1);
+                            }
+                            context.Response.Write(json.Trim());
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = 404;
+                            context.Response.Write("{\"error\":\"Not found\"}");
+                        }
+                    }
+                    else
+                    {
+                        // Return all polls
+                        if (string.IsNullOrEmpty(pollsJson))
+                        {
+                            context.Response.Write("[]");
+                        }
+                        else
+                        {
+                            context.Response.Write(pollsJson);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Return empty array on error
+                    context.Response.Write("[]");
+                }
+                break;
+
             case "attendees":
                 string attendeesJson = LoadAllJson("attendees", dataFolder);
                 // Filter by event_id if provided
@@ -371,19 +494,119 @@ public class BBQHandler : IHttpHandler
                 }
                 break;
 
+            case "group_invitations":
+                context.Response.ContentType = "application/json; charset=utf-8";
+                try
+                {
+                    string userPhone = context.Request.QueryString["user_phone"] ?? "";
+                    string invGroupId = context.Request.QueryString["group_id"] ?? "";
+                    
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        string json = LoadEntityJson("group_invitations", id, dataFolder);
+                        if (!string.IsNullOrEmpty(json))
+                            context.Response.Write(json);
+                        else
+                        {
+                            context.Response.StatusCode = 404;
+                            context.Response.Write("{\"error\":\"Not found\"}");
+                        }
+                    }
+                    else
+                    {
+                        string invitationsJson = LoadAllJson("group_invitations", dataFolder);
+                        
+                        // If no invitations exist, return empty array
+                        if (string.IsNullOrEmpty(invitationsJson) || invitationsJson == "[]")
+                        {
+                            context.Response.Write("[]");
+                            break;
+                        }
+                        
+                        // Filter by user_phone or group_id if provided
+                        if (!string.IsNullOrEmpty(userPhone) || !string.IsNullOrEmpty(invGroupId))
+                        {
+                            List<string> filteredInvitations = new List<string>();
+                            string trimmed = invitationsJson.Trim('[', ']');
+                            if (!string.IsNullOrEmpty(trimmed))
+                            {
+                                string[] invitations = trimmed.Split(new string[] { "},{" }, StringSplitOptions.None);
+                                foreach (string inv in invitations)
+                                {
+                                    try
+                                    {
+                                        string cleanInv = inv.Trim();
+                                        if (!cleanInv.StartsWith("{")) cleanInv = "{" + cleanInv;
+                                        if (!cleanInv.EndsWith("}")) cleanInv = cleanInv + "}";
+                                        
+                                        bool matches = true;
+                                        if (!string.IsNullOrEmpty(userPhone) && !cleanInv.Contains("\"user_phone\":\"" + userPhone + "\""))
+                                            matches = false;
+                                        if (!string.IsNullOrEmpty(invGroupId) && !cleanInv.Contains("\"group_id\":\"" + invGroupId + "\""))
+                                            matches = false;
+                                        
+                                        if (matches)
+                                            filteredInvitations.Add(cleanInv);
+                                    }
+                                    catch
+                                    {
+                                        // Skip invalid invitation entries
+                                        continue;
+                                    }
+                                }
+                            }
+                            context.Response.Write("[" + string.Join(",", filteredInvitations) + "]");
+                        }
+                        else
+                        {
+                            context.Response.Write(invitationsJson);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                    string stackTrace = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                    context.Response.Write("{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + stackTrace + "\"}");
+                }
+                break;
+
             default:
                 // Debug: return entity value to see what we got
                 context.Response.StatusCode = 400;
+                context.Response.ContentType = "application/json; charset=utf-8";
                 string debugEntity = HttpUtility.JavaScriptStringEncode(entity ?? "");
                 string debugQuery = HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString());
-                context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + debugEntity + "\",\"queryString\":\"" + debugQuery + "\"}");
+                string originalEntity = context.Request.QueryString["entity"] ?? "";
+                // List all available cases for debugging
+                string availableCases = "groups,events,members,payments,attendees,guests,users,group_invitations,polls";
+                context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + debugEntity + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"queryString\":\"" + debugQuery + "\",\"availableCases\":\"" + availableCases + "\"}");
                 break;
         }
     }
 
     private void HandlePost(HttpContext context, string entity, string dataFolder)
     {
-        string body = new StreamReader(context.Request.InputStream).ReadToEnd();
+        context.Response.ContentType = "application/json; charset=utf-8";
+        
+        string body = "";
+        try
+        {
+            using (StreamReader reader = new StreamReader(context.Request.InputStream, Encoding.UTF8))
+            {
+                body = reader.ReadToEnd();
+            }
+        }
+        catch (Exception ex)
+        {
+            context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json; charset=utf-8";
+            context.Response.Write("{\"error\":\"Failed to read request body\",\"details\":\"" + HttpUtility.JavaScriptStringEncode(ex.Message) + "\"}");
+            return;
+        }
+        
         string action = context.Request.QueryString["action"] ?? "";
         string id = context.Request.QueryString["id"] ?? "";
         
@@ -408,9 +631,11 @@ public class BBQHandler : IHttpHandler
             return;
         }
         
-        switch (entity.ToLower())
+        try
         {
-            case "groups":
+            switch (entity.ToLower())
+            {
+                case "groups":
                 // Simple JSON creation
                 string newId = Guid.NewGuid().ToString();
                 string createdAt = DateTime.UtcNow.ToString("o");
@@ -529,6 +754,521 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(paymentJson);
                 break;
 
+            case "polls":
+                // Handle vote action (toggle - add or remove vote)
+                if (action == "vote")
+                {
+                    try
+                    {
+                        // Parse JSON body to get poll_id, option_id, member_id using string manipulation
+                        string pollId = "";
+                        string optionId = "";
+                        string memberId = "";
+                        
+                        // Extract poll_id
+                        int pollIdIdx = body.IndexOf("\"poll_id\"");
+                        if (pollIdIdx >= 0)
+                        {
+                            int startQuote = body.IndexOf("\"", pollIdIdx + 9);
+                            int endQuote = body.IndexOf("\"", startQuote + 1);
+                            if (startQuote > 0 && endQuote > startQuote)
+                            {
+                                pollId = body.Substring(startQuote + 1, endQuote - startQuote - 1);
+                            }
+                        }
+                        
+                        // Extract option_id
+                        int optionIdIdx = body.IndexOf("\"option_id\"");
+                        if (optionIdIdx >= 0)
+                        {
+                            int startQuote = body.IndexOf("\"", optionIdIdx + 11);
+                            int endQuote = body.IndexOf("\"", startQuote + 1);
+                            if (startQuote > 0 && endQuote > startQuote)
+                            {
+                                optionId = body.Substring(startQuote + 1, endQuote - startQuote - 1);
+                            }
+                        }
+                        
+                        // Extract member_id
+                        int memberIdIdx = body.IndexOf("\"member_id\"");
+                        if (memberIdIdx >= 0)
+                        {
+                            int startQuote = body.IndexOf("\"", memberIdIdx + 12);
+                            int endQuote = body.IndexOf("\"", startQuote + 1);
+                            if (startQuote > 0 && endQuote > startQuote)
+                            {
+                                memberId = body.Substring(startQuote + 1, endQuote - startQuote - 1);
+                            }
+                        }
+                        
+                        if (string.IsNullOrEmpty(pollId) || string.IsNullOrEmpty(optionId) || string.IsNullOrEmpty(memberId))
+                        {
+                            context.Response.StatusCode = 400;
+                            context.Response.ContentType = "application/json; charset=utf-8";
+                            context.Response.Write("{\"error\":\"Missing required fields: poll_id, option_id, member_id\"}");
+                            return;
+                        }
+                        
+                        string pollJson = LoadEntityJson("polls", pollId, dataFolder);
+                        if (string.IsNullOrEmpty(pollJson))
+                        {
+                            context.Response.StatusCode = 404;
+                            context.Response.ContentType = "application/json; charset=utf-8";
+                            context.Response.Write("{\"error\":\"Poll not found\"}");
+                            return;
+                        }
+                        
+                        // FIRST: If optionId is "1", fix the first option BEFORE checking for option_id
+                        // This ensures the first option gets ID "1" if it's missing
+                        bool optionFound = false;
+                        if (optionId == "1")
+                        {
+                            try
+                            {
+                                int pollOptionsIdx = pollJson.IndexOf("\"options\":[");
+                                if (pollOptionsIdx >= 0)
+                                {
+                                    int arrayStart = pollJson.IndexOf("[", pollOptionsIdx);
+                                    if (arrayStart >= 0)
+                                    {
+                                        // Find the first option - it's the first object after "["
+                                        int firstOptionStart = arrayStart + 1;
+                                        int firstOptionEnd = -1;
+                                        bool inString = false;
+                                        int braceCount = 0;
+                                        
+                                        for (int i = firstOptionStart; i < pollJson.Length; i++)
+                                        {
+                                            char c = pollJson[i];
+                                            if (c == '"' && (i == 0 || pollJson[i - 1] != '\\'))
+                                                inString = !inString;
+                                            else if (!inString)
+                                            {
+                                                if (c == '{') braceCount++;
+                                                else if (c == '}')
+                                                {
+                                                    braceCount--;
+                                                    if (braceCount == 0)
+                                                    {
+                                                        firstOptionEnd = i;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (firstOptionEnd > firstOptionStart)
+                                        {
+                                            string firstOption = pollJson.Substring(firstOptionStart, firstOptionEnd - firstOptionStart + 1).Trim();
+                                            
+                                            // If first option doesn't have an ID, add "1"
+                                            if (!firstOption.Contains("\"id\""))
+                                            {
+                                                string fixedFirstOption = firstOption.Trim();
+                                                if (fixedFirstOption.StartsWith("{"))
+                                                    fixedFirstOption = fixedFirstOption.Substring(1);
+                                                if (fixedFirstOption.EndsWith("}"))
+                                                    fixedFirstOption = fixedFirstOption.Substring(0, fixedFirstOption.Length - 1);
+                                                
+                                                fixedFirstOption = "{\"id\":\"1\"," + fixedFirstOption.Trim() + "}";
+                                                pollJson = pollJson.Substring(0, firstOptionStart) + fixedFirstOption + pollJson.Substring(firstOptionEnd + 1);
+                                                SaveEntityJson("polls", pollId, pollJson, dataFolder);
+                                                optionFound = true;
+                                            }
+                                            else if (firstOption.Contains("\"id\":\"1\"") || firstOption.Contains("\"id\": \"1\""))
+                                            {
+                                                optionFound = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception fixEx)
+                            {
+                                // If fixing fails, continue to check if option exists anyway
+                                // Don't return error here, let the code continue
+                            }
+                        }
+                        
+                        // NOW check if the option_id exists (if we didn't just fix it)
+                        if (!optionFound)
+                        {
+                            optionFound = pollJson.Contains("\"id\":\"" + optionId + "\"") || pollJson.Contains("\"id\": \"" + optionId + "\"");
+                        }
+                        
+                        // If still not found, try to find by order
+                        if (!optionFound)
+                        {
+                            try
+                            {
+                                int pollOptionsIdx = pollJson.IndexOf("\"options\":[");
+                                if (pollOptionsIdx >= 0)
+                            {
+                                int arrayStart = pollJson.IndexOf("[", pollOptionsIdx);
+                                int arrayEnd = pollJson.IndexOf("]", arrayStart);
+                                if (arrayEnd > arrayStart)
+                                {
+                                    string optionsContent = pollJson.Substring(arrayStart + 1, arrayEnd - arrayStart - 1);
+                                    
+                                    // First, check if option_id exists
+                                    optionFound = optionsContent.Contains("\"id\":\"" + optionId + "\"") || optionsContent.Contains("\"id\": \"" + optionId + "\"");
+                                    
+                                    // If not found, check if any option is missing an id field and fix them
+                                    if (!optionFound && optionsContent.Contains("\"text\""))
+                                    {
+                                        // Options exist - need to check and fix them
+                                        List<string> fixedOptions = new List<string>();
+                                        string[] optionParts = optionsContent.Split(new string[] { "},{" }, StringSplitOptions.None);
+                                        int optionIndex = 0;
+                                        foreach (string part in optionParts)
+                                        {
+                                            string clean = part.Trim();
+                                            if (!clean.StartsWith("{")) clean = "{" + clean;
+                                            if (!clean.EndsWith("}")) clean = clean + "}";
+                                            
+                                            // Check if this option has an id
+                                            if (!clean.Contains("\"id\""))
+                                            {
+                                                // Extract text and order
+                                                string text = "";
+                                                string order = optionIndex.ToString();
+                                                
+                                                int textIdx = clean.IndexOf("\"text\"");
+                                                if (textIdx >= 0)
+                                                {
+                                                    int textStart = clean.IndexOf("\"", textIdx + 6);
+                                                    int textEnd = clean.IndexOf("\"", textStart + 1);
+                                                    if (textStart > 0 && textEnd > textStart)
+                                                    {
+                                                        text = clean.Substring(textStart + 1, textEnd - textStart - 1);
+                                                    }
+                                                }
+                                                
+                                                int orderIdx = clean.IndexOf("\"order\"");
+                                                if (orderIdx >= 0)
+                                                {
+                                                    int orderStart = clean.IndexOf(":", orderIdx);
+                                                    int orderEnd = clean.IndexOf(",", orderStart);
+                                                    if (orderEnd < 0) orderEnd = clean.IndexOf("}", orderStart);
+                                                    if (orderEnd > orderStart)
+                                                    {
+                                                        order = clean.Substring(orderStart + 1, orderEnd - orderStart - 1).Trim();
+                                                    }
+                                                }
+                                                
+                                                // Generate new ID for this option
+                                                // If this is the first option (order 0) and optionId is "1" (from CreatePollDialog), use "1" as the ID
+                                                string newOptionId = Guid.NewGuid().ToString();
+                                                
+                                                // If optionId is "1" and this is order 0, use the optionId as the new ID
+                                                if (order == "0" && optionId == "1")
+                                                {
+                                                    newOptionId = "1";
+                                                    optionFound = true;
+                                                }
+                                                
+                                                clean = "{\"id\":\"" + newOptionId + "\",\"text\":\"" + HttpUtility.JavaScriptStringEncode(text) + "\",\"order\":" + order + "}";
+                                            }
+                                            else
+                                            {
+                                                // Check if this option has the optionId we're looking for
+                                                if (clean.Contains("\"id\":\"" + optionId + "\"") || clean.Contains("\"id\": \"" + optionId + "\""))
+                                                {
+                                                    optionFound = true;
+                                                }
+                                            }
+                                            
+                                            fixedOptions.Add(clean);
+                                            optionIndex++;
+                                        }
+                                        
+                                        // Rebuild options array
+                                        string newOptionsContent = "[" + string.Join(",", fixedOptions.ToArray()) + "]";
+                                        pollJson = pollJson.Substring(0, arrayStart + 1) + newOptionsContent.Substring(1, newOptionsContent.Length - 2) + pollJson.Substring(arrayEnd);
+                                        
+                                        // Save the fixed poll
+                                        SaveEntityJson("polls", pollId, pollJson, dataFolder);
+                                        
+                                        // Re-check if option is now found after fixing
+                                        if (optionFound)
+                                        {
+                                            optionFound = pollJson.Contains("\"id\":\"" + optionId + "\"") || pollJson.Contains("\"id\": \"" + optionId + "\"");
+                                        }
+                                    }
+                                    
+                                    // Final check - if option still not found, try to find by order
+                                    if (!optionFound && !pollJson.Contains("\"id\":\"" + optionId + "\"") && !pollJson.Contains("\"id\": \"" + optionId + "\""))
+                                    {
+                                        // If optionId is "1", try to find the first option (order 0) and add the ID
+                                        if (optionId == "1")
+                                        {
+                                            // Reload pollJson to get fresh data
+                                            pollJson = LoadEntityJson("polls", pollId, dataFolder);
+                                            
+                                            // Find the first option in the options array - it's the one right after "["
+                                            int optionsStartIdx = pollJson.IndexOf("\"options\":[");
+                                            if (optionsStartIdx >= 0)
+                                            {
+                                                int firstArrayStart = pollJson.IndexOf("[", optionsStartIdx);
+                                                int firstOptionStart = firstArrayStart + 1;
+                                                
+                                                // Find the end of the first option (first "}" after array start, but not if it's inside a string)
+                                                int firstOptionEnd = -1;
+                                                bool inString = false;
+                                                for (int i = firstOptionStart; i < pollJson.Length; i++)
+                                                {
+                                                    if (pollJson[i] == '"' && (i == 0 || pollJson[i - 1] != '\\'))
+                                                        inString = !inString;
+                                                    else if (!inString && pollJson[i] == '}')
+                                                    {
+                                                        firstOptionEnd = i;
+                                                        break;
+                                                    }
+                                                }
+                                                
+                                                if (firstOptionEnd > firstOptionStart)
+                                                {
+                                                    // Extract the first option
+                                                    string firstOption = pollJson.Substring(firstOptionStart, firstOptionEnd - firstOptionStart + 1).Trim();
+                                                    
+                                                    // Check if this option doesn't have an ID - if so, add ID "1"
+                                                    if (!firstOption.Contains("\"id\""))
+                                                    {
+                                                        // Add ID "1" at the beginning of the option
+                                                        string fixedFirstOption = firstOption.Trim();
+                                                        if (fixedFirstOption.StartsWith("{"))
+                                                            fixedFirstOption = fixedFirstOption.Substring(1);
+                                                        if (fixedFirstOption.EndsWith("}"))
+                                                            fixedFirstOption = fixedFirstOption.Substring(0, fixedFirstOption.Length - 1);
+                                                        
+                                                        fixedFirstOption = "{\"id\":\"1\"," + fixedFirstOption.Trim() + "}";
+                                                        
+                                                        // Replace the first option in pollJson
+                                                        pollJson = pollJson.Substring(0, firstOptionStart) + fixedFirstOption + pollJson.Substring(firstOptionEnd + 1);
+                                                        SaveEntityJson("polls", pollId, pollJson, dataFolder);
+                                                        optionFound = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // If still not found, return error with more details
+                                        if (!optionFound && !pollJson.Contains("\"id\":\"" + optionId + "\"") && !pollJson.Contains("\"id\": \"" + optionId + "\""))
+                                        {
+                                            context.Response.StatusCode = 400;
+                                            context.Response.ContentType = "application/json; charset=utf-8";
+                                            string pollPreview = pollJson.Length > 200 ? pollJson.Substring(0, 200) : pollJson;
+                                            context.Response.Write("{\"error\":\"Invalid option_id: option not found in poll\",\"optionId\":\"" + HttpUtility.JavaScriptStringEncode(optionId) + "\",\"pollPreview\":\"" + HttpUtility.JavaScriptStringEncode(pollPreview) + "\"}");
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception fixEx)
+                        {
+                            // If fixing options fails, check if option exists anyway
+                            if (!pollJson.Contains("\"id\":\"" + optionId + "\"") && !pollJson.Contains("\"id\": \"" + optionId + "\""))
+                            {
+                                context.Response.StatusCode = 400;
+                                context.Response.ContentType = "application/json; charset=utf-8";
+                                string errorDetails = "{\"error\":\"Invalid option_id: option not found in poll\",\"optionId\":\"" + HttpUtility.JavaScriptStringEncode(optionId) + "\",\"exception\":\"" + HttpUtility.JavaScriptStringEncode(fixEx.Message) + "\",\"pollJson\":\"" + HttpUtility.JavaScriptStringEncode(pollJson.Substring(0, Math.Min(200, pollJson.Length))) + "\"}";
+                                context.Response.Write(errorDetails);
+                                return;
+                            }
+                        }
+                        
+                        // If option still not found after all attempts, return error
+                        if (!optionFound && !pollJson.Contains("\"id\":\"" + optionId + "\"") && !pollJson.Contains("\"id\": \"" + optionId + "\""))
+                        {
+                            context.Response.StatusCode = 400;
+                            context.Response.ContentType = "application/json; charset=utf-8";
+                            context.Response.Write("{\"error\":\"Invalid option_id: option not found in poll\",\"optionId\":\"" + HttpUtility.JavaScriptStringEncode(optionId) + "\"}");
+                            return;
+                        }
+                        }
+                        
+                        // Check if votes array exists, if not add it
+                        if (!pollJson.Contains("\"votes\""))
+                        {
+                            pollJson = pollJson.Trim();
+                            if (pollJson.EndsWith("}"))
+                            {
+                                pollJson = pollJson.Substring(0, pollJson.Length - 1) + ",\"votes\":[]}";
+                            }
+                        }
+                        
+                        // Check if this member already voted for this option
+                        string votePattern = "\"member_id\":\"" + memberId + "\"";
+                        string optionPattern = "\"option_id\":\"" + optionId + "\"";
+                        bool hasVote = pollJson.Contains(votePattern) && pollJson.Contains(optionPattern);
+                        
+                        // Find the vote entry to remove if exists
+                        if (hasVote)
+                        {
+                            // Find the vote entry and remove it
+                            int voteStart = pollJson.IndexOf("{\"id\":");
+                            while (voteStart >= 0)
+                            {
+                                int voteEnd = pollJson.IndexOf("}", voteStart);
+                                if (voteEnd >= 0)
+                                {
+                                    string voteEntry = pollJson.Substring(voteStart, voteEnd - voteStart + 1);
+                                    if (voteEntry.Contains(votePattern) && voteEntry.Contains(optionPattern))
+                                    {
+                                        // Remove this vote entry
+                                        // Also remove the comma before or after if exists
+                                        if (voteStart > 0 && pollJson[voteStart - 1] == ',')
+                                        {
+                                            voteStart--;
+                                        }
+                                        else if (voteEnd + 1 < pollJson.Length && pollJson[voteEnd + 1] == ',')
+                                        {
+                                            voteEnd++;
+                                        }
+                                        pollJson = pollJson.Substring(0, voteStart) + pollJson.Substring(voteEnd + 1);
+                                        break;
+                                    }
+                                }
+                                voteStart = pollJson.IndexOf("{\"id\":", voteStart + 1);
+                            }
+                        }
+                        else
+                        {
+                            // Add new vote
+                            string newVoteId = Guid.NewGuid().ToString();
+                            string votedAt = DateTime.UtcNow.ToString("o");
+                            string newVote = "{\"id\":\"" + newVoteId + "\",\"option_id\":\"" + optionId + "\",\"member_id\":\"" + memberId + "\",\"voted_at\":\"" + votedAt + "\"}";
+                            
+                            // Insert into votes array
+                            int votesIdx = pollJson.IndexOf("\"votes\":[");
+                            if (votesIdx >= 0)
+                            {
+                                int arrayStart = pollJson.IndexOf("[", votesIdx);
+                                int arrayEnd = pollJson.IndexOf("]", arrayStart);
+                                if (arrayEnd > arrayStart)
+                                {
+                                    string votesContent = pollJson.Substring(arrayStart + 1, arrayEnd - arrayStart - 1).Trim();
+                                    if (string.IsNullOrEmpty(votesContent))
+                                    {
+                                        pollJson = pollJson.Substring(0, arrayEnd) + newVote + pollJson.Substring(arrayEnd);
+                                    }
+                                    else
+                                    {
+                                        pollJson = pollJson.Substring(0, arrayEnd) + "," + newVote + pollJson.Substring(arrayEnd);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        SaveEntityJson("polls", pollId, pollJson, dataFolder);
+                        context.Response.Write(pollJson);
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Response.StatusCode = 500;
+                        context.Response.ContentType = "application/json; charset=utf-8";
+                        string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                        string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                        context.Response.Write("{\"error\":\"Error processing vote\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + errorStack + "\"}");
+                        return;
+                    }
+                }
+                
+                // Create new poll
+                string pollNewId = Guid.NewGuid().ToString();
+                string pollCreatedAt = DateTime.UtcNow.ToString("o");
+                
+                string pollJsonBody = body.Trim();
+                
+                // Always parse and rebuild JSON to ensure all required fields
+                if (pollJsonBody.StartsWith("{") && pollJsonBody.EndsWith("}"))
+                {
+                    // Remove outer braces
+                    string pollContent = pollJsonBody.Substring(1, pollJsonBody.Length - 2);
+                    
+                    // Remove existing id and created_at if they exist (we'll add our own)
+                    if (pollContent.Contains("\"id\""))
+                    {
+                        int idStart = pollContent.IndexOf("\"id\"");
+                        int idEnd = pollContent.IndexOf(",", idStart);
+                        if (idEnd < 0) idEnd = pollContent.IndexOf("}", idStart);
+                        if (idEnd > idStart)
+                        {
+                            string before = pollContent.Substring(0, idStart);
+                            string after = pollContent.Substring(idEnd);
+                            // Remove comma if it's at the start of 'after'
+                            if (after.StartsWith(","))
+                                after = after.Substring(1);
+                            pollContent = before.TrimEnd(',') + after;
+                        }
+                    }
+                    
+                    if (pollContent.Contains("\"created_at\""))
+                    {
+                        int createdStart = pollContent.IndexOf("\"created_at\"");
+                        int createdEnd = pollContent.IndexOf(",", createdStart);
+                        if (createdEnd < 0) createdEnd = pollContent.IndexOf("}", createdStart);
+                        if (createdEnd > createdStart)
+                        {
+                            string before = pollContent.Substring(0, createdStart);
+                            string after = pollContent.Substring(createdEnd);
+                            // Remove comma if it's at the start of 'after'
+                            if (after.StartsWith(","))
+                                after = after.Substring(1);
+                            pollContent = before.TrimEnd(',') + after;
+                        }
+                    }
+                    
+                    // Clean up any double commas
+                    while (pollContent.Contains(",,"))
+                    {
+                        pollContent = pollContent.Replace(",,", ",");
+                    }
+                    pollContent = pollContent.Trim(',');
+                    
+                    // Ensure options and votes arrays exist
+                    if (!pollContent.Contains("\"options\""))
+                    {
+                        if (!string.IsNullOrEmpty(pollContent) && !pollContent.EndsWith(","))
+                            pollContent = pollContent + ",";
+                        pollContent = pollContent + "\"options\":[]";
+                    }
+                    if (!pollContent.Contains("\"votes\""))
+                    {
+                        if (!string.IsNullOrEmpty(pollContent) && !pollContent.EndsWith(","))
+                            pollContent = pollContent + ",";
+                        pollContent = pollContent + "\"votes\":[]";
+                    }
+                    if (!pollContent.Contains("\"is_active\""))
+                    {
+                        if (!string.IsNullOrEmpty(pollContent) && !pollContent.EndsWith(","))
+                            pollContent = pollContent + ",";
+                        pollContent = pollContent + "\"is_active\":true";
+                    }
+                    
+                    // Build final JSON with id and created_at at the beginning
+                    string idAndCreated = "\"id\":\"" + pollNewId + "\",\"created_at\":\"" + pollCreatedAt + "\"";
+                    if (!string.IsNullOrEmpty(pollContent))
+                    {
+                        pollJsonBody = "{" + idAndCreated + "," + pollContent + "}";
+                    }
+                    else
+                    {
+                        pollJsonBody = "{" + idAndCreated + "}";
+                    }
+                }
+                else
+                {
+                    // If body is not valid JSON, create minimal poll
+                    pollJsonBody = "{\"id\":\"" + pollNewId + "\",\"created_at\":\"" + pollCreatedAt + "\",\"options\":[],\"votes\":[],\"is_active\":true}";
+                }
+                
+                SaveEntityJson("polls", pollNewId, pollJsonBody, dataFolder);
+                context.Response.Write(pollJsonBody);
+                break;
+
             case "users":
                 string userNewId = Guid.NewGuid().ToString();
                 string userCreatedAt = DateTime.UtcNow.ToString("o");
@@ -628,10 +1368,58 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(userJson);
                 break;
 
-            default:
-                context.Response.StatusCode = 400;
-                context.Response.Write("{\"error\":\"Invalid entity\"}");
+            case "group_invitations":
+                try
+                {
+                    string invitationNewId = Guid.NewGuid().ToString();
+                    string invitationCreatedAt = DateTime.UtcNow.ToString("o");
+
+                    string invitationJson = body;
+                    if (string.IsNullOrEmpty(invitationJson) || !invitationJson.Trim().StartsWith("{") || !invitationJson.Trim().EndsWith("}"))
+                    {
+                        context.Response.StatusCode = 400;
+                        context.Response.ContentType = "application/json; charset=utf-8";
+                        context.Response.Write("{\"error\":\"Invalid JSON format for group_invitations POST\"}");
+                        break;
+                    }
+
+                    if (!invitationJson.Contains("\"id\""))
+                    {
+                        invitationJson = invitationJson.Trim();
+                        if (invitationJson.StartsWith("{") && invitationJson.EndsWith("}"))
+                        {
+                            invitationJson = invitationJson.Substring(1, invitationJson.Length - 2);
+                            invitationJson = "{\"id\":\"" + invitationNewId + "\",\"created_at\":\"" + invitationCreatedAt + "\"," + invitationJson + "}";
+                        }
+                    }
+
+                    SaveEntityJson("group_invitations", invitationNewId, invitationJson, dataFolder);
+                    context.Response.Write(invitationJson);
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                    string stackTrace = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                    context.Response.Write("{\"error\":\"Error in HandlePost for group_invitations\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + stackTrace + "\"}");
+                }
                 break;
+
+                default:
+                    context.Response.StatusCode = 400;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    context.Response.Write("{\"error\":\"Invalid entity\",\"entity\":\"" + HttpUtility.JavaScriptStringEncode(entity ?? "") + "\"}");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json; charset=utf-8";
+            string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+            string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+            context.Response.Write("{\"error\":\"Error in HandlePost\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + errorStack + "\"}");
         }
     }
 
@@ -641,6 +1429,7 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(id))
         {
             context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json; charset=utf-8";
             context.Response.Write("{\"error\":\"Missing id parameter\"}");
             return;
         }
@@ -658,6 +1447,7 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(id))
         {
             context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json; charset=utf-8";
             context.Response.Write("{\"error\":\"Missing id parameter\"}");
             return;
         }
@@ -666,6 +1456,7 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(entity))
         {
             context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json; charset=utf-8";
             string errorMsg = "{\"error\":\"Missing entity parameter\",\"queryString\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString()) + "\"}";
             context.Response.Write(errorMsg);
             return;
@@ -793,6 +1584,7 @@ public class BBQHandler : IHttpHandler
                 if (!paymentJson.StartsWith("{") || !paymentJson.EndsWith("}"))
                 {
                     context.Response.StatusCode = 400;
+                    context.Response.ContentType = "application/json; charset=utf-8";
                     context.Response.Write("{\"error\":\"Invalid JSON format\"}");
                     return;
                 }
@@ -857,11 +1649,79 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(paymentJson);
                 break;
 
+            case "polls":
+                string pollJsonUpdate = body;
+                // Preserve created_at if exists
+                string existingPollJson = LoadEntityJson("polls", id, dataFolder);
+                string pollCreatedAt = "";
+                if (!string.IsNullOrEmpty(existingPollJson) && existingPollJson.Contains("\"created_at\""))
+                {
+                    int createdIdx = existingPollJson.IndexOf("\"created_at\"");
+                    if (createdIdx > 0)
+                    {
+                        int startQuote = existingPollJson.IndexOf("\"", createdIdx + 12);
+                        int endQuote = existingPollJson.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            pollCreatedAt = existingPollJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                        }
+                    }
+                }
+                
+                // Parse and rebuild JSON
+                pollJsonUpdate = pollJsonUpdate.Trim();
+                if (!pollJsonUpdate.StartsWith("{") || !pollJsonUpdate.EndsWith("}"))
+                {
+                    context.Response.StatusCode = 400;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    context.Response.Write("{\"error\":\"Invalid JSON format\"}");
+                    return;
+                }
+                
+                // Remove outer braces
+                string pollJsonContent = pollJsonUpdate.Substring(1, pollJsonUpdate.Length - 2);
+                
+                // Ensure id is in the JSON
+                if (!pollJsonContent.Contains("\"id\""))
+                {
+                    pollJsonContent = "\"id\":\"" + id + "\"," + pollJsonContent;
+                }
+                else
+                {
+                    // Replace existing id with the one from query string
+                    int idIdx = pollJsonContent.IndexOf("\"id\"");
+                    if (idIdx >= 0)
+                    {
+                        int startQuote = pollJsonContent.IndexOf("\"", idIdx + 4);
+                        int endQuote = pollJsonContent.IndexOf("\"", startQuote + 1);
+                        if (startQuote > 0 && endQuote > startQuote)
+                        {
+                            string before = pollJsonContent.Substring(0, startQuote + 1);
+                            string after = pollJsonContent.Substring(endQuote);
+                            pollJsonContent = before + id + after;
+                        }
+                    }
+                }
+                
+                // Add created_at if we have it
+                if (!string.IsNullOrEmpty(pollCreatedAt) && !pollJsonContent.Contains("\"created_at\""))
+                {
+                    pollJsonContent = pollJsonContent + ",\"created_at\":\"" + pollCreatedAt + "\"";
+                }
+                
+                // Rebuild JSON
+                pollJsonUpdate = "{" + pollJsonContent + "}";
+                
+                SaveEntityJson("polls", id, pollJsonUpdate, dataFolder);
+                context.Response.Write(pollJsonUpdate);
+                break;
+
             case "attendees":
                 string attendeeJson = body;
                 if (string.IsNullOrEmpty(attendeeJson))
                 {
                     context.Response.StatusCode = 400;
+                    context.Response.ContentType = "application/json; charset=utf-8";
                     context.Response.Write("{\"error\":\"Empty request body\"}");
                     return;
                 }
@@ -888,6 +1748,7 @@ public class BBQHandler : IHttpHandler
                 if (!attendeeJson.StartsWith("{") || !attendeeJson.EndsWith("}"))
                 {
                     context.Response.StatusCode = 400;
+                    context.Response.ContentType = "application/json; charset=utf-8";
                     context.Response.Write("{\"error\":\"Invalid JSON format\"}");
                     return;
                 }
@@ -994,11 +1855,91 @@ public class BBQHandler : IHttpHandler
                 context.Response.Write(userJson);
                 break;
 
+            case "group_invitations":
+                try
+                {
+                    string invitationUpdatedAt = DateTime.UtcNow.ToString("o");
+                    string invitationJson = body;
+                    
+                    // Preserve created_at if exists
+                    string existingInvitationJson = LoadEntityJson("group_invitations", id, dataFolder);
+                    if (!string.IsNullOrEmpty(existingInvitationJson) && existingInvitationJson.Contains("\"created_at\""))
+                    {
+                        int createdIdx = existingInvitationJson.IndexOf("\"created_at\"");
+                        if (createdIdx > 0)
+                        {
+                            int startQuote = existingInvitationJson.IndexOf("\"", createdIdx + 12);
+                            int endQuote = existingInvitationJson.IndexOf("\"", startQuote + 1);
+                            if (startQuote > 0 && endQuote > startQuote)
+                            {
+                                string createdAt = existingInvitationJson.Substring(startQuote + 1, endQuote - startQuote - 1);
+                                invitationJson = invitationJson.Trim();
+                                if (invitationJson.StartsWith("{") && invitationJson.EndsWith("}"))
+                                {
+                                    invitationJson = invitationJson.Substring(1, invitationJson.Length - 2);
+                                    if (!invitationJson.Contains("\"created_at\""))
+                                    {
+                                        invitationJson = invitationJson + ",\"created_at\":\"" + createdAt + "\"";
+                                    }
+                                    invitationJson = "{" + invitationJson + "}";
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Ensure id and updated_at are in the JSON
+                    invitationJson = invitationJson.Trim();
+                    if (invitationJson.StartsWith("{") && invitationJson.EndsWith("}"))
+                    {
+                        invitationJson = invitationJson.Substring(1, invitationJson.Length - 2);
+                        // Add/update id
+                        if (!invitationJson.Contains("\"id\""))
+                        {
+                            invitationJson = "\"id\":\"" + id + "\"," + invitationJson;
+                        }
+                        // Add/update updated_at
+                        if (invitationJson.Contains("\"updated_at\""))
+                        {
+                            // Replace existing updated_at
+                            int updatedIdx = invitationJson.IndexOf("\"updated_at\"");
+                            if (updatedIdx > 0)
+                            {
+                                int startQuote = invitationJson.IndexOf("\"", updatedIdx + 13);
+                                int endQuote = invitationJson.IndexOf("\"", startQuote + 1);
+                                if (startQuote > 0 && endQuote > startQuote)
+                                {
+                                    string before = invitationJson.Substring(0, startQuote + 1);
+                                    string after = invitationJson.Substring(endQuote);
+                                    invitationJson = before + invitationUpdatedAt + after;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            invitationJson = invitationJson + ",\"updated_at\":\"" + invitationUpdatedAt + "\"";
+                        }
+                        invitationJson = "{" + invitationJson + "}";
+                    }
+                    
+                    SaveEntityJson("group_invitations", id, invitationJson, dataFolder);
+                    context.Response.Write(invitationJson);
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
+                    string stackTrace = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
+                    context.Response.Write("{\"error\":\"Error in HandlePutWithBody for group_invitations\",\"details\":\"" + errorMsg + "\",\"stack\":\"" + stackTrace + "\"}");
+                }
+                break;
+
             default:
                 context.Response.StatusCode = 400;
+                context.Response.ContentType = "application/json; charset=utf-8";
                 string originalEntity = context.Request.QueryString["entity"] ?? "";
-                string errorMsg = "{\"error\":\"Invalid entity\",\"entity\":\"" + HttpUtility.JavaScriptStringEncode(entity ?? "") + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"id\":\"" + HttpUtility.JavaScriptStringEncode(id ?? "") + "\",\"queryString\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString()) + "\"}";
-                context.Response.Write(errorMsg);
+                string errorResponse = "{\"error\":\"Invalid entity\",\"entity\":\"" + HttpUtility.JavaScriptStringEncode(entity ?? "") + "\",\"originalEntity\":\"" + HttpUtility.JavaScriptStringEncode(originalEntity) + "\",\"id\":\"" + HttpUtility.JavaScriptStringEncode(id ?? "") + "\",\"queryString\":\"" + HttpUtility.JavaScriptStringEncode(context.Request.QueryString.ToString()) + "\"}";
+                context.Response.Write(errorResponse);
                 break;
         }
     }
@@ -1016,6 +1957,7 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(payboxPaymentId))
         {
             context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json; charset=utf-8";
             context.Response.Write("{\"error\":\"Missing payment_id parameter\"}");
             return;
         }
@@ -1261,6 +2203,7 @@ public class BBQHandler : IHttpHandler
         if (string.IsNullOrEmpty(id))
         {
             context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json; charset=utf-8";
             context.Response.Write("{\"error\":\"Missing id parameter\"}");
             return;
         }
@@ -1296,7 +2239,27 @@ public class BBQHandler : IHttpHandler
         {
             foreach (string file in Directory.GetFiles(folderPath, "*.json"))
             {
-                items.Add(File.ReadAllText(file, Encoding.UTF8));
+                try
+                {
+                    string content = File.ReadAllText(file, Encoding.UTF8);
+                    // Remove BOM if present
+                    if (content.Length > 0 && content[0] == '\uFEFF')
+                    {
+                        content = content.Substring(1);
+                    }
+                    // Trim whitespace
+                    content = content.Trim();
+                    // Only add if it's valid JSON (starts with {)
+                    if (!string.IsNullOrEmpty(content) && content.StartsWith("{"))
+                    {
+                        items.Add(content);
+                    }
+                }
+                catch
+                {
+                    // Skip invalid files
+                    continue;
+                }
             }
         }
         if (items.Count == 0)

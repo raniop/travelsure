@@ -25,49 +25,61 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      let errorData;
+      // Read response text once
+      const text = await response.text();
+      console.error(`API Error [${response.status}]:`, {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        responseText: text.substring(0, 500)
+      });
+      
+      let errorData: any = null;
+      
+      // Try to parse as JSON, but fallback to text if it fails
       try {
-        const text = await response.text();
-        console.error(`API Error [${response.status}]:`, {
-          url,
-          status: response.status,
-          statusText: response.statusText,
-          responseText: text.substring(0, 500)
-        });
         // Check if response is HTML (404 page) instead of JSON
         if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
           errorData = { 
             error: `HTTP ${response.status}: ${response.statusText}`, 
             details: 'Server returned HTML instead of JSON. File may not exist or PHP is not configured correctly.' 
           };
+        } else if (text.trim()) {
+          // Try to parse as JSON
+          errorData = JSON.parse(text);
         } else {
-          errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
+          errorData = { error: 'Unknown error' };
         }
       } catch (parseError) {
-        // If parsing fails, show the raw text
-        const text = await response.text().catch(() => '');
+        // If parsing fails, use the raw text
         console.error('Failed to parse error response:', parseError, 'Raw text:', text.substring(0, 500));
         errorData = { 
           error: `HTTP ${response.status}: ${response.statusText}`, 
           details: text || 'Unknown error' 
         };
       }
-      const errorMessage = errorData.error || errorData.details || errorData.stack || `HTTP ${response.status}`;
+      
+      const errorMessage = errorData?.error || errorData?.details || errorData?.message || text || `HTTP ${response.status}`;
       throw new Error(errorMessage);
     }
 
     // Check if response is actually JSON before parsing
     const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      return response.json();
-    } else {
-      // If not JSON, read as text first to see what we got
-      const text = await response.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
-      }
+    const text = await response.text();
+    
+    // Remove BOM if present
+    const cleanText = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+    
+    try {
+      return JSON.parse(cleanText);
+    } catch (parseError: any) {
+      console.error('JSON Parse Error:', {
+        error: parseError.message,
+        position: parseError.message.match(/position (\d+)/)?.[1],
+        text: cleanText.substring(0, 200),
+        fullText: cleanText
+      });
+      throw new Error(`Invalid JSON response: ${parseError.message}. Response: ${cleanText.substring(0, 200)}`);
     }
   }
 
