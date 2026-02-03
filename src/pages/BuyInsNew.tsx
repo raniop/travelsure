@@ -1578,23 +1578,25 @@ export default function BuyInsNew() {
           </div>
 
           <div className="space-y-3 sm:space-y-4">
-            {customers.map((customer, index) => (
-              <div
-                key={index}
-                data-customer-index={index}
-                className={cn(
-                  "rounded-xl border backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] transition-all duration-300",
-                  validationErrors[index] && validationErrors[index].length > 0
-                    ? "border-rose-300 bg-rose-50/80"
-                    : "border-white/60 bg-white/90",
-                  removingCustomerIndex === index
-                    ? "opacity-0 -translate-x-4 scale-95"
-                    : "opacity-100 translate-x-0 scale-100"
-                )}
-              >
-                <div className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between mb-3 flex-row-reverse">
-                    <div className="text-right w-full">
+            {customers.map((customer, index) => {
+              const canRemoveCustomer = customers.length > 1 && (index !== 0 || isGetByIdU);
+              return (
+                <div
+                  key={index}
+                  data-customer-index={index}
+                  className={cn(
+                    "rounded-xl border backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] transition-all duration-300",
+                    validationErrors[index] && validationErrors[index].length > 0
+                      ? "border-rose-300 bg-rose-50/80"
+                      : "border-white/60 bg-white/90",
+                    removingCustomerIndex === index
+                      ? "opacity-0 -translate-x-4 scale-95"
+                      : "opacity-100 translate-x-0 scale-100"
+                  )}
+                >
+                  <div className="p-3 sm:p-4">
+                    <div className="relative flex items-center mb-3">
+                      <div className={cn("text-right w-full", canRemoveCustomer ? "pl-10" : "")}>
                       <div className="text-base sm:text-lg font-bold text-[#0b4e86]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                         {index === 0 ? "פרטי הנוסע הראשון" : `פרטי הנוסע ${index === 1 ? "השני" : index === 2 ? "השלישי" : `מספר ${index + 1}`}`}
                       </div>
@@ -1604,21 +1606,21 @@ export default function BuyInsNew() {
                         </div>
                       )}
                     </div>
-                    {customers.length > 1 && (index !== 0 || isGetByIdU) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          removeCustomer(index);
-                        }}
-                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                        הסר
-                      </button>
-                    )}
-                  </div>
+                      {canRemoveCustomer && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            removeCustomer(index);
+                          }}
+                          className="absolute left-0 top-0 inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          הסר
+                        </button>
+                      )}
+                    </div>
 
                   {/* הודעת שגיאה עבור נוסע זה */}
                   {validationErrors[index] && validationErrors[index].length > 0 && (
@@ -1885,7 +1887,7 @@ export default function BuyInsNew() {
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
 
           {/* Bottom Section */}
