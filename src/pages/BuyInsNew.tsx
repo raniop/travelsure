@@ -334,8 +334,8 @@ function GenderToggle({
 
   return (
     <div className="grid grid-cols-2 gap-4 sm:gap-5" style={{ width: "fit-content" }}>
-      {item("F", "נוסעת")}
       {item("M", "נוסע")}
+      {item("F", "נוסעת")}
     </div>
   );
 }
@@ -597,6 +597,13 @@ const getQueryParam = (params: URLSearchParams, keys: string[]) => {
   return "";
 };
 
+const GET_BY_IDU_AFFILIATES = new Set(["902", "1282", "1283", "1284", "1731"]);
+
+const isGetByIdULink = (params: URLSearchParams) => {
+  const affValue = getQueryParam(params, ["aff", "shatapId", "id"]);
+  return affValue ? GET_BY_IDU_AFFILIATES.has(affValue) : false;
+};
+
 const normalizeDateForHarel = (value: string) => {
   if (!value) return "";
   const trimmed = value.trim();
@@ -629,6 +636,7 @@ export default function BuyInsNew() {
   const [loading, setLoading] = useState<Record<number, boolean>>({});
   const [shatapName, setShatapName] = useState<string>("");
   const [shatapId, setShatapId] = useState<string>("");
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [status, setStatus] = useState<
     | { type: "idle"; text: string }
     | { type: "checking"; text: string }
@@ -650,6 +658,25 @@ export default function BuyInsNew() {
       phone: "",
     },
   ]);
+
+  const isAff1731 = (() => {
+    const params = new URLSearchParams(window.location.search);
+    return getQueryParam(params, ["aff", "shatapId", "id"]) === "1731";
+  })();
+
+  const isGetByIdU = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return isGetByIdULink(params);
+  }, []);
+
+  useEffect(() => {
+    const updateViewport = () => {
+      setIsMobileViewport(window.innerWidth < 640);
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
 
   const [additionalCustomers, setAdditionalCustomers] = useState<AdditionalCustomer[]>([]);
   const [selectedAdditionalCustomers, setSelectedAdditionalCustomers] = useState<Set<string>>(new Set());
@@ -863,6 +890,20 @@ export default function BuyInsNew() {
       delete updated[customerIndex];
       return updated;
     });
+  };
+
+  const removeCustomer = (customerIndex: number) => {
+    setRemovingCustomerIndex(customerIndex);
+    setTimeout(() => {
+      setCustomers((prev) => {
+        const updated = prev.filter((_, i) => i !== customerIndex);
+        if (customerIndex === 0) {
+          setId(updated[0]?.id || "");
+        }
+        return updated;
+      });
+      setRemovingCustomerIndex(null);
+    }, 300);
   };
 
   const validateIdRealTime = (idValue: string, customerIndex: number) => {
@@ -1136,10 +1177,7 @@ export default function BuyInsNew() {
             json = { found: false };
           }
         } else {
-          const params = new URLSearchParams(window.location.search);
-          const affValue = getQueryParam(params, ["aff", "shatapId", "id"]);
-          const getByIdUAffiliates = new Set(["902", "1282", "1283", "1284"]);
-          const useGetByIdU = affValue ? getByIdUAffiliates.has(affValue) : false;
+          const useGetByIdU = isGetByIdU;
           const apiUrl = useGetByIdU
             ? `${API_BASE_URL}/api/policy/GetByIdU?id=${encodeURIComponent(normalizedId)}&pass=Admin$123`
             : `${API_BASE_URL}/api/policy/GetByPersonId?personId=${encodeURIComponent(normalizedId)}`;
@@ -1566,15 +1604,11 @@ export default function BuyInsNew() {
                         </div>
                       )}
                     </div>
-                    {customers.length > 1 && index !== 0 && (
+                    {customers.length > 1 && (index !== 0 || isGetByIdU) && (
                       <button
                         type="button"
                         onClick={() => {
-                          setRemovingCustomerIndex(index);
-                          setTimeout(() => {
-                            setCustomers((prev) => prev.filter((_, i) => i !== index));
-                            setRemovingCustomerIndex(null);
-                          }, 300);
+                          removeCustomer(index);
                         }}
                         className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition"
                       >
@@ -2063,7 +2097,11 @@ export default function BuyInsNew() {
 
       {/* Modal for Additional Customers */}
       {additionalCustomers.length > 0 && showAdditionalCustomersModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className={`fixed inset-0 z-50 flex justify-center p-4 ${
+            isAff1731 && isMobileViewport ? "items-start pt-8" : "items-center"
+          }`}
+        >
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -2194,12 +2232,14 @@ export default function BuyInsNew() {
                   const isSelected = selectedAdditionalCustomers.has(addCust.personId);
 
                   const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
-                  const isAlreadyAdded = customers.some((c) => {
+                  const existingCustomerIndex = customers.findIndex((c) => {
                     const normalizedCustomerId = String(c.id || "").padStart(9, "0");
                     return normalizedCustomerId === normalizedAddCustId;
                   });
+                  const isAlreadyAdded = existingCustomerIndex !== -1;
 
                   const canSelect = !isAlreadyAdded && (isSelected || selectedAdditionalCustomers.size < availableSlots);
+                  const canRemoveAdded = isAlreadyAdded && (existingCustomerIndex !== 0 || isGetByIdU);
                   const fullName = addCust.primaryName || `${addCust.firstNameHe} ${addCust.lastNameHe}`.trim();
 
                   const handleRowClick = () => {
@@ -2271,28 +2311,13 @@ export default function BuyInsNew() {
                           <div className="text-xs text-green-600 mt-0.5">כבר נוסף</div>
                         )}
                       </div>
-                      {isAlreadyAdded && (
+                      {canRemoveAdded && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const normalizedAddCustId = String(addCust.personId || "").padStart(9, "0");
-                            const customerIndex = customers.findIndex((c) => {
-                              const normalizedCustomerId = String(c.id || "").padStart(9, "0");
-                              return normalizedCustomerId === normalizedAddCustId;
-                            });
-
-                            if (customerIndex !== -1) {
-                              setRemovingCustomerIndex(customerIndex);
-                              setTimeout(() => {
-                                setCustomers((prev) => {
-                                  return prev.filter((c) => {
-                                    const normalizedCustomerId = String(c.id || "").padStart(9, "0");
-                                    return normalizedCustomerId !== normalizedAddCustId;
-                                  });
-                                });
-                                setRemovingCustomerIndex(null);
-                              }, 300);
+                            if (existingCustomerIndex !== -1) {
+                              removeCustomer(existingCustomerIndex);
                             }
                           }}
                           className="text-xs font-medium text-rose-600 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 transition flex-shrink-0"
