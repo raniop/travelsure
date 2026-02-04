@@ -492,15 +492,17 @@ const buildCustomerFromEntry = (entry: Record<string, unknown>, fallbackId: stri
 
   const resolvedFirstNameHe = split.first || "";
   const resolvedLastNameHe = split.last || "";
-  const resolvedFirstNameEn = firstNameEn || "";
-  const resolvedLastNameEn = lastNameEn || "";
+  const resolvedFirstNameEn = (firstNameEn || "").trim();
+  const resolvedLastNameEn = (lastNameEn || "").trim();
 
-  const shouldCopyToEnglish =
-    !resolvedFirstNameEn &&
-    !resolvedLastNameEn &&
+  const shouldCopyFirstNameToEnglish =
+    !resolvedFirstNameEn.trim() &&
     !isHebrewText(resolvedFirstNameHe) &&
+    isLatinText(resolvedFirstNameHe);
+  const shouldCopyLastNameToEnglish =
+    !resolvedLastNameEn.trim() &&
     !isHebrewText(resolvedLastNameHe) &&
-    (isLatinText(resolvedFirstNameHe) || isLatinText(resolvedLastNameHe));
+    isLatinText(resolvedLastNameHe);
 
   return {
     id: personId,
@@ -509,8 +511,8 @@ const buildCustomerFromEntry = (entry: Record<string, unknown>, fallbackId: stri
     ),
     firstNameHe: resolvedFirstNameHe,
     lastNameHe: resolvedLastNameHe,
-    firstNameEn: shouldCopyToEnglish ? resolvedFirstNameHe : resolvedFirstNameEn,
-    lastNameEn: shouldCopyToEnglish ? resolvedLastNameHe : resolvedLastNameEn,
+    firstNameEn: shouldCopyFirstNameToEnglish ? resolvedFirstNameHe : resolvedFirstNameEn,
+    lastNameEn: shouldCopyLastNameToEnglish ? resolvedLastNameHe : resolvedLastNameEn,
     birthDate: pickString(entry, ["birthDate", "BirthDate", "dateOfBirth", "DateOfBirth", "dob"]),
     email: pickString(entry, ["email", "Email", "mail", "Mail"]),
     phone: pickString(entry, ["phone", "Phone", "phoneNumber", "PhoneNumber", "mobile", "Mobile", "cell", "Cell"]),
@@ -1883,7 +1885,16 @@ export default function BuyInsNew() {
                         onChange={(e) =>
                           setCustomers((prev) => {
                             const updated = [...prev];
-                            updated[index] = { ...updated[index], firstNameHe: e.target.value };
+                            const nextFirstNameHe = e.target.value;
+                            const shouldCopy =
+                              !updated[index].firstNameEn?.trim() &&
+                              !isHebrewText(nextFirstNameHe) &&
+                              isLatinText(nextFirstNameHe);
+                            updated[index] = {
+                              ...updated[index],
+                              firstNameHe: nextFirstNameHe,
+                              firstNameEn: shouldCopy ? nextFirstNameHe : updated[index].firstNameEn,
+                            };
                             return updated;
                           })
                         }
@@ -1898,7 +1909,16 @@ export default function BuyInsNew() {
                         onChange={(e) =>
                           setCustomers((prev) => {
                             const updated = [...prev];
-                            updated[index] = { ...updated[index], lastNameHe: e.target.value };
+                            const nextLastNameHe = e.target.value;
+                            const shouldCopy =
+                              !updated[index].lastNameEn?.trim() &&
+                              !isHebrewText(nextLastNameHe) &&
+                              isLatinText(nextLastNameHe);
+                            updated[index] = {
+                              ...updated[index],
+                              lastNameHe: nextLastNameHe,
+                              lastNameEn: shouldCopy ? nextLastNameHe : updated[index].lastNameEn,
+                            };
                             return updated;
                           })
                         }
