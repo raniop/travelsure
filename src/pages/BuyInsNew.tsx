@@ -63,6 +63,14 @@ function splitNameHe(full?: string | null) {
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
+function isHebrewText(value?: string | null) {
+  return Boolean(value && /[\u0590-\u05FF]/.test(value));
+}
+
+function isLatinText(value?: string | null) {
+  return Boolean(value && /[A-Za-z]/.test(value));
+}
+
 function calculateAge(birthDate: string): number | null {
   if (!birthDate) return null;
   const date = new Date(birthDate);
@@ -482,15 +490,27 @@ const buildCustomerFromEntry = (entry: Record<string, unknown>, fallbackId: stri
     "engLastName",
   ]);
 
+  const resolvedFirstNameHe = split.first || "";
+  const resolvedLastNameHe = split.last || "";
+  const resolvedFirstNameEn = firstNameEn || "";
+  const resolvedLastNameEn = lastNameEn || "";
+
+  const shouldCopyToEnglish =
+    !resolvedFirstNameEn &&
+    !resolvedLastNameEn &&
+    !isHebrewText(resolvedFirstNameHe) &&
+    !isHebrewText(resolvedLastNameHe) &&
+    (isLatinText(resolvedFirstNameHe) || isLatinText(resolvedLastNameHe));
+
   return {
     id: personId,
     gender: normalizeGender(
       entry.gender || entry.Gender || entry.sex || entry.Sex || entry.sexType || entry.SexType
     ),
-    firstNameHe: split.first || "",
-    lastNameHe: split.last || "",
-    firstNameEn: firstNameEn || "",
-    lastNameEn: lastNameEn || "",
+    firstNameHe: resolvedFirstNameHe,
+    lastNameHe: resolvedLastNameHe,
+    firstNameEn: shouldCopyToEnglish ? resolvedFirstNameHe : resolvedFirstNameEn,
+    lastNameEn: shouldCopyToEnglish ? resolvedLastNameHe : resolvedLastNameEn,
     birthDate: pickString(entry, ["birthDate", "BirthDate", "dateOfBirth", "DateOfBirth", "dob"]),
     email: pickString(entry, ["email", "Email", "mail", "Mail"]),
     phone: pickString(entry, ["phone", "Phone", "phoneNumber", "PhoneNumber", "mobile", "Mobile", "cell", "Cell"]),
