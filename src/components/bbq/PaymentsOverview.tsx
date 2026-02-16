@@ -380,48 +380,31 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       setTotalGuestPayments(guestPaymentsTotal);
 
       // Load current balance and total deposited
-      const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500 שקל
+      const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500 שקל (תשלומי אורחים לא נכללים)
       try {
         const members = await apiClient.getMembers(groupId);
         
-        // סה"כ שהופקד = מספר החברים × 500
+        // סה"כ שהופקד = מספר החברים × 500 (רק חברים, בלי אורחים)
         setTotalDeposited(members.length * DEPOSIT_PER_MEMBER);
         
         if (!isAdmin && userId) {
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
           const userMember = members.find((m: any) => m.phone === userData.phone);
           if (userMember) {
-            // Use exact balance value, but round for display
             const balance = userMember.balance !== undefined && userMember.balance !== null
               ? (typeof userMember.balance === 'string' ? parseFloat(userMember.balance) : userMember.balance)
               : 0;
-            // Round to 2 decimal places for display (but keep exact value in calculation)
             const roundedBalance = parseFloat(balance.toFixed(2));
             setCurrentBalance(roundedBalance);
           } else {
             setCurrentBalance(0);
           }
         } else if (isAdmin) {
-          // For admin, show total balance of all members
-          // Use proper rounding to avoid floating point precision issues
-          let totalBalance = 0;
-          for (const m of members) {
-            if (m.balance !== undefined && m.balance !== null) {
-              const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
-              const roundedBalance = parseFloat(balance.toFixed(2));
-              totalBalance = parseFloat((totalBalance + roundedBalance).toFixed(2));
-            }
-          }
-          // Round to 2 decimal places for display
-          // If the result is very close to a whole number (within 0.05), round to whole number
-          let finalTotalBalance = parseFloat(totalBalance.toFixed(2));
-          const nearestWhole = Math.round(totalBalance);
-          const difference = Math.abs(totalBalance - nearestWhole);
-          if (difference <= 0.05) {
-            finalTotalBalance = nearestWhole;
-          }
-          
-          setCurrentBalance(finalTotalBalance);
+          // יתרה נוכחית = שהופקד + תשלומי אורחים − ניכויים מחברים
+          const totalDep = members.length * DEPOSIT_PER_MEMBER;
+          const calcBalance = totalDep + guestPaymentsTotal - deducted;
+          const roundedBalance = parseFloat(calcBalance.toFixed(2));
+          setCurrentBalance(roundedBalance);
         } else {
           setCurrentBalance(0);
         }

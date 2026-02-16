@@ -597,9 +597,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             : (member.balance || 0);
           const roundedCurrentBalance = parseFloat(currentBalance.toFixed(2));
           
-          // Calculate new balance (deduct rounded costPerPerson)
-          // Both values are already rounded to 2 decimal places
-          const newBalance = Math.max(0, roundedCurrentBalance - roundedCostPerPerson); // Don't go below 0
+          // Calculate new balance (deduct rounded costPerPerson). מינוס = חבר חרג, חייב להשלים
+          const newBalance = roundedCurrentBalance - roundedCostPerPerson;
           
           // Round only when saving to database (to prevent floating point precision issues)
           // Use parseFloat with toFixed to ensure exactly 2 decimal places
