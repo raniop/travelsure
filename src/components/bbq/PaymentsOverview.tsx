@@ -379,9 +379,13 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       
       setTotalGuestPayments(guestPaymentsTotal);
 
-      // Load current balance for the logged-in user and calculate total deposited
+      // Load current balance and total deposited
+      const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500 שקל
       try {
         const members = await apiClient.getMembers(groupId);
+        
+        // סה"כ שהופקד = מספר החברים × 500
+        setTotalDeposited(members.length * DEPOSIT_PER_MEMBER);
         
         if (!isAdmin && userId) {
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
@@ -417,93 +421,10 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             finalTotalBalance = nearestWhole;
           }
           
-          // Store the raw balance for later auto-fix calculation
-          const rawTotalBalance = totalBalance;
-          
           setCurrentBalance(finalTotalBalance);
         } else {
           setCurrentBalance(0);
         }
-        
-        // Calculate total deposited = current balance + total deducted
-        // This represents what was originally deposited (before deductions)
-        // Use exact values for calculation (no rounding)
-        let currentBalanceForCalc = 0;
-        if (isAdmin) {
-          // For admin, use total balance of all members
-          // Use proper rounding to avoid floating point precision issues
-          for (const m of members) {
-            if (m.balance !== undefined && m.balance !== null) {
-              const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
-              const roundedBalance = parseFloat(balance.toFixed(2));
-              currentBalanceForCalc = parseFloat((currentBalanceForCalc + roundedBalance).toFixed(2));
-            }
-          }
-        } else if (userId) {
-          const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
-          const userMember = members.find((m: any) => m.phone === userData.phone);
-          if (userMember) {
-            currentBalanceForCalc = userMember.balance !== undefined && userMember.balance !== null
-              ? (typeof userMember.balance === 'string' ? parseFloat(userMember.balance) : userMember.balance)
-              : 0;
-          }
-        }
-        
-        // Total deposited = current balance + deducted (from members only)
-        // This represents what was originally deposited by members (before deductions).
-        // Only count member payments with status "deducted" (actually taken from balance).
-        // Excludes "pending"/"confirmed" etc. that might not have reduced balance.
-        const memberDeductedOnly = paymentsData
-          .filter((p: any) => p.payer_type === "member" && p.payment_status === "deducted")
-          .reduce((sum, p) => {
-            const amount = parseFloat((p.amount || 0).toFixed(2));
-            return parseFloat((sum + amount).toFixed(2));
-          }, 0);
-        
-        // currentBalanceForCalc is already rounded to 2 decimal places
-        // memberDeductedOnly is already rounded to 2 decimal places
-        // So we can just add them and round the result
-        const totalDepositedCalc = parseFloat((currentBalanceForCalc + memberDeductedOnly).toFixed(2));
-        
-        // Debug log: total deposited = currentBalanceForCalc + memberDeductedOnly (only status "deducted")
-        const paymentsUsedForTotalDeposited = paymentsData.filter(
-          (p: any) => p.payer_type === "member" && p.payment_status === "deducted"
-        );
-        console.log("Total Deposited Calculation:", {
-          currentBalanceForCalc,
-          memberDeductedOnly,
-          totalDepositedCalc,
-          formula: "totalDeposited = currentBalance + member payments (status === 'deducted' only)",
-          membersCount: members.length,
-          sumOfBalances: members.reduce((sum, m) => {
-            const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : (m.balance || 0);
-            return parseFloat((sum + parseFloat(balance.toFixed(2))).toFixed(2));
-          }, 0),
-          paymentsUsedForTotalDeposited: paymentsUsedForTotalDeposited.map((p: any) => ({
-            amount: p.amount,
-            status: p.payment_status,
-            payer_type: p.payer_type,
-            event_id: p.event_id
-          }))
-        });
-        
-        // Round to 2 decimal places for display
-        // If the result is very close to a whole number (within 0.05), round to whole number
-        // This handles cases like 5000.03 -> 5000.00 or 5000.02 -> 5000.00
-        let finalTotalDeposited = parseFloat(totalDepositedCalc.toFixed(2));
-        const nearestWhole = Math.round(totalDepositedCalc);
-        const difference = Math.abs(totalDepositedCalc - nearestWhole);
-        
-        // If very close to whole number (within 0.05), round to whole number
-        if (difference <= 0.05) {
-          finalTotalDeposited = nearestWhole;
-        }
-        
-        setTotalDeposited(finalTotalDeposited);
-
-        // Automatic balance correction is disabled. Total deposited is computed from
-        // current balances + member payments with status "deducted" only. Reconcile
-        // or adjust balances via manager actions (e.g. Update balance) if needed.
       } catch (balanceError) {
         console.error("Error loading balance:", balanceError);
         setCurrentBalance(0);
