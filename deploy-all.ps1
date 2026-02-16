@@ -1,6 +1,21 @@
-# Deploy all files to production with credential prompt
+# Deploy all files to production with credential prompt (always pushes to git too)
 Write-Host "Deploying all files to production..." -ForegroundColor Cyan
 Write-Host ""
+
+# Always push to git first if there are changes
+$gitStatus = git status --porcelain
+if ($gitStatus) {
+    Write-Host "Uncommitted changes found. Committing and pushing to git..." -ForegroundColor Yellow
+    git add -A
+    git commit -m "Deploy: latest changes"
+    git push
+    Write-Host "Git push done." -ForegroundColor Green
+    Write-Host ""
+} else {
+    Write-Host "No uncommitted changes. Pushing to ensure remote is up to date..." -ForegroundColor Yellow
+    git push
+    Write-Host ""
+}
 
 # Get credentials
 $cred = Get-Credential -Message "Enter FTP credentials (Username and Password for server 109.226.23.217)"
