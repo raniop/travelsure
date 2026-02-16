@@ -244,28 +244,36 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
 
       {/* LEFT: Stats and Actions */}
       <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start" dir="rtl" style={{ direction: "rtl" }}>
-        {/* Balance */}
+        {/* Balance: כל חבר התחיל עם 500, מורידים לפי אירועים. מינוס = חייב להשלים */}
         <div
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+          className={`flex flex-col gap-0.5 items-end px-3 py-2 rounded-lg ${
             (member.balance || 0) >= 0
               ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
               : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
           }`}
           dir="rtl"
         >
-          <div className="flex flex-col items-end">
-            <span className="text-xs text-muted-foreground">יתרה</span>
-            <span className="text-sm md:text-base font-bold">
-              <span dir="ltr" className="tabular-nums">
-                {Math.abs(member.balance || 0).toFixed(2)}
-              </span>{" "}
-              שקל
-            </span>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end">
+              <span className="text-xs text-muted-foreground">יתרה</span>
+              <span className="text-sm md:text-base font-bold">
+                <span dir="ltr" className="tabular-nums">
+                  {(member.balance || 0) < 0 ? "-" : ""}
+                  {Math.abs(member.balance || 0).toFixed(2)}
+                </span>{" "}
+                שקל
+              </span>
+            </div>
+            {(member.balance || 0) >= 0 ? (
+              <ArrowUpRight className="w-4 h-4 shrink-0" />
+            ) : (
+              <ArrowDownRight className="w-4 h-4 shrink-0" />
+            )}
           </div>
-          {(member.balance || 0) >= 0 ? (
-            <ArrowUpRight className="w-4 h-4 shrink-0" />
-          ) : (
-            <ArrowDownRight className="w-4 h-4 shrink-0" />
+          {(member.balance || 0) < 0 && (
+            <span className="text-xs font-medium">
+              במינוס – יש להשלים {Math.abs(member.balance || 0).toFixed(2)} שקל
+            </span>
           )}
         </div>
 
@@ -338,15 +346,17 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
 
         {isAdmin && (
           <>
-            {(member.balance || 0) < 100 && member.phone && (
+            {((member.balance || 0) < 100 || (member.balance || 0) < 0) && member.phone && (
               <Button
                 variant="default"
                 size="sm"
                 onClick={() => {
-                  // Send WhatsApp message requesting deposit
                   const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
                   const currentBalance = member.balance || 0;
-                  const message = `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה שלך.`;
+                  const isNegative = currentBalance < 0;
+                  const message = isNegative
+                    ? `שלום ${member.name}!\n\nהיתרה שלך במינוס: ${currentBalance.toFixed(2)} ₪ (חייב/ת להשלים ${Math.abs(currentBalance).toFixed(2)} ₪).\n\nאנא השלם את הסכום לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההשלמה, המנהל יעדכן את היתרה.`
+                    : `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה שלך.`;
                   
                   // Convert Israeli phone number to international format (+972)
                   let phoneNumber = member.phone.replace(/[^0-9]/g, '');
@@ -364,7 +374,9 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
                   
                   toast({
                     title: "נשלחה הודעת WhatsApp",
-                    description: `נשלחה בקשה להפקדה ל-${member.name}`
+                    description: (member.balance || 0) < 0
+                      ? `נשלחה בקשה להשלמת יתרה ל-${member.name}`
+                      : `נשלחה בקשה להפקדה ל-${member.name}`
                   });
                 }}
               >
@@ -702,14 +714,15 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
     e.preventDefault();
 
     const balanceValue = parseFloat(balance);
-    if (isNaN(balanceValue) || balanceValue < 0) {
+    if (isNaN(balanceValue)) {
       toast({
         title: "שגיאה",
-        description: "אנא הזן יתרה תקינה (מספר חיובי)",
+        description: "אנא הזן יתרה תקינה (מספר)",
         variant: "destructive"
       });
       return;
     }
+    // יתרה שלילית = החבר חרג וחייב להשלים (מותר)
 
     try {
       setLoading(true);
@@ -764,17 +777,16 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
           <DialogHeader>
             <DialogTitle>עדכן יתרה - {member.name}</DialogTitle>
             <DialogDescription>
-              עדכן את היתרה החודשית של החבר (500 שקל בתחילת החודש)
+              עדכן יתרה: כל חבר מתחיל עם 500 שקל, מורידים לפי אירועים. מינוס = החבר חייב להשלים.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="balance">יתרה נוכחית (₪)</Label>
+              <Label htmlFor="balance">יתרה נוכחית (₪) — מינוס = חייב להשלים</Label>
               <Input
                 id="balance"
                 type="number"
                 step="0.01"
-                min="0"
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="0.00"
