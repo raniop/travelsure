@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && powershell -ExecutionPolicy Bypass -File .\\sync-bbq-assets.ps1",
     "build:dev": "vite build --mode development",
     "build:deploy": "vite build && powershell -ExecutionPolicy Bypass -File .\\deploy-to-iis.ps1",
     "build:deploy:push": "vite build && powershell -ExecutionPolicy Bypass -File .\\deploy-to-iis.ps1 && powershell -ExecutionPolicy Bypass -File .\\git-push.ps1",
