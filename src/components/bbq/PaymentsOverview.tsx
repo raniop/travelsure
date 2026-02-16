@@ -450,14 +450,11 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         }
         
         // Total deposited = current balance + deducted (from members only)
-        // This represents what was originally deposited by members (before deductions)
-        // Guest payments are NOT deposits - they are separate payments for events
-        // Use exact values (no rounding in calculation)
-        // IMPORTANT: Only count member payments that were deducted from balance
-        // Make sure we're only counting member payments, not guest payments
-        // Use proper rounding to avoid floating point precision issues
-        const memberDeductedOnly = deductedPaymentsFiltered
-          .filter((p: any) => p.payer_type === "member")
+        // This represents what was originally deposited by members (before deductions).
+        // Only count member payments with status "deducted" (actually taken from balance).
+        // Excludes "pending"/"confirmed" etc. that might not have reduced balance.
+        const memberDeductedOnly = paymentsData
+          .filter((p: any) => p.payer_type === "member" && p.payment_status === "deducted")
           .reduce((sum, p) => {
             const amount = parseFloat((p.amount || 0).toFixed(2));
             return parseFloat((sum + amount).toFixed(2));
@@ -468,27 +465,25 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         // So we can just add them and round the result
         const totalDepositedCalc = parseFloat((currentBalanceForCalc + memberDeductedOnly).toFixed(2));
         
-        // Debug log to see what's happening
+        // Debug log: total deposited = currentBalanceForCalc + memberDeductedOnly (only status "deducted")
+        const paymentsUsedForTotalDeposited = paymentsData.filter(
+          (p: any) => p.payer_type === "member" && p.payment_status === "deducted"
+        );
         console.log("Total Deposited Calculation:", {
           currentBalanceForCalc,
-          deducted,
           memberDeductedOnly,
           totalDepositedCalc,
+          formula: "totalDeposited = currentBalance + member payments (status === 'deducted' only)",
           membersCount: members.length,
-          membersBalances: members.map((m: any) => ({ 
-            name: m.name, 
-            balance: m.balance,
-            roundedBalance: parseFloat((m.balance || 0).toFixed(2))
-          })),
           sumOfBalances: members.reduce((sum, m) => {
             const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : (m.balance || 0);
             return parseFloat((sum + parseFloat(balance.toFixed(2))).toFixed(2));
           }, 0),
-          deductedPayments: deductedPaymentsFiltered.map((p: any) => ({ 
+          paymentsUsedForTotalDeposited: paymentsUsedForTotalDeposited.map((p: any) => ({
             amount: p.amount,
-            roundedAmount: parseFloat((p.amount || 0).toFixed(2)),
             status: p.payment_status,
-            payer_type: p.payer_type 
+            payer_type: p.payer_type,
+            event_id: p.event_id
           }))
         });
         
@@ -506,125 +501,9 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         
         setTotalDeposited(finalTotalDeposited);
 
-        // AUTO-FIX: Always check and fix balances if needed
-        // If totalDeposited is very close to a round number (like 5000.03 -> 5000.00),
-        // recalculate and fix balances automatically
-        if (isAdmin && nearestWhole > 0 && difference <= 0.05) {
-          // Calculate what the correct current balance should be
-          // Use the rounded totalDeposited (nearestWhole) minus memberDeductedOnly
-          const correctCurrentBalance = parseFloat((nearestWhole - memberDeductedOnly).toFixed(2));
-          const actualCurrentBalance = parseFloat(currentBalanceForCalc.toFixed(2));
-          const balanceDifference = Math.abs(actualCurrentBalance - correctCurrentBalance);
-          
-          // If there's a difference (even small like 0.03), fix the balances
-          // This ensures balances are always correct based on deposits and deductions
-          if (balanceDifference > 0.001) {
-            console.log("Auto-fixing balances:", {
-              correctCurrentBalance,
-              actualCurrentBalance,
-              balanceDifference,
-              totalDeposited: nearestWhole,
-              memberDeductedOnly
-            });
-            
-            // Calculate the correction factor
-            const correctionFactor = correctCurrentBalance - actualCurrentBalance;
-            
-            // Distribute the correction proportionally among all members
-            try {
-              const freshMembers = await apiClient.getMembers(groupId);
-              const totalCurrentBalance = freshMembers.reduce((sum, m) => {
-                const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : (m.balance || 0);
-                return sum + parseFloat(balance.toFixed(2));
-              }, 0);
-              
-              if (totalCurrentBalance > 0 && Math.abs(correctionFactor) > 0.001) {
-                // Calculate the target total balance
-                const targetTotalBalance = correctCurrentBalance;
-                
-                // Adjust each member's balance proportionally to reach the target
-                // We'll update all members to ensure the total matches
-                let totalAdjusted = 0;
-                const updates: Array<{id: string, balance: number}> = [];
-                
-                for (let i = 0; i < freshMembers.length; i++) {
-                  const member = freshMembers[i];
-                  const currentBalance = typeof member.balance === 'string' 
-                    ? parseFloat(member.balance) 
-                    : (member.balance || 0);
-                  
-                  if (currentBalance > 0) {
-                    // Calculate proportional adjustment
-                    const proportion = currentBalance / totalCurrentBalance;
-                    const targetBalance = targetTotalBalance * proportion;
-                    const newBalance = parseFloat(targetBalance.toFixed(2));
-                    
-                    // For the last member, adjust to ensure exact total
-                    if (i === freshMembers.length - 1) {
-                      const remainingBalance = parseFloat((targetTotalBalance - totalAdjusted).toFixed(2));
-                      updates.push({ id: member.id, balance: remainingBalance });
-                    } else {
-                      updates.push({ id: member.id, balance: newBalance });
-                      totalAdjusted = parseFloat((totalAdjusted + newBalance).toFixed(2));
-                    }
-                  }
-                }
-                
-                // Apply all updates
-                for (const update of updates) {
-                  const member = freshMembers.find(m => m.id === update.id);
-                  if (member) {
-                    await apiClient.updateMember(member.id, {
-                      ...member,
-                      balance: update.balance
-                    });
-                  }
-                }
-                
-                // Wait a bit for the updates to complete
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                // Reload members to get updated balances
-                const updatedMembers = await apiClient.getMembers(groupId);
-                let fixedTotalBalance = 0;
-                for (const m of updatedMembers) {
-                  if (m.balance !== undefined && m.balance !== null) {
-                    const balance = typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance;
-                    const roundedBalance = parseFloat(balance.toFixed(2));
-                    fixedTotalBalance = parseFloat((fixedTotalBalance + roundedBalance).toFixed(2));
-                  }
-                }
-                
-                // Round the fixed balance if needed
-                const nearestWholeFixed = Math.round(fixedTotalBalance);
-                const differenceFixed = Math.abs(fixedTotalBalance - nearestWholeFixed);
-                if (differenceFixed <= 0.05) {
-                  fixedTotalBalance = nearestWholeFixed;
-                }
-                
-                // Update current balance display
-                setCurrentBalance(fixedTotalBalance);
-                
-                console.log("Balances auto-fixed:", {
-                  oldTotal: actualCurrentBalance,
-                  newTotal: fixedTotalBalance,
-                  correction: correctionFactor,
-                  expected: correctCurrentBalance,
-                  updatesCount: updates.length
-                });
-              }
-            } catch (fixError) {
-              console.error("Error auto-fixing balances:", fixError);
-            }
-          } else {
-            // Even if difference is small, if balance is close to whole number, round it
-            const nearestWholeBalance = Math.round(actualCurrentBalance);
-            const differenceBalance = Math.abs(actualCurrentBalance - nearestWholeBalance);
-            if (differenceBalance <= 0.05) {
-              setCurrentBalance(nearestWholeBalance);
-            }
-          }
-        }
+        // Automatic balance correction is disabled. Total deposited is computed from
+        // current balances + member payments with status "deducted" only. Reconcile
+        // or adjust balances via manager actions (e.g. Update balance) if needed.
       } catch (balanceError) {
         console.error("Error loading balance:", balanceError);
         setCurrentBalance(0);
