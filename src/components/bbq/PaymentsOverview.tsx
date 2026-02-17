@@ -379,14 +379,17 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       
       setTotalGuestPayments(guestPaymentsTotal);
 
-      // Load current balance and total deposited
-      const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500 שקל (תשלומי אורחים לא נכללים)
+      // Load current balance and total deposited (רק חברים, בלי אורחים)
       try {
         const members = await apiClient.getMembers(groupId);
-        
-        // סה"כ שהופקד = מספר החברים × 500 (רק חברים, בלי אורחים)
-        setTotalDeposited(members.length * DEPOSIT_PER_MEMBER);
-        
+        const sumBalances = members.reduce((sum, m: any) => {
+          const b = m.balance != null ? (typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance) : 0;
+          return parseFloat((sum + parseFloat(b.toFixed(2))).toFixed(2));
+        }, 0);
+        // סה"כ שהופקד = יתרות נוכחיות + כל מה שניכוי → כולל הפקדות נוספות (עדכון יתרה)
+        const totalDepositedCalc = parseFloat((sumBalances + deducted).toFixed(2));
+        setTotalDeposited(totalDepositedCalc);
+
         if (!isAdmin && userId) {
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
           const userMember = members.find((m: any) => m.phone === userData.phone);
@@ -400,10 +403,8 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             setCurrentBalance(0);
           }
         } else if (isAdmin) {
-          // יתרה נוכחית = רק חברים: שהופקד − ניכויים (בלי תשלומי אורחים)
-          const totalDep = members.length * DEPOSIT_PER_MEMBER;
-          const calcBalance = totalDep - deducted;
-          const roundedBalance = parseFloat(calcBalance.toFixed(2));
+          // יתרה נוכחית = סכום יתרות כל החברים (= סה"כ שהופקד − ניכויים)
+          const roundedBalance = parseFloat(sumBalances.toFixed(2));
           setCurrentBalance(roundedBalance);
         } else {
           setCurrentBalance(0);
