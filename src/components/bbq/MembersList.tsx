@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, User, Phone, Mail, Trash2, Wallet, MessageCircle, Users, ArrowUpRight, ArrowDownRight, LogOut } from "lucide-react";
+import { Plus, User, Mail, Trash2, Wallet, MessageCircle, Users, LogOut } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -246,197 +246,125 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
     }
   };
 
-  const renderMemberCard = (member: Member, index: number) => (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      {/* RIGHT: Member info (pinned to the right edge) */}
-      <div className="flex items-center gap-3 ml-auto text-right" dir="rtl" style={{ direction: "rtl" }}>
-        <Avatar className="w-12 h-12 shrink-0">
-          {member.profile_image ? (
-            <AvatarImage src={member.profile_image} alt={member.name} />
-          ) : null}
-          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
-            {member.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+  const renderMemberCard = (member: Member, index: number, isMe?: boolean) => {
+    const savedUser = localStorage.getItem('bbq_current_user');
+    const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
+    const isCurrentUser = member.phone === userPhone;
+    const balance = member.balance ?? 0;
+    const isNegative = balance < 0;
+    const showRequestDeposit = isAdmin && member.phone && (balance < 100 || balance < 0);
 
-        <div className="flex flex-col items-end">
-          <div className="font-semibold text-base md:text-lg text-right">{member.name}</div>
-          {member.nickname && (
-            <div className="text-xs md:text-sm text-muted-foreground text-right">{member.nickname}</div>
-          )}
-          {member.phone && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-              <Phone className="w-3 h-3" />
-              <span>{member.phone}</span>
+    return (
+      <div className="flex flex-col gap-4">
+        {/* Row: Avatar | Name + details | Balance - same order for all cards */}
+        <div className="flex items-center gap-4 min-h-[72px]" dir="rtl" style={{ direction: "rtl" }}>
+          <Avatar className="w-14 h-14 shrink-0 ring-2 ring-background shadow-sm">
+            {member.profile_image ? (
+              <AvatarImage src={member.profile_image} alt={member.name} />
+            ) : null}
+            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-xl">
+              {member.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0 flex flex-col items-end justify-center">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <span className="font-semibold text-base truncate">{member.name}</span>
+              {isMe && (
+                <Badge variant="secondary" className="text-xs shrink-0">אני</Badge>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* LEFT: Stats and Actions */}
-      <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-start" dir="rtl" style={{ direction: "rtl" }}>
-        {/* Balance: כל חבר התחיל עם 500, מורידים לפי אירועים. מינוס = חייב להשלים */}
-        <div
-          className={`flex flex-col gap-0.5 items-end px-3 py-2 rounded-lg ${
-            (member.balance || 0) >= 0
-              ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-              : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-          }`}
-          dir="rtl"
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex flex-col items-end">
-              <span className="text-xs text-muted-foreground">יתרה</span>
-              <span className="text-sm md:text-base font-bold">
-                <span dir="ltr" className="tabular-nums">
-                  {(member.balance || 0) < 0 ? "-" : ""}
-                  {Math.abs(member.balance || 0).toFixed(2)}
-                </span>{" "}
-                שקל
-              </span>
+            <div className="text-sm text-muted-foreground truncate max-w-full">
+              {member.nickname || (member.phone ? member.phone : "—")}
             </div>
-            {(member.balance || 0) >= 0 ? (
-              <ArrowUpRight className="w-4 h-4 shrink-0" />
-            ) : (
-              <ArrowDownRight className="w-4 h-4 shrink-0" />
-            )}
           </div>
-          {(member.balance || 0) < 0 && (
-            <span className="text-xs font-medium">
-              במינוס – יש להשלים {Math.abs(member.balance || 0).toFixed(2)} שקל
+          {/* Balance - fixed min height so cards align */}
+          <div
+            className={`shrink-0 w-[120px] min-h-[56px] flex flex-col items-end justify-center gap-0.5 px-3 py-2 rounded-xl ${
+              isNegative ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400" : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+            }`}
+          >
+            <span className="text-sm font-bold tabular-nums" dir="ltr">
+              {isNegative ? "-" : ""}{Math.abs(balance).toFixed(2)} ₪
             </span>
-          )}
+            <span className="text-xs">
+              {isNegative ? `להשלים ${Math.abs(balance).toFixed(2)} ₪` : "יתרה"}
+            </span>
+          </div>
         </div>
 
-        {/* Actions */}
-        {(() => {
-          const savedUser = localStorage.getItem('bbq_current_user');
-          const userPhone = savedUser ? JSON.parse(savedUser).phone : null;
-          const isCurrentUser = member.phone === userPhone;
-          
-          if (editingNickname === member.id) {
-            return (
-              <EditNicknameDialog
-                member={member}
-                groupId={groupId}
-                currentNickname={member.nickname || ""}
-                onNicknameUpdated={(newNickname) => {
-                  setMembers(prev => prev.map(m => 
-                    m.id === member.id ? { ...m, nickname: newNickname } : m
-                  ));
-                  setEditingNickname(null);
-                }}
-                onCancel={() => setEditingNickname(null)}
-              />
-            );
-          }
-          
-          if (isCurrentUser) {
-            return (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingNickname(member.id)}
-                >
-                  {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={async () => {
-                    if (!confirm("האם אתה בטוח שברצונך לצאת מהקבוצה?")) return;
-                    
-                    try {
-                      await apiClient.deleteMember(member.id);
-                      toast({
-                        title: "הצלחה!",
-                        description: "יצאת מהקבוצה בהצלחה."
-                      });
-                      onLeaveGroup?.();
-                    } catch (error: any) {
-                      console.error("Error leaving group:", error);
-                      toast({
-                        title: "שגיאה",
-                        description: error.message || "לא הצלחנו לצאת מהקבוצה.",
-                        variant: "destructive"
-                      });
-                    }
-                  }}
-                  className="gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  צא מהקבוצה
-                </Button>
-              </>
-            );
-          }
-          
-          return null;
-        })()}
-
-        {isAdmin && (
-          <>
-            {((member.balance || 0) < 100 || (member.balance || 0) < 0) && member.phone && (
+        {/* Actions - one row, consistent spacing */}
+        <div className="flex flex-wrap items-center gap-2 justify-start border-t border-border/50 pt-3" dir="rtl" style={{ direction: "rtl" }}>
+          {editingNickname === member.id ? (
+            <EditNicknameDialog
+              member={member}
+              groupId={groupId}
+              currentNickname={member.nickname || ""}
+              onNicknameUpdated={(newNickname) => {
+                setMembers(prev => prev.map(m => m.id === member.id ? { ...m, nickname: newNickname } : m));
+                setEditingNickname(null);
+              }}
+              onCancel={() => setEditingNickname(null)}
+            />
+          ) : isCurrentUser ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setEditingNickname(member.id)}>
+                {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
+              </Button>
               <Button
-                variant="default"
+                variant="destructive"
                 size="sm"
-                onClick={() => {
-                  const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
-                  const currentBalance = member.balance || 0;
-                  const isNegative = currentBalance < 0;
-                  const message = isNegative
-                    ? `שלום ${member.name}!\n\nהיתרה שלך במינוס: ${currentBalance.toFixed(2)} ₪ (חייב/ת להשלים ${Math.abs(currentBalance).toFixed(2)} ₪).\n\nאנא השלם את הסכום לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההשלמה, המנהל יעדכן את היתרה.`
-                    : `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה שלך.`;
-                  
-                  // Convert Israeli phone number to international format (+972)
-                  let phoneNumber = member.phone.replace(/[^0-9]/g, '');
-                  if (phoneNumber.startsWith('0')) {
-                    phoneNumber = '972' + phoneNumber.substring(1);
-                  } else if (!phoneNumber.startsWith('972')) {
-                    phoneNumber = '972' + phoneNumber;
+                onClick={async () => {
+                  if (!confirm("האם אתה בטוח שברצונך לצאת מהקבוצה?")) return;
+                  try {
+                    await apiClient.deleteMember(member.id);
+                    toast({ title: "הצלחה!", description: "יצאת מהקבוצה בהצלחה." });
+                    onLeaveGroup?.();
+                  } catch (e: any) {
+                    toast({ title: "שגיאה", description: e.message || "לא הצלחנו לצאת מהקבוצה.", variant: "destructive" });
                   }
-                  
-                  // Create WhatsApp link
-                  const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-                  
-                  // Open WhatsApp in new window
-                  window.open(whatsappLink, '_blank');
-                  
-                  toast({
-                    title: "נשלחה הודעת WhatsApp",
-                    description: (member.balance || 0) < 0
-                      ? `נשלחה בקשה להשלמת יתרה ל-${member.name}`
-                      : `נשלחה בקשה להפקדה ל-${member.name}`
-                  });
                 }}
               >
-                <MessageCircle className="w-4 h-4 ml-2" />
-                בקש הפקדה
+                <LogOut className="w-4 h-4 ml-1.5" />
+                צא מהקבוצה
               </Button>
-            )}
-            <UpdateBalanceDialog 
-              member={member} 
-              groupId={groupId}
-              onBalanceUpdated={loadMembers}
-            >
-              <Button variant="outline" size="sm">
-                עדכן יתרה
+            </>
+          ) : isAdmin ? (
+            <>
+              {showRequestDeposit && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
+                    const currentBalance = member.balance || 0;
+                    const isNeg = currentBalance < 0;
+                    const message = isNeg
+                      ? `שלום ${member.name}!\n\nהיתרה שלך במינוס: ${currentBalance.toFixed(2)} ₪ (חייב/ת להשלים ${Math.abs(currentBalance).toFixed(2)} ₪).\n\nאנא השלם את הסכום לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההשלמה, המנהל יעדכן את היתרה.`
+                      : `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה.`;
+                    let phoneNumber = (member.phone || "").replace(/[^0-9]/g, '');
+                    if (phoneNumber.startsWith('0')) phoneNumber = '972' + phoneNumber.slice(1);
+                    else if (!phoneNumber.startsWith('972')) phoneNumber = '972' + phoneNumber;
+                    window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+                    toast({ title: "נשלחה הודעת WhatsApp", description: isNeg ? `בקשה להשלמת יתרה ל-${member.name}` : `בקשה להפקדה ל-${member.name}` });
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 ml-1.5" />
+                  בקש הפקדה
+                </Button>
+              )}
+              <UpdateBalanceDialog member={member} groupId={groupId} onBalanceUpdated={loadMembers}>
+                <Button variant="outline" size="sm">עדכן יתרה</Button>
+              </UpdateBalanceDialog>
+              <Button variant="destructive" size="sm" onClick={() => deleteMember(member.id)}>
+                <Trash2 className="w-4 h-4 ml-1.5" />
+                מחק
               </Button>
-            </UpdateBalanceDialog>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => deleteMember(member.id)}
-            >
-              <Trash2 className="w-4 h-4 ml-2" />
-              מחק
-            </Button>
-          </>
-        )}
+            </>
+          ) : null}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -451,21 +379,18 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
 
   return (
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
-      {/* Header */}
-      <div className="flex items-center justify-between w-full mb-6" dir="rtl" style={{ direction: "rtl" }}>
-        <div className="flex items-center gap-3">
-          {isAdmin && (
-            <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
-              <Button>
-                <Plus className="w-4 h-4 ml-2" />
-                הוסף חבר
-              </Button>
-            </AddMemberDialog>
-          )}
-        </div>
-        <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-500 to-teal-600 bg-clip-text text-transparent text-right">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8" dir="rtl" style={{ direction: "rtl" }}>
+        <h2 className="text-2xl font-bold text-foreground text-right">
           חברים
         </h2>
+        {isAdmin && (
+          <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
+            <Button className="w-full sm:w-auto">
+              <Plus className="w-4 h-4 ml-2" />
+              הוסף חבר
+            </Button>
+          </AddMemberDialog>
+        )}
       </div>
 
       {members.length === 0 ? (
@@ -500,28 +425,23 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
             
             return (
               <>
-                <div className="mb-6">
-                  <h3 className="text-lg md:text-xl font-semibold mb-3 text-right">אני</h3>
-                  <div
-                    className="group relative p-4 rounded-xl border-2 border-primary/30 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-primary/5 via-primary/5 to-muted/20"
-                    dir="rtl"
-                  >
-                    {renderMemberCard(currentUserMember, 0)}
+                <div className="mb-8">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2 text-right">אני</h3>
+                  <div className="rounded-2xl border-2 border-primary/20 bg-card p-5 shadow-sm hover:shadow-md transition-shadow">
+                    {renderMemberCard(currentUserMember, 0, true)}
                   </div>
                 </div>
                 
                 {otherMembers.length > 0 && (
                   <div>
-                    <h3 className="text-lg md:text-xl font-semibold mb-3 text-right">חברים נוספים</h3>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2 text-right">חברים נוספים</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
                       {otherMembers.map((member, index) => (
                         <div
                           key={member.id}
-                          className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                          dir="rtl"
+                          className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md hover:border-primary/30 transition-all"
                         >
-                          {renderMemberCard(member, index)}
+                          {renderMemberCard(member, index, false)}
                         </div>
                       ))}
                     </div>
