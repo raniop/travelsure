@@ -62,24 +62,55 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
     loadGuests();
   }, [groupId, refreshTrigger]); // Add refreshTrigger to dependencies
 
+  const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500, היתרה = 500 − סכום ניכויים מאירועים
+
   const loadMembers = async () => {
     try {
       setLoading(true);
       const members = await apiClient.getMembers(groupId);
-      
-      // Round all balances to 2 decimal places (for display only, keep exact values in calculation)
-      const membersWithRoundedBalances = members.map((member: any) => ({
+      const events = await apiClient.getEvents(groupId);
+      const allPayments: any[] = [];
+      for (const event of events) {
+        const payments = await apiClient.getPayments(event.id);
+        for (const p of payments) {
+          allPayments.push({ ...p, event_id: event.id });
+        }
+      }
+      // יתרה נכונה לכל חבר: 500 − סכום כל הניכויים (תשלומים שמונכים מהיתרה, לא "paid")
+      const membersWithCorrectBalance = members.map((member: any) => {
+        const deducted = allPayments
+          .filter((p: any) => p.payer_type === "member" && p.payer_id === member.id && p.payment_status !== "paid")
+          .reduce((sum: number, p: any) => sum + parseFloat((p.amount || 0).toFixed(2)), 0);
+        const calculatedBalance = parseFloat((DEPOSIT_PER_MEMBER - deducted).toFixed(2));
+        return {
+          ...member,
+          balance: calculatedBalance
+        };
+      });
+      // Round for display (already 2 decimals)
+      const membersWithRoundedBalances = membersWithCorrectBalance.map((member: any) => ({
         ...member,
-        balance: member.balance !== undefined && member.balance !== null 
+        balance: member.balance !== undefined && member.balance !== null
           ? parseFloat((member.balance).toFixed(2))
           : member.balance
       }));
-      
+      // אם מנהל – מעדכנים גם ב-API כדי שהנתונים יהיו נכונים בכל המערכת
+      if (isAdmin) {
+        for (const member of membersWithRoundedBalances) {
+          const stored = members.find((m: any) => m.id === member.id);
+          const storedBalance = stored?.balance != null ? parseFloat((stored.balance).toFixed(2)) : null;
+          if (storedBalance !== member.balance) {
+            try {
+              await apiClient.updateMember(member.id, { ...member, balance: member.balance });
+            } catch (e) {
+              console.error("Error syncing balance for member", member.id, e);
+            }
+          }
+        }
+      }
       // Load all users to get profile images
       try {
         const allUsers = await apiClient.getUsers();
-        
-        // Match members with users by phone to get profile images
         const membersWithImages = membersWithRoundedBalances.map((member: any) => {
           if (member.phone) {
             const user = allUsers.find((u: any) => u.phone === member.phone);
@@ -89,11 +120,8 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
           }
           return member;
         });
-        
-        // Sort by name
         setMembers(membersWithImages.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (userError) {
-        // If can't load users, just use members without images
         console.error("Error loading users for profile images:", userError);
         setMembers(membersWithRoundedBalances.sort((a, b) => a.name.localeCompare(b.name)));
       }
