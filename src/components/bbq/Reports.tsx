@@ -690,19 +690,29 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* נוכחות חברים – רעיון חדש: פודיום ל-3 הראשונים + גרף מוטות RTL (צומח מימין לשמאל) */}
+        {/* נוכחות חברים – פודיום לפי מקומות; אותו מספר אירועים = אותו מקום (מקובצים) */}
         {memberAttendanceData.length > 0 && (() => {
           const maxEvents = Math.max(...memberAttendanceData.map((e) => e.events), 1);
-          const top3 = memberAttendanceData.slice(0, 3);
-          const rest = memberAttendanceData.slice(3);
+          const byEvents = new Map<number, MemberAttendanceData[]>();
+          memberAttendanceData.forEach((e) => {
+            const list = byEvents.get(e.events) || [];
+            list.push(e);
+            byEvents.set(e.events, list);
+          });
+          const sortedCounts = [...byEvents.keys()].sort((a, b) => b - a);
+          const places: { place: number; events: number; members: MemberAttendanceData[] }[] = [];
+          sortedCounts.forEach((events, idx) => {
+            places.push({ place: idx + 1, events, members: byEvents.get(events)! });
+          });
+          const top3Places = places.slice(0, 3);
+          const restPlaces = places.slice(3);
           const podiumColors = [
-            { bg: "from-amber-400 to-yellow-500", ring: "ring-amber-400/50", label: "מקום 1" },
-            { bg: "from-slate-300 to-slate-400", ring: "ring-slate-300/50", label: "מקום 2" },
-            { bg: "from-amber-600 to-amber-700", ring: "ring-amber-700/50", label: "מקום 3" },
+            { bg: "from-amber-400 to-yellow-500", label: "מקום 1" },
+            { bg: "from-slate-300 to-slate-400", label: "מקום 2" },
+            { bg: "from-amber-600 to-amber-700", label: "מקום 3" },
           ];
           return (
             <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card" dir="rtl">
-              {/* כותרת – מיושרת בצד ימין בלבד */}
               <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white" dir="rtl">
                 <div className="flex items-center gap-4 justify-start max-w-full w-full">
                   <div className="text-right min-w-0">
@@ -715,20 +725,23 @@ const Reports = ({ groupId }: ReportsProps) => {
                 </div>
               </header>
               <CardContent className="p-4 md:p-6">
-                {/* פודיום אמיתי: מדרגות – מקום 1 הכי גבוה, אז 2, אז 3 (ב-RTL: 1 ימין, 2 מרכז, 3 שמאל) */}
+                {/* פודיום: 3 מקומות ראשונים – כל מקום יכול להכיל כמה חברים עם אותו כמות */}
                 <div className="flex items-end justify-center gap-2 sm:gap-4 mb-6 min-h-[200px]" dir="rtl">
-                  {[0, 1, 2].map((i) => {
-                    if (i >= top3.length) return null;
-                    const entry = top3[i];
+                  {top3Places.map((slot, i) => {
                     const style = podiumColors[i];
                     const pedestalHeights = ["h-16", "h-10", "h-6"];
                     const pedHeight = pedestalHeights[i];
+                    const names = slot.members.map((m) => m.name).join(", ");
                     return (
-                      <div key={i} className="flex flex-col items-center flex-1 max-w-[140px]">
+                      <div key={i} className="flex flex-col items-center flex-1 max-w-[160px]">
                         <div className={`w-full rounded-t-2xl p-3 text-white shadow-lg bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[100px] border-b-0`}>
-                          <span className="text-2xl font-black tabular-nums opacity-90">{entry.events}</span>
+                          <span className="text-2xl font-black tabular-nums opacity-90">{slot.events}</span>
                           <span className="text-xs opacity-90">אירועים</span>
-                          <span className="font-bold mt-1.5 truncate w-full text-sm" title={entry.name}>{entry.name}</span>
+                          <div className="font-bold mt-1.5 w-full text-sm line-clamp-3 text-center" title={names}>
+                            {slot.members.map((m, j) => (
+                              <span key={j}>{m.name}{j < slot.members.length - 1 ? " • " : ""}</span>
+                            ))}
+                          </div>
                           <span className="text-xs opacity-80 mt-0.5">{style.label}</span>
                         </div>
                         <div className={`w-full ${pedHeight} rounded-b-lg bg-gradient-to-b ${style.bg} opacity-90`} />
@@ -736,16 +749,17 @@ const Reports = ({ groupId }: ReportsProps) => {
                     );
                   })}
                 </div>
-                {/* שאר הרשימה: מוט אופקי שצומח מימין לשמאל, שם מימין */}
-                {rest.length > 0 && (
+                {/* שאר המקומות – כל שורה = מקום אחד (יכול כמה שמות) + מוט */}
+                {restPlaces.length > 0 && (
                   <div className="space-y-3">
-                    {rest.map((entry, idx) => {
-                      const index = 3 + idx;
-                      const pct = maxEvents > 0 ? (entry.events / maxEvents) * 100 : 0;
+                    {restPlaces.map((slot, idx) => {
+                      const pct = maxEvents > 0 ? (slot.events / maxEvents) * 100 : 0;
+                      const placeNum = 4 + idx;
+                      const names = slot.members.map((m) => m.name).join(" • ");
                       return (
-                        <div key={index} className="flex items-center gap-3 w-full">
-                          <span className="w-6 text-right text-muted-foreground tabular-nums text-sm shrink-0">{index + 1}</span>
-                          <span className="font-medium truncate w-28 text-right shrink-0">{entry.name}</span>
+                        <div key={idx} className="flex items-center gap-3 w-full">
+                          <span className="w-8 text-right text-muted-foreground tabular-nums text-sm shrink-0">{placeNum}</span>
+                          <span className="font-medium text-right shrink-0 max-w-[180px] truncate" title={names}>{names}</span>
                           <div className="flex-1 h-8 rounded-full bg-muted overflow-hidden min-w-0" dir="rtl">
                             <div
                               className="h-full rounded-full bg-gradient-to-l from-primary to-primary/70 transition-all duration-500"
@@ -753,7 +767,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                             />
                           </div>
                           <div className="w-16 shrink-0 text-left" style={{ direction: "ltr" }}>
-                            <span className="text-sm font-bold text-muted-foreground tabular-nums">{entry.events} אירועים</span>
+                            <span className="text-sm font-bold text-muted-foreground tabular-nums">{slot.events} אירועים</span>
                           </div>
                         </div>
                       );
