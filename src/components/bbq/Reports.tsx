@@ -706,11 +706,12 @@ const Reports = ({ groupId }: ReportsProps) => {
           });
           const top3Places = places.slice(0, 3);
           const restPlaces = places.slice(3);
-          const podiumColors = [
-            { bg: "from-amber-400 to-yellow-500", label: "מקום 1" },
-            { bg: "from-slate-300 to-slate-400", label: "מקום 2" },
-            { bg: "from-amber-600 to-amber-700", label: "מקום 3" },
-          ];
+          const byPlace: Record<number, { bg: string; label: string; pedHeight: string }> = {
+            1: { bg: "from-amber-400 to-yellow-500", label: "מקום 1", pedHeight: "h-16" },
+            2: { bg: "from-slate-300 to-slate-400", label: "מקום 2", pedHeight: "h-10" },
+            3: { bg: "from-amber-600 to-amber-700", label: "מקום 3", pedHeight: "h-6" },
+          };
+          const podiumOrder = [1, 0, 2];
           return (
             <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card" dir="rtl">
               <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white" dir="rtl">
@@ -725,26 +726,26 @@ const Reports = ({ groupId }: ReportsProps) => {
                 </div>
               </header>
               <CardContent className="p-4 md:p-6">
-                {/* פודיום: 3 מקומות ראשונים – כל מקום יכול להכיל כמה חברים עם אותו כמות */}
-                <div className="flex items-end justify-center gap-2 sm:gap-4 mb-6 min-h-[200px]" dir="rtl">
-                  {top3Places.map((slot, i) => {
-                    const style = podiumColors[i];
-                    const pedestalHeights = ["h-16", "h-10", "h-6"];
-                    const pedHeight = pedestalHeights[i];
-                    const names = slot.members.map((m) => m.name).join(", ");
+                {/* פודיום אמיתי: כסף | זהב (אמצע) | ארד */}
+                <div className="flex items-end justify-center gap-2 sm:gap-4 mb-6 min-h-[220px]">
+                  {podiumOrder.map((idx) => {
+                    if (idx >= top3Places.length) return null;
+                    const slot = top3Places[idx];
+                    const style = byPlace[slot.place];
+                    if (!style) return null;
                     return (
-                      <div key={i} className="flex flex-col items-center flex-1 max-w-[160px]">
-                        <div className={`w-full rounded-t-2xl p-3 text-white shadow-lg bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[100px] border-b-0`}>
+                      <div key={slot.place} className="flex flex-col items-center flex-1 max-w-[180px]">
+                        <div className={`w-full rounded-t-2xl p-3 text-white shadow-lg bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[120px] border-b-0`}>
                           <span className="text-2xl font-black tabular-nums opacity-90">{slot.events}</span>
                           <span className="text-xs opacity-90">אירועים</span>
-                          <div className="font-bold mt-1.5 w-full text-sm line-clamp-3 text-center" title={names}>
+                          <div className="mt-2 w-full text-sm font-bold space-y-0.5 min-h-[2.5rem] flex flex-col justify-center" title={slot.members.map((m) => m.name).join(", ")}>
                             {slot.members.map((m, j) => (
-                              <span key={j}>{m.name}{j < slot.members.length - 1 ? " • " : ""}</span>
+                              <span key={j} className="block truncate text-center">{m.name}</span>
                             ))}
                           </div>
-                          <span className="text-xs opacity-80 mt-0.5">{style.label}</span>
+                          <span className="text-xs opacity-80 mt-1">{style.label}</span>
                         </div>
-                        <div className={`w-full ${pedHeight} rounded-b-lg bg-gradient-to-b ${style.bg} opacity-90`} />
+                        <div className={`w-full ${style.pedHeight} rounded-b-lg bg-gradient-to-b ${style.bg} opacity-90`} />
                       </div>
                     );
                   })}
