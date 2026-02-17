@@ -726,53 +726,72 @@ const Reports = ({ groupId }: ReportsProps) => {
                 </div>
               </header>
               <CardContent className="p-4 md:p-6">
-                {/* פודיום אמיתי: כסף | זהב (אמצע) | ארד */}
-                <div className="flex items-end justify-center gap-2 sm:gap-4 mb-6 min-h-[220px]">
+                {/* פודיום מעוצב: כסף | זהב (אמצע, בולט) | ארד */}
+                <div className="flex items-end justify-center gap-1 sm:gap-3 mb-8 min-h-[240px] px-1">
                   {podiumOrder.map((idx) => {
                     if (idx >= top3Places.length) return null;
                     const slot = top3Places[idx];
                     const style = byPlace[slot.place];
                     if (!style) return null;
+                    const isFirst = slot.place === 1;
                     return (
-                      <div key={slot.place} className="flex flex-col items-center flex-1 max-w-[180px]">
-                        <div className={`w-full rounded-t-2xl p-3 text-white shadow-lg bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[120px] border-b-0`}>
-                          <span className="text-2xl font-black tabular-nums opacity-90">{slot.events}</span>
+                      <div
+                        key={slot.place}
+                        className={`flex flex-col items-center ${isFirst ? "flex-[1.15] max-w-[200px] z-10" : "flex-1 max-w-[160px]"}`}
+                      >
+                        <div
+                          className={`w-full rounded-t-2xl p-4 text-white flex flex-col items-center justify-center text-center border-b-0 shadow-xl ${isFirst ? "min-h-[140px] py-4 ring-2 ring-amber-300/50 shadow-amber-200/30" : "min-h-[110px] shadow-black/10"}`}
+                          style={{
+                            background: slot.place === 1
+                              ? "linear-gradient(180deg, #fcd34d 0%, #f59e0b 50%, #d97706 100%)"
+                              : slot.place === 2
+                                ? "linear-gradient(180deg, #e2e8f0 0%, #94a3b8 50%, #64748b 100%)"
+                                : "linear-gradient(180deg, #d97706 0%, #b45309 50%, #92400e 100%)",
+                          }}
+                        >
+                          <span className="text-xs font-semibold uppercase tracking-wider opacity-90">{style.label}</span>
+                          <span className="text-3xl font-black tabular-nums mt-0.5 drop-shadow-sm">{slot.events}</span>
                           <span className="text-xs opacity-90">אירועים</span>
-                          <div className="mt-2 w-full text-sm font-bold space-y-0.5 min-h-[2.5rem] flex flex-col justify-center" title={slot.members.map((m) => m.name).join(", ")}>
+                          <div className="mt-3 w-full text-sm font-bold space-y-1 min-h-[2.5rem] flex flex-col justify-center" title={slot.members.map((m) => m.name).join(", ")}>
                             {slot.members.map((m, j) => (
-                              <span key={j} className="block truncate text-center">{m.name}</span>
+                              <span key={j} className="block truncate text-center leading-tight">{m.name}</span>
                             ))}
                           </div>
-                          <span className="text-xs opacity-80 mt-1">{style.label}</span>
                         </div>
-                        <div className={`w-full ${style.pedHeight} rounded-b-lg bg-gradient-to-b ${style.bg} opacity-90`} />
+                        <div
+                          className={`w-full ${style.pedHeight} rounded-b-xl border-t-2 border-white/20`}
+                          style={{
+                            background: slot.place === 1
+                              ? "linear-gradient(180deg, #b45309 0%, #92400e 100%)"
+                              : slot.place === 2
+                                ? "linear-gradient(180deg, #64748b 0%, #475569 100%)"
+                                : "linear-gradient(180deg, #92400e 0%, #78350f 100%)",
+                          }}
+                        />
                       </div>
                     );
                   })}
                 </div>
-                {/* שאר המקומות – כל שורה = מקום אחד (יכול כמה שמות) + מוט */}
+                {/* מי שלא בפודיום – רשימה נפרדת */}
                 {restPlaces.length > 0 && (
-                  <div className="space-y-3">
-                    {restPlaces.map((slot, idx) => {
-                      const pct = maxEvents > 0 ? (slot.events / maxEvents) * 100 : 0;
-                      const placeNum = 4 + idx;
-                      const names = slot.members.map((m) => m.name).join(" • ");
-                      return (
-                        <div key={idx} className="flex items-center gap-3 w-full">
-                          <span className="w-8 text-right text-muted-foreground tabular-nums text-sm shrink-0">{placeNum}</span>
-                          <span className="font-medium text-right shrink-0 max-w-[180px] truncate" title={names}>{names}</span>
-                          <div className="flex-1 h-8 rounded-full bg-muted overflow-hidden min-w-0" dir="rtl">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-l from-primary to-primary/70 transition-all duration-500"
-                              style={{ width: `${pct}%` }}
-                            />
+                  <div className="border-t border-border pt-5 mt-2" dir="rtl">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-3 text-right">שאר המשתתפים</h4>
+                    <div className="space-y-2">
+                      {restPlaces.map((slot, idx) => {
+                        const placeNum = 4 + idx;
+                        const names = slot.members.map((m) => m.name).join(" • ");
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 w-full py-2 px-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors"
+                          >
+                            <span className="w-7 text-right text-muted-foreground tabular-nums text-sm font-medium shrink-0">{placeNum}</span>
+                            <span className="font-medium text-right flex-1 min-w-0 truncate" title={names}>{names}</span>
+                            <span className="text-sm text-muted-foreground tabular-nums shrink-0" style={{ direction: "ltr" }}>{slot.events} אירועים</span>
                           </div>
-                          <div className="w-16 shrink-0 text-left" style={{ direction: "ltr" }}>
-                            <span className="text-sm font-bold text-muted-foreground tabular-nums">{slot.events} אירועים</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </CardContent>
