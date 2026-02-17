@@ -690,40 +690,80 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* נוכחות חברים – רשימה נקייה, כותרת מיושרת לימין */}
-        {memberAttendanceData.length > 0 && (
-          <Card className="border shadow-md rounded-2xl overflow-hidden">
-            <CardHeader className="border-b bg-muted/30">
-              <div className="flex items-center gap-3 w-full justify-end" dir="rtl" style={{ direction: "rtl" }}>
-                <div className="text-right">
-                  <CardTitle className="text-lg font-semibold">נוכחות חברים</CardTitle>
-                  <CardDescription>{rangeLabel}</CardDescription>
-                </div>
-                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                  <Users className="w-5 h-5 text-primary" />
+        {/* נוכחות חברים – WOW: כותרת גרדיאנט, טבעות התקדמות, דירוג ויזואלי */}
+        {memberAttendanceData.length > 0 && (() => {
+          const maxEvents = Math.max(...memberAttendanceData.map((e) => e.events), 1);
+          return (
+            <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card">
+              <div className="bg-gradient-to-l from-violet-600 via-purple-600 to-fuchsia-600 px-6 py-5 text-white" dir="rtl" style={{ direction: "rtl" }}>
+                <div className="flex items-center gap-3 justify-end">
+                  <div className="text-right">
+                    <h3 className="text-xl md:text-2xl font-bold tracking-tight">נוכחות חברים</h3>
+                    <p className="text-white/80 text-sm mt-0.5">{rangeLabel}</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm">
+                    <Award className="w-7 h-7" />
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ul className="divide-y divide-border" dir="rtl" style={{ direction: "rtl" }}>
-                {memberAttendanceData.map((entry, index) => (
-                  <li
-                    key={index}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors"
-                  >
-                    <span className="text-muted-foreground font-medium w-6 text-left tabular-nums" style={{ direction: "ltr" }}>
-                      {index + 1}.
-                    </span>
-                    <span className="flex-1 font-medium truncate" style={{ textAlign: "right" }}>{entry.name}</span>
-                    <span className="text-sm text-muted-foreground shrink-0" style={{ direction: "ltr" }}>
-                      {entry.events} אירועים
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
+              <CardContent className="p-4 md:p-6">
+                <div className="space-y-4" dir="rtl" style={{ direction: "rtl" }}>
+                  {memberAttendanceData.map((entry, index) => {
+                    const pct = maxEvents > 0 ? (entry.events / maxEvents) * 100 : 0;
+                    const isFirst = index === 0;
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-lg ${isFirst ? "bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800" : "bg-muted/20 hover:bg-muted/40 border-transparent hover:border-primary/20"}`}
+                      >
+                        <div className="flex items-center justify-center shrink-0 relative w-14 h-14">
+                          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                            <path
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              className="text-muted"
+                              d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
+                            />
+                            <path
+                              fill="none"
+                              stroke={`url(#attendanceGrad-${index})`}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeDasharray={`${(pct / 100) * 97} 97`}
+                              d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
+                            />
+                            <defs>
+                              <linearGradient id={`attendanceGrad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="hsl(var(--primary))" />
+                                <stop offset="100%" stopColor="hsl(280, 70%, 55%)" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-black tabular-nums text-primary" style={{ direction: "ltr" }}>
+                            {entry.events}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            {isFirst && <Award className="w-5 h-5 text-amber-500 shrink-0" />}
+                            <span className="font-bold text-base md:text-lg truncate">{entry.name}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-0.5 text-right">{entry.events} אירועים בתקופה</p>
+                        </div>
+                        <div className="shrink-0 w-8 text-center">
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary tabular-nums" style={{ direction: "ltr" }}>
+                            {index + 1}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Host Statistics */}
         {hostStats.length > 0 && (
