@@ -400,9 +400,9 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             setCurrentBalance(0);
           }
         } else if (isAdmin) {
-          // יתרה נוכחית = שהופקד + תשלומי אורחים − ניכויים מחברים
+          // יתרה נוכחית = רק חברים: שהופקד − ניכויים (בלי תשלומי אורחים)
           const totalDep = members.length * DEPOSIT_PER_MEMBER;
-          const calcBalance = totalDep + guestPaymentsTotal - deducted;
+          const calcBalance = totalDep - deducted;
           const roundedBalance = parseFloat(calcBalance.toFixed(2));
           setCurrentBalance(roundedBalance);
         } else {
