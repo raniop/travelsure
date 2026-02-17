@@ -706,12 +706,12 @@ const Reports = ({ groupId }: ReportsProps) => {
           });
           const top3Places = places.slice(0, 3);
           const restPlaces = places.slice(3);
-          const byPlace: Record<number, { bg: string; label: string; pedHeight: string }> = {
-            1: { bg: "from-amber-400 to-yellow-500", label: "מקום 1", pedHeight: "h-16" },
-            2: { bg: "from-slate-300 to-slate-400", label: "מקום 2", pedHeight: "h-10" },
-            3: { bg: "from-amber-600 to-amber-700", label: "מקום 3", pedHeight: "h-6" },
-          };
           const podiumOrder = [1, 0, 2];
+          const stepConfig = {
+            1: { frontH: 72, topMinH: 132, flex: "1.25", maxW: "200px", topBg: "linear-gradient(180deg, #fffbeb 0%, #fef3c7 15%, #fde68a 40%, #fcd34d 70%, #f59e0b 100%)", frontBg: "linear-gradient(180deg, #f59e0b 0%, #d97706 30%, #b45309 70%, #92400e 100%)", glow: "0 0 30px rgba(245,158,11,0.4), 0 12px 28px rgba(0,0,0,0.15)" },
+            2: { frontH: 48, topMinH: 108, flex: "1", maxW: "160px", topBg: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 20%, #e2e8f0 60%, #cbd5e1 100%)", frontBg: "linear-gradient(180deg, #94a3b8 0%, #64748b 40%, #475569 100%)", glow: "0 8px 24px rgba(0,0,0,0.12)" },
+            3: { frontH: 32, topMinH: 96, flex: "1", maxW: "160px", topBg: "linear-gradient(180deg, #fef3c7 0%, #fde68a 25%, #f59e0b 60%, #d97706 100%)", frontBg: "linear-gradient(180deg, #b45309 0%, #92400e 50%, #78350f 100%)", glow: "0 8px 24px rgba(0,0,0,0.12)" },
+          };
           return (
             <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card" dir="rtl">
               <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white" dir="rtl">
@@ -726,72 +726,59 @@ const Reports = ({ groupId }: ReportsProps) => {
                 </div>
               </header>
               <CardContent className="p-4 md:p-6">
-                {/* פודיום מעוצב: בסיס מאוחד, כסף | זהב (אמצע) | ארד, צללים ועומק */}
-                <div className="relative mb-8 min-h-[260px] px-2 pb-3">
-                  <div className="flex items-end justify-center gap-0 min-h-[220px] pb-3" style={{ alignItems: "flex-end" }}>
+                {/* פודיום אמיתי מאפס: משטח עליון + חזית עם מספר ענק, בסיס מאוחד */}
+                <div className="relative flex flex-col items-center mb-8">
+                  <div className="flex items-end justify-center gap-0 w-full max-w-2xl mx-auto" style={{ minHeight: 220 }}>
                     {podiumOrder.map((idx) => {
                       if (idx >= top3Places.length) return null;
                       const slot = top3Places[idx];
-                      const style = byPlace[slot.place];
-                      if (!style) return null;
+                      const cfg = stepConfig[slot.place as 1 | 2 | 3];
+                      if (!cfg) return null;
                       const isFirst = slot.place === 1;
-                      const shadow = isFirst
-                        ? "0 20px 40px -8px rgba(217, 119, 6, 0.35), 0 8px 16px -4px rgba(0,0,0,0.15)"
-                        : "0 12px 24px -6px rgba(0,0,0,0.12), 0 4px 8px -2px rgba(0,0,0,0.08)";
                       return (
                         <div
                           key={slot.place}
-                          className={`flex flex-col items-center ${isFirst ? "flex-[1.2] max-w-[200px] z-10 -mb-1" : "flex-1 max-w-[155px] z-0"}`}
+                          className="flex flex-col items-center flex-shrink-0"
+                          style={{ flex: cfg.flex, maxWidth: cfg.maxW }}
                         >
                           <div
-                            className="w-full rounded-t-xl p-4 text-white flex flex-col items-center justify-center text-center border-b-0 relative overflow-hidden"
+                            className="w-full rounded-t-xl overflow-hidden flex flex-col items-center justify-end text-center px-3 pt-3 pb-2 border border-white/30 border-b-0 shadow-lg"
                             style={{
-                              minHeight: isFirst ? 150 : 118,
-                              boxShadow: shadow,
-                              background: slot.place === 1
-                                ? "linear-gradient(165deg, #fef3c7 0%, #fcd34d 18%, #f59e0b 55%, #d97706 100%)"
-                                : slot.place === 2
-                                  ? "linear-gradient(165deg, #f8fafc 0%, #e2e8f0 25%, #94a3b8 70%, #64748b 100%)"
-                                  : "linear-gradient(165deg, #fef3c7 0%, #d97706 30%, #b45309 70%, #92400e 100%)",
-                              borderLeft: "1px solid rgba(255,255,255,0.4)",
-                              borderRight: "1px solid rgba(0,0,0,0.08)",
-                              borderTop: "1px solid rgba(255,255,255,0.5)",
+                              minHeight: cfg.topMinH,
+                              background: cfg.topBg,
+                              boxShadow: cfg.glow,
                             }}
                           >
-                            {isFirst && (
-                              <div className="absolute inset-0 pointer-events-none opacity-30" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 50%)" }} />
-                            )}
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-90 relative">{style.label}</span>
-                            <span className="text-3xl font-black tabular-nums mt-0.5 relative drop-shadow-md" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>{slot.events}</span>
-                            <span className="text-xs opacity-90 relative">אירועים</span>
-                            <div className="mt-2.5 w-full text-sm font-bold space-y-1 min-h-[2.25rem] flex flex-col justify-center relative" title={slot.members.map((m) => m.name).join(", ")}>
+                            <span className="text-xs font-bold text-black/50 uppercase tracking-wider">מקום {slot.place}</span>
+                            <span className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">{slot.events}</span>
+                            <span className="text-xs text-gray-700 font-medium">אירועים</span>
+                            <div className="mt-2 w-full text-sm font-bold text-gray-800 space-y-0.5" title={slot.members.map((m) => m.name).join(", ")}>
                               {slot.members.map((m, j) => (
-                                <span key={j} className="block truncate text-center leading-tight">{m.name}</span>
+                                <span key={j} className="block truncate">{m.name}</span>
                               ))}
                             </div>
                           </div>
                           <div
-                            className={`w-full ${style.pedHeight} rounded-b-lg relative`}
+                            className="w-full flex items-center justify-center rounded-b-md border border-white/20 border-t-0 font-black text-white"
                             style={{
-                              boxShadow: "inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.15)",
-                              background: slot.place === 1
-                                ? "linear-gradient(180deg, #b45309 0%, #92400e 50%, #78350f 100%)"
-                                : slot.place === 2
-                                  ? "linear-gradient(180deg, #64748b 0%, #475569 50%, #334155 100%)"
-                                  : "linear-gradient(180deg, #92400e 0%, #78350f 50%, #451a03 100%)",
-                              borderLeft: "1px solid rgba(255,255,255,0.12)",
-                              borderRight: "1px solid rgba(0,0,0,0.2)",
+                              height: cfg.frontH,
+                              background: cfg.frontBg,
+                              boxShadow: "inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.2)",
+                              textShadow: "0 2px 4px rgba(0,0,0,0.4)",
+                              fontSize: isFirst ? "3rem" : slot.place === 2 ? "2.25rem" : "1.75rem",
                             }}
-                          />
+                          >
+                            {slot.place}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                   <div
-                    className="absolute bottom-0 left-2 right-2 h-3 rounded-b-lg z-0"
+                    className="w-full max-w-2xl h-4 rounded-b-xl mx-auto -mt-px"
                     style={{
-                      background: "linear-gradient(180deg, #78350f 0%, #451a03 100%)",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                      background: "linear-gradient(180deg, #57534e 0%, #44403c 50%, #292524 100%)",
+                      boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
                     }}
                   />
                 </div>
