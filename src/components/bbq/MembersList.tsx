@@ -76,35 +76,38 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
           allPayments.push({ ...p, event_id: event.id });
         }
       }
-      // יתרה נכונה לכל חבר: 500 − סכום כל הניכויים (תשלומים שמונכים מהיתרה, לא "paid")
+      // יתרה: 500 − ניכויים; אם יש הפקדה נוספת (עדכון יתרה) – היתרה השמורה גבוהה יותר
       const membersWithCorrectBalance = members.map((member: any) => {
         const deducted = allPayments
           .filter((p: any) => p.payer_type === "member" && p.payer_id === member.id && p.payment_status !== "paid")
           .reduce((sum: number, p: any) => sum + parseFloat((p.amount || 0).toFixed(2)), 0);
         const calculatedBalance = parseFloat((DEPOSIT_PER_MEMBER - deducted).toFixed(2));
-        return {
-          ...member,
-          balance: calculatedBalance
-        };
+        const storedBalance = member.balance != null ? parseFloat((member.balance).toFixed(2)) : null;
+        // אם היתרה שמורה גבוהה מהמחושבת = הפקיד עוד → להציג ולשמור את השמורה
+        const displayBalance = storedBalance != null && storedBalance > calculatedBalance
+          ? storedBalance
+          : calculatedBalance;
+        return { ...member, balance: displayBalance };
       });
-      // Round for display (already 2 decimals)
       const membersWithRoundedBalances = membersWithCorrectBalance.map((member: any) => ({
         ...member,
-        balance: member.balance !== undefined && member.balance !== null
-          ? parseFloat((member.balance).toFixed(2))
-          : member.balance
+        balance: member.balance != null ? parseFloat((member.balance).toFixed(2)) : member.balance
       }));
-      // אם מנהל – מעדכנים גם ב-API כדי שהנתונים יהיו נכונים בכל המערכת
+      // מנהל: תקן ב-API רק כשהמחושב נמוך מהיתרה השמורה (לא לדרוס הפקדה ידנית)
       if (isAdmin) {
         for (const member of membersWithRoundedBalances) {
           const stored = members.find((m: any) => m.id === member.id);
           const storedBalance = stored?.balance != null ? parseFloat((stored.balance).toFixed(2)) : null;
-          if (storedBalance !== member.balance) {
-            try {
-              await apiClient.updateMember(member.id, { ...member, balance: member.balance });
-            } catch (e) {
-              console.error("Error syncing balance for member", member.id, e);
-            }
+          const deducted = allPayments
+            .filter((p: any) => p.payer_type === "member" && p.payer_id === member.id && p.payment_status !== "paid")
+            .reduce((sum: number, p: any) => sum + parseFloat((p.amount || 0).toFixed(2)), 0);
+          const calculatedBalance = parseFloat((DEPOSIT_PER_MEMBER - deducted).toFixed(2));
+          if (storedBalance != null && storedBalance > calculatedBalance) continue;
+          if (storedBalance === calculatedBalance) continue;
+          try {
+            await apiClient.updateMember(member.id, { ...member, balance: calculatedBalance });
+          } catch (e) {
+            console.error("Error syncing balance for member", member.id, e);
           }
         }
       }
