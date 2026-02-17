@@ -726,51 +726,74 @@ const Reports = ({ groupId }: ReportsProps) => {
                 </div>
               </header>
               <CardContent className="p-4 md:p-6">
-                {/* פודיום מעוצב: כסף | זהב (אמצע, בולט) | ארד */}
-                <div className="flex items-end justify-center gap-1 sm:gap-3 mb-8 min-h-[240px] px-1">
-                  {podiumOrder.map((idx) => {
-                    if (idx >= top3Places.length) return null;
-                    const slot = top3Places[idx];
-                    const style = byPlace[slot.place];
-                    if (!style) return null;
-                    const isFirst = slot.place === 1;
-                    return (
-                      <div
-                        key={slot.place}
-                        className={`flex flex-col items-center ${isFirst ? "flex-[1.15] max-w-[200px] z-10" : "flex-1 max-w-[160px]"}`}
-                      >
+                {/* פודיום מעוצב: בסיס מאוחד, כסף | זהב (אמצע) | ארד, צללים ועומק */}
+                <div className="relative mb-8 min-h-[260px] px-2 pb-3">
+                  <div className="flex items-end justify-center gap-0 min-h-[220px] pb-3" style={{ alignItems: "flex-end" }}>
+                    {podiumOrder.map((idx) => {
+                      if (idx >= top3Places.length) return null;
+                      const slot = top3Places[idx];
+                      const style = byPlace[slot.place];
+                      if (!style) return null;
+                      const isFirst = slot.place === 1;
+                      const shadow = isFirst
+                        ? "0 20px 40px -8px rgba(217, 119, 6, 0.35), 0 8px 16px -4px rgba(0,0,0,0.15)"
+                        : "0 12px 24px -6px rgba(0,0,0,0.12), 0 4px 8px -2px rgba(0,0,0,0.08)";
+                      return (
                         <div
-                          className={`w-full rounded-t-2xl p-4 text-white flex flex-col items-center justify-center text-center border-b-0 shadow-xl ${isFirst ? "min-h-[140px] py-4 ring-2 ring-amber-300/50 shadow-amber-200/30" : "min-h-[110px] shadow-black/10"}`}
-                          style={{
-                            background: slot.place === 1
-                              ? "linear-gradient(180deg, #fcd34d 0%, #f59e0b 50%, #d97706 100%)"
-                              : slot.place === 2
-                                ? "linear-gradient(180deg, #e2e8f0 0%, #94a3b8 50%, #64748b 100%)"
-                                : "linear-gradient(180deg, #d97706 0%, #b45309 50%, #92400e 100%)",
-                          }}
+                          key={slot.place}
+                          className={`flex flex-col items-center ${isFirst ? "flex-[1.2] max-w-[200px] z-10 -mb-1" : "flex-1 max-w-[155px] z-0"}`}
                         >
-                          <span className="text-xs font-semibold uppercase tracking-wider opacity-90">{style.label}</span>
-                          <span className="text-3xl font-black tabular-nums mt-0.5 drop-shadow-sm">{slot.events}</span>
-                          <span className="text-xs opacity-90">אירועים</span>
-                          <div className="mt-3 w-full text-sm font-bold space-y-1 min-h-[2.5rem] flex flex-col justify-center" title={slot.members.map((m) => m.name).join(", ")}>
-                            {slot.members.map((m, j) => (
-                              <span key={j} className="block truncate text-center leading-tight">{m.name}</span>
-                            ))}
+                          <div
+                            className="w-full rounded-t-xl p-4 text-white flex flex-col items-center justify-center text-center border-b-0 relative overflow-hidden"
+                            style={{
+                              minHeight: isFirst ? 150 : 118,
+                              boxShadow: shadow,
+                              background: slot.place === 1
+                                ? "linear-gradient(165deg, #fef3c7 0%, #fcd34d 18%, #f59e0b 55%, #d97706 100%)"
+                                : slot.place === 2
+                                  ? "linear-gradient(165deg, #f8fafc 0%, #e2e8f0 25%, #94a3b8 70%, #64748b 100%)"
+                                  : "linear-gradient(165deg, #fef3c7 0%, #d97706 30%, #b45309 70%, #92400e 100%)",
+                              borderLeft: "1px solid rgba(255,255,255,0.4)",
+                              borderRight: "1px solid rgba(0,0,0,0.08)",
+                              borderTop: "1px solid rgba(255,255,255,0.5)",
+                            }}
+                          >
+                            {isFirst && (
+                              <div className="absolute inset-0 pointer-events-none opacity-30" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 50%)" }} />
+                            )}
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-90 relative">{style.label}</span>
+                            <span className="text-3xl font-black tabular-nums mt-0.5 relative drop-shadow-md" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>{slot.events}</span>
+                            <span className="text-xs opacity-90 relative">אירועים</span>
+                            <div className="mt-2.5 w-full text-sm font-bold space-y-1 min-h-[2.25rem] flex flex-col justify-center relative" title={slot.members.map((m) => m.name).join(", ")}>
+                              {slot.members.map((m, j) => (
+                                <span key={j} className="block truncate text-center leading-tight">{m.name}</span>
+                              ))}
+                            </div>
                           </div>
+                          <div
+                            className={`w-full ${style.pedHeight} rounded-b-lg relative`}
+                            style={{
+                              boxShadow: "inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.15)",
+                              background: slot.place === 1
+                                ? "linear-gradient(180deg, #b45309 0%, #92400e 50%, #78350f 100%)"
+                                : slot.place === 2
+                                  ? "linear-gradient(180deg, #64748b 0%, #475569 50%, #334155 100%)"
+                                  : "linear-gradient(180deg, #92400e 0%, #78350f 50%, #451a03 100%)",
+                              borderLeft: "1px solid rgba(255,255,255,0.12)",
+                              borderRight: "1px solid rgba(0,0,0,0.2)",
+                            }}
+                          />
                         </div>
-                        <div
-                          className={`w-full ${style.pedHeight} rounded-b-xl border-t-2 border-white/20`}
-                          style={{
-                            background: slot.place === 1
-                              ? "linear-gradient(180deg, #b45309 0%, #92400e 100%)"
-                              : slot.place === 2
-                                ? "linear-gradient(180deg, #64748b 0%, #475569 100%)"
-                                : "linear-gradient(180deg, #92400e 0%, #78350f 100%)",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                  <div
+                    className="absolute bottom-0 left-2 right-2 h-3 rounded-b-lg z-0"
+                    style={{
+                      background: "linear-gradient(180deg, #78350f 0%, #451a03 100%)",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                    }}
+                  />
                 </div>
                 {/* מי שלא בפודיום – רשימה נפרדת */}
                 {restPlaces.length > 0 && (
