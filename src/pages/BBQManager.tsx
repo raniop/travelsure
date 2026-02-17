@@ -45,6 +45,7 @@ const BBQManager = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("events");
   const [membersRefreshTrigger, setMembersRefreshTrigger] = useState(0);
+  const [eventsRefreshTrigger, setEventsRefreshTrigger] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false); // Will be set to true only if no user found
   const [showDashboard, setShowDashboard] = useState(false);
@@ -825,7 +826,7 @@ const BBQManager = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">אירועים</h2>
               {user.isAdmin && (
-                <CreateEventDialog groupId={group.id} onEventCreated={() => loadGroup(user.id)}>
+                <CreateEventDialog groupId={group.id} onEventCreated={() => { loadGroup(user.id); setEventsRefreshTrigger((t) => t + 1); }}>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
                     אירוע חדש
@@ -838,6 +839,7 @@ const BBQManager = () => {
                 groupId={group.id} 
                 userId={user.id}
                 isAdmin={user.isAdmin}
+                externalRefreshTrigger={eventsRefreshTrigger}
                 onPaymentsCalculated={() => {
                   setActiveTab("payments");
                   if (group) {

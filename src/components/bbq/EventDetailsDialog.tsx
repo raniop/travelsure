@@ -40,6 +40,7 @@ interface Attendee {
   id: string;
   member_id: string;
   attended: boolean;
+  pays_with_group?: boolean;
   member: Member;
 }
 
@@ -164,12 +165,13 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         a.member_id === memberId ? { ...a, attended } : a
       ));
     } else if (attended) {
-      // Create new attendee only if attended = true
+      // Create new attendee only if attended = true (default: אוכל ומשלם)
       const newAttendee: Attendee = {
         id: `temp-${Date.now()}`, // Temporary ID
         event_id: eventId,
         member_id: memberId,
         attended: true,
+        pays_with_group: true,
         created_at: new Date().toISOString()
       };
       setAttendees(prev => [...prev, newAttendee]);
@@ -186,7 +188,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           id: existingAttendee.id,
           event_id: existingAttendee.event_id,
           member_id: existingAttendee.member_id,
-          attended: attended, // Explicitly set attended (can be true or false)
+          attended: attended,
+          pays_with_group: existingAttendee.pays_with_group !== false,
           created_at: existingAttendee.created_at
         };
         
@@ -202,7 +205,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
             return { 
               ...a, 
               ...updated,
-              attended: updated.attended !== undefined ? updated.attended : attended // Ensure attended is set
+              attended: updated.attended !== undefined ? updated.attended : attended,
+              pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : a.pays_with_group !== false
             };
           }
           return a;
@@ -212,11 +216,12 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         const created = await apiClient.createAttendee({
           event_id: eventId,
           member_id: memberId,
-          attended: true
+          attended: true,
+          pays_with_group: true
         });
         // Replace temporary ID with real ID
         setAttendees(prev => prev.map(a => 
-          a.member_id === memberId ? { ...a, id: created.id } : a
+          a.member_id === memberId ? { ...a, id: created.id, pays_with_group: true } : a
         ));
       }
     } catch (error: any) {
@@ -252,6 +257,40 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       toast({
         title: "שגיאה",
         description: error.message || "לא הצלחנו לעדכן את האורח",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleMemberPaysWithGroup = async (memberId: string, paysWithGroup: boolean) => {
+    const existingAttendee = attendees.find(a => a.member_id === memberId);
+    if (!existingAttendee || !existingAttendee.attended) return;
+
+    setAttendees(prev => prev.map(a =>
+      a.member_id === memberId ? { ...a, pays_with_group: paysWithGroup } : a
+    ));
+
+    try {
+      const updateData = {
+        id: existingAttendee.id,
+        event_id: existingAttendee.event_id,
+        member_id: existingAttendee.member_id,
+        attended: true,
+        pays_with_group: paysWithGroup,
+        created_at: (existingAttendee as any).created_at
+      };
+      const updated = await apiClient.updateAttendee(existingAttendee.id, updateData);
+      setAttendees(prev => prev.map(a =>
+        a.member_id === memberId ? { ...a, ...updated, pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : paysWithGroup } : a
+      ));
+      if (onPaymentsCalculated) onPaymentsCalculated();
+    } catch (error: any) {
+      setAttendees(prev => prev.map(a =>
+        a.member_id === memberId ? { ...a, pays_with_group: !paysWithGroup } : a
+      ));
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן",
         variant: "destructive"
       });
     }
@@ -512,7 +551,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
     try {
       setCalculating(true);
 
-      const payingAttendees = attendees.filter(a => a.attended);
+      const payingAttendees = attendees.filter(a => a.attended && (a.pays_with_group !== false));
       const payingGuests = guests.filter(g => g.should_pay);
       const totalPaying = payingAttendees.length + payingGuests.length;
 
@@ -662,7 +701,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   };
 
   const eventDate = event ? new Date(event.event_date) : new Date();
-  const payingAttendees = attendees.filter(a => a.attended);
+  const payingAttendees = attendees.filter(a => a.attended && (a.pays_with_group !== false));
   const payingGuests = guests.filter(g => g.should_pay);
   const totalPaying = payingAttendees.length + payingGuests.length;
   const totalCost = event ? (event.butcher_cost || 0) + (event.grocery_cost || 0) : (event?.total_cost || 0);
@@ -967,6 +1006,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                   return sortedMembers.map((member) => {
                     const attendee = attendees.find(a => a.member_id === member.id);
                     const attended = attendee?.attended || false;
+                    const paysWithGroup = attendee?.pays_with_group !== false;
                     const isCurrentUser = member.phone === userPhone;
                     
                     // Only allow editing if admin or if it's the current user
@@ -977,18 +1017,37 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                         key={member.id}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
-                        {attended ? (
-                          <Badge variant="default">
-                            <CheckCircle2 className="w-3 h-3 ml-1" />
-                            {attendanceLabel}
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            <XCircle className="w-3 h-3 ml-1" />
-                            לא מגיע
-                          </Badge>
-                        )}
-                        <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {attended ? (
+                            <Badge variant="default">
+                              <CheckCircle2 className="w-3 h-3 ml-1" />
+                              {attendanceLabel}
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="w-3 h-3 ml-1" />
+                              לא מגיע
+                            </Badge>
+                          )}
+                          {attended && (
+                            canEdit ? (
+                              <Toggle
+                                pressed={paysWithGroup}
+                                onPressedChange={(pressed) => toggleMemberPaysWithGroup(member.id, pressed)}
+                                variant={paysWithGroup ? "default" : "outline"}
+                                size="sm"
+                                className="min-w-[100px]"
+                              >
+                                {paysWithGroup ? "אוכל ומשלם" : "קונה לעצמו"}
+                              </Toggle>
+                            ) : (
+                              <Badge variant={paysWithGroup ? "default" : "secondary"}>
+                                {paysWithGroup ? "אוכל ומשלם" : "קונה לעצמו"}
+                              </Badge>
+                            )
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           <Checkbox
                             checked={attended}
                             disabled={!canEdit}
@@ -996,7 +1055,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                               toggleMemberAttendance(member.id, checked as boolean)
                             }
                           />
-                          <div className="flex flex-col items-end">
+                          <div className="flex flex-col items-end min-w-0">
                             <span className={`text-right ${attended ? "font-medium" : "text-muted-foreground"}`}>
                               {member.name}
                               {isCurrentUser && !isAdmin && (

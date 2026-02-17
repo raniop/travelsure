@@ -171,7 +171,7 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
           
           // Get attendees for this event
           const attendees = await apiClient.getAttendees(event.id);
-          const payingAttendees = attendees.filter((a: any) => a.attended);
+          const payingAttendees = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false));
           const payingGuests = eventGuests.filter((g: any) => g.should_pay);
           const totalPaying = payingAttendees.length + payingGuests.length;
           

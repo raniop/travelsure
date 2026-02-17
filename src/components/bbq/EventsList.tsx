@@ -28,9 +28,11 @@ interface EventsListProps {
   isAdmin: boolean;
   showHistory?: boolean;
   onPaymentsCalculated?: () => void;
+  /** When this value changes, the list refetches (e.g. after creating a new event). */
+  externalRefreshTrigger?: number;
 }
 
-const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsCalculated }: EventsListProps) => {
+const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsCalculated, externalRefreshTrigger }: EventsListProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -39,7 +41,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
   useEffect(() => {
     loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, isAdmin, userId, refreshTrigger]);
+  }, [groupId, isAdmin, userId, refreshTrigger, externalRefreshTrigger]);
 
   // Create a wrapper callback that refreshes events list
   const handlePaymentsCalculated = () => {
@@ -329,6 +331,7 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
           event_id: existingAttendee.event_id,
           member_id: existingAttendee.member_id,
           attended: attended,
+          pays_with_group: existingAttendee.pays_with_group !== false,
           created_at: existingAttendee.created_at
         };
         await apiClient.updateAttendee(existingAttendee.id, updateData);
@@ -336,7 +339,8 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
         await apiClient.createAttendee({
           event_id: event.id,
           member_id: userMember.id,
-          attended: true
+          attended: true,
+          pays_with_group: true
         });
       }
       
