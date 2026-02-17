@@ -388,14 +388,17 @@ const Reports = ({ groupId }: ReportsProps) => {
         ? monthYear
         : `${formatMonthYear(monthFrom)} – ${formatMonthYear(monthTo)}`;
 
-  // Color palette for charts
   const CHART_COLORS = [
-    "hsl(170, 60%, 40%)",
-    "hsl(145, 70%, 45%)",
-    "hsl(200, 70%, 50%)",
-    "hsl(30, 80%, 55%)",
-    "hsl(280, 60%, 50%)",
-    "hsl(15, 85%, 55%)",
+    "hsl(170, 58%, 42%)",
+    "hsl(200, 70%, 48%)",
+    "hsl(280, 55%, 52%)",
+    "hsl(32, 78%, 52%)",
+    "hsl(145, 55%, 42%)",
+    "hsl(15, 82%, 55%)",
+    "hsl(260, 60%, 58%)",
+    "hsl(50, 75%, 50%)",
+    "hsl(330, 65%, 55%)",
+    "hsl(190, 65%, 45%)",
   ];
 
   return (
@@ -684,81 +687,64 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* Member Attendance Chart */}
+        {/* נוכחות חברים – גרף עמודות אופקי + רשימה */}
         {memberAttendanceData.length > 0 && (
-          <Card className="border-2 shadow-md">
-            <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
-              <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
-                <PieChart className="w-6 h-6 text-purple-600" />
-                <CardTitle className="text-lg md:text-xl text-right">נוכחות חברים</CardTitle>
+          <Card className="border-2 shadow-lg overflow-hidden rounded-2xl">
+            <CardHeader className="border-b bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-fuchsia-500/10 pb-4">
+              <div className="flex items-center gap-3" dir="rtl" style={{ direction: "rtl" }}>
+                <div className="p-2.5 rounded-xl bg-violet-500/15">
+                  <PieChart className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-right">נוכחות חברים</CardTitle>
+                  <CardDescription className="text-right mt-0.5">{rangeLabel}</CardDescription>
+                </div>
               </div>
-              <CardDescription className="text-right">{rangeLabel}</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
-              <div className="flex flex-col lg:flex-row gap-6 items-start w-full" dir="rtl" style={{ direction: "rtl" }}>
-                <div className="flex-shrink-0 w-full lg:w-auto lg:min-w-[200px]">
-                  <div className="flex flex-col gap-3">
-                    {memberAttendanceData.map((entry, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-center gap-1.5 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                        dir="rtl"
-                        style={{ direction: "rtl" }}
-                      >
-                        <div
-                          className="w-4 h-4 rounded-full shrink-0 border-2 border-white shadow-sm"
-                          style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                        />
-                        <div className="flex flex-col items-end flex-1">
-                          <span className="text-sm font-medium">{entry.name}</span>
-                          <span className="text-xs text-muted-foreground">{entry.events} אירועים</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0 w-full" dir="ltr" style={{ direction: "ltr" }}>
-                  <ChartContainer
-                    config={memberAttendanceData.reduce((acc, member, index) => {
-                      acc[member.name] = {
-                        label: member.name,
-                        color: CHART_COLORS[index % CHART_COLORS.length],
-                      };
-                      return acc;
-                    }, {} as Record<string, { label: string; color: string }>)}
-                    className="h-[250px] md:h-[300px] w-full"
-                    dir="ltr"
+            <CardContent className="pt-6 pb-8">
+              {/* גרף עמודות אופקי – קל להשוואה */}
+              <div className="mb-8" dir="ltr" style={{ direction: "ltr" }}>
+                <ChartContainer
+                  config={memberAttendanceData.reduce((acc, member, i) => {
+                    acc[member.name] = { label: member.name, color: CHART_COLORS[i % CHART_COLORS.length] };
+                    return acc;
+                  }, {} as Record<string, { label: string; color: string }>)}
+                  className="h-[280px] w-full"
+                >
+                  <BarChart
+                    data={[...memberAttendanceData].reverse()}
+                    layout="vertical"
+                    margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
                   >
-                    <RechartsPieChart>
-                      <Pie
-                        data={memberAttendanceData}
-                        dataKey="events"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        innerRadius={40}
-                        label={false}
-                        startAngle={90}
-                        endAngle={-270}
-                        animationDuration={1000}
-                      >
-                        {memberAttendanceData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                            stroke="white"
-                            strokeWidth={2}
-                          />
-                        ))}
-                      </Pie>
-                      <ChartTooltip 
-                        content={<ChartTooltipContent />}
-                        formatter={(value, name) => [`${value} אירועים`, name]}
-                      />
-                    </RechartsPieChart>
-                  </ChartContainer>
-                </div>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+                    <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
+                    <ChartTooltip content={<ChartTooltipContent />} formatter={(value: number) => [`${value} אירועים`, ""]} />
+                    <Bar dataKey="events" radius={[0, 6, 6, 0]} maxBarSize={32} animationDuration={800}>
+                      {memberAttendanceData.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[(memberAttendanceData.length - 1 - i) % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              </div>
+              {/* רשימת חברים – גריד קומפקטי */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2" dir="rtl" style={{ direction: "rtl" }}>
+                {memberAttendanceData.map((entry, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/40 hover:border-violet-200 dark:hover:border-violet-800/50 transition-all"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0 ring-2 ring-background"
+                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{entry.name}</p>
+                      <p className="text-xs text-muted-foreground">{entry.events} אירועים</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
