@@ -25,6 +25,7 @@ interface MemberReport {
   totalPending: number;
   totalOwed: number;
   currentBalance?: number;
+  totalDeposited?: number; // סה"כ שהפקיד (יתרה + כל הניכויים)
 }
 
 interface MonthlyData {
@@ -292,16 +293,18 @@ const Reports = ({ groupId }: ReportsProps) => {
             }
           }
 
+          const totalDeposited = parseFloat((currentBalance + deductedTotal).toFixed(2));
           return {
             memberId: member.id,
             memberName: member.name,
             memberNickname: member.nickname ?? null,
             profileImage: profileImage ?? null,
-            eventsAttended: 0, // מחשבים בהמשך עם attendees
+            eventsAttended: 0,
             totalPaid,
             totalPending: 0,
             totalOwed: currentBalance < 0 ? Math.abs(currentBalance) : 0,
             currentBalance,
+            totalDeposited,
           };
         });
 
@@ -858,8 +861,21 @@ const Reports = ({ groupId }: ReportsProps) => {
                         </div>
                       )}
 
+                      {/* סה"כ שהפקיד */}
+                      {report.totalDeposited !== undefined && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400" dir="rtl">
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground">סה&quot;כ שהפקיד</span>
+                            <span className="text-sm md:text-base font-semibold">
+                              <span dir="ltr" className="tabular-nums">{report.totalDeposited.toFixed(2)}</span> שקל
+                            </span>
+                          </div>
+                          <TrendingUp className="w-4 h-4 shrink-0" />
+                        </div>
+                      )}
+
                       {/* Events */}
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400" dir="rtl">
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 text-foreground" dir="rtl">
                         <div className="flex flex-col items-end">
                           <span className="text-xs text-muted-foreground">אירועים</span>
                           <span className="text-sm md:text-base font-semibold">{report.eventsAttended}</span>
