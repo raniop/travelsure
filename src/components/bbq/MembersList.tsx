@@ -256,25 +256,27 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
 
     return (
       <div className="flex flex-col gap-4">
-        {/* Row: Avatar | Name + details | Balance - same order for all cards */}
+        {/* Row: [Avatar + Name צמוד] | Balance */}
         <div className="flex items-center gap-4 min-h-[72px]" dir="rtl" style={{ direction: "rtl" }}>
-          <Avatar className="w-14 h-14 shrink-0 ring-2 ring-background shadow-sm">
-            {member.profile_image ? (
-              <AvatarImage src={member.profile_image} alt={member.name} />
-            ) : null}
-            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-xl">
-              {member.name.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0 flex flex-col items-end justify-center">
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              <span className="font-semibold text-base truncate">{member.name}</span>
-              {isMe && (
-                <Badge variant="secondary" className="text-xs shrink-0">אני</Badge>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground truncate max-w-full">
-              {member.nickname || (member.phone ? member.phone : "—")}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Avatar className="w-14 h-14 shrink-0 ring-2 ring-background shadow-sm">
+              {member.profile_image ? (
+                <AvatarImage src={member.profile_image} alt={member.name} />
+              ) : null}
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-xl">
+                {member.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-end justify-center min-w-0">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <span className="font-semibold text-base truncate">{member.name}</span>
+                {isMe && (
+                  <Badge variant="secondary" className="text-xs shrink-0">אני</Badge>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground truncate max-w-full">
+                {member.nickname || (member.phone ? member.phone : "—")}
+              </div>
             </div>
           </div>
           {/* Balance - fixed min height so cards align */}
@@ -310,6 +312,11 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
               <Button variant="outline" size="sm" onClick={() => setEditingNickname(member.id)}>
                 {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
               </Button>
+              {isAdmin && (
+                <UpdateBalanceDialog member={member} groupId={groupId} onBalanceUpdated={loadMembers}>
+                  <Button variant="outline" size="sm">עדכן יתרה</Button>
+                </UpdateBalanceDialog>
+              )}
               <Button
                 variant="destructive"
                 size="sm"
@@ -435,7 +442,7 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
                 {otherMembers.length > 0 && (
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-2 text-right">חברים נוספים</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                       {otherMembers.map((member, index) => (
                         <div
                           key={member.id}
