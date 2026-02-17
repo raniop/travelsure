@@ -687,68 +687,44 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* נוכחות חברים – גרף עמודות אופקי + רשימה */}
-        {memberAttendanceData.length > 0 && (
-          <Card className="border-2 shadow-lg overflow-hidden rounded-2xl">
-            <CardHeader className="border-b bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-fuchsia-500/10 pb-4">
-              <div className="flex items-center gap-3" dir="rtl" style={{ direction: "rtl" }}>
-                <div className="p-2.5 rounded-xl bg-violet-500/15">
-                  <PieChart className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl text-right">נוכחות חברים</CardTitle>
-                  <CardDescription className="text-right mt-0.5">{rangeLabel}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 pb-8">
-              {/* גרף עמודות אופקי – קל להשוואה */}
-              <div className="mb-8" dir="ltr" style={{ direction: "ltr" }}>
-                <ChartContainer
-                  config={memberAttendanceData.reduce((acc, member, i) => {
-                    acc[member.name] = { label: member.name, color: CHART_COLORS[i % CHART_COLORS.length] };
-                    return acc;
-                  }, {} as Record<string, { label: string; color: string }>)}
-                  className="h-[280px] w-full"
-                >
-                  <BarChart
-                    data={[...memberAttendanceData].reverse()}
-                    layout="vertical"
-                    margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" horizontal={false} />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                    <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} formatter={(value: number) => [`${value} אירועים`, ""]} />
-                    <Bar dataKey="events" radius={[0, 6, 6, 0]} maxBarSize={32} animationDuration={800}>
-                      {memberAttendanceData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[(memberAttendanceData.length - 1 - i) % CHART_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
-              </div>
-              {/* רשימת חברים – גריד קומפקטי */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2" dir="rtl" style={{ direction: "rtl" }}>
-                {memberAttendanceData.map((entry, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-3 rounded-xl border bg-card hover:bg-muted/40 hover:border-violet-200 dark:hover:border-violet-800/50 transition-all"
-                  >
+        {/* נוכחות חברים – דירוג ברור: מקום, שם, כמות אירועים + פס יחסי */}
+        {memberAttendanceData.length > 0 && (() => {
+          const maxEvents = Math.max(...memberAttendanceData.map((e) => e.events), 1);
+          return (
+            <Card className="border-2 shadow-md rounded-2xl overflow-hidden">
+              <CardHeader className="bg-muted/30 border-b">
+                <CardTitle className="text-right text-lg">נוכחות חברים</CardTitle>
+                <CardDescription className="text-right">{rangeLabel}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border" dir="rtl">
+                  {memberAttendanceData.map((entry, index) => (
                     <div
-                      className="w-3 h-3 rounded-full shrink-0 ring-2 ring-background"
-                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{entry.name}</p>
-                      <p className="text-xs text-muted-foreground">{entry.events} אירועים</p>
+                      key={index}
+                      className="flex items-center gap-4 px-4 py-3 hover:bg-muted/30 transition-colors"
+                    >
+                      <span className="text-muted-foreground font-bold w-6 text-left tabular-nums" style={{ direction: "ltr" }}>
+                        {index + 1}
+                      </span>
+                      <span className="flex-1 font-medium min-w-0 truncate">{entry.name}</span>
+                      <div className="flex items-center gap-3 w-[140px] shrink-0">
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden min-w-[60px]">
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${(entry.events / maxEvents) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold tabular-nums w-12 text-left" style={{ direction: "ltr" }}>
+                          {entry.events} אירועים
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Host Statistics */}
         {hostStats.length > 0 && (
