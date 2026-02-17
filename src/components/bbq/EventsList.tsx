@@ -260,6 +260,7 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
   const [isAttending, setIsAttending] = useState<boolean | null>(null);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [confirmedCount, setConfirmedCount] = useState<number>(0);
+  const [payingCount, setPayingCount] = useState<number>(0);
   const { toast } = useToast();
   const eventDate = new Date(event.event_date);
   const today = new Date();
@@ -294,19 +295,21 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
         try {
           const attendees = await apiClient.getAttendees(event.id);
           const confirmedAttendees = attendees.filter((a: any) => a.attended === true).length;
-          
-          // Also count paying guests
+          const payingAttendees = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false)).length;
           try {
             const guests = await apiClient.getGuests(event.id);
             const payingGuests = guests.filter((g: any) => g.should_pay === true).length;
             setConfirmedCount(confirmedAttendees + payingGuests);
+            setPayingCount(payingAttendees + payingGuests);
           } catch (guestError) {
             console.error("Error loading guests:", guestError);
             setConfirmedCount(confirmedAttendees);
+            setPayingCount(payingAttendees);
           }
         } catch (error) {
           console.error("Error loading confirmed attendees:", error);
           setConfirmedCount(0);
+          setPayingCount(0);
         }
       } catch (error) {
         console.error("Error loading members:", error);
@@ -347,15 +350,16 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
       try {
         const attendees = await apiClient.getAttendees(event.id);
         const confirmedAttendees = attendees.filter((a: any) => a.attended === true).length;
-        
-        // Also count paying guests
+        const payingAttendees = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false)).length;
         try {
           const guests = await apiClient.getGuests(event.id);
           const payingGuests = guests.filter((g: any) => g.should_pay === true).length;
           setConfirmedCount(confirmedAttendees + payingGuests);
+          setPayingCount(payingAttendees + payingGuests);
         } catch (guestError) {
           console.error("Error loading guests:", guestError);
           setConfirmedCount(confirmedAttendees);
+          setPayingCount(payingAttendees);
         }
       } catch (error) {
         console.error("Error refreshing confirmed count:", error);
@@ -455,6 +459,17 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
               </div>
             </div>
 
+            {/* Paying */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-emerald-50 dark:bg-emerald-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
+              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-emerald-600" : "text-gray-600"}`} />
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground leading-tight">משלמים</span>
+                <span className={`text-xs font-bold ${isFuture ? "text-emerald-700 dark:text-emerald-400" : "text-gray-700 dark:text-gray-400"}`}>
+                  {payingCount}
+                </span>
+              </div>
+            </div>
+
             {/* Total Cost */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-cyan-50 dark:bg-cyan-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
               <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-cyan-600" : "text-gray-600"}`} />
@@ -466,14 +481,14 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
               </div>
             </div>
 
-            {/* Cost Per Person */}
-            {confirmedCount > 0 && (
+            {/* Cost Per Person (per paying participant) */}
+            {payingCount > 0 && (
               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-amber-50 dark:bg-amber-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
                 <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-gray-600"}`} />
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] text-muted-foreground leading-tight">עלות למשתתף</span>
                   <span className={`text-xs font-bold ${isFuture ? "text-amber-700 dark:text-amber-400" : "text-gray-700 dark:text-gray-400"}`}>
-                    {(totalCost / confirmedCount).toFixed(2)} ₪
+                    {(totalCost / payingCount).toFixed(2)} ₪
                   </span>
                 </div>
               </div>
