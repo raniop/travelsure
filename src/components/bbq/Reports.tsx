@@ -702,9 +702,9 @@ const Reports = ({ groupId }: ReportsProps) => {
           ];
           return (
             <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card" dir="rtl">
-              {/* כותרת – כל התוכן מיושר לימין */}
-              <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white">
-                <div className="flex items-center gap-4 justify-end max-w-full">
+              {/* כותרת – מיושרת בצד ימין בלבד */}
+              <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white" dir="rtl">
+                <div className="flex items-center gap-4 justify-start max-w-full w-full">
                   <div className="text-right min-w-0">
                     <h3 className="text-xl md:text-2xl font-bold tracking-tight">נוכחות חברים</h3>
                     <p className="text-white/90 text-sm mt-0.5">{rangeLabel}</p>
@@ -715,21 +715,23 @@ const Reports = ({ groupId }: ReportsProps) => {
                 </div>
               </header>
               <CardContent className="p-4 md:p-6">
-                {/* פודיום: 3 כרטיסים – ב-RTL סדר: שלישי | שני | ראשון (ראשון בימין) */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  {[2, 1, 0].map((i) => {
+                {/* פודיום אמיתי: מדרגות – מקום 1 הכי גבוה, אז 2, אז 3 (ב-RTL: 1 ימין, 2 מרכז, 3 שמאל) */}
+                <div className="flex items-end justify-center gap-2 sm:gap-4 mb-6 min-h-[200px]" dir="rtl">
+                  {[0, 1, 2].map((i) => {
                     if (i >= top3.length) return null;
                     const entry = top3[i];
                     const style = podiumColors[i];
+                    const pedestalHeights = ["h-16", "h-10", "h-6"];
+                    const pedHeight = pedestalHeights[i];
                     return (
-                      <div
-                        key={i}
-                        className={`rounded-2xl p-4 text-white shadow-lg ring-2 ${style.ring} bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[120px]`}
-                      >
-                        <span className="text-2xl font-black tabular-nums opacity-90">{entry.events}</span>
-                        <span className="text-sm opacity-90">אירועים</span>
-                        <span className="font-bold mt-2 truncate w-full" title={entry.name}>{entry.name}</span>
-                        <span className="text-xs opacity-80 mt-0.5">{style.label}</span>
+                      <div key={i} className="flex flex-col items-center flex-1 max-w-[140px]">
+                        <div className={`w-full rounded-t-2xl p-3 text-white shadow-lg bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[100px] border-b-0`}>
+                          <span className="text-2xl font-black tabular-nums opacity-90">{entry.events}</span>
+                          <span className="text-xs opacity-90">אירועים</span>
+                          <span className="font-bold mt-1.5 truncate w-full text-sm" title={entry.name}>{entry.name}</span>
+                          <span className="text-xs opacity-80 mt-0.5">{style.label}</span>
+                        </div>
+                        <div className={`w-full ${pedHeight} rounded-b-lg bg-gradient-to-b ${style.bg} opacity-90`} />
                       </div>
                     );
                   })}
