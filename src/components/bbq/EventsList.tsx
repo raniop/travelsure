@@ -449,33 +449,33 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
             )}
 
             {/* Confirmed */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-green-50 dark:bg-green-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-              <Users className={`w-3.5 h-3.5 ${isFuture ? "text-green-600" : "text-gray-600"}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-green-100/80 dark:bg-green-950/30 border-green-200 dark:border-green-800/50" : "bg-green-50 dark:bg-green-950/20 border-green-100 dark:border-green-900/40"}`}>
+              <Users className={`w-3.5 h-3.5 ${isFuture ? "text-green-600" : "text-green-600/80"}`} />
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-muted-foreground leading-tight">מאשרים</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-green-700 dark:text-green-400" : "text-gray-700 dark:text-gray-400"}`}>
+                <span className={`text-[10px] leading-tight ${isFuture ? "text-green-600/90" : "text-green-700/70"}`}>מאשרים</span>
+                <span className={`text-xs font-bold ${isFuture ? "text-green-800 dark:text-green-300" : "text-green-700 dark:text-green-400"}`}>
                   {confirmedCount}
                 </span>
               </div>
             </div>
 
             {/* Paying */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-emerald-50 dark:bg-emerald-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-emerald-600" : "text-gray-600"}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-teal-100/80 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50" : "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/40"}`}>
+              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-teal-600" : "text-teal-600/80"}`} />
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-muted-foreground leading-tight">משלמים</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-emerald-700 dark:text-emerald-400" : "text-gray-700 dark:text-gray-400"}`}>
+                <span className={`text-[10px] leading-tight ${isFuture ? "text-teal-600/90" : "text-teal-700/70"}`}>משלמים</span>
+                <span className={`text-xs font-bold ${isFuture ? "text-teal-800 dark:text-teal-300" : "text-teal-700 dark:text-teal-400"}`}>
                   {payingCount}
                 </span>
               </div>
             </div>
 
             {/* Total Cost */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-cyan-50 dark:bg-cyan-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-cyan-600" : "text-gray-600"}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-sky-100/80 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50" : "bg-sky-50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-900/40"}`}>
+              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-sky-600" : "text-sky-600/80"}`} />
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-muted-foreground leading-tight">עלות סה"כ</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-cyan-700 dark:text-cyan-400" : "text-gray-700 dark:text-gray-400"}`}>
+                <span className={`text-[10px] leading-tight ${isFuture ? "text-sky-600/90" : "text-sky-700/70"}`}>עלות סה"כ</span>
+                <span className={`text-xs font-bold ${isFuture ? "text-sky-800 dark:text-sky-300" : "text-sky-700 dark:text-sky-400"}`}>
                   {totalCost.toFixed(2)} ₪
                 </span>
               </div>
@@ -483,11 +483,11 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
 
             {/* Cost Per Person (per paying participant) */}
             {payingCount > 0 && (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-amber-50 dark:bg-amber-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-                <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-gray-600"}`} />
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
+                <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-muted-foreground leading-tight">עלות למשתתף</span>
-                  <span className={`text-xs font-bold ${isFuture ? "text-amber-700 dark:text-amber-400" : "text-gray-700 dark:text-gray-400"}`}>
+                  <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף</span>
+                  <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>
                     {(totalCost / payingCount).toFixed(2)} ₪
                   </span>
                 </div>
@@ -495,11 +495,11 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
             )}
 
             {/* Time */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-indigo-50 dark:bg-indigo-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-              <Clock className={`w-3.5 h-3.5 ${isFuture ? "text-indigo-600" : "text-gray-600"}`} />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-violet-100/80 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800/50" : "bg-violet-50 dark:bg-violet-950/20 border-violet-100 dark:border-violet-900/40"}`}>
+              <Clock className={`w-3.5 h-3.5 ${isFuture ? "text-violet-600" : "text-violet-600/80"}`} />
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-muted-foreground leading-tight">שעה</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-indigo-700 dark:text-indigo-400" : "text-gray-700 dark:text-gray-400"}`}>
+                <span className={`text-[10px] leading-tight ${isFuture ? "text-violet-600/90" : "text-violet-700/70"}`}>שעה</span>
+                <span className={`text-xs font-bold ${isFuture ? "text-violet-800 dark:text-violet-300" : "text-violet-700 dark:text-violet-400"}`}>
                   {format(eventDate, "HH:mm", { locale: he })}
                 </span>
               </div>
@@ -507,11 +507,11 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
 
             {/* Location */}
             {hostMember && (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isFuture ? "bg-purple-50 dark:bg-purple-950/20" : "bg-gray-50 dark:bg-gray-800/50"}`}>
-                <MapPin className={`w-3.5 h-3.5 ${isFuture ? "text-purple-600" : "text-gray-600"}`} />
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-rose-100/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50" : "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/40"}`}>
+                <MapPin className={`w-3.5 h-3.5 ${isFuture ? "text-rose-600" : "text-rose-600/80"}`} />
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-muted-foreground leading-tight">מיקום</span>
-                  <span className={`text-xs font-bold truncate max-w-[100px] ${isFuture ? "text-purple-700 dark:text-purple-400" : "text-gray-700 dark:text-gray-400"}`}>
+                  <span className={`text-[10px] leading-tight ${isFuture ? "text-rose-600/90" : "text-rose-700/70"}`}>מיקום</span>
+                  <span className={`text-xs font-bold truncate max-w-[100px] ${isFuture ? "text-rose-800 dark:text-rose-300" : "text-rose-700 dark:text-rose-400"}`}>
                     {hostMember.name}
                   </span>
                 </div>
