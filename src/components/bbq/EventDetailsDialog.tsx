@@ -283,7 +283,6 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       setAttendees(prev => prev.map(a =>
         a.member_id === memberId ? { ...a, ...updated, pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : paysWithGroup } : a
       ));
-      if (onPaymentsCalculated) onPaymentsCalculated();
     } catch (error: any) {
       setAttendees(prev => prev.map(a =>
         a.member_id === memberId ? { ...a, pays_with_group: !paysWithGroup } : a
@@ -1032,11 +1031,13 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                           {attended && (
                             canEdit ? (
                               <Toggle
+                                type="button"
                                 pressed={paysWithGroup}
                                 onPressedChange={(pressed) => toggleMemberPaysWithGroup(member.id, pressed)}
                                 variant={paysWithGroup ? "default" : "outline"}
                                 size="sm"
                                 className="min-w-[100px]"
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 {paysWithGroup ? "אוכל ומשלם" : "קונה לעצמו"}
                               </Toggle>
