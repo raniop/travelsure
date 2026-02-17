@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, ArrowUpRight, ArrowDownRight, Coins, UserPlus } from "lucide-react";
+import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, Trophy, ArrowUpRight, ArrowDownRight, Coins, UserPlus } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart as RechartsLineChart, Pie, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -690,76 +690,74 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* נוכחות חברים – WOW: כותרת גרדיאנט, טבעות התקדמות, דירוג ויזואלי */}
+        {/* נוכחות חברים – רעיון חדש: פודיום ל-3 הראשונים + גרף מוטות RTL (צומח מימין לשמאל) */}
         {memberAttendanceData.length > 0 && (() => {
           const maxEvents = Math.max(...memberAttendanceData.map((e) => e.events), 1);
+          const top3 = memberAttendanceData.slice(0, 3);
+          const rest = memberAttendanceData.slice(3);
+          const podiumColors = [
+            { bg: "from-amber-400 to-yellow-500", ring: "ring-amber-400/50", label: "מקום 1" },
+            { bg: "from-slate-300 to-slate-400", ring: "ring-slate-300/50", label: "מקום 2" },
+            { bg: "from-amber-600 to-amber-700", ring: "ring-amber-700/50", label: "מקום 3" },
+          ];
           return (
-            <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card">
-              <div className="bg-gradient-to-l from-violet-600 via-purple-600 to-fuchsia-600 px-6 py-5 text-white" dir="rtl" style={{ direction: "rtl" }}>
-                <div className="flex items-center gap-3 justify-end">
-                  <div className="text-right">
+            <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card" dir="rtl">
+              {/* כותרת – כל התוכן מיושר לימין */}
+              <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white">
+                <div className="flex items-center gap-4 justify-end max-w-full">
+                  <div className="text-right min-w-0">
                     <h3 className="text-xl md:text-2xl font-bold tracking-tight">נוכחות חברים</h3>
-                    <p className="text-white/80 text-sm mt-0.5">{rangeLabel}</p>
+                    <p className="text-white/90 text-sm mt-0.5">{rangeLabel}</p>
                   </div>
-                  <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-sm">
-                    <Award className="w-7 h-7" />
+                  <div className="p-3 rounded-2xl bg-white/20 backdrop-blur shrink-0">
+                    <Trophy className="w-7 h-7" />
                   </div>
                 </div>
-              </div>
+              </header>
               <CardContent className="p-4 md:p-6">
-                <div className="space-y-4" dir="rtl" style={{ direction: "rtl" }}>
-                  {memberAttendanceData.map((entry, index) => {
-                    const pct = maxEvents > 0 ? (entry.events / maxEvents) * 100 : 0;
-                    const isFirst = index === 0;
+                {/* פודיום: 3 כרטיסים – ב-RTL סדר: שלישי | שני | ראשון (ראשון בימין) */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {[2, 1, 0].map((i) => {
+                    if (i >= top3.length) return null;
+                    const entry = top3[i];
+                    const style = podiumColors[i];
                     return (
                       <div
-                        key={index}
-                        className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-lg ${isFirst ? "bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800" : "bg-muted/20 hover:bg-muted/40 border-transparent hover:border-primary/20"}`}
+                        key={i}
+                        className={`rounded-2xl p-4 text-white shadow-lg ring-2 ${style.ring} bg-gradient-to-b ${style.bg} flex flex-col items-center justify-center text-center min-h-[120px]`}
                       >
-                        <div className="flex items-center justify-center shrink-0 relative w-14 h-14">
-                          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                            <path
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              className="text-muted"
-                              d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
-                            />
-                            <path
-                              fill="none"
-                              stroke={`url(#attendanceGrad-${index})`}
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeDasharray={`${(pct / 100) * 97} 97`}
-                              d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
-                            />
-                            <defs>
-                              <linearGradient id={`attendanceGrad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="hsl(var(--primary))" />
-                                <stop offset="100%" stopColor="hsl(280, 70%, 55%)" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm font-black tabular-nums text-primary" style={{ direction: "ltr" }}>
-                            {entry.events}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap justify-end">
-                            {isFirst && <Award className="w-5 h-5 text-amber-500 shrink-0" />}
-                            <span className="font-bold text-base md:text-lg truncate">{entry.name}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-0.5 text-right">{entry.events} אירועים בתקופה</p>
-                        </div>
-                        <div className="shrink-0 w-8 text-center">
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary tabular-nums" style={{ direction: "ltr" }}>
-                            {index + 1}
-                          </span>
-                        </div>
+                        <span className="text-2xl font-black tabular-nums opacity-90">{entry.events}</span>
+                        <span className="text-sm opacity-90">אירועים</span>
+                        <span className="font-bold mt-2 truncate w-full" title={entry.name}>{entry.name}</span>
+                        <span className="text-xs opacity-80 mt-0.5">{style.label}</span>
                       </div>
                     );
                   })}
                 </div>
+                {/* שאר הרשימה: מוט אופקי שצומח מימין לשמאל, שם מימין */}
+                {rest.length > 0 && (
+                  <div className="space-y-3">
+                    {rest.map((entry, idx) => {
+                      const index = 3 + idx;
+                      const pct = maxEvents > 0 ? (entry.events / maxEvents) * 100 : 0;
+                      return (
+                        <div key={index} className="flex items-center gap-3 w-full">
+                          <span className="w-6 text-right text-muted-foreground tabular-nums text-sm shrink-0">{index + 1}</span>
+                          <span className="font-medium truncate w-28 text-right shrink-0">{entry.name}</span>
+                          <div className="flex-1 h-8 rounded-full bg-muted overflow-hidden min-w-0" dir="rtl">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-l from-primary to-primary/70 transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <div className="w-16 shrink-0 text-left" style={{ direction: "ltr" }}>
+                            <span className="text-sm font-bold text-muted-foreground tabular-nums">{entry.events} אירועים</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
