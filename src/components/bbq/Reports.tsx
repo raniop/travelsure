@@ -46,10 +46,20 @@ interface HostStats {
   eventCount: number;
 }
 
+type ReportScope = "all" | "current_month" | "range";
+
 const Reports = ({ groupId }: ReportsProps) => {
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<MemberReport[]>([]);
+  const [reportScope, setReportScope] = useState<ReportScope>("all");
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [monthFrom, setMonthFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(0, 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [monthTo, setMonthTo] = useState(new Date());
   const [totalEventsInMonth, setTotalEventsInMonth] = useState(0);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [memberAttendanceData, setMemberAttendanceData] = useState<MemberAttendanceData[]>([]);
@@ -62,7 +72,7 @@ const Reports = ({ groupId }: ReportsProps) => {
   useEffect(() => {
     loadReports();
     loadChartData();
-  }, [groupId, currentMonth]);
+  }, [groupId, reportScope, currentMonth, monthFrom, monthTo]);
 
   const loadChartData = async () => {
     try {
@@ -77,6 +87,7 @@ const Reports = ({ groupId }: ReportsProps) => {
         
         const monthEvents = allEvents.filter(event => {
           const eventDate = new Date(event.event_date);
+          eventDate.setHours(0, 0, 0, 0);
           return eventDate >= monthStart && eventDate <= monthEnd;
         });
         
@@ -86,9 +97,8 @@ const Reports = ({ groupId }: ReportsProps) => {
           try {
             const payments = await apiClient.getPayments(event.id);
             for (const payment of payments) {
-              // Only count "deducted" payments (from balance)
-              if (payment.payment_status === "deducted") {
-                monthDeducted += payment.amount || 0;
+              if (payment.payer_type === "member" && payment.payment_status !== "paid") {
+                monthDeducted += parseFloat((payment.amount || 0).toFixed(2));
               }
             }
           } catch (error) {
@@ -106,16 +116,31 @@ const Reports = ({ groupId }: ReportsProps) => {
       
       setMonthlyData(monthlyStats);
       
-      // Load member attendance data for current month
-      const monthStartForAttendance = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      monthStartForAttendance.setHours(0, 0, 0, 0);
-      const monthEndForAttendance = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      monthEndForAttendance.setHours(23, 59, 59, 999);
-      
-      const monthEventsForAttendance = allEvents.filter(event => {
-        const eventDate = new Date(event.event_date);
-        return eventDate >= monthStartForAttendance && eventDate <= monthEndForAttendance;
-      });
+      // נוכחות: לפי ה-scope (הכל / חודש נוכחי / טווח)
+      let monthEventsForAttendance: any[];
+      if (reportScope === "all") {
+        monthEventsForAttendance = [...allEvents];
+      } else if (reportScope === "current_month") {
+        const monthStartForAttendance = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        monthStartForAttendance.setHours(0, 0, 0, 0);
+        const monthEndForAttendance = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        monthEndForAttendance.setHours(23, 59, 59, 999);
+        monthEventsForAttendance = allEvents.filter(event => {
+          const eventDate = new Date(event.event_date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= monthStartForAttendance && eventDate <= monthEndForAttendance;
+        });
+      } else {
+        const rangeStart = new Date(monthFrom.getFullYear(), monthFrom.getMonth(), 1);
+        rangeStart.setHours(0, 0, 0, 0);
+        const rangeEnd = new Date(monthTo.getFullYear(), monthTo.getMonth() + 1, 0);
+        rangeEnd.setHours(23, 59, 59, 999);
+        monthEventsForAttendance = allEvents.filter(event => {
+          const eventDate = new Date(event.event_date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= rangeStart && eventDate <= rangeEnd;
+        });
+      }
       
       // Load all members and attendees in parallel to optimize performance
       const allMembers = await apiClient.getMembers(groupId);
@@ -180,147 +205,139 @@ const Reports = ({ groupId }: ReportsProps) => {
     }
   };
 
+  const DEPOSIT_PER_MEMBER = 500;
+
   const loadReports = async () => {
     try {
       setLoading(true);
 
-      // Get current month start and end
-      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      monthStart.setHours(0, 0, 0, 0);
-      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      monthEnd.setHours(23, 59, 59, 999);
-
-      // Load all events in current month
       const allEvents = await apiClient.getEvents(groupId);
-      const monthEvents = allEvents.filter(event => {
-        const eventDate = new Date(event.event_date);
-        return eventDate >= monthStart && eventDate <= monthEnd;
-      });
+      let scopeEvents: any[];
+      if (reportScope === "all") {
+        scopeEvents = [...allEvents];
+      } else if (reportScope === "current_month") {
+        const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+        scopeEvents = allEvents.filter(event => {
+          const eventDate = new Date(event.event_date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= monthStart && eventDate <= monthEnd;
+        });
+      } else {
+        const rangeStart = new Date(monthFrom.getFullYear(), monthFrom.getMonth(), 1);
+        rangeStart.setHours(0, 0, 0, 0);
+        const rangeEnd = new Date(monthTo.getFullYear(), monthTo.getMonth() + 1, 0);
+        rangeEnd.setHours(23, 59, 59, 999);
+        scopeEvents = allEvents.filter(event => {
+          const eventDate = new Date(event.event_date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= rangeStart && eventDate <= rangeEnd;
+        });
+      }
 
-      // Set total events count for the month
-      setTotalEventsInMonth(monthEvents.length);
-      
-      // Store month events for display (sorted by date)
-      setMonthEvents(monthEvents.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
+      setTotalEventsInMonth(scopeEvents.length);
+      setMonthEvents([...scopeEvents].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
 
-      // Load all members
       const membersData = await apiClient.getMembers(groupId);
       setMembers(membersData);
 
-      // Load all users to get profile images
+      // Load ALL payments for ALL events (for balance calculation and month stats)
+      const allPaymentsByEvent: { eventId: string; payments: any[] }[] = [];
+      for (const event of allEvents) {
+        try {
+          const payments = await apiClient.getPayments(event.id);
+          allPaymentsByEvent.push({ eventId: event.id, payments });
+        } catch (e) {
+          console.error(`Error loading payments for event ${event.id}:`, e);
+        }
+      }
+      const allPaymentsFlat = allPaymentsByEvent.flatMap(({ payments }) => payments);
+
       let usersWithImages: any[] = [];
       try {
-        const allUsers = await apiClient.getUsers();
-        usersWithImages = allUsers;
+        usersWithImages = await apiClient.getUsers();
       } catch (userError) {
         console.error("Error loading users for profile images:", userError);
       }
 
-      // Build reports for each member
-      const memberReports: MemberReport[] = await Promise.all(
-        membersData.filter(m => m.is_active !== false).map(async (member: any) => {
-          // Find matching user by phone to get profile image
+      const monthEventIds = new Set(scopeEvents.map((e: any) => e.id));
+
+      const memberReports: MemberReport[] = membersData
+        .filter((m: any) => m.is_active !== false)
+        .map((member: any) => {
           let profileImage: string | null = null;
           if (member.phone) {
             const user = usersWithImages.find((u: any) => u.phone === member.phone);
-            if (user && user.profile_image) {
-              profileImage = user.profile_image;
-            }
+            if (user?.profile_image) profileImage = user.profile_image;
           }
-          // Count events attended in this month
+
+          // יתרה: כמו בעמוד חברים – 500 − ניכויים; אם יש הפקדה נוספת (שמורה) משתמשים בה
+          const deductedTotal = allPaymentsFlat
+            .filter((p: any) => p.payer_type === "member" && p.payer_id === member.id && p.payment_status !== "paid")
+            .reduce((sum: number, p: any) => sum + parseFloat((p.amount || 0).toFixed(2)), 0);
+          const calculatedBalance = parseFloat((DEPOSIT_PER_MEMBER - deductedTotal).toFixed(2));
+          const storedBalance = member.balance != null ? parseFloat((member.balance).toFixed(2)) : null;
+          const currentBalance = storedBalance != null && storedBalance > calculatedBalance ? storedBalance : calculatedBalance;
+
+          // חודש נבחר: אירועים שהחבר השתתף + סכום שנקוזז
           let eventsAttended = 0;
           let totalPaid = 0;
-          let totalPending = 0;
-
-          for (const event of monthEvents) {
-            // Check if member attended
-            try {
-              const attendees = await apiClient.getAttendees(event.id);
-              const memberAttended = attendees.some(
-                (a: any) => a.member_id === member.id && a.attended
-              );
-
-              if (memberAttended) {
-                eventsAttended++;
-
-                // Get payments for this member and event
-                try {
-                  const payments = await apiClient.getPayments(event.id);
-                  const memberPayment = payments.find(
-                    (p: any) => p.payer_id === member.id && p.payer_type === "member"
-                  );
-
-                  if (memberPayment) {
-                    // With the new balance model, only "deducted" payments count (from balance)
-                    if (memberPayment.payment_status === "deducted") {
-                      totalPaid += memberPayment.amount || 0;
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Error loading payments for event ${event.id}:`, error);
-                }
-              }
-            } catch (error) {
-              console.error(`Error loading attendees for event ${event.id}:`, error);
-            }
-          }
-
-          // Get current balance from member data (use exact value)
-          const currentBalance = member.balance !== undefined && member.balance !== null
-            ? (typeof member.balance === 'string' ? parseFloat(member.balance) : member.balance)
-            : 0;
-          
-          // Calculate total deducted this month (from payments with status "deducted")
-          let totalDeducted = 0;
-          for (const event of monthEvents) {
-            try {
-              const payments = await apiClient.getPayments(event.id);
-              const memberPayment = payments.find(
-                (p: any) => p.payer_id === member.id && p.payer_type === "member" && p.payment_status === "deducted"
-              );
-              if (memberPayment) {
-                totalDeducted += memberPayment.amount || 0;
-              }
-            } catch (error) {
-              console.error(`Error loading payments for event ${event.id}:`, error);
+          for (const { eventId, payments } of allPaymentsByEvent) {
+            if (!monthEventIds.has(eventId)) continue;
+            const memberPayment = payments.find((p: any) => p.payer_id === member.id && p.payer_type === "member");
+            if (memberPayment && memberPayment.payment_status !== "paid") {
+              totalPaid += parseFloat((memberPayment.amount || 0).toFixed(2));
             }
           }
 
           return {
             memberId: member.id,
             memberName: member.name,
-            memberNickname: member.nickname || null,
-            profileImage: profileImage || null,
-            eventsAttended,
-            totalPaid, // This is now total deducted from balance
-            totalPending: 0, // No pending in balance model
-            totalOwed: currentBalance < 0 ? Math.abs(currentBalance) : 0, // If balance is negative, they owe
-            currentBalance // Add current balance
+            memberNickname: member.nickname ?? null,
+            profileImage: profileImage ?? null,
+            eventsAttended: 0, // מחשבים בהמשך עם attendees
+            totalPaid,
+            totalPending: 0,
+            totalOwed: currentBalance < 0 ? Math.abs(currentBalance) : 0,
+            currentBalance,
           };
-        })
-      );
+        });
 
-      // Sort by events attended (descending), then by name
-      memberReports.sort((a, b) => {
-        if (a.eventsAttended !== b.eventsAttended) {
-          return b.eventsAttended - a.eventsAttended;
+      // טעינת נוכחות (attendees) לפי התקופה הנבחרת
+      const attendeesByEventId = new Map<string, any[]>();
+      for (const event of scopeEvents) {
+        try {
+          const attendees = await apiClient.getAttendees(event.id);
+          attendeesByEventId.set(event.id, attendees);
+        } catch (e) {
+          console.error(`Error loading attendees for event ${event.id}:`, e);
         }
-        return a.memberName.localeCompare(b.memberName, 'he');
-      });
+      }
+      for (const report of memberReports) {
+        const member = membersData.find((m: any) => m.id === report.memberId);
+        if (!member) continue;
+        let count = 0;
+        for (const event of scopeEvents) {
+          const attendees = attendeesByEventId.get(event.id) || [];
+          if (attendees.some((a: any) => a.member_id === member.id && a.attended)) count++;
+        }
+        report.eventsAttended = count;
+      }
 
+      memberReports.sort((a, b) => {
+        if (a.eventsAttended !== b.eventsAttended) return b.eventsAttended - a.eventsAttended;
+        return a.memberName.localeCompare(b.memberName, "he");
+      });
       setReports(memberReports);
 
-      // Calculate total guest payments for this month (use exact values)
+      // תשלומי אורחים – רק אירועים של החודש הנבחר
       let guestPaymentsTotal = 0;
-      for (const event of monthEvents) {
-        try {
-          const payments = await apiClient.getPayments(event.id);
-          const guestPayments = payments.filter((p: any) => p.payer_type === "guest");
-          for (const payment of guestPayments) {
-            guestPaymentsTotal += payment.amount || 0;
-          }
-        } catch (error) {
-          console.error(`Error loading guest payments for event ${event.id}:`, error);
+      for (const { eventId, payments } of allPaymentsByEvent) {
+        if (!monthEventIds.has(eventId)) continue;
+        for (const p of payments) {
+          if (p.payer_type === "guest") guestPaymentsTotal += parseFloat((p.amount || 0).toFixed(2));
         }
       }
       setTotalGuestPayments(guestPaymentsTotal);
@@ -329,7 +346,7 @@ const Reports = ({ groupId }: ReportsProps) => {
       toast({
         title: "שגיאה",
         description: "לא הצלחנו לטעון את הדוחות",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -357,7 +374,6 @@ const Reports = ({ groupId }: ReportsProps) => {
 
   const monthYear = formatMonthYear(currentMonth);
   const totalDeducted = reports.reduce((sum, r) => sum + r.totalPaid, 0);
-  // Calculate exact total balance without rounding
   let totalBalance = 0;
   for (const r of reports) {
     if (r.currentBalance !== undefined && r.currentBalance !== null) {
@@ -365,8 +381,12 @@ const Reports = ({ groupId }: ReportsProps) => {
       totalBalance += balance;
     }
   }
-  const isCurrentMonth = currentMonth.getMonth() === new Date().getMonth() && 
-                         currentMonth.getFullYear() === new Date().getFullYear();
+  const rangeLabel =
+    reportScope === "all"
+      ? "מתחילת הפעילות"
+      : reportScope === "current_month"
+        ? monthYear
+        : `${formatMonthYear(monthFrom)} – ${formatMonthYear(monthTo)}`;
 
   // Color palette for charts
   const CHART_COLORS = [
@@ -380,61 +400,91 @@ const Reports = ({ groupId }: ReportsProps) => {
 
   return (
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
-      {/* Header with Month Selector */}
+      {/* Header + בחירת תקופה */}
       <div className="pb-4" dir="rtl" style={{ direction: "rtl" }}>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-end w-full" dir="rtl" style={{ direction: "rtl" }}>
-            <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style={{ textAlign: "right", marginLeft: "auto" }}>
-              דוחות וסטטיסטיקות
-            </h2>
-            {!isCurrentMonth && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentMonth(new Date())}
-                className="text-xs md:text-sm mr-auto"
-                style={{ marginRight: "auto", marginLeft: "0" }}
-              >
-                חודש נוכחי
+        <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent text-right mb-4">
+          דוחות וסטטיסטיקות
+        </h2>
+
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground text-right">תקופת דוח</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={reportScope === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setReportScope("all")}
+            >
+              הכל מתחילת הפעילות
+            </Button>
+            <Button
+              variant={reportScope === "current_month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setReportScope("current_month")}
+            >
+              חודש נוכחי
+            </Button>
+            <Button
+              variant={reportScope === "range" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setReportScope("range")}
+            >
+              מחודש עד חודש
+            </Button>
+          </div>
+
+          {reportScope === "current_month" && (
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" dir="rtl">
+              <Button variant="ghost" size="icon" onClick={() => changeMonth(1)} className="h-8 w-8">
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            )}
-          </div>
-          
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between p-3" dir="rtl" style={{ direction: "rtl" }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => changeMonth(1)}
-              className="h-8 w-8"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-sm md:text-base font-semibold text-foreground">
-                {monthYear}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {totalEventsInMonth} אירועים
-              </span>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-semibold">{monthYear}</span>
+                <span className="text-xs text-muted-foreground">{totalEventsInMonth} אירועים</span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => changeMonth(-1)} className="h-8 w-8">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => changeMonth(-1)}
-              className="h-8 w-8"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          )}
+
+          {reportScope === "range" && (
+            <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border bg-muted/30" dir="rtl">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground">מחודש</label>
+                <input
+                  type="month"
+                  value={`${monthFrom.getFullYear()}-${String(monthFrom.getMonth() + 1).padStart(2, "0")}`}
+                  onChange={(e) => {
+                    const [y, m] = e.target.value.split("-").map(Number);
+                    setMonthFrom(new Date(y, m - 1, 1));
+                  }}
+                  className="rounded-md border bg-background px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground">עד חודש</label>
+                <input
+                  type="month"
+                  value={`${monthTo.getFullYear()}-${String(monthTo.getMonth() + 1).padStart(2, "0")}`}
+                  onChange={(e) => {
+                    const [y, m] = e.target.value.split("-").map(Number);
+                    setMonthTo(new Date(y, m - 1, 1));
+                  }}
+                  className="rounded-md border bg-background px-2 py-1.5 text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {reportScope === "all" && (
+            <p className="text-sm text-muted-foreground text-right">{rangeLabel} · {totalEventsInMonth} אירועים</p>
+          )}
         </div>
       </div>
 
       {/* Summary Cards - Modern Design */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {/* Events Card */}
+        {/* Events Card - בחודש נבחר */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
           <CardHeader className="pb-3">
@@ -446,6 +496,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                 סה"כ אירועים
               </CardTitle>
             </div>
+            <p className="text-xs text-muted-foreground text-right -mt-1">{rangeLabel}</p>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
@@ -457,7 +508,7 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* Total Deducted Card */}
+        {/* Total Deducted */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-red-500 to-red-600"></div>
           <CardHeader className="pb-3">
@@ -469,6 +520,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                 סה"כ קוזז מהיתרה
               </CardTitle>
             </div>
+            <p className="text-xs text-muted-foreground text-right -mt-1">{rangeLabel}</p>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
@@ -480,7 +532,7 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* Total Balance Card */}
+        {/* Total Balance - יתרה נוכחית (כל החברים) */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 sm:col-span-2 lg:col-span-1">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
           <CardHeader className="pb-3">
@@ -492,6 +544,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                 סה"כ יתרה נוכחית
               </CardTitle>
             </div>
+            <p className="text-xs text-muted-foreground text-right -mt-1">רק חברים</p>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
@@ -503,7 +556,7 @@ const Reports = ({ groupId }: ReportsProps) => {
           </CardContent>
         </Card>
 
-        {/* Guest Payments Card */}
+        {/* Guest Payments - בחודש נבחר */}
         <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10">
           <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
           <CardHeader className="pb-3">
@@ -515,6 +568,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                 תשלומי אורחים
               </CardTitle>
             </div>
+            <p className="text-xs text-muted-foreground text-right -mt-1">{rangeLabel}</p>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
@@ -638,7 +692,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                 <PieChart className="w-6 h-6 text-purple-600" />
                 <CardTitle className="text-lg md:text-xl text-right">נוכחות חברים</CardTitle>
               </div>
-              <CardDescription className="text-right">חודש {monthYear}</CardDescription>
+              <CardDescription className="text-right">{rangeLabel}</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="flex flex-col lg:flex-row gap-6 items-start w-full" dir="rtl" style={{ direction: "rtl" }}>
@@ -761,7 +815,7 @@ const Reports = ({ groupId }: ReportsProps) => {
             <Users className="w-6 h-6 text-primary" />
             <CardTitle className="text-lg md:text-xl text-right">דוחות לפי אנשים</CardTitle>
           </div>
-          <CardDescription className="text-right">סטטיסטיקה לכל חבר בחודש {monthYear}</CardDescription>
+          <CardDescription className="text-right">סטטיסטיקה לכל חבר · {rangeLabel}</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {reports.length === 0 ? (
@@ -816,7 +870,7 @@ const Reports = ({ groupId }: ReportsProps) => {
                             <span className="text-xs text-muted-foreground">יתרה</span>
                             <span className="text-sm md:text-base font-bold">
                               <span dir="ltr" className="tabular-nums">
-                                {Math.abs(report.currentBalance).toFixed(2)}
+                                {report.currentBalance < 0 ? "-" : ""}{Math.abs(report.currentBalance).toFixed(2)}
                               </span>{" "}
                               שקל
                             </span>
