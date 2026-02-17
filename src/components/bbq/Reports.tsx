@@ -749,9 +749,8 @@ const Reports = ({ groupId }: ReportsProps) => {
                               boxShadow: cfg.glow,
                             }}
                           >
-                            <span className="text-xs font-bold text-black/50 uppercase tracking-wider">מקום {slot.place}</span>
-                            <span className="text-2xl font-black text-gray-900 tabular-nums mt-0.5">{slot.events}</span>
-                            <span className="text-xs text-gray-700 font-medium">אירועים</span>
+                            <span className="text-2xl font-black text-gray-900 tabular-nums">{slot.events}</span>
+                            <span className="text-xs text-gray-700 font-medium mt-0.5">אירועים</span>
                             <div className="mt-2 w-full text-sm font-bold text-gray-800 space-y-0.5" title={slot.members.map((m) => m.name).join(", ")}>
                               {slot.members.map((m, j) => (
                                 <span key={j} className="block truncate">{m.name}</span>
