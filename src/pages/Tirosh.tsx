@@ -101,7 +101,8 @@ const Tirosh = () => {
     setIsLoading(true);
 
     try {
-      const apiUrl = "https://ophir.travelsure.co.il/api-tirosh.php";
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apiUrl = `${supabaseUrl}/functions/v1/send-tirosh-lead`;
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
