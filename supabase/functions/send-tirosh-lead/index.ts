@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "TravelSure <no-reply@send.travelsure.co.il>",
+        from: "TravelSure <no-reply@travelsure.co.il>",
         to: recipients,
         subject: `ליד חדש - תירוש: ${fullName}`,
         html,
