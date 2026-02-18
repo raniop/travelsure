@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>טופס ליד - תירוש</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f4f7fb;
+        color: #0f172a;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 16px 48px;
+      }
+      .card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 12px 30px rgba(2, 6, 23, 0.08);
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        color: #0b4e86;
+        text-align: center;
+      }
+      p.subtitle {
+        margin: 0 0 24px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+      }
+      input, textarea {
+        width: 100%;
+        border: 1px solid #cbd5f5;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+      }
+      input:focus, textarea:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+      }
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 16px;
+      }
+      @media (min-width: 640px) {
+        .grid-2 {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .error {
+        color: #dc2626;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #4ade80;
+        color: #1a5a5a;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+      }
+      .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 13px;
+      }
+      .status.ok { color: #15803d; }
+      .status.err { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>טופס ליד - תירוש</h1>
+        <p class="subtitle">מלאו פרטים ונחזור אליכם בהקדם</p>
+
+        <form id="tiroshForm" novalidate>
+          <div class="grid grid-2">
+            <div>
+              <label for="fullName">שם מלא *</label>
+              <input id="fullName" name="fullName" required />
+              <div class="error" data-error="fullName"></div>
+            </div>
+            <div>
+              <label for="phone">טלפון *</label>
+              <input id="phone" name="phone" required />
+              <div class="error" data-error="phone"></div>
+            </div>
+            <div>
+              <label for="birthDate">תאריך לידה *</label>
+              <input id="birthDate" name="birthDate" type="date" required />
+              <div class="error" data-error="birthDate"></div>
+            </div>
+            <div>
+              <label for="idNumber">תעודת זהות *</label>
+              <input id="idNumber" name="idNumber" inputmode="numeric" required />
+              <div class="error" data-error="idNumber"></div>
+            </div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <label for="notes">הערות</label>
+            <textarea id="notes" name="notes"></textarea>
+            <div class="error" data-error="notes"></div>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <button class="btn" type="submit" id="submitBtn">שלח</button>
+          </div>
+          <div id="status" class="status"></div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("tiroshForm");
+      const statusEl = document.getElementById("status");
+      const submitBtn = document.getElementById("submitBtn");
+
+      const setStatus = (text, isError) => {
+        statusEl.textContent = text || "";
+        statusEl.className = "status" + (isError ? " err" : " ok");
+      };
+
+      const setError = (field, message) => {
+        const el = document.querySelector(`[data-error="${field}"]`);
+        if (el) el.textContent = message || "";
+      };
+
+      const clearErrors = () => {
+        ["fullName", "phone", "birthDate", "idNumber", "notes"].forEach((field) => setError(field, ""));
+      };
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearErrors();
+        setStatus("");
+
+        const payload = {
+          fullName: form.fullName.value.trim(),
+          phone: form.phone.value.trim(),
+          birthDate: form.birthDate.value.trim(),
+          idNumber: form.idNumber.value.trim(),
+          notes: form.notes.value.trim(),
+        };
+
+        let hasError = false;
+        if (!payload.fullName) { setError("fullName", "שם מלא הוא שדה חובה"); hasError = true; }
+        if (!payload.phone) { setError("phone", "טלפון הוא שדה חובה"); hasError = true; }
+        if (!payload.birthDate) { setError("birthDate", "תאריך לידה הוא שדה חובה"); hasError = true; }
+        if (!payload.idNumber) { setError("idNumber", "תעודת זהות היא שדה חובה"); hasError = true; }
+        if (hasError) return;
+
+        submitBtn.disabled = true;
+        setStatus("שולח...");
+
+        try {
+          const res = await fetch("/api-tirosh.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            throw new Error("request_failed");
+          }
+
+          form.reset();
+          setStatus("הפנייה נשלחה בהצלחה!", false);
+        } catch (err) {
+          setStatus("שגיאה בשליחת הפנייה, נסו שוב מאוחר יותר.", true);
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

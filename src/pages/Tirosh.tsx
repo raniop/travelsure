@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,17 +61,21 @@ const Tirosh = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke("send-tirosh-lead", {
-        body: {
+      const res = await fetch("/api-tirosh.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           fullName: formData.fullName.trim(),
           phone: formData.phone.trim(),
           birthDate: formData.birthDate.trim(),
           idNumber: formData.idNumber.trim(),
           notes: formData.notes?.trim() || "",
-        },
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        throw new Error("tirosh_request_failed");
+      }
 
       toast({
         title: "הפנייה נשלחה בהצלחה!",

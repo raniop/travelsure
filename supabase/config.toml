@@ -18,9 +18,6 @@ port = 54323
 [functions.send-contact-email]
 verify_jwt = false
 
-[functions.send-tirosh-lead]
-verify_jwt = false
-
 [functions.send-otp]
 verify_jwt = false
 
