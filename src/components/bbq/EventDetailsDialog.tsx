@@ -34,13 +34,16 @@ interface Member {
   id: string;
   name: string;
   phone: string | null;
+  nickname?: string;
 }
 
 interface Attendee {
   id: string;
+  event_id?: string;
   member_id: string;
   attended: boolean;
   pays_with_group?: boolean;
+  created_at?: string;
   member: Member;
 }
 
@@ -172,7 +175,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         member_id: memberId,
         attended: true,
         pays_with_group: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        member: { id: memberId, name: '', phone: null }
       };
       setAttendees(prev => [...prev, newAttendee]);
     } else {

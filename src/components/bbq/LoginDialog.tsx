@@ -199,7 +199,7 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} dir="rtl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>

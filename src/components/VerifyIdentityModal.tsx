@@ -464,7 +464,7 @@ const VerifyIdentityModal = ({ open, onOpenChange }: VerifyIdentityModalProps) =
               phone: customer.phone,
             };
           })
-          .filter((item): item is Record<string, unknown> => Boolean(item));
+          .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
         const uniqueAdditional = Array.from(
           new Map(additional.map((item) => [String(item.personId), item])).values()
