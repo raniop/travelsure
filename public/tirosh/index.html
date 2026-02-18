@@ -5,55 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>טופס ליד - תירוש</title>
     <style>
+      :root {
+        --brand: #2f6b63;
+        --brand-dark: #1f4b46;
+        --accent: #4ade80;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #e2e8f0;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         font-family: Arial, Helvetica, sans-serif;
-        background: #f4f7fb;
-        color: #0f172a;
+        background: radial-gradient(circle at top, #f5faff 0%, #f8fafc 40%, #eef2f7 100%);
+        color: var(--text);
+        min-height: 100vh;
       }
       .wrap {
-        max-width: 720px;
+        max-width: 860px;
         margin: 0 auto;
-        padding: 32px 16px 48px;
+        padding: 28px 16px 56px;
+      }
+      .hero {
+        display: grid;
+        gap: 20px;
+        align-items: center;
+        justify-items: center;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      .logo {
+        width: min(260px, 70vw);
+        height: auto;
+        display: block;
+      }
+      .title {
+        margin: 0;
+        font-size: 26px;
+        color: var(--brand-dark);
+      }
+      .subtitle {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
       }
       .card {
         background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        box-shadow: 0 12px 30px rgba(2, 6, 23, 0.08);
-        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        padding: 26px;
       }
-      h1 {
-        margin: 0 0 8px;
-        font-size: 22px;
-        color: #0b4e86;
-        text-align: center;
-      }
-      p.subtitle {
-        margin: 0 0 24px;
-        text-align: center;
-        color: #64748b;
-        font-size: 14px;
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(79, 209, 197, 0.12);
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 700;
       }
       label {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 6px;
         font-size: 13px;
         font-weight: 600;
         color: #334155;
         margin-bottom: 6px;
       }
+      label span.req {
+        color: #dc2626;
+      }
       input, textarea {
         width: 100%;
-        border: 1px solid #cbd5f5;
-        border-radius: 10px;
-        padding: 10px 12px;
+        border: 1px solid #d7e3f5;
+        border-radius: 12px;
+        padding: 12px 14px;
         font-size: 14px;
         outline: none;
-        box-sizing: border-box;
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        background: #f8fafc;
+      }
+      input::placeholder, textarea::placeholder {
+        color: #94a3b8;
       }
       input:focus, textarea:focus {
         border-color: #38bdf8;
-        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        background: #ffffff;
+      }
+      input[type="date"] {
+        text-align: right;
       }
       textarea {
         min-height: 120px;
@@ -64,10 +111,16 @@
         grid-template-columns: repeat(1, minmax(0, 1fr));
         gap: 16px;
       }
-      @media (min-width: 640px) {
+      @media (min-width: 700px) {
         .grid-2 {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+      }
+      .helper {
+        margin: 16px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
       }
       .error {
         color: #dc2626;
@@ -79,69 +132,87 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
-        background: #4ade80;
-        color: #1a5a5a;
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        color: #0f3d2c;
         border: none;
-        border-radius: 12px;
-        padding: 12px 16px;
+        border-radius: 14px;
+        padding: 13px 18px;
         font-size: 15px;
         font-weight: 700;
         cursor: pointer;
         width: 100%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 20px rgba(34, 197, 94, 0.25);
       }
       .btn:disabled {
         opacity: 0.7;
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
       .status {
-        margin-top: 12px;
+        margin-top: 14px;
         text-align: center;
         font-size: 13px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        color: #334155;
       }
-      .status.ok { color: #15803d; }
-      .status.err { color: #b91c1c; }
+      .status.ok { background: #dcfce7; color: #15803d; }
+      .status.err { background: #fee2e2; color: #b91c1c; }
     </style>
   </head>
   <body>
     <div class="wrap">
-      <div class="card">
-        <h1>טופס ליד - תירוש</h1>
-        <p class="subtitle">מלאו פרטים ונחזור אליכם בהקדם</p>
+      <div class="hero">
+        <img class="logo" src="/tirosh/logo.png" alt="תירוש ביטוח ופיננסים" />
+        <div>
+          <h1 class="title">טופס ליד - תירוש</h1>
+          <p class="subtitle">מלאו את הפרטים ונחזור אליכם בהקדם</p>
+        </div>
+        <span class="badge">שדות חובה מסומנים בכוכבית</span>
+      </div>
 
+      <div class="card">
         <form id="tiroshForm" novalidate>
           <div class="grid grid-2">
             <div>
-              <label for="fullName">שם מלא *</label>
-              <input id="fullName" name="fullName" required />
+              <label for="fullName">שם מלא <span class="req">*</span></label>
+              <input id="fullName" name="fullName" placeholder="לדוגמה: ישראל ישראלי" required />
               <div class="error" data-error="fullName"></div>
             </div>
             <div>
-              <label for="phone">טלפון *</label>
-              <input id="phone" name="phone" required />
+              <label for="phone">טלפון <span class="req">*</span></label>
+              <input id="phone" name="phone" placeholder="לדוגמה: 052-1234567" required />
               <div class="error" data-error="phone"></div>
             </div>
             <div>
-              <label for="birthDate">תאריך לידה *</label>
+              <label for="birthDate">תאריך לידה <span class="req">*</span></label>
               <input id="birthDate" name="birthDate" type="date" required />
               <div class="error" data-error="birthDate"></div>
             </div>
             <div>
-              <label for="idNumber">תעודת זהות *</label>
-              <input id="idNumber" name="idNumber" inputmode="numeric" required />
+              <label for="idNumber">תעודת זהות <span class="req">*</span></label>
+              <input id="idNumber" name="idNumber" inputmode="numeric" placeholder="9 ספרות" required />
               <div class="error" data-error="idNumber"></div>
             </div>
           </div>
 
-          <div style="margin-top: 16px;">
+          <div style="margin-top: 18px;">
             <label for="notes">הערות</label>
-            <textarea id="notes" name="notes"></textarea>
+            <textarea id="notes" name="notes" placeholder="כל דבר שחשוב לדעת..."></textarea>
             <div class="error" data-error="notes"></div>
           </div>
 
-          <div style="margin-top: 20px;">
+          <div style="margin-top: 22px;">
             <button class="btn" type="submit" id="submitBtn">שלח</button>
           </div>
-          <div id="status" class="status"></div>
+          <div id="status" class="status" style="display:none;"></div>
+          <div class="helper">הפרטים נשמרים בצורה מאובטחת לצורך חזרה אליכם בלבד.</div>
         </form>
       </div>
     </div>
@@ -154,6 +225,7 @@
       const setStatus = (text, isError) => {
         statusEl.textContent = text || "";
         statusEl.className = "status" + (isError ? " err" : " ok");
+        statusEl.style.display = text ? "block" : "none";
       };
 
       const setError = (field, message) => {
@@ -186,7 +258,7 @@
         if (hasError) return;
 
         submitBtn.disabled = true;
-        setStatus("שולח...");
+        submitBtn.textContent = "שולח...";
 
         try {
           const res = await fetch("/api-tirosh.php", {
@@ -205,6 +277,7 @@
           setStatus("שגיאה בשליחת הפנייה, נסו שוב מאוחר יותר.", true);
         } finally {
           submitBtn.disabled = false;
+          submitBtn.textContent = "שלח";
         }
       });
     </script>
