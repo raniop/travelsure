@@ -59,13 +59,15 @@ const Tirosh = () => {
   };
 
   const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^\d/]/g, "");
-    const digits = raw.replace(/\D/g, "").slice(0, 8);
-    const parts = [];
-    if (digits.length >= 2) parts.push(digits.slice(0, 2));
-    if (digits.length >= 4) parts.push(digits.slice(2, 4));
-    if (digits.length > 4) parts.push(digits.slice(4));
-    const nextValue = parts.join("/");
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    let nextValue = "";
+    if (digits.length <= 2) {
+      nextValue = digits;
+    } else if (digits.length <= 4) {
+      nextValue = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    } else {
+      nextValue = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    }
     setFormData((prev) => ({ ...prev, birthDate: nextValue }));
     if (errors.birthDate) {
       setErrors((prev) => ({ ...prev, birthDate: "" }));
@@ -241,6 +243,9 @@ const Tirosh = () => {
                 </label>
                 <Input
                   name="birthDate"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
                   value={formData.birthDate}
                   onChange={handleBirthDateChange}
                   placeholder="dd/mm/yyyy"
@@ -290,7 +295,7 @@ const Tirosh = () => {
               type="submit"
               variant="cta"
               size="lg"
-              className="w-full rounded-xl bg-[#2f6b63] text-white hover:bg-[#25564f]"
+              className="w-full rounded-xl bg-gradient-to-r from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white hover:brightness-105"
               disabled={isLoading}
             >
               {isLoading ? (

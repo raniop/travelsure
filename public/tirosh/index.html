@@ -235,7 +235,7 @@
             </div>
             <div>
               <label for="birthDate">תאריך לידה <span class="req">*</span></label>
-              <input id="birthDate" name="birthDate" type="date" required />
+              <input id="birthDate" name="birthDate" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" required />
               <div class="hint">פורמט: יום/חודש/שנה</div>
               <div class="error" data-error="birthDate"></div>
             </div>
@@ -281,6 +281,21 @@
         ["fullName", "phone", "birthDate", "idNumber", "notes"].forEach((field) => setError(field, ""));
       };
 
+      const formatBirthDate = (value) => {
+        const digits = value.replace(/\D/g, "").slice(0, 8);
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+      };
+
+      const birthDateInput = document.getElementById("birthDate");
+      birthDateInput.addEventListener("input", (e) => {
+        const nextValue = formatBirthDate(e.target.value);
+        if (e.target.value !== nextValue) {
+          e.target.value = nextValue;
+        }
+      });
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         clearErrors();
@@ -298,6 +313,10 @@
         if (!payload.fullName) { setError("fullName", "שם מלא הוא שדה חובה"); hasError = true; }
         if (!payload.phone) { setError("phone", "טלפון הוא שדה חובה"); hasError = true; }
         if (!payload.birthDate) { setError("birthDate", "תאריך לידה הוא שדה חובה"); hasError = true; }
+        if (payload.birthDate && !/^\d{2}\/\d{2}\/\d{4}$/.test(payload.birthDate)) {
+          setError("birthDate", "יש להזין תאריך בפורמט DD/MM/YYYY");
+          hasError = true;
+        }
         if (!payload.idNumber) { setError("idNumber", "תעודת זהות היא שדה חובה"); hasError = true; }
         if (payload.idNumber && !/^\d{5,9}$/.test(payload.idNumber)) {
           setError("idNumber", "תעודת זהות לא תקינה");
