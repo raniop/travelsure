@@ -10,6 +10,7 @@ import ScrollIndicator from "@/components/ScrollIndicator";
 import Index from "./pages/Index";
 import Purchase from "./pages/Purchase";
 import BuyInsNew from "./pages/BuyInsNew";
+import Tirosh from "./pages/Tirosh";
 import FAQ from "./pages/FAQ";
 import Services from "./pages/Services";
 import About from "./pages/About";
@@ -39,7 +40,7 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/buyinsnew" element={<BuyInsNew />} />
-        <Route path="/tirosh" element={<BuyInsNew />} />
+        <Route path="/tirosh" element={<Tirosh />} />
         <Route path="/services" element={<Services />} />
         <Route path="/services/travel" element={<TravelInsurance />} />
         <Route path="/travel-policy" element={<TravelPolicy />} />
