@@ -24,26 +24,37 @@
         min-height: 100vh;
       }
       .wrap {
-        max-width: 860px;
+        max-width: 980px;
         margin: 0 auto;
-        padding: 28px 16px 56px;
+        padding: 32px 16px 64px;
       }
       .hero {
         display: grid;
-        gap: 20px;
+        gap: 16px;
         align-items: center;
         justify-items: center;
-        margin-bottom: 24px;
+        margin-bottom: 28px;
         text-align: center;
       }
       .logo {
-        width: min(260px, 70vw);
+        width: min(280px, 70vw);
         height: auto;
         display: block;
       }
+      .logo-fallback {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 20px;
+        border-radius: 12px;
+        background: #2f6b63;
+        color: #ffffff;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
       .title {
         margin: 0;
-        font-size: 26px;
+        font-size: 28px;
         color: var(--brand-dark);
       }
       .subtitle {
@@ -55,8 +66,30 @@
         background: #ffffff;
         border: 1px solid var(--border);
         border-radius: 20px;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
-        padding: 26px;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.1);
+        padding: 28px;
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 6px;
+        background: linear-gradient(90deg, #2f6b63 0%, #4ade80 100%);
+      }
+      .intro {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .intro h2 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--brand-dark);
       }
       .badge {
         display: inline-flex;
@@ -109,7 +142,7 @@
       .grid {
         display: grid;
         grid-template-columns: repeat(1, minmax(0, 1fr));
-        gap: 16px;
+        gap: 18px;
       }
       @media (min-width: 700px) {
         .grid-2 {
@@ -124,6 +157,11 @@
       }
       .error {
         color: #dc2626;
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .hint {
+        color: #94a3b8;
         font-size: 12px;
         margin-top: 6px;
       }
@@ -169,7 +207,8 @@
   <body>
     <div class="wrap">
       <div class="hero">
-        <img class="logo" src="/tirosh/logo.png" alt="תירוש ביטוח ופיננסים" />
+        <img class="logo" src="/tirosh/logo.png" alt="תירוש ביטוח ופיננסים" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='inline-flex';" />
+        <div id="logoFallback" class="logo-fallback" style="display:none;">תירוש ביטוח ופיננסים</div>
         <div>
           <h1 class="title">טופס ליד - תירוש</h1>
           <p class="subtitle">מלאו את הפרטים ונחזור אליכם בהקדם</p>
@@ -178,6 +217,10 @@
       </div>
 
       <div class="card">
+        <div class="intro">
+          <h2>נשמח לעזור לכם במהירות</h2>
+          <span class="badge">חוזרים אליכם תוך זמן קצר</span>
+        </div>
         <form id="tiroshForm" novalidate>
           <div class="grid grid-2">
             <div>
@@ -193,6 +236,7 @@
             <div>
               <label for="birthDate">תאריך לידה <span class="req">*</span></label>
               <input id="birthDate" name="birthDate" type="date" required />
+              <div class="hint">פורמט: יום/חודש/שנה</div>
               <div class="error" data-error="birthDate"></div>
             </div>
             <div>
@@ -255,6 +299,14 @@
         if (!payload.phone) { setError("phone", "טלפון הוא שדה חובה"); hasError = true; }
         if (!payload.birthDate) { setError("birthDate", "תאריך לידה הוא שדה חובה"); hasError = true; }
         if (!payload.idNumber) { setError("idNumber", "תעודת זהות היא שדה חובה"); hasError = true; }
+        if (payload.idNumber && !/^\d{5,9}$/.test(payload.idNumber)) {
+          setError("idNumber", "תעודת זהות לא תקינה");
+          hasError = true;
+        }
+        if (payload.phone && payload.phone.length < 6) {
+          setError("phone", "מספר טלפון קצר מדי");
+          hasError = true;
+        }
         if (hasError) return;
 
         submitBtn.disabled = true;
