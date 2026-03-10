@@ -43,6 +43,7 @@ interface Attendee {
   member_id: string;
   attended: boolean;
   pays_with_group?: boolean;
+  pays_grocery_only?: boolean;
   created_at?: string;
   member: Member;
 }
@@ -175,6 +176,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         member_id: memberId,
         attended: true,
         pays_with_group: true,
+        pays_grocery_only: false,
         created_at: new Date().toISOString(),
         member: { id: memberId, name: '', phone: null }
       };
@@ -194,6 +196,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           member_id: existingAttendee.member_id,
           attended: attended,
           pays_with_group: existingAttendee.pays_with_group !== false,
+          pays_grocery_only: existingAttendee.pays_grocery_only === true,
           created_at: existingAttendee.created_at
         };
         
@@ -210,7 +213,8 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
               ...a, 
               ...updated,
               attended: updated.attended !== undefined ? updated.attended : attended,
-              pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : a.pays_with_group !== false
+              pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : a.pays_with_group !== false,
+              pays_grocery_only: updated.pays_grocery_only !== undefined ? updated.pays_grocery_only : a.pays_grocery_only === true
             };
           }
           return a;
@@ -221,11 +225,12 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           event_id: eventId,
           member_id: memberId,
           attended: true,
-          pays_with_group: true
+          pays_with_group: true,
+          pays_grocery_only: false
         });
         // Replace temporary ID with real ID
         setAttendees(prev => prev.map(a => 
-          a.member_id === memberId ? { ...a, id: created.id, pays_with_group: true } : a
+          a.member_id === memberId ? { ...a, id: created.id, pays_with_group: true, pays_grocery_only: false } : a
         ));
       }
     } catch (error: any) {
@@ -281,15 +286,50 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         member_id: existingAttendee.member_id,
         attended: true,
         pays_with_group: paysWithGroup,
+        pays_grocery_only: existingAttendee.pays_grocery_only === true,
         created_at: (existingAttendee as any).created_at
       };
       const updated = await apiClient.updateAttendee(existingAttendee.id, updateData);
       setAttendees(prev => prev.map(a =>
-        a.member_id === memberId ? { ...a, ...updated, pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : paysWithGroup } : a
+        a.member_id === memberId ? { ...a, ...updated, pays_with_group: updated.pays_with_group !== undefined ? updated.pays_with_group : paysWithGroup, pays_grocery_only: updated.pays_grocery_only !== undefined ? updated.pays_grocery_only : a.pays_grocery_only === true } : a
       ));
     } catch (error: any) {
       setAttendees(prev => prev.map(a =>
         a.member_id === memberId ? { ...a, pays_with_group: !paysWithGroup } : a
+      ));
+      toast({
+        title: "שגיאה",
+        description: error.message || "לא הצלחנו לעדכן",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleMemberPaysGroceryOnly = async (memberId: string, paysGroceryOnly: boolean) => {
+    const existingAttendee = attendees.find(a => a.member_id === memberId);
+    if (!existingAttendee || !existingAttendee.attended || existingAttendee.pays_with_group === false) return;
+
+    setAttendees(prev => prev.map(a =>
+      a.member_id === memberId ? { ...a, pays_grocery_only: paysGroceryOnly } : a
+    ));
+
+    try {
+      const updateData = {
+        id: existingAttendee.id,
+        event_id: existingAttendee.event_id,
+        member_id: existingAttendee.member_id,
+        attended: true,
+        pays_with_group: true,
+        pays_grocery_only: paysGroceryOnly,
+        created_at: (existingAttendee as any).created_at
+      };
+      const updated = await apiClient.updateAttendee(existingAttendee.id, updateData);
+      setAttendees(prev => prev.map(a =>
+        a.member_id === memberId ? { ...a, ...updated, pays_grocery_only: updated.pays_grocery_only !== undefined ? updated.pays_grocery_only : paysGroceryOnly } : a
+      ));
+    } catch (error: any) {
+      setAttendees(prev => prev.map(a =>
+        a.member_id === memberId ? { ...a, pays_grocery_only: !paysGroceryOnly } : a
       ));
       toast({
         title: "שגיאה",
@@ -567,11 +607,23 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
         return;
       }
 
-      const totalCost = event.butcher_cost && event.grocery_cost 
-        ? event.butcher_cost + event.grocery_cost 
-        : (event.total_cost || 0);
-      // Use exact value for calculation (no rounding)
-      const costPerPerson = totalCost / totalPaying;
+      const butcher = event.butcher_cost ?? 0;
+      const grocery = event.grocery_cost ?? 0;
+      const fullPayersCount = payingAttendees.filter(a => !(a.pays_grocery_only === true)).length + payingGuests.length;
+      const nAll = totalPaying;
+
+      if (butcher > 0 && fullPayersCount === 0) {
+        toast({
+          title: "שגיאה",
+          description: "אין משלמים על הבשר. הוסף לפחות משתתף אחד שמשלם על הכל (בשר+סופר).",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const nFull = fullPayersCount;
+      const amountFull = nFull > 0 && nAll > 0 ? (butcher / nFull) + (grocery / nAll) : 0;
+      const amountGroceryOnly = nAll > 0 ? grocery / nAll : 0;
 
       // Get all members to update their balance
       const allMembers = await apiClient.getMembers(groupId);
@@ -623,55 +675,44 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       // Get fresh members data after returning balances
       const freshMembers = await apiClient.getMembers(groupId);
 
-      // Round costPerPerson once for all members to ensure consistency
-      // Use parseFloat with toFixed to ensure exactly 2 decimal places
-      const roundedCostPerPerson = parseFloat(costPerPerson.toFixed(2));
-      
-      // Calculate new payments and deduct from balances
+      // Calculate new payments and deduct from balances (per-person amount: full vs grocery-only)
       for (const attendee of payingAttendees) {
         const member = freshMembers.find((m: any) => m.id === attendee.member_id);
-        
+        const isGroceryOnly = attendee.pays_grocery_only === true;
+        const amount = isGroceryOnly ? amountGroceryOnly : amountFull;
+        const roundedAmount = parseFloat(amount.toFixed(2));
+
         if (member) {
-          // Get current balance and ensure it's a number
-          // IMPORTANT: Round to 2 decimal places before calculation to avoid floating point precision issues
           const currentBalance = typeof member.balance === 'string' 
             ? parseFloat(member.balance) 
             : (member.balance || 0);
           const roundedCurrentBalance = parseFloat(currentBalance.toFixed(2));
-          
-          // Calculate new balance (deduct rounded costPerPerson). מינוס = חבר חרג, חייב להשלים
-          const newBalance = roundedCurrentBalance - roundedCostPerPerson;
-          
-          // Round only when saving to database (to prevent floating point precision issues)
-          // Use parseFloat with toFixed to ensure exactly 2 decimal places
+          const newBalance = roundedCurrentBalance - roundedAmount;
           const roundedNewBalance = parseFloat(newBalance.toFixed(2));
-          
-          // Update member balance
+
           await apiClient.updateMember(member.id, {
             ...member,
             balance: roundedNewBalance
           });
 
-          // Create new payment record (round only when saving)
-          // IMPORTANT: Use the same rounded value for payment amount
           await apiClient.createPayment({
             event_id: eventId,
             payer_id: attendee.member_id,
             payer_type: "member",
-            amount: roundedCostPerPerson,
-            payment_status: "deducted" // Mark as deducted from balance
+            amount: roundedAmount,
+            payment_status: "deducted"
           });
         }
       }
 
-      // Create payments for guests (round only when saving to database)
-      // Use the same rounded value as for members to ensure consistency
+      // Guests always pay full (butcher + grocery share)
       for (const guest of payingGuests) {
+        const roundedAmount = parseFloat(amountFull.toFixed(2));
         await apiClient.createPayment({
           event_id: eventId,
           payer_id: guest.id,
           payer_type: "guest",
-          amount: roundedCostPerPerson,
+          amount: roundedAmount,
           payment_status: "pending"
         });
       }
@@ -679,9 +720,12 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       // Mark that payments have been calculated
       setHasPayments(true);
 
+      const hasBoth = amountFull !== amountGroceryOnly && payingAttendees.some(a => a.pays_grocery_only === true);
       toast({
         title: "הצלחה!",
-        description: `חושבו תשלומים: ${costPerPerson.toFixed(2)} ₪ לכל משתתף. הסכום נקזז מהיתרה החודשית של כל חבר`
+        description: hasBoth
+          ? `חושבו תשלומים: משלם על הכל ${amountFull.toFixed(2)} ₪, רק סופר ${amountGroceryOnly.toFixed(2)} ₪. הסכום נקזז מהיתרה.`
+          : `חושבו תשלומים: ${amountFull.toFixed(2)} ₪ למשתתף. הסכום נקזז מהיתרה החודשית של כל חבר`
       });
 
       // Reload event details to show updated payments
@@ -708,7 +752,15 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const payingGuests = guests.filter(g => g.should_pay);
   const totalPaying = payingAttendees.length + payingGuests.length;
   const totalCost = event ? (event.butcher_cost || 0) + (event.grocery_cost || 0) : (event?.total_cost || 0);
-  const costPerPerson = totalPaying > 0 && totalCost > 0 ? totalCost / totalPaying : 0;
+  const butcherDisplay = event?.butcher_cost ?? 0;
+  const groceryDisplay = event?.grocery_cost ?? 0;
+  const fullPayersCountDisplay = payingAttendees.filter(a => !(a.pays_grocery_only === true)).length + payingGuests.length;
+  const nAllDisplay = totalPaying;
+  const hasGroceryOnlyPayers = payingAttendees.some(a => a.pays_grocery_only === true);
+  const amountFullDisplay = nAllDisplay > 0 && fullPayersCountDisplay > 0
+    ? (butcherDisplay / fullPayersCountDisplay) + (groceryDisplay / nAllDisplay)
+    : totalPaying > 0 && totalCost > 0 ? totalCost / totalPaying : 0;
+  const amountGroceryOnlyDisplay = nAllDisplay > 0 ? groceryDisplay / nAllDisplay : 0;
   
   // Check if event is in the future or past
   const today = new Date();
@@ -961,7 +1013,15 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                     <div className="text-2xl font-bold">{totalPaying}</div>
                     {totalPaying > 0 && (
                       <div className="text-sm text-muted-foreground mt-1">
-                        {costPerPerson.toFixed(2)} ₪ לאדם
+                        {hasGroceryOnlyPayers ? (
+                          <>
+                            <span>על הכל: {amountFullDisplay.toFixed(2)} ₪</span>
+                            <br />
+                            <span>רק סופר: {amountGroceryOnlyDisplay.toFixed(2)} ₪</span>
+                          </>
+                        ) : (
+                          <span>{amountFullDisplay.toFixed(2)} ₪ לאדם</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1010,6 +1070,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                     const attendee = attendees.find(a => a.member_id === member.id);
                     const attended = attendee?.attended || false;
                     const paysWithGroup = attendee?.pays_with_group !== false;
+                    const paysGroceryOnly = attendee?.pays_grocery_only === true;
                     const isCurrentUser = member.phone === userPhone;
                     
                     // Only allow editing if admin or if it's the current user
@@ -1048,6 +1109,25 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                             ) : (
                               <Badge variant={paysWithGroup ? "default" : "secondary"}>
                                 {paysWithGroup ? "אוכל ומשלם" : "קונה לעצמו"}
+                              </Badge>
+                            )
+                          )}
+                          {attended && paysWithGroup && (
+                            canEdit ? (
+                              <Toggle
+                                type="button"
+                                pressed={!paysGroceryOnly}
+                                onPressedChange={(pressed) => toggleMemberPaysGroceryOnly(member.id, !pressed)}
+                                variant={!paysGroceryOnly ? "default" : "outline"}
+                                size="sm"
+                                className="min-w-[90px]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {paysGroceryOnly ? "רק סופר" : "על הכל"}
+                              </Toggle>
+                            ) : (
+                              <Badge variant={!paysGroceryOnly ? "default" : "secondary"}>
+                                {paysGroceryOnly ? "רק סופר" : "על הכל"}
                               </Badge>
                             )
                           )}

@@ -335,6 +335,7 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
           member_id: existingAttendee.member_id,
           attended: attended,
           pays_with_group: existingAttendee.pays_with_group !== false,
+          pays_grocery_only: existingAttendee.pays_grocery_only === true,
           created_at: existingAttendee.created_at
         };
         await apiClient.updateAttendee(existingAttendee.id, updateData);
@@ -343,7 +344,8 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
           event_id: event.id,
           member_id: userMember.id,
           attended: true,
-          pays_with_group: true
+          pays_with_group: true,
+          pays_grocery_only: false
         });
       }
       
