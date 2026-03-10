@@ -268,6 +268,8 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
   const [costFull, setCostFull] = useState<number>(0);
   const [costGroceryOnly, setCostGroceryOnly] = useState<number>(0);
   const [hasBothPaymentTypes, setHasBothPaymentTypes] = useState<boolean>(false);
+  const [fullPayersCount, setFullPayersCount] = useState<number>(0);
+  const [groceryOnlyPayersCount, setGroceryOnlyPayersCount] = useState<number>(0);
   const { toast } = useToast();
   const eventDate = new Date(event.event_date);
   const today = new Date();
@@ -323,12 +325,18 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
               setCostGroceryOnly(0);
             }
             setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
+            const groceryOnlyCount = payingAttendeesList.filter((a: any) => a.pays_grocery_only === true).length;
+            setFullPayersCount(fullPayersCount + payingGuests);
+            setGroceryOnlyPayersCount(groceryOnlyCount);
           } catch (guestError) {
             console.error("Error loading guests:", guestError);
             setConfirmedCount(confirmedAttendees);
             setPayingCount(payingAttendees);
             const nAll = payingAttendees;
             const nFull = fullPayersCount;
+            const groceryOnlyCount = payingAttendeesList.filter((a: any) => a.pays_grocery_only === true).length;
+            setFullPayersCount(fullPayersCount);
+            setGroceryOnlyPayersCount(groceryOnlyCount);
             const butcher = event.butcher_cost ?? 0;
             const grocery = event.grocery_cost ?? 0;
             if (nAll > 0) {
@@ -344,6 +352,8 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
           setCostFull(0);
           setCostGroceryOnly(0);
           setHasBothPaymentTypes(false);
+          setFullPayersCount(0);
+          setGroceryOnlyPayersCount(0);
         }
       } catch (error) {
         console.error("Error loading members:", error);
@@ -404,6 +414,9 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
             setCostFull(nFull > 0 ? butcher / nFull + grocery / nAll : (butcher + grocery) / nAll);
           }
           setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
+          const groceryOnlyCount = payingAttendeesList.filter((a: any) => a.pays_grocery_only === true).length;
+          setFullPayersCount(fullPayersCount + payingGuests);
+          setGroceryOnlyPayersCount(groceryOnlyCount);
         } catch (guestError) {
           console.error("Error loading guests:", guestError);
           setConfirmedCount(confirmedAttendees);
@@ -417,6 +430,9 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
             setCostFull(nFull > 0 ? butcher / nFull + grocery / nAll : (butcher + grocery) / nAll);
           }
           setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
+          const groceryOnlyCount = payingAttendeesList.filter((a: any) => a.pays_grocery_only === true).length;
+          setFullPayersCount(fullPayersCount);
+          setGroceryOnlyPayersCount(groceryOnlyCount);
         }
       } catch (error) {
         console.error("Error refreshing confirmed count:", error);
@@ -516,16 +532,33 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
               </div>
             </div>
 
-            {/* Paying */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-teal-100/80 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50" : "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/40"}`}>
-              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-teal-600" : "text-teal-600/80"}`} />
-              <div className="flex flex-col items-end">
-                <span className={`text-[10px] leading-tight ${isFuture ? "text-teal-600/90" : "text-teal-700/70"}`}>משלמים</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-teal-800 dark:text-teal-300" : "text-teal-700 dark:text-teal-400"}`}>
-                  {payingCount}
-                </span>
+            {/* Paying – 2 blocks when both payment types */}
+            {hasBothPaymentTypes ? (
+              <>
+                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-teal-100/80 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50" : "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/40"}`}>
+                  <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-teal-600" : "text-teal-600/80"}`} />
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[10px] leading-tight ${isFuture ? "text-teal-600/90" : "text-teal-700/70"}`}>משלמים על הכל</span>
+                    <span className={`text-xs font-bold ${isFuture ? "text-teal-800 dark:text-teal-300" : "text-teal-700 dark:text-teal-400"}`}>{fullPayersCount}</span>
+                  </div>
+                </div>
+                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-teal-100/80 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50" : "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/40"}`}>
+                  <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-teal-600" : "text-teal-600/80"}`} />
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[10px] leading-tight ${isFuture ? "text-teal-600/90" : "text-teal-700/70"}`}>משלמים רק סופר</span>
+                    <span className={`text-xs font-bold ${isFuture ? "text-teal-800 dark:text-teal-300" : "text-teal-700 dark:text-teal-400"}`}>{groceryOnlyPayersCount}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-teal-100/80 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800/50" : "bg-teal-50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/40"}`}>
+                <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-teal-600" : "text-teal-600/80"}`} />
+                <div className="flex flex-col items-end">
+                  <span className={`text-[10px] leading-tight ${isFuture ? "text-teal-600/90" : "text-teal-700/70"}`}>משלמים</span>
+                  <span className={`text-xs font-bold ${isFuture ? "text-teal-800 dark:text-teal-300" : "text-teal-700 dark:text-teal-400"}`}>{payingCount}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Total Cost */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-sky-100/80 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800/50" : "bg-sky-50 dark:bg-sky-950/20 border-sky-100 dark:border-sky-900/40"}`}>
@@ -538,29 +571,33 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
               </div>
             </div>
 
-            {/* Cost Per Person – יש משלמים X ויש משלמים Y (על הכל / רק סופר) */}
-            {payingCount > 0 && (
+            {/* Cost Per Person – 2 blocks when both payment types */}
+            {payingCount > 0 && (hasBothPaymentTypes ? (
+              <>
+                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
+                  <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף על הכל</span>
+                    <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>{costFull.toFixed(2)} ₪</span>
+                  </div>
+                </div>
+                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
+                  <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף רק סופר</span>
+                    <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>{costGroceryOnly.toFixed(2)} ₪</span>
+                  </div>
+                </div>
+              </>
+            ) : (
               <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
                 <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
-                <div className="flex flex-col items-end min-w-0 gap-0.5">
-                  {hasBothPaymentTypes ? (
-                    <>
-                      <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף (לפי סוג)</span>
-                      <span className={`text-[11px] font-bold leading-tight ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>
-                        על הכל {costFull.toFixed(2)} ₪ · רק סופר {costGroceryOnly.toFixed(2)} ₪
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף</span>
-                      <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>
-                        {costFull.toFixed(2)} ₪
-                      </span>
-                    </>
-                  )}
+                <div className="flex flex-col items-end">
+                  <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף</span>
+                  <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>{costFull.toFixed(2)} ₪</span>
                 </div>
               </div>
-            )}
+            ))}
 
             {/* Time */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-violet-100/80 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800/50" : "bg-violet-50 dark:bg-violet-950/20 border-violet-100 dark:border-violet-900/40"}`}>
