@@ -50,6 +50,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
       onPaymentsCalculated();
     }
   };
+  const handleEventDetailsClose = () => setRefreshTrigger(prev => prev + 1);
 
   const loadEvents = async () => {
     try {
@@ -181,12 +182,13 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
           <div className="space-y-4">
             {futureEvents.map((event, index) => (
               <EventCard 
-                key={event.id} 
-                event={event} 
+                key={event.id}
+                event={event}
                 groupId={groupId}
                 userId={userId}
                 isAdmin={isAdmin}
                 onPaymentsCalculated={handlePaymentsCalculated}
+                onEventDetailsClose={handleEventDetailsClose}
                 index={index}
                 isFuture={true}
                 refreshTrigger={refreshTrigger}
@@ -215,6 +217,7 @@ const EventsList = ({ groupId, userId, isAdmin, showHistory = false, onPaymentsC
                 userId={userId}
                 isAdmin={isAdmin}
                 onPaymentsCalculated={handlePaymentsCalculated}
+                onEventDetailsClose={handleEventDetailsClose}
                 index={index}
                 isFuture={false}
                 refreshTrigger={refreshTrigger}
@@ -249,12 +252,13 @@ interface EventCardProps {
   userId: string;
   isAdmin: boolean;
   onPaymentsCalculated?: () => void;
+  onEventDetailsClose?: () => void;
   index: number;
   isFuture: boolean;
   refreshTrigger?: number;
 }
 
-const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, index, isFuture, refreshTrigger }: EventCardProps) => {
+const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEventDetailsClose, index, isFuture, refreshTrigger }: EventCardProps) => {
   const [members, setMembers] = useState<any[]>([]);
   const [userMember, setUserMember] = useState<any>(null);
   const [isAttending, setIsAttending] = useState<boolean | null>(null);
@@ -529,6 +533,7 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, inde
               userId={userId}
               isAdmin={isAdmin}
               onPaymentsCalculated={onPaymentsCalculated}
+              onClose={onEventDetailsClose}
             >
               <Button
                 variant="default"

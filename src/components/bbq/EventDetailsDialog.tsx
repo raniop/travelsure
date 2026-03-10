@@ -28,6 +28,8 @@ interface EventDetailsDialogProps {
   isAdmin: boolean;
   children: React.ReactNode;
   onPaymentsCalculated?: () => void;
+  /** Called when the dialog is closed, so the parent can refresh the list (e.g. update event card). */
+  onClose?: () => void;
 }
 
 interface Member {
@@ -66,7 +68,7 @@ interface Event {
   host_member_id?: string | null;
 }
 
-const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPaymentsCalculated }: EventDetailsDialogProps) => {
+const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPaymentsCalculated, onClose }: EventDetailsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -771,7 +773,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const attendanceLabel = isFutureEvent ? "מגיע" : "הגיע";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(newOpen) => { if (!newOpen) onClose?.(); setOpen(newOpen); }}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
