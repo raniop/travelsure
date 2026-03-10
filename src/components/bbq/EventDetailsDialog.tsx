@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
-import { Users, UserPlus, CheckCircle2, XCircle, Edit2, Trash2, Save, X } from "lucide-react";
+import { Users, UserPlus, CheckCircle2, XCircle, Edit2, Trash2, Save, X, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -1095,17 +1095,24 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                           )}
                           {attended && (
                             canEdit ? (
-                              <Toggle
-                                type="button"
-                                pressed={paysWithGroup}
-                                onPressedChange={(pressed) => toggleMemberPaysWithGroup(member.id, pressed)}
-                                variant={paysWithGroup ? "default" : "outline"}
-                                size="sm"
-                                className="min-w-[100px]"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {paysWithGroup ? "אוכל ומשלם" : "קונה לעצמו"}
-                              </Toggle>
+                              <div className="flex rounded-md border border-input overflow-hidden" dir="rtl">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleMemberPaysWithGroup(member.id, true); }}
+                                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${paysWithGroup ? "bg-primary text-primary-foreground" : "bg-muted/30 hover:bg-muted/50"}`}
+                                >
+                                  {paysWithGroup && <Check className="w-3.5 h-3.5 shrink-0" />}
+                                  אוכל ומשלם
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleMemberPaysWithGroup(member.id, false); }}
+                                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors border-r border-input ${!paysWithGroup ? "bg-primary text-primary-foreground" : "bg-muted/30 hover:bg-muted/50"}`}
+                                >
+                                  {!paysWithGroup && <Check className="w-3.5 h-3.5 shrink-0" />}
+                                  קונה לעצמו
+                                </button>
+                              </div>
                             ) : (
                               <Badge variant={paysWithGroup ? "default" : "secondary"}>
                                 {paysWithGroup ? "אוכל ומשלם" : "קונה לעצמו"}
@@ -1114,17 +1121,24 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                           )}
                           {attended && paysWithGroup && (
                             canEdit ? (
-                              <Toggle
-                                type="button"
-                                pressed={!paysGroceryOnly}
-                                onPressedChange={(pressed) => toggleMemberPaysGroceryOnly(member.id, !pressed)}
-                                variant={!paysGroceryOnly ? "default" : "outline"}
-                                size="sm"
-                                className="min-w-[90px]"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {paysGroceryOnly ? "רק סופר" : "על הכל"}
-                              </Toggle>
+                              <div className="flex rounded-md border border-input overflow-hidden" dir="rtl">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleMemberPaysGroceryOnly(member.id, false); }}
+                                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors ${!paysGroceryOnly ? "bg-primary text-primary-foreground" : "bg-muted/30 hover:bg-muted/50"}`}
+                                >
+                                  {!paysGroceryOnly && <Check className="w-3.5 h-3.5 shrink-0" />}
+                                  על הכל
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleMemberPaysGroceryOnly(member.id, true); }}
+                                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors border-r border-input ${paysGroceryOnly ? "bg-primary text-primary-foreground" : "bg-muted/30 hover:bg-muted/50"}`}
+                                >
+                                  {paysGroceryOnly && <Check className="w-3.5 h-3.5 shrink-0" />}
+                                  רק סופר
+                                </button>
+                              </div>
                             ) : (
                               <Badge variant={!paysGroceryOnly ? "default" : "secondary"}>
                                 {paysGroceryOnly ? "רק סופר" : "על הכל"}
