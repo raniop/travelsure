@@ -265,6 +265,9 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [confirmedCount, setConfirmedCount] = useState<number>(0);
   const [payingCount, setPayingCount] = useState<number>(0);
+  const [costFull, setCostFull] = useState<number>(0);
+  const [costGroceryOnly, setCostGroceryOnly] = useState<number>(0);
+  const [hasBothPaymentTypes, setHasBothPaymentTypes] = useState<boolean>(false);
   const { toast } = useToast();
   const eventDate = new Date(event.event_date);
   const today = new Date();
@@ -299,21 +302,48 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
         try {
           const attendees = await apiClient.getAttendees(event.id);
           const confirmedAttendees = attendees.filter((a: any) => a.attended === true).length;
-          const payingAttendees = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false)).length;
+          const payingAttendeesList = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false));
+          const payingAttendees = payingAttendeesList.length;
+          const fullPayersCount = payingAttendeesList.filter((a: any) => !(a.pays_grocery_only === true)).length;
+          const hasGroceryOnly = payingAttendeesList.some((a: any) => a.pays_grocery_only === true);
           try {
             const guests = await apiClient.getGuests(event.id);
             const payingGuests = guests.filter((g: any) => g.should_pay === true).length;
             setConfirmedCount(confirmedAttendees + payingGuests);
             setPayingCount(payingAttendees + payingGuests);
+            const nFull = fullPayersCount + payingGuests;
+            const nAll = payingAttendees + payingGuests;
+            const butcher = event.butcher_cost ?? 0;
+            const grocery = event.grocery_cost ?? 0;
+            if (nAll > 0) {
+              setCostGroceryOnly(grocery / nAll);
+              setCostFull(nFull > 0 ? butcher / nFull + grocery / nAll : (butcher + grocery) / nAll);
+            } else {
+              setCostFull(0);
+              setCostGroceryOnly(0);
+            }
+            setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
           } catch (guestError) {
             console.error("Error loading guests:", guestError);
             setConfirmedCount(confirmedAttendees);
             setPayingCount(payingAttendees);
+            const nAll = payingAttendees;
+            const nFull = fullPayersCount;
+            const butcher = event.butcher_cost ?? 0;
+            const grocery = event.grocery_cost ?? 0;
+            if (nAll > 0) {
+              setCostGroceryOnly(grocery / nAll);
+              setCostFull(nFull > 0 ? butcher / nFull + grocery / nAll : (butcher + grocery) / nAll);
+            }
+            setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
           }
         } catch (error) {
           console.error("Error loading confirmed attendees:", error);
           setConfirmedCount(0);
           setPayingCount(0);
+          setCostFull(0);
+          setCostGroceryOnly(0);
+          setHasBothPaymentTypes(false);
         }
       } catch (error) {
         console.error("Error loading members:", error);
@@ -356,16 +386,37 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
       try {
         const attendees = await apiClient.getAttendees(event.id);
         const confirmedAttendees = attendees.filter((a: any) => a.attended === true).length;
-        const payingAttendees = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false)).length;
+        const payingAttendeesList = attendees.filter((a: any) => a.attended && (a.pays_with_group !== false));
+        const payingAttendees = payingAttendeesList.length;
+        const fullPayersCount = payingAttendeesList.filter((a: any) => !(a.pays_grocery_only === true)).length;
+        const hasGroceryOnly = payingAttendeesList.some((a: any) => a.pays_grocery_only === true);
         try {
           const guests = await apiClient.getGuests(event.id);
           const payingGuests = guests.filter((g: any) => g.should_pay === true).length;
           setConfirmedCount(confirmedAttendees + payingGuests);
           setPayingCount(payingAttendees + payingGuests);
+          const nFull = fullPayersCount + payingGuests;
+          const nAll = payingAttendees + payingGuests;
+          const butcher = event.butcher_cost ?? 0;
+          const grocery = event.grocery_cost ?? 0;
+          if (nAll > 0) {
+            setCostGroceryOnly(grocery / nAll);
+            setCostFull(nFull > 0 ? butcher / nFull + grocery / nAll : (butcher + grocery) / nAll);
+          }
+          setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
         } catch (guestError) {
           console.error("Error loading guests:", guestError);
           setConfirmedCount(confirmedAttendees);
           setPayingCount(payingAttendees);
+          const nAll = payingAttendees;
+          const nFull = fullPayersCount;
+          const butcher = event.butcher_cost ?? 0;
+          const grocery = event.grocery_cost ?? 0;
+          if (nAll > 0) {
+            setCostGroceryOnly(grocery / nAll);
+            setCostFull(nFull > 0 ? butcher / nFull + grocery / nAll : (butcher + grocery) / nAll);
+          }
+          setHasBothPaymentTypes(hasGroceryOnly && fullPayersCount > 0);
         }
       } catch (error) {
         console.error("Error refreshing confirmed count:", error);
@@ -487,15 +538,21 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
               </div>
             </div>
 
-            {/* Cost Per Person (per paying participant) */}
+            {/* Cost Per Person – על הכל / רק סופר when both types exist */}
             {payingCount > 0 && (
               <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
-                <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
-                <div className="flex flex-col items-end">
+                <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
+                <div className="flex flex-col items-end min-w-0">
                   <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף</span>
-                  <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>
-                    {(totalCost / payingCount).toFixed(2)} ₪
-                  </span>
+                  {hasBothPaymentTypes ? (
+                    <span className={`text-[11px] font-bold leading-tight ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>
+                      על הכל {costFull.toFixed(2)} ₪ · רק סופר {costGroceryOnly.toFixed(2)} ₪
+                    </span>
+                  ) : (
+                    <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>
+                      {costFull.toFixed(2)} ₪
+                    </span>
+                  )}
                 </div>
               </div>
             )}
