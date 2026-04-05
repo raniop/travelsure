@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight, UserPlus } from "lucide-react";
-import { PayboxBalanceAlignDialog } from "@/components/bbq/PayboxBalanceAlignDialog";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 
@@ -44,8 +43,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const [totalDeposited, setTotalDeposited] = useState<number>(0);
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
-  /** סכום יתרות רק חברים פעילים — להתאמת פייבוקס */
-  const [sumActiveBalances, setSumActiveBalances] = useState<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -388,13 +385,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           const b = m.balance != null ? (typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance) : 0;
           return parseFloat((sum + parseFloat(b.toFixed(2))).toFixed(2));
         }, 0);
-        const sumActive = members
-          .filter((m: any) => m.is_active !== false)
-          .reduce((sum: number, m: any) => {
-            const b = m.balance != null ? (typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance) : 0;
-            return parseFloat((sum + parseFloat(b.toFixed(2))).toFixed(2));
-          }, 0);
-        setSumActiveBalances(sumActive);
         // סה"כ שהופקד = יתרות נוכחיות + כל מה שניכוי → כולל הפקדות נוספות (עדכון יתרה)
         const totalDepositedCalc = parseFloat((sumBalances + deducted).toFixed(2));
         setTotalDeposited(totalDepositedCalc);
@@ -421,7 +411,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       } catch (balanceError) {
         console.error("Error loading balance:", balanceError);
         setCurrentBalance(0);
-        setSumActiveBalances(0);
       }
     } catch (error: any) {
       console.error("Error loading payments:", error);
@@ -506,15 +495,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent text-right">
           תשלומים
         </h2>
-        {isAdmin && (
-          <div className="flex flex-wrap items-center gap-2 justify-end">
-            <PayboxBalanceAlignDialog
-              groupId={groupId}
-              currentSumBalances={sumActiveBalances}
-              onApplied={() => void loadPayments()}
-            />
-          </div>
-        )}
       </div>
 
       {/* Summary Cards */}
