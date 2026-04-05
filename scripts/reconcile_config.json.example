@@ -1,0 +1,5 @@
+{
+  "app_total_deposited": 11000,
+  "app_balance": 1054.26,
+  "comment": "Copy to reconcile_config.json next to this script and edit numbers from the BBQ app."
+}
