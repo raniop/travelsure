@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync } from "node:fs";
 import { join } from "node:path";
 
 const distIndex = join(process.cwd(), "dist", "index.html");
@@ -32,3 +32,15 @@ bbq = bbq.replace(/href="\/assets\/index-[^"]+\.css"/, `href="${cssPath}"`);
 writeFileSync(bbqIndex, bbq, "utf8");
 
 console.log(`sync-bbq-assets: updated dist/bbq/index.html -> ${jsPath}, ${cssPath}`);
+
+// Keep public/ in sync with dist/ so IIS/static hosts that serve public/ load the same hashed bundles as dist/
+const distAssets = join(process.cwd(), "dist", "assets");
+const publicDir = join(process.cwd(), "public");
+const publicAssets = join(publicDir, "assets");
+if (existsSync(distAssets)) {
+  mkdirSync(publicAssets, { recursive: true });
+  cpSync(distAssets, publicAssets, { recursive: true });
+  cpSync(distIndex, join(publicDir, "index.html"));
+  cpSync(bbqIndex, join(publicDir, "bbq", "index.html"));
+  console.log("sync-bbq-assets: synced dist -> public/ (assets, index.html, bbq/index.html)");
+}

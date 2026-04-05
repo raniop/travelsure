@@ -64,6 +64,8 @@ interface Event {
   total_cost?: number;
   butcher_cost?: number;
   grocery_cost?: number;
+  /** סכום משיכה בפועל מקופת פייבוקס (redeem) — לא חייב להיות שווה לעלות; ההפרש = נסגר מחוץ לקופה */
+  paybox_cash_out?: number | null;
   description: string | null;
   host_member_id?: string | null;
 }
@@ -83,6 +85,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
   const [isEditingCost, setIsEditingCost] = useState(false);
   const [editedButcherCost, setEditedButcherCost] = useState("");
   const [editedGroceryCost, setEditedGroceryCost] = useState("");
+  const [editedPayboxCashOut, setEditedPayboxCashOut] = useState("");
   const [isEditingHost, setIsEditingHost] = useState(false);
   const [editedHostMemberId, setEditedHostMemberId] = useState<string>("");
   const [isEditingTime, setIsEditingTime] = useState(false);
@@ -136,6 +139,11 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       if (eventData) {
         setEditedButcherCost(eventData.butcher_cost?.toString() || "0");
         setEditedGroceryCost(eventData.grocery_cost?.toString() || "0");
+        setEditedPayboxCashOut(
+          eventData.paybox_cash_out != null && eventData.paybox_cash_out !== undefined && !Number.isNaN(Number(eventData.paybox_cash_out))
+            ? String(eventData.paybox_cash_out)
+            : ""
+        );
         setEditedHostMemberId(eventData.host_member_id || "");
         // Extract time from event_date (format: YYYY-MM-DD HH:mm or YYYY-MM-DD)
         const eventDate = new Date(eventData.event_date);
@@ -469,12 +477,27 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
 
     const totalCost = butcherCost + groceryCost;
 
+    let payboxCashOut: number | null = null;
+    if (editedPayboxCashOut.trim() !== "") {
+      const pb = parseFloat(editedPayboxCashOut.replace(",", "."));
+      if (isNaN(pb) || pb < 0) {
+        toast({
+          title: "שגיאה",
+          description: "סכום משיכת פייבוקס לא תקין (מספר ≥ 0 או ריק)",
+          variant: "destructive"
+        });
+        return;
+      }
+      payboxCashOut = parseFloat(pb.toFixed(2));
+    }
+
     try {
       await apiClient.updateEvent(eventId, {
         ...event,
         butcher_cost: butcherCost,
         grocery_cost: groceryCost,
-        total_cost: totalCost
+        total_cost: totalCost,
+        paybox_cash_out: payboxCashOut
       });
 
       await loadEventDetails();
@@ -936,6 +959,11 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                           setIsEditingCost(false);
                           setEditedButcherCost(event.butcher_cost?.toString() || "0");
                           setEditedGroceryCost(event.grocery_cost?.toString() || "0");
+                          setEditedPayboxCashOut(
+                            event.paybox_cash_out != null && event.paybox_cash_out !== undefined && !Number.isNaN(Number(event.paybox_cash_out))
+                              ? String(event.paybox_cash_out)
+                              : ""
+                          );
                         }}
                       >
                         <X className="w-4 h-4 ml-2" />
@@ -1008,6 +1036,24 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                   </>
                 )}
               </div>
+              {isEditingCost && isAdmin && (
+                <div className="text-right space-y-2 pt-2">
+                  <Label className="text-sm text-muted-foreground block">משיכת פייבוקס בפועל (אופציונלי)</Label>
+                  <Input
+                    type="number"
+                    value={editedPayboxCashOut}
+                    onChange={(e) => setEditedPayboxCashOut(e.target.value)}
+                    className="text-right text-lg font-semibold max-w-xs ml-auto"
+                    dir="rtl"
+                    step="0.01"
+                    min="0"
+                    placeholder="למשל 2427.25 — ריק אם לא רלוונטי"
+                  />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    הסכום שמשכת מקופת פייבוקס (redeem) לאירוע הזה. ההפרש מול &quot;סה״כ&quot; למעלה = סכום שנסגר מחוץ לקופה (ניקוי, העברה וכו׳) — לא משנה את חלוקת הניכויים לחברים.
+                  </p>
+                </div>
+              )}
               <div className="border-t pt-3">
                 <div className="flex items-center justify-between">
                   <div className="text-right">
@@ -1032,6 +1078,25 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                     <div className="text-2xl font-bold">{totalCost.toFixed(2)} ₪</div>
                   </div>
                 </div>
+                {!isEditingCost &&
+                  event.paybox_cash_out != null &&
+                  event.paybox_cash_out !== undefined &&
+                  !Number.isNaN(Number(event.paybox_cash_out)) && (
+                    <div className="mt-3 rounded-md border border-dashed border-muted-foreground/30 bg-muted/40 p-3 text-sm text-right space-y-1">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">משיכה מפייבוקס (בפועל)</span>
+                        <span className="font-semibold tabular-nums">
+                          {Number(event.paybox_cash_out).toFixed(2)} ₪
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-4 pt-1 border-t border-muted-foreground/20">
+                        <span className="text-muted-foreground">הפרש מול עלות האירוע (נסגר מחוץ לקופה)</span>
+                        <span className="font-semibold tabular-nums">
+                          {(totalCost - Number(event.paybox_cash_out)).toFixed(2)} ₪
+                        </span>
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
 

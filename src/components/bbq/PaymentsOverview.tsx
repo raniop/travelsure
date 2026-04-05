@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { apiClient } from "@/integrations/api/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight, UserPlus, Download } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight, UserPlus } from "lucide-react";
 import { PayboxBalanceAlignDialog } from "@/components/bbq/PayboxBalanceAlignDialog";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
@@ -48,16 +47,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
   /** סכום יתרות רק חברים פעילים — להתאמת פייבוקס */
   const [sumActiveBalances, setSumActiveBalances] = useState<number>(0);
   const { toast } = useToast();
-
-  /** נתונים לייצוא CSV להצלבה עם פייבוקס (מנהל בלבד) */
-  const exportSnapshotRef = useRef<{
-    paymentsData: any[];
-    events: any[];
-    members: any[];
-    totalDeposited: number;
-    sumBalances: number;
-    deducted: number;
-  } | null>(null);
 
   useEffect(() => {
     loadPayments();
@@ -410,15 +399,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         const totalDepositedCalc = parseFloat((sumBalances + deducted).toFixed(2));
         setTotalDeposited(totalDepositedCalc);
 
-        exportSnapshotRef.current = {
-          paymentsData,
-          events,
-          members,
-          totalDeposited: totalDepositedCalc,
-          sumBalances,
-          deducted,
-        };
-
         if (!isAdmin && userId) {
           const userData = JSON.parse(localStorage.getItem('bbq_current_user') || '{}');
           const userMember = members.find((m: any) => m.phone === userData.phone);
@@ -442,14 +422,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         console.error("Error loading balance:", balanceError);
         setCurrentBalance(0);
         setSumActiveBalances(0);
-        exportSnapshotRef.current = {
-          paymentsData,
-          events,
-          members,
-          totalDeposited: 0,
-          sumBalances: 0,
-          deducted,
-        };
       }
     } catch (error: any) {
       console.error("Error loading payments:", error);
@@ -461,122 +433,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
     } finally {
       setLoading(false);
     }
-  };
-
-  const csvEscape = (cell: string) => {
-    if (cell.includes(",") || cell.includes('"') || cell.includes("\n") || cell.includes("\r")) {
-      return `"${cell.replace(/"/g, '""')}"`;
-    }
-    return cell;
-  };
-
-  const triggerDownload = (filename: string, content: string, mime: string) => {
-    const blob = new Blob([content], { type: mime });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
-  const exportReconciliationCsv = async () => {
-    const snap = exportSnapshotRef.current;
-    if (!snap?.paymentsData) {
-      toast({
-        title: "אין נתונים",
-        description: "רענן את העמוד ונסה שוב",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { paymentsData, events, members } = snap;
-    const eventById = new Map(events.map((e: any) => [e.id, e]));
-    const guestsByEvent: Record<string, any[]> = {};
-    for (const e of events) {
-      try {
-        guestsByEvent[e.id] = await apiClient.getGuests(e.id);
-      } catch {
-        guestsByEvent[e.id] = [];
-      }
-    }
-
-    const rows: string[][] = [];
-    for (const p of paymentsData) {
-      const isMemberDeduction = p.payer_type === "member" && p.payment_status !== "paid";
-      const isGuestDeduction = p.payer_type === "guest" && p.payment_status === "deducted";
-      if (!isMemberDeduction && !isGuestDeduction) continue;
-
-      const ev = eventById.get(p.event_id) as any;
-      const eventDateStr = ev?.event_date
-        ? format(new Date(ev.event_date), "yyyy-MM-dd")
-        : "";
-      const dRaw = p.paid_at || p.created_at || ev?.event_date;
-      const dateStr = dRaw
-        ? format(new Date(dRaw), "yyyy-MM-dd")
-        : eventDateStr;
-
-      let payerName = "";
-      if (p.payer_type === "member") {
-        const m = members.find((x: any) => x.id === p.payer_id);
-        payerName = m?.name || String(p.payer_id);
-      } else {
-        const guests = guestsByEvent[p.event_id] || [];
-        const g = guests.find((x: any) => x.id === p.payer_id);
-        payerName = g?.name || "אורח";
-      }
-
-      const amt = parseFloat(String(p.amount ?? 0));
-      const signed = (-amt).toFixed(2);
-      const typeLabel = p.payer_type === "member" ? "ניכוי חבר" : "ניכוי אורח";
-      const note = `${typeLabel} | אירוע ${eventDateStr} | ${payerName}`;
-
-      rows.push([dateStr, signed, note, "deduction", payerName, eventDateStr]);
-    }
-
-    rows.sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
-
-    const stamp = format(new Date(), "yyyy-MM-dd-HHmm");
-    const bom = "\uFEFF";
-    const header = "date,amount_signed,note,type,payer_name,event_date";
-    const lines = rows.map((r) => r.map((c) => csvEscape(String(c))).join(","));
-    triggerDownload(
-      `bbq-pool-deductions-${stamp}.csv`,
-      bom + [header, ...lines].join("\n"),
-      "text/csv;charset=utf-8",
-    );
-
-    setTimeout(() => {
-      const h = "name,phone,balance";
-      const memberRows = members.map((m: any) => {
-        const b =
-          m.balance != null
-            ? typeof m.balance === "string"
-              ? parseFloat(m.balance)
-              : m.balance
-            : 0;
-        return [m.name || "", m.phone || "", parseFloat(b.toFixed(2)).toFixed(2)];
-      });
-      const body = memberRows.map((r) => r.map((c) => csvEscape(String(c))).join(",")).join("\n");
-      triggerDownload(
-        `bbq-members-balance-${stamp}.csv`,
-        bom + h + "\n" + body,
-        "text/csv;charset=utf-8",
-      );
-    }, 350);
-
-    setTimeout(() => {
-      const summary =
-        `סה"כ שהופקד (אפליקציה): ${snap.totalDeposited.toFixed(2)} ₪\r\n` +
-        `סכום יתרות חברים: ${snap.sumBalances.toFixed(2)} ₪\r\n` +
-        `סה"כ ניכויים מחברים (חישוב אפליקציה): ${snap.deducted.toFixed(2)} ₪\r\n`;
-      triggerDownload(`bbq-pool-summary-${stamp}.txt`, summary, "text/plain;charset=utf-8");
-    }, 700);
-
-    toast({
-      title: "הורדו קבצים",
-      description: "ניכויים, יתרות חברים וסיכום — להשוואה מול ייצוא פייבוקס",
-    });
   };
 
   const markAsPaid = async (paymentId: string) => {
@@ -657,16 +513,6 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
               currentSumBalances={sumActiveBalances}
               onApplied={() => void loadPayments()}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2 shrink-0"
-              onClick={() => void exportReconciliationCsv()}
-            >
-              <Download className="w-4 h-4" />
-              ייצוא להצלבה (פייבוקס)
-            </Button>
           </div>
         )}
       </div>
