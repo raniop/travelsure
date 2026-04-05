@@ -25,3 +25,9 @@ dist-ssr
 
 # FTP Credentials - DO NOT COMMIT!
 FTP_CREDENTIALS.ps1
+
+# Local reconciliation reports (generated)
+docs/reconcile_full_report.txt
+docs/reconcile_analysis_result.txt
+docs/paybox_reconcile_report.txt
+scripts/reconcile_config.json
