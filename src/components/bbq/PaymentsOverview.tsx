@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight, UserPlus, Download } from "lucide-react";
+import { PayboxBalanceAlignDialog } from "@/components/bbq/PayboxBalanceAlignDialog";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 
@@ -44,6 +45,8 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const [totalDeposited, setTotalDeposited] = useState<number>(0);
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
+  /** סכום יתרות רק חברים פעילים — להתאמת פייבוקס */
+  const [sumActiveBalances, setSumActiveBalances] = useState<number>(0);
   const { toast } = useToast();
 
   /** נתונים לייצוא CSV להצלבה עם פייבוקס (מנהל בלבד) */
@@ -396,6 +399,13 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           const b = m.balance != null ? (typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance) : 0;
           return parseFloat((sum + parseFloat(b.toFixed(2))).toFixed(2));
         }, 0);
+        const sumActive = members
+          .filter((m: any) => m.is_active !== false)
+          .reduce((sum: number, m: any) => {
+            const b = m.balance != null ? (typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance) : 0;
+            return parseFloat((sum + parseFloat(b.toFixed(2))).toFixed(2));
+          }, 0);
+        setSumActiveBalances(sumActive);
         // סה"כ שהופקד = יתרות נוכחיות + כל מה שניכוי → כולל הפקדות נוספות (עדכון יתרה)
         const totalDepositedCalc = parseFloat((sumBalances + deducted).toFixed(2));
         setTotalDeposited(totalDepositedCalc);
@@ -431,6 +441,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       } catch (balanceError) {
         console.error("Error loading balance:", balanceError);
         setCurrentBalance(0);
+        setSumActiveBalances(0);
         exportSnapshotRef.current = {
           paymentsData,
           events,
@@ -640,16 +651,23 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           תשלומים
         </h2>
         {isAdmin && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-2 shrink-0"
-            onClick={() => void exportReconciliationCsv()}
-          >
-            <Download className="w-4 h-4" />
-            ייצוא להצלבה (פייבוקס)
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            <PayboxBalanceAlignDialog
+              groupId={groupId}
+              currentSumBalances={sumActiveBalances}
+              onApplied={() => void loadPayments()}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 shrink-0"
+              onClick={() => void exportReconciliationCsv()}
+            >
+              <Download className="w-4 h-4" />
+              ייצוא להצלבה (פייבוקס)
+            </Button>
+          </div>
         )}
       </div>
 

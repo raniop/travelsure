@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import sys
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -77,16 +76,6 @@ def norm_date(d) -> str:
     if isinstance(d, datetime):
         return d.strftime("%Y-%m-%d %H:%M:%S")
     return str(d).strip()
-
-
-def fingerprint(r: dict) -> tuple:
-    d = r.get("date")
-    if isinstance(d, datetime):
-        day = d.strftime("%Y-%m-%d")
-    else:
-        day = str(d)[:10] if d else ""
-    amt = round(abs(float(r["amount"])), 2)
-    return (day, amt, r["kind"])
 
 
 def discover_downloads() -> Path:
@@ -212,10 +201,6 @@ def main() -> None:
     lines.append(f"Balance gap (Paybox net - app balance): {net - app_bal:+.2f}")
     lines.append("")
 
-    fp_paybox: dict = defaultdict(int)
-    for r in pb:
-        fp_paybox[fingerprint(r)] += 1
-
     if app_csv_path and app_csv_path.is_file():
         app_rows = load_app_csv(app_csv_path)
         app_sum = sum(r["amount_signed"] for r in app_rows)
@@ -223,32 +208,25 @@ def main() -> None:
         lines.append(f"Rows: {len(app_rows)}")
         lines.append(f"Sum of amount_signed: {app_sum:.2f}")
         lines.append("")
-        lines.append("=== Row match (day + amount + payment|redeem) ===")
-        for r in app_rows:
-            amt = r["amount_signed"]
-            kind = "payment" if amt > 0 else "redeem"
-            day = r["date"][:10] if len(r["date"]) >= 10 else r["date"]
-            fp = (day, round(abs(amt), 2), kind)
-            cnt = fp_paybox.get(fp, 0)
-            ok = "OK Paybox" if cnt > 0 else "NO match in Paybox"
-            lines.append(f"  {r['date']} | {amt:+.2f} | {ok} | {r.get('note','')}")
-
+        abs_app = abs(app_sum)
+        lines.append("=== Aggregate comparison (meaningful) ===")
+        lines.append(f"Total outflows in app CSV (|sum|): {abs_app:.2f}")
+        lines.append(f"Total Paybox redeem (|sum|): {paybox_red_abs:.2f}")
+        lines.append(f"Gap (app recorded vs Paybox cash out): {abs_app - paybox_red_abs:+.2f}")
+        if abs(abs_app - implied_deduct) < 0.02:
+            lines.append("OK: CSV sum matches app (deposited - member balances).")
+        lines.append(
+            "Note: App CSV splits each event per member; Paybox has one redeem per withdrawal. "
+            "Line-by-line fingerprint matching is not applicable."
+        )
         lines.append("")
-        lines.append("=== Paybox rows with no matching app row ===")
-        fp_app: dict = defaultdict(int)
-        for r in app_rows:
-            amt = r["amount_signed"]
-            kind = "payment" if amt > 0 else "redeem"
-            day = r["date"][:10] if len(r["date"]) >= 10 else r["date"]
-            fp_app[(day, round(abs(amt), 2), kind)] += 1
-        for r in pb:
-            fp = fingerprint(r)
-            if fp_app.get(fp, 0) <= 0:
-                lines.append(
-                    f"  {norm_date(r['date'])} | {r['kind']:7} | {r['amount']:.2f} | {r.get('name','')} | {r.get('note','')}"
-                )
-            else:
-                fp_app[fp] -= 1
+        lines.append("=== Paybox redeem lines only (cash out) ===")
+        for r in sorted(pb, key=lambda x: (norm_date(x["date"]), x["kind"])):
+            if r["kind"] != "redeem":
+                continue
+            lines.append(
+                f"  {norm_date(r['date'])} | {r['amount']:.2f} | {r.get('name','')} | {r.get('note','')}"
+            )
         lines.append("")
     else:
         lines.append("=== No app CSV: fingerprint matching skipped ===")
