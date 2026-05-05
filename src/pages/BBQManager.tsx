@@ -803,6 +803,15 @@ const BBQManager = () => {
                   )}
                 </button>
               </div>
+              {activeTab === "reports" && (
+                <div
+                  className="flex justify-end border-t border-gray-200/60 dark:border-gray-600/60 pt-3 mt-2 px-1 pb-1"
+                  dir="rtl"
+                >
+                  {/* כפתור ייצוא PDF מוצג כאן בדסקטופ דרך createPortal מתוך Reports */}
+                  <div id="bbq-report-pdf-slot" className="min-h-9 inline-flex items-center justify-end empty:min-h-9" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -878,7 +887,11 @@ const BBQManager = () => {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4 pb-20 md:pb-4">
-            <Reports groupId={group.id} groupName={group.name} />
+            <Reports
+              groupId={group.id}
+              groupName={group.name}
+              pdfToolbarSlotActive={activeTab === "reports"}
+            />
           </TabsContent>
 
           {user.isAdmin && (

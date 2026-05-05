@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { apiClient } from "@/integrations/api/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,14 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import { exportReportsPdf } from "@/lib/bbq/exportReportsPdf";
 
+const BBQ_REPORT_PDF_SLOT_ID = "bbq-report-pdf-slot";
+
 interface ReportsProps {
   groupId: string;
   /** שם הקבוצה מספיק לכותרת ב־PDF; אם חסר — נטען מ־API */
   groupName?: string;
+  /** כשטאב הדוחות פעיל: בדסקטופ הכפתור מוצג בפס מתחת לטאבים (מיושר לשמאל, מתחת ל«הגדרות») */
+  pdfToolbarSlotActive?: boolean;
 }
 
 interface MemberReport {
@@ -53,7 +58,11 @@ interface HostStats {
 
 type ReportScope = "all" | "current_month" | "range";
 
-const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
+const Reports = ({
+  groupId,
+  groupName: groupNameProp,
+  pdfToolbarSlotActive = false,
+}: ReportsProps) => {
   const [loading, setLoading] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [groupNameResolved, setGroupNameResolved] = useState("");
@@ -75,6 +84,28 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
   const [hostStats, setHostStats] = useState<HostStats[]>([]);
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
   const { toast } = useToast();
+
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  const [toolbarSlotEl, setToolbarSlotEl] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!pdfToolbarSlotActive || !isDesktop) {
+      setToolbarSlotEl(null);
+      return;
+    }
+    setToolbarSlotEl(document.getElementById(BBQ_REPORT_PDF_SLOT_ID));
+  }, [pdfToolbarSlotActive, isDesktop]);
 
   useEffect(() => {
     loadReports();
@@ -487,6 +518,22 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
     }
   };
 
+  const showPdfInToolbar = toolbarSlotEl != null;
+
+  const pdfExportButton = (
+    <Button
+      type="button"
+      variant="default"
+      size="sm"
+      className="gap-2 shrink-0 bg-teal-600 hover:bg-teal-700 w-full sm:w-auto"
+      onClick={() => void handleExportPdf()}
+      disabled={pdfExporting || loading}
+    >
+      {pdfExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+      ייצוא PDF לקבוצה
+    </Button>
+  );
+
   const CHART_COLORS = [
     "hsl(170, 58%, 42%)",
     "hsl(200, 70%, 48%)",
@@ -502,9 +549,13 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
 
   return (
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
-      {/* Header + בחירת תקופה */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 pb-4" dir="rtl" style={{ direction: "rtl" }}>
-        <div className="min-w-0 flex-1">
+      {showPdfInToolbar && toolbarSlotEl
+        ? createPortal(pdfExportButton, toolbarSlotEl)
+        : null}
+
+      {/* Header + בחירת תקופה — דסקטופ: כפתור PDF בשורת הטאבים (מתחת ל«הגדרות»); מובייל: בשורה תחת הכותרת */}
+      <div className="flex flex-col gap-3 pb-4" dir="rtl" style={{ direction: "rtl" }}>
+        <div className="min-w-0 w-full">
           <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent text-right mb-1">
             דוחות וסטטיסטיקות
           </h2>
@@ -512,17 +563,11 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
             ייצוא PDF דרך ההדפדפן (שמירה כ‑PDF) — כולל סיכומים, חברים, אירועים, מגמות, נוכחות ומארחים
           </p>
         </div>
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          className="gap-2 shrink-0 self-end sm:self-start bg-teal-600 hover:bg-teal-700"
-          onClick={() => void handleExportPdf()}
-          disabled={pdfExporting || loading}
-        >
-          {pdfExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-          ייצוא PDF לקבוצה
-        </Button>
+        {!showPdfInToolbar ? (
+          <div className="flex w-full justify-end">
+            {pdfExportButton}
+          </div>
+        ) : null}
       </div>
 
       <div className="pb-4 pt-2" dir="rtl" style={{ direction: "rtl" }}>
