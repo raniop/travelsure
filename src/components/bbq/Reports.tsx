@@ -471,9 +471,9 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
         })),
       });
       toast({
-        title: "חלון הדפסה נפתח",
+        title: "חלון הדפסה",
         description:
-          'בחרו מדפיס «Microsoft Print to PDF» / «שמירה כ‑PDF» ושמרו את הקובץ.',
+          "אמור להיפתח מיד מתפריט המדפיס — בחרו «Microsoft Print to PDF» או «שמירה כ‑PDF». אם כלום לא קורה, רעננו (Ctrl+F5) כדי לטעון גרסה עדכנית.",
       });
     } catch (err) {
       console.error(err);

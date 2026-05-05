@@ -1,7 +1,7 @@
 /**
  * ייצוא דוח לקבוצה כ־PDF אמין לעברית:
- * פותח חלון עם הדוח ומריץ הדפסה — בוחרים «שמירה כ‑PDF» / «Microsoft Print to PDF».
- * (html2canvas לא משרטט עקבית RTL/גריד/תוכן ארוך, ולכן הוסר מנתיב הייצוא.)
+ * ממלא iframe נסתר ומפעיל window.print מהאפליקציה — בלי חלון קופץ ובלי noopener שחוסם תצוגה.
+ * בוחרים בהדפסה «שמירה כ‑PDF» / «Microsoft Print to PDF». html2canvas הוסר — לא מתאים ל‑RTL ארוך.
  */
 
 export interface ExportReportsPdfMemberRow {
@@ -330,33 +330,100 @@ function buildPrintDocument(p: ExportReportsPdfPayload): string {
 </head>
 <body dir="rtl">
   <div class="banner"><strong>איך שומרים PDF:</strong> בחלון ההדפסה בחרו מדפיס — <strong>Microsoft Print to PDF</strong>,
-  <strong>Save as PDF</strong> או דומה · שם הקובץ: <code dir="ltr" style="font-size:10pt;">${esc(suggestedReportPdfFilename(p))}</code></div>
+  <strong>Save as PDF</strong> או דומה · שם הקובץ מוצע: <code dir="ltr" style="font-size:10pt;">${esc(suggestedReportPdfFilename(p))}</code></div>
   ${body}
-  <script>
-    (function(){
-      function go(){
-        window.focus();
-        setTimeout(function(){ window.print(); }, 350);
-      }
-      if(document.readyState === "complete") go();
-      else window.addEventListener("load", go);
-    })();
-  <\/script>
 </body>
 </html>`;
 }
 
 /**
- * פותח דף הדפסה — בתפריט ההדפסה בוחרים «שמירה כ‑PDF».
- * @throws אם החלון נחסם
+ * טאב גיבוי אם iframe לא זמין (נדיר).
  */
-export function exportReportsPdf(payload: ExportReportsPdfPayload): void {
-  const doc = buildPrintDocument(payload);
-  const w = window.open("", "_blank", "noopener,noreferrer");
+function openPrintInNewTab(doc: string): void {
+  const w = window.open("about:blank", "_blank");
   if (!w) {
-    throw new Error("הדפדפן חוסם חלון קופץ — הרשו חלונות קופצים לאתר");
+    throw new Error(
+      "לא ניתן לפתוח הדפסה — נסו דפדפן אחר, אפשרו חלונות קופצים, או רעננו את העמוד",
+    );
   }
   w.document.open();
   w.document.write(doc);
   w.document.close();
+
+  const trigger = () => {
+    setTimeout(() => {
+      try {
+        w.focus();
+        w.print();
+      } catch {
+        /* ignore */
+      }
+    }, 450);
+  };
+
+  if (w.document.readyState === "complete") {
+    trigger();
+  } else {
+    w.addEventListener("load", trigger, { once: true });
+  }
+}
+
+/**
+ * מדפיס את הדוח (שמירה כ‑PDF מתבצעת בתפריט המדפיס).
+ */
+export function exportReportsPdf(payload: ExportReportsPdfPayload): void {
+  const doc = buildPrintDocument(payload);
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.title = "bbq-report-print";
+  iframe.style.cssText =
+    "position:fixed;inset:0;width:0;height:0;border:0;opacity:0;pointer-events:none;visibility:hidden;";
+
+  document.body.appendChild(iframe);
+
+  const win = iframe.contentWindow;
+  const idoc = iframe.contentDocument ?? win?.document;
+
+  if (!win || !idoc) {
+    iframe.remove();
+    openPrintInNewTab(doc);
+    return;
+  }
+
+  idoc.open();
+  idoc.write(doc);
+  idoc.close();
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    iframe.remove();
+  };
+
+  const runPrint = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          win.focus();
+          win.print();
+        } catch {
+          iframe.remove();
+          openPrintInNewTab(doc);
+          return;
+        }
+        win.addEventListener("afterprint", cleanup, { once: true });
+        window.setTimeout(cleanup, 120_000);
+      });
+    });
+  };
+
+  const schedule = () => window.setTimeout(runPrint, 450);
+
+  if (idoc.readyState === "complete") {
+    schedule();
+  } else {
+    win.addEventListener("load", schedule, { once: true });
+  }
 }
