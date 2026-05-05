@@ -204,19 +204,51 @@ function buildHtml(p: ExportReportsPdfPayload): string {
 function safeFilenamePart(name: string): string {
   const n = name
     .trim()
+    // הסרת אימוג'י ובקרי תווים בעייתיים לשם קובץ
+    .replace(/[\u{1F300}-\u{1F9FF}\u2600-\u26FF]/gu, "")
     .replace(/[<>:"/\\|?*]+/g, "")
     .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
     .slice(0, 48);
   return n || "kvutsa";
 }
 
+/**
+ * יצירת PDF — html2canvas לעיתים מחזיר דף ריק אם התוכן מחוץ למסגרת המסך.
+ * משתמשים ב־viewport נראה (פנימי) לזמן קצר בלבד.
+ */
 export async function exportReportsPdf(payload: ExportReportsPdfPayload): Promise<void> {
-  const el = document.createElement("div");
-  el.setAttribute("dir", "rtl");
-  el.style.cssText =
-    "position:absolute;left:-9999px;top:0;width:210mm;max-width:794px;box-sizing:border-box;padding:24px 28px;background:#ffffff;color:#171717;font-family:'Segoe UI',Tahoma,'Helvetica Neue','Arial Hebrew',Arial,sans-serif;";
-  el.innerHTML = buildHtml(payload);
-  document.body.appendChild(el);
+  const overlay = document.createElement("div");
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.style.cssText = [
+    "position:fixed",
+    "inset:0",
+    "z-index:2147483646",
+    "background:rgba(248,250,252,0.97)",
+    "overflow:auto",
+    "box-sizing:border-box",
+    "padding:16px",
+  ].join(";");
+
+  const inner = document.createElement("div");
+  inner.setAttribute("dir", "rtl");
+  inner.style.cssText = [
+    "box-sizing:border-box",
+    "width:210mm",
+    "max-width:794px",
+    "margin:0 auto",
+    "padding:28px",
+    "background:#ffffff",
+    "color:#171717",
+    "font-family:'Segoe UI',Tahoma,'Helvetica Neue','Arial Hebrew',Arial,sans-serif",
+    "box-shadow:0 4px 24px rgba(0,0,0,0.08)",
+    "border-radius:8px",
+  ].join(";");
+  inner.innerHTML = buildHtml(payload);
+
+  overlay.appendChild(inner);
+  document.body.appendChild(overlay);
 
   const stamp = new Date().toISOString().slice(0, 10);
   const fname = `doh-${safeFilenamePart(payload.groupName)}-${stamp}.pdf`;
@@ -225,14 +257,32 @@ export async function exportReportsPdf(payload: ExportReportsPdfPayload): Promis
     margin: [10, 10, 10, 10] as [number, number, number, number],
     filename: fname,
     image: { type: "jpeg" as const, quality: 0.93 },
-    html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
+      letterRendering: true,
+      foreignObjectRendering: false,
+    },
     jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
     pagebreak: { mode: ["css", "legacy"] as ("css" | "legacy")[] },
   };
 
   try {
-    await html2pdf().set(opt).from(el).save();
+    if (document.fonts?.ready) {
+      await document.fonts.ready.catch(() => undefined);
+    }
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      }),
+    );
+
+    await html2pdf().set(opt).from(inner).save();
   } finally {
-    document.body.removeChild(el);
+    document.body.removeChild(overlay);
   }
 }
