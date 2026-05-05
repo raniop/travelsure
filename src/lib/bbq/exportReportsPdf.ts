@@ -1,4 +1,8 @@
-import html2pdf from "html2pdf.js";
+/**
+ * ייצוא דוח לקבוצה כ־PDF אמין לעברית:
+ * פותח חלון עם הדוח ומריץ הדפסה — בוחרים «שמירה כ‑PDF» / «Microsoft Print to PDF».
+ * (html2canvas לא משרטט עקבית RTL/גריד/תוכן ארוך, ולכן הוסר מנתיב הייצוא.)
+ */
 
 export interface ExportReportsPdfMemberRow {
   name: string;
@@ -64,225 +68,295 @@ function money(n: number): string {
 }
 
 function sectionTitle(text: string): string {
-  return `
-    <div style="page-break-inside:avoid;margin-top:22px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #0d9488;">
-      <h2 style="margin:0;font-size:15px;font-weight:700;color:#0f766e;">${esc(text)}</h2>
-    </div>`;
+  return `<h2 class="sec">${esc(text)}</h2>`;
 }
 
-function tableWrap(inner: string): string {
-  return `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:10.5px;">
-      ${inner}
-    </table>`;
+function tableWrap(headRow: string, bodyRows: string, cls?: string): string {
+  return `<table class="data ${cls || ""}" dir="rtl"><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
 }
 
-function th(text: string, width?: string): string {
-  const w = width ? `width:${width};` : "";
-  return `<th style="${w}text-align:right;padding:8px 10px;background:#f0fdfa;color:#115e59;border:1px solid #99f6e4;font-weight:600;">${esc(text)}</th>`;
+function th(text: string, wPct?: number): string {
+  const style = wPct != null ? ` style="width:${wPct}%;"` : "";
+  return `<th${style}>${esc(text)}</th>`;
 }
 
-function td(text: string, opts?: { strong?: boolean; dirLtr?: boolean }): string {
-  const weight = opts?.strong ? "font-weight:600;" : "";
-  const dir = opts?.dirLtr ? "direction:ltr;text-align:left;" : "text-align:right;";
-  return `<td style="${dir}${weight}padding:7px 10px;border:1px solid #e5e7eb;vertical-align:middle;">${text}</td>`;
-}
-
-function buildHtml(p: ExportReportsPdfPayload): string {
+function buildBodyHtml(p: ExportReportsPdfPayload): string {
   const title = p.groupName.trim() || "דוח קבוצה";
 
-  const summaryGrid = `
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:8px;page-break-inside:avoid;">
-      <div style="border:1px solid #dbeafe;border-radius:10px;padding:12px;background:#eff6ff;">
-        <div style="font-size:10px;color:#1e40af;margin-bottom:4px;">סה״כ אירועים · ${esc(p.rangeLabel)}</div>
-        <div style="font-size:20px;font-weight:800;color:#1d4ed8;">${p.summary.events}</div>
-      </div>
-      <div style="border:1px solid #fee2e2;border-radius:10px;padding:12px;background:#fef2f2;">
-        <div style="font-size:10px;color:#991b1b;margin-bottom:4px;">סה״כ קוזז מהיתרה</div>
-        <div style="font-size:20px;font-weight:800;color:#b91c1c;">${money(p.summary.totalDeducted)} ₪</div>
-      </div>
-      <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px;background:#ecfdf5;">
-        <div style="font-size:10px;color:#065f46;margin-bottom:4px;">סה״כ יתרות (חברים פעילים)</div>
-        <div style="font-size:20px;font-weight:800;color:#047857;">${money(p.summary.totalBalance)} ₪</div>
-      </div>
-      <div style="border:1px solid #ffedd5;border-radius:10px;padding:12px;background:#fff7ed;">
-        <div style="font-size:10px;color:#9a3412;margin-bottom:4px;">תשלומי אורחים (טווח הדוח)</div>
-        <div style="font-size:20px;font-weight:800;color:#c2410c;">${money(p.summary.guestPayments)} ₪</div>
-      </div>
-    </div>`;
+  /* סיכום — טבלה 2x2 במקום grid (מתאים להדפסה) */
+  const summaryTable = `
+  <table class="summary4" dir="rtl">
+    <tbody>
+      <tr>
+        <td class="sb blue">
+          <div class="sl">סה״כ אירועים · ${esc(p.rangeLabel)}</div>
+          <div class="sbig">${p.summary.events}</div>
+        </td>
+        <td class="sb red">
+          <div class="sl">סה״כ קוזז מהיתרה</div>
+          <div class="sbig">${money(p.summary.totalDeducted)} ₪</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="sb green">
+          <div class="sl">סה״כ יתרות (חברים פעילים)</div>
+          <div class="sbig">${money(p.summary.totalBalance)} ₪</div>
+        </td>
+        <td class="sb orange">
+          <div class="sl">תשלומי אורחים (טווח הדוח)</div>
+          <div class="sbig">${money(p.summary.guestPayments)} ₪</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>`;
 
-  let membersTable =
-    `<tr>${th("חבר")}${th("אירועים")}${th("קוזז בטווח")}${th("יתרה")}${th('סה״כ שהופקד')}${th("חוב")}</tr>`;
+  let membersHead = `<tr>${th("חבר", 26)}${th("אירועים", 8)}${th("קוזז בטווח", 14)}${th("יתרה", 14)}${th("סה״כ שהופקד", 16)}${th("חוב", 10)}</tr>`;
+
+  let membersRows = "";
   if (p.members.length === 0) {
-    membersTable += `<tr><td colspan="6" style="text-align:right;padding:10px;border:1px solid #e5e7eb;color:#9ca3af;">אין חברים פעילים בתקופה</td></tr>`;
+    membersRows = `<tr><td colspan="6" class="empty">אין חברים פעילים בתקופה</td></tr>`;
   } else {
     for (const m of p.members) {
-      const nick = m.nickname ? ` <span style="color:#6b7280;font-size:9px;">(${esc(m.nickname)})</span>` : "";
-      membersTable += `<tr>
-      ${td(esc(m.name) + nick, { strong: true })}
-      ${td(String(m.eventsAttended))}
-      ${td(money(m.totalPaid) + " ₪", { dirLtr: true })}
-      ${td(money(m.currentBalance) + " ₪", { dirLtr: true })}
-      ${td(money(m.totalDeposited) + " ₪", { dirLtr: true })}
-      ${td(m.owes > 0 ? money(m.owes) + " ₪" : "—", { dirLtr: true })}
-    </tr>`;
-    }
-  }
-
-  let eventsTable =
-    `<tr>${th("תאריך", "22%")}${th("פרטים")}${th("עלות", "14%")}</tr>`;
-  if (p.eventsInPeriod.length === 0) {
-    eventsTable += `<tr><td colspan="3" style="text-align:right;padding:10px;border:1px solid #e5e7eb;color:#9ca3af;">אין אירועים בטווח</td></tr>`;
-  } else {
-    for (const e of p.eventsInPeriod) {
-      eventsTable += `<tr>
-        ${td(esc(e.dateLabel))}
-        ${td(esc(e.description || "—"))}
-        ${td(money(e.cost) + " ₪", { dirLtr: true })}
+      const nick = m.nickname ? ` <span class="nick">(${esc(m.nickname)})</span>` : "";
+      membersRows += `<tr>
+        <td><strong>${esc(m.name)}</strong>${nick}</td>
+        <td class="num">${m.eventsAttended}</td>
+        <td class="num">${money(m.totalPaid)} ₪</td>
+        <td class="num">${money(m.currentBalance)} ₪</td>
+        <td class="num">${money(m.totalDeposited)} ₪</td>
+        <td class="num">${m.owes > 0 ? `${money(m.owes)} ₪` : "—"}</td>
       </tr>`;
     }
   }
 
-  let monthlyTable = `<tr>${th("חודש")}${th("אירועים", "14%")}${th("קוזז מהיתרה", "26%")}</tr>`;
-  for (const row of p.monthlyOverview) {
-    monthlyTable += `<tr>
-      ${td(esc(row.month))}
-      ${td(String(row.events))}
-      ${td(money(row.deducted) + " ₪", { dirLtr: true })}
-    </tr>`;
-  }
-
-  let attendanceTable = `<tr>${th("חבר")}${th("אירועים בהם השתתף", "22%")}</tr>`;
-  if (p.attendance.length === 0) {
-    attendanceTable += `<tr><td colspan="2" style="text-align:right;padding:10px;border:1px solid #e5e7eb;color:#9ca3af;">אין נתוני נוכחות בתקופה</td></tr>`;
+  let eventsHead = `<tr>${th("תאריך", 24)}${th("פרטים")}${th("עלות", 12)}</tr>`;
+  let eventsRows = "";
+  if (p.eventsInPeriod.length === 0) {
+    eventsRows = `<tr><td colspan="3" class="empty">אין אירועים בטווח</td></tr>`;
   } else {
-    for (const a of p.attendance) {
-      attendanceTable += `<tr>${td(esc(a.name))}${td(String(a.events), { dirLtr: true })}</tr>`;
+    for (const e of p.eventsInPeriod) {
+      eventsRows += `<tr>
+        <td>${esc(e.dateLabel)}</td>
+        <td>${esc(e.description || "—")}</td>
+        <td class="num">${money(e.cost)} ₪</td>
+      </tr>`;
     }
   }
 
-  let hostsTable = `<tr>${th("מארח")}${th("מספר אירועים", "22%")}</tr>`;
+  let monthlyHead = `<tr>${th("חודש", 42)}${th("אירועים", 16)}${th("קוזז מהיתרה")}</tr>`;
+  let monthlyRows = "";
+  for (const row of p.monthlyOverview) {
+    monthlyRows += `<tr>
+      <td>${esc(row.month)}</td>
+      <td class="num">${row.events}</td>
+      <td class="num">${money(row.deducted)} ₪</td>
+    </tr>`;
+  }
+
+  let attendanceHead = `<tr>${th("חבר")}${th("אירועים", 14)}</tr>`;
+  let attendanceRows = "";
+  if (p.attendance.length === 0) {
+    attendanceRows = `<tr><td colspan="2" class="empty">אין נתוני נוכחות בתקופה</td></tr>`;
+  } else {
+    for (const a of p.attendance) {
+      attendanceRows += `<tr><td>${esc(a.name)}</td><td class="num">${a.events}</td></tr>`;
+    }
+  }
+
+  let hostsHead = `<tr>${th("מארח")}${th("מספר אירועים", 18)}</tr>`;
+  let hostsRows = "";
   if (p.hosts.length === 0) {
-    hostsTable += `<tr><td colspan="2" style="text-align:right;padding:10px;border:1px solid #e5e7eb;color:#9ca3af;">אין שיוכי מארחים באירועים</td></tr>`;
+    hostsRows = `<tr><td colspan="2" class="empty">אין שיוכי מארחים באירועים</td></tr>`;
   } else {
     for (const h of p.hosts) {
       const nick = h.nickname ? ` (${esc(h.nickname)})` : "";
-      hostsTable += `<tr>${td(esc(h.name) + nick)}${td(String(h.count), { dirLtr: true })}</tr>`;
+      hostsRows += `<tr><td>${esc(h.name)}${nick}</td><td class="num">${h.count}</td></tr>`;
     }
   }
 
   const header = `
-    <div style="page-break-inside:avoid;margin-bottom:20px;text-align:right;border-bottom:3px solid #0d9488;padding-bottom:16px;">
-      <div style="font-size:22px;font-weight:800;color:#134e4a;letter-spacing:-0.02em;">${esc(title)}</div>
-      <div style="font-size:13px;color:#0f766e;margin-top:6px;font-weight:600;">דוח מסכם לקבוצה</div>
-      <div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.6;">
-        <div><strong>תקופה:</strong> ${esc(p.rangeLabel)} · <strong>היקף:</strong> ${esc(p.reportScopeLabel)}</div>
-        <div><strong>נוצר:</strong> ${esc(p.generatedAt)}</div>
-      </div>
-    </div>`;
+  <header class="hdr">
+    <h1>${esc(title)}</h1>
+    <p class="sub">דוח מסכם לקבוצה</p>
+    <p class="meta"><strong>תקופה:</strong> ${esc(p.rangeLabel)} · <strong>היקף:</strong> ${esc(p.reportScopeLabel)}<br/>
+    <strong>נוצר:</strong> ${esc(p.generatedAt)}</p>
+  </header>`;
 
   return `
-    ${header}
-    ${summaryGrid}
-    ${sectionTitle("דוח לפי חברים (פעילים)")}
-    ${tableWrap(membersTable)}
-    ${sectionTitle("אירועים בטווח הדוח")}
-    ${tableWrap(eventsTable)}
-    <div style="page-break-before:always;"></div>
-    ${sectionTitle("מגמות — 6 חודשים אחרונים")}
-    ${tableWrap(monthlyTable)}
-    ${sectionTitle("נוכחות חברים בטווח הדוח")}
-    ${tableWrap(attendanceTable)}
-    ${sectionTitle("אירוח — מי אירח הכי הרבה (סה״כ)")}
-    ${tableWrap(hostsTable)}
-    <div style="margin-top:28px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:9px;color:#94a3b8;text-align:center;">
-      הופק באמצעות מערכת ניהול הקבוצה · לשימוש פנימי בלבד
-    </div>
+  ${header}
+  ${summaryTable}
+  ${sectionTitle("דוח לפי חברים (פעילים)")}
+  ${tableWrap(membersHead, membersRows)}
+  <div class="pb"></div>
+  ${sectionTitle("אירועים בטווח הדוח")}
+  ${tableWrap(eventsHead, eventsRows)}
+  <div class="pb"></div>
+  ${sectionTitle("מגמות — 6 חודשים אחרונים")}
+  ${tableWrap(monthlyHead, monthlyRows)}
+  ${sectionTitle("נוכחות חברים בטווח הדוח")}
+  ${tableWrap(attendanceHead, attendanceRows)}
+  ${sectionTitle("אירוח — מי אירח הכי הרבה (סה״כ)")}
+  ${tableWrap(hostsHead, hostsRows)}
+  <footer class="ftr">הופק באמצעות מערכת ניהול הקבוצה · לשימוש פנימי בלבד</footer>
   `;
 }
 
+/** שם קובץ מוצע בהורדת הדפסה (הדפדפן לא תמיד מכבד) */
+export function suggestedReportPdfFilename(payload: ExportReportsPdfPayload): string {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const part = safeFilenamePart(payload.groupName);
+  return `doh-${part}-${stamp}.pdf`;
+}
+
 function safeFilenamePart(name: string): string {
-  const n = name
-    .trim()
-    // הסרת אימוג'י ובקרי תווים בעייתיים לשם קובץ
-    .replace(/[\u{1F300}-\u{1F9FF}\u2600-\u26FF]/gu, "")
-    .replace(/[<>:"/\\|?*]+/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 48);
-  return n || "kvutsa";
+  return (
+    name
+      .normalize("NFKC")
+      .replace(/\p{Emoji_Presentation}/gu, "")
+      .replace(/\uFE0F/g, "")
+      .replace(/[^\p{L}\p{N}\s'-]/gu, "")
+      .replace(/[<>:"/\\|?*]+/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48) || "kvutsa"
+  );
+}
+
+function buildPrintDocument(p: ExportReportsPdfPayload): string {
+  const body = buildBodyHtml(p);
+  const ttl = esc(p.groupName.trim() || "דוח קבוצה");
+  return `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>${ttl}</title>
+  <style>
+    @page { margin: 12mm 14mm; size: A4 portrait; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Tahoma, Arial, "Arial Hebrew", "Segoe UI", "David", sans-serif;
+      font-size: 11pt;
+      color: #111827;
+      line-height: 1.45;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body { padding: 8px 12px 24px; }
+    .hdr h1 {
+      margin: 0 0 4px 0;
+      font-size: 20pt;
+      color: #134e4a;
+      border-bottom: 3px solid #14b8a6;
+      padding-bottom: 10px;
+    }
+    .hdr .sub { margin: 6px 0 0 0; font-size: 12pt; color: #0f766e; font-weight: 700; }
+    .hdr .meta { margin: 10px 0 16px 0; font-size: 10pt; color: #64748b; }
+    h2.sec {
+      margin: 18px 0 8px 0;
+      font-size: 12pt;
+      color: #0f766e;
+      border-bottom: 2px solid #99f6e4;
+      padding-bottom: 4px;
+      page-break-after: avoid;
+    }
+    table.data, table.summary4 {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 14px 0;
+      font-size: 10pt;
+      page-break-inside: auto;
+    }
+    table.data th, table.data td {
+      border: 1px solid #d1d5db;
+      padding: 7px 9px;
+      text-align: right;
+      vertical-align: top;
+    }
+    table.data th {
+      background: #ccfbf1;
+      color: #115e59;
+      font-weight: 700;
+    }
+    table.data td.empty {
+      color: #9ca3af;
+      text-align: center;
+      padding: 12px;
+    }
+    td.num {
+      direction: ltr;
+      unicode-bidi: isolate;
+      text-align: left;
+      font-variant-numeric: tabular-nums;
+    }
+    .nick { color: #6b7280; font-size: 9pt; font-weight: 400; }
+    table.summary4 { margin-bottom: 18px; page-break-inside: avoid; }
+    table.summary4 td.sb {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px;
+      width: 50%;
+      vertical-align: top;
+    }
+    table.summary4 td.blue { background: #eff6ff; border-color: #bfdbfe; }
+    table.summary4 td.red { background: #fef2f2; border-color: #fecaca; }
+    table.summary4 td.green { background: #ecfdf5; border-color: #a7f3d0; }
+    table.summary4 td.orange { background: #fff7ed; border-color: #fed7aa; }
+    .sl { font-size: 9pt; color: #52525b; margin-bottom: 6px; }
+    .sbig { font-size: 17pt; font-weight: 800; letter-spacing: -0.02em; }
+    .pb { page-break-before: always; height: 0; margin: 0; padding: 0; border: none; }
+    footer.ftr {
+      margin-top: 28px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 8pt;
+      color: #94a3b8;
+      text-align: center;
+    }
+    @media print {
+      body { padding: 0; }
+      .banner { display: none !important; }
+    }
+    .banner {
+      margin-bottom:12px;padding:10px 12px;background:#fef9c3;border:1px solid #fde047;
+      border-radius:6px;font-size:10pt;color:#713f12;text-align:right;
+    }
+  </style>
+</head>
+<body dir="rtl">
+  <div class="banner"><strong>איך שומרים PDF:</strong> בחלון ההדפסה בחרו מדפיס — <strong>Microsoft Print to PDF</strong>,
+  <strong>Save as PDF</strong> או דומה · שם הקובץ: <code dir="ltr" style="font-size:10pt;">${esc(suggestedReportPdfFilename(p))}</code></div>
+  ${body}
+  <script>
+    (function(){
+      function go(){
+        window.focus();
+        setTimeout(function(){ window.print(); }, 350);
+      }
+      if(document.readyState === "complete") go();
+      else window.addEventListener("load", go);
+    })();
+  <\/script>
+</body>
+</html>`;
 }
 
 /**
- * יצירת PDF — html2canvas לעיתים מחזיר דף ריק אם התוכן מחוץ למסגרת המסך.
- * משתמשים ב־viewport נראה (פנימי) לזמן קצר בלבד.
+ * פותח דף הדפסה — בתפריט ההדפסה בוחרים «שמירה כ‑PDF».
+ * @throws אם החלון נחסם
  */
-export async function exportReportsPdf(payload: ExportReportsPdfPayload): Promise<void> {
-  const overlay = document.createElement("div");
-  overlay.setAttribute("aria-hidden", "true");
-  overlay.style.cssText = [
-    "position:fixed",
-    "inset:0",
-    "z-index:2147483646",
-    "background:rgba(248,250,252,0.97)",
-    "overflow:auto",
-    "box-sizing:border-box",
-    "padding:16px",
-  ].join(";");
-
-  const inner = document.createElement("div");
-  inner.setAttribute("dir", "rtl");
-  inner.style.cssText = [
-    "box-sizing:border-box",
-    "width:210mm",
-    "max-width:794px",
-    "margin:0 auto",
-    "padding:28px",
-    "background:#ffffff",
-    "color:#171717",
-    "font-family:'Segoe UI',Tahoma,'Helvetica Neue','Arial Hebrew',Arial,sans-serif",
-    "box-shadow:0 4px 24px rgba(0,0,0,0.08)",
-    "border-radius:8px",
-  ].join(";");
-  inner.innerHTML = buildHtml(payload);
-
-  overlay.appendChild(inner);
-  document.body.appendChild(overlay);
-
-  const stamp = new Date().toISOString().slice(0, 10);
-  const fname = `doh-${safeFilenamePart(payload.groupName)}-${stamp}.pdf`;
-
-  const opt = {
-    margin: [10, 10, 10, 10] as [number, number, number, number],
-    filename: fname,
-    image: { type: "jpeg" as const, quality: 0.93 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      scrollX: 0,
-      scrollY: 0,
-      letterRendering: true,
-      foreignObjectRendering: false,
-    },
-    jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
-    pagebreak: { mode: ["css", "legacy"] as ("css" | "legacy")[] },
-  };
-
-  try {
-    if (document.fonts?.ready) {
-      await document.fonts.ready.catch(() => undefined);
-    }
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => resolve());
-      }),
-    );
-
-    await html2pdf().set(opt).from(inner).save();
-  } finally {
-    document.body.removeChild(overlay);
+export function exportReportsPdf(payload: ExportReportsPdfPayload): void {
+  const doc = buildPrintDocument(payload);
+  const w = window.open("", "_blank", "noopener,noreferrer");
+  if (!w) {
+    throw new Error("הדפדפן חוסם חלון קופץ — הרשו חלונות קופצים לאתר");
   }
+  w.document.open();
+  w.document.write(doc);
+  w.document.close();
 }

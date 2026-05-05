@@ -426,7 +426,7 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
   const handleExportPdf = async () => {
     try {
       setPdfExporting(true);
-      await exportReportsPdf({
+      exportReportsPdf({
         groupName: groupNameResolved || groupNameProp?.trim() || "קבוצת BBQ",
         generatedAt: format(new Date(), "d בMMMM yyyy 'בשעה' HH:mm", { locale: he }),
         rangeLabel,
@@ -471,8 +471,9 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
         })),
       });
       toast({
-        title: "הורדה הושלמה",
-        description: "קובץ PDF נשמר במחשב שלך",
+        title: "חלון הדפסה נפתח",
+        description:
+          'בחרו מדפיס «Microsoft Print to PDF» / «שמירה כ‑PDF» ושמרו את הקובץ.',
       });
     } catch (err) {
       console.error(err);
@@ -508,7 +509,7 @@ const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
             דוחות וסטטיסטיקות
           </h2>
           <p className="text-xs text-muted-foreground text-right hidden sm:block">
-            ייצוא PDF כולל סיכומים, טבלאות חברים, אירועים, מגמות מחודשיים, נוכחות ומארחים
+            ייצוא PDF דרך ההדפדפן (שמירה כ‑PDF) — כולל סיכומים, חברים, אירועים, מגמות, נוכחות ומארחים
           </p>
         </div>
         <Button
