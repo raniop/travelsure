@@ -70,6 +70,57 @@ interface Event {
   host_member_id?: string | null;
 }
 
+/**
+ * מחלק סכומים לשקלים מעוגלים כך שסכום החלוקה שווה בדיוק ליעד (באגורות).
+ * שיטת שארית מקסימימלית — מונעת פערים של אגורות בין "עלות אירוע" לסיכום ניכויים.
+ */
+function allocateExactShekels(rawShares: number[], targetTotal: number): number[] {
+  const n = rawShares.length;
+  if (n === 0) return [];
+
+  const targetCents = Math.round(targetTotal * 100 + 1e-9);
+  const floorCents = rawShares.map((r) => Math.floor(r * 100 + 1e-9));
+  let remainder = targetCents - floorCents.reduce((a, b) => a + b, 0);
+
+  const order = rawShares.map((r, i) => ({
+    i,
+    frac: r * 100 - floorCents[i],
+  }));
+  order.sort((a, b) => b.frac - a.frac);
+
+  const cents = [...floorCents];
+
+  let k = 0;
+  while (remainder > 0 && k < order.length) {
+    cents[order[k].i]++;
+    remainder--;
+    k++;
+  }
+  // שארית מעוגלת מעלה — אם נשאר (נדיר, FP), מחלקים סביב
+  let rr = 0;
+  while (remainder > 0) {
+    cents[order[rr % order.length].i]++;
+    remainder--;
+    rr++;
+  }
+
+  order.sort((a, b) => a.frac - b.frac);
+  k = 0;
+  while (remainder < 0 && k < order.length) {
+    cents[order[k].i]--;
+    remainder++;
+    k++;
+  }
+  rr = 0;
+  while (remainder < 0) {
+    cents[order[rr % order.length].i]--;
+    remainder++;
+    rr++;
+  }
+
+  return cents.map((c) => parseFloat((c / 100).toFixed(2)));
+}
+
 const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPaymentsCalculated, onClose }: EventDetailsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
@@ -700,12 +751,29 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       // Get fresh members data after returning balances
       const freshMembers = await apiClient.getMembers(groupId);
 
+      const nMember = payingAttendees.length;
+      const nFullM = payingAttendees.filter((a) => !(a.pays_grocery_only === true)).length;
+      const targetMemberTotal =
+        (nFull > 0 ? (nFullM * butcher) / nFull : 0) + (nAll > 0 ? (nMember * grocery) / nAll : 0);
+      const memberRawShares = payingAttendees.map((a) =>
+        a.pays_grocery_only === true ? amountGroceryOnly : amountFull
+      );
+      const memberAmounts = allocateExactShekels(memberRawShares, targetMemberTotal);
+
+      const targetGuestTotal =
+        payingGuests.length > 0 && nFull > 0 && nAll > 0
+          ? payingGuests.length * (butcher / nFull + grocery / nAll)
+          : 0;
+      const guestRawShares = payingGuests.map(() => amountFull);
+      const guestAmounts = allocateExactShekels(guestRawShares, targetGuestTotal);
+
+      let memberIdx = 0;
+
       // Calculate new payments and deduct from balances (per-person amount: full vs grocery-only)
       for (const attendee of payingAttendees) {
         const member = freshMembers.find((m: any) => m.id === attendee.member_id);
-        const isGroceryOnly = attendee.pays_grocery_only === true;
-        const amount = isGroceryOnly ? amountGroceryOnly : amountFull;
-        const roundedAmount = parseFloat(amount.toFixed(2));
+        const roundedAmount = memberAmounts[memberIdx];
+        memberIdx += 1;
 
         if (member) {
           const currentBalance = typeof member.balance === 'string' 
@@ -731,8 +799,10 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       }
 
       // Guests always pay full (butcher + grocery share)
+      let guestIdx = 0;
       for (const guest of payingGuests) {
-        const roundedAmount = parseFloat(amountFull.toFixed(2));
+        const roundedAmount = guestAmounts[guestIdx];
+        guestIdx += 1;
         await apiClient.createPayment({
           event_id: eventId,
           payer_id: guest.id,

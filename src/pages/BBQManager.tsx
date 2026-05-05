@@ -878,7 +878,7 @@ const BBQManager = () => {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4 pb-20 md:pb-4">
-            <Reports groupId={group.id} />
+            <Reports groupId={group.id} groupName={group.name} />
           </TabsContent>
 
           {user.isAdmin && (

@@ -6,13 +6,17 @@ import { Button } from "@/components/ui/button";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, TrendingUp, BarChart3, PieChart, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, Trophy, ArrowUpRight, ArrowDownRight, Coins, UserPlus } from "lucide-react";
+import { Calendar, TrendingUp, BarChart3, LineChart, ChevronRight, ChevronLeft, Users, Activity, Award, Trophy, ArrowUpRight, ArrowDownRight, Coins, UserPlus, FileDown, Loader2 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart";
 import { Bar, BarChart, Line, LineChart as RechartsLineChart, Pie, PieChart as RechartsPieChart, Cell, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+import { exportReportsPdf } from "@/lib/bbq/exportReportsPdf";
+
 interface ReportsProps {
   groupId: string;
+  /** שם הקבוצה מספיק לכותרת ב־PDF; אם חסר — נטען מ־API */
+  groupName?: string;
 }
 
 interface MemberReport {
@@ -49,8 +53,10 @@ interface HostStats {
 
 type ReportScope = "all" | "current_month" | "range";
 
-const Reports = ({ groupId }: ReportsProps) => {
+const Reports = ({ groupId, groupName: groupNameProp }: ReportsProps) => {
   const [loading, setLoading] = useState(true);
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const [groupNameResolved, setGroupNameResolved] = useState("");
   const [reports, setReports] = useState<MemberReport[]>([]);
   const [reportScope, setReportScope] = useState<ReportScope>("all");
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -74,6 +80,25 @@ const Reports = ({ groupId }: ReportsProps) => {
     loadReports();
     loadChartData();
   }, [groupId, reportScope, currentMonth, monthFrom, monthTo]);
+
+  useEffect(() => {
+    if (groupNameProp?.trim()) {
+      setGroupNameResolved(groupNameProp.trim());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const g = await apiClient.getGroup(groupId);
+        if (!cancelled && g?.name) setGroupNameResolved(String(g.name).trim());
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId, groupNameProp]);
 
   const loadChartData = async () => {
     try {
@@ -391,6 +416,76 @@ const Reports = ({ groupId }: ReportsProps) => {
         ? monthYear
         : `${formatMonthYear(monthFrom)} – ${formatMonthYear(monthTo)}`;
 
+  const reportScopeLabel =
+    reportScope === "all"
+      ? "הכל מתחילת הפעילות"
+      : reportScope === "current_month"
+        ? "חודש בודד (נבחר למעלה)"
+        : "טווח חודשים (נבחר למעלה)";
+
+  const handleExportPdf = async () => {
+    try {
+      setPdfExporting(true);
+      await exportReportsPdf({
+        groupName: groupNameResolved || groupNameProp?.trim() || "קבוצת BBQ",
+        generatedAt: format(new Date(), "d בMMMM yyyy 'בשעה' HH:mm", { locale: he }),
+        rangeLabel,
+        reportScopeLabel,
+        summary: {
+          events: totalEventsInMonth,
+          totalDeducted,
+          totalBalance,
+          guestPayments: totalGuestPayments,
+        },
+        members: reports.map((r) => ({
+          name: r.memberName,
+          nickname: r.memberNickname ?? null,
+          eventsAttended: r.eventsAttended,
+          totalPaid: r.totalPaid,
+          currentBalance: r.currentBalance ?? 0,
+          totalDeposited: r.totalDeposited ?? 0,
+          owes: r.totalOwed,
+        })),
+        eventsInPeriod: monthEvents.map((e: any) => {
+          const butcher = Number(e.butcher_cost) || 0;
+          const grocery = Number(e.grocery_cost) || 0;
+          const summed = butcher + grocery;
+          const cost =
+            summed > 0 ? summed : Number(e.total_cost) || 0;
+          return {
+          dateLabel: format(new Date(e.event_date), "EEEE, d בMMMM yyyy", { locale: he }),
+          description: (e.description as string) || "",
+            cost,
+          };
+        }),
+        monthlyOverview: [...monthlyData].reverse().map((m) => ({
+          month: m.month,
+          events: m.events,
+          deducted: m.paid,
+        })),
+        attendance: memberAttendanceData.map((a) => ({ name: a.name, events: a.events })),
+        hosts: hostStats.map((h) => ({
+          name: h.memberName,
+          nickname: h.memberNickname ?? null,
+          count: h.eventCount,
+        })),
+      });
+      toast({
+        title: "הורדה הושלמה",
+        description: "קובץ PDF נשמר במחשב שלך",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו ליצור את קובץ ה־PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setPdfExporting(false);
+    }
+  };
+
   const CHART_COLORS = [
     "hsl(170, 58%, 42%)",
     "hsl(200, 70%, 48%)",
@@ -407,11 +502,29 @@ const Reports = ({ groupId }: ReportsProps) => {
   return (
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
       {/* Header + בחירת תקופה */}
-      <div className="pb-4" dir="rtl" style={{ direction: "rtl" }}>
-        <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent text-right mb-4">
-          דוחות וסטטיסטיקות
-        </h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 pb-4" dir="rtl" style={{ direction: "rtl" }}>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent text-right mb-1">
+            דוחות וסטטיסטיקות
+          </h2>
+          <p className="text-xs text-muted-foreground text-right hidden sm:block">
+            ייצוא PDF כולל סיכומים, טבלאות חברים, אירועים, מגמות מחודשיים, נוכחות ומארחים
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          className="gap-2 shrink-0 self-end sm:self-start bg-teal-600 hover:bg-teal-700"
+          onClick={() => void handleExportPdf()}
+          disabled={pdfExporting || loading}
+        >
+          {pdfExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          ייצוא PDF לקבוצה
+        </Button>
+      </div>
 
+      <div className="pb-4 pt-2" dir="rtl" style={{ direction: "rtl" }}>
         <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground text-right">תקופת דוח</p>
           <div className="flex flex-wrap gap-2">
