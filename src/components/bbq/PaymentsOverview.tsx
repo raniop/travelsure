@@ -537,7 +537,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
             <div className={`text-3xl font-bold mb-1 text-right ${currentBalance !== null && currentBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
               {currentBalance !== null ? (
                 <span dir="ltr" className="tabular-nums">
-                  {Math.abs(currentBalance).toFixed(2)}
+                  {currentBalance.toFixed(2)}
                 </span>
               ) : (
                 "טוען..."
