@@ -18,6 +18,39 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+const PAYBOX_GROUP_LINK = "https://links.payboxapp.com/k5qia1URTZb";
+const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500, היתרה = 500 − סכום ניכויים מאירועים
+
+function buildDepositRequestWhatsAppMessage(
+  memberName: string,
+  currentBalance: number,
+  groupName?: string,
+): string {
+  const groupLabel = groupName?.trim() ? `קבוצת «${groupName.trim()}»` : "הקבוצה";
+  const balanceLine =
+    currentBalance < 0
+      ? `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נוצל יותר מהיתרה, ויש להפקיד מחדש.`
+      : `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נמוכה, וכדאי להפקיד מחדש.`;
+
+  return [
+    `שלום ${memberName}!`,
+    "",
+    `זו הודעה מ${groupLabel} לגבי קופת האירועים המשותפת (מזון ועלויות אירועים).`,
+    "",
+    `בכל תקופה כל חבר מפקיד ${DEPOSIT_PER_MEMBER} ₪ לקבוצת PayBox שלנו. מסכום זה מקוזזים עלויות האירועים לפי השתתפות.`,
+    "",
+    balanceLine,
+    "",
+    "מה לעשות:",
+    `1. העבר/י ${DEPOSIT_PER_MEMBER} ₪ לקבוצת PayBox:`,
+    PAYBOX_GROUP_LINK,
+    "2. שלח/י לי הודעה לאחר ההעברה.",
+    "3. אעדכן את היתרה במערכת.",
+    "",
+    "תודה!",
+  ].join("\n");
+}
+
 interface Member {
   id: string;
   name: string;
@@ -31,6 +64,7 @@ interface Member {
 
 interface MembersListProps {
   groupId: string;
+  groupName?: string;
   isAdmin?: boolean;
   userId?: string;
   userPhone?: string;
@@ -49,7 +83,7 @@ interface GuestWithEvent {
   cost_per_person: number;
 }
 
-const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup, refreshTrigger }: MembersListProps) => {
+const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, onLeaveGroup, refreshTrigger }: MembersListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [guests, setGuests] = useState<GuestWithEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +95,6 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
     loadMembers();
     loadGuests();
   }, [groupId, refreshTrigger]); // Add refreshTrigger to dependencies
-
-  const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500, היתרה = 500 − סכום ניכויים מאירועים
 
   const loadMembers = async () => {
     try {
@@ -289,7 +321,7 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
               {isNegative ? "-" : ""}{Math.abs(balance).toFixed(2)} ₪
             </span>
             <span className="text-xs">
-              {isNegative ? `להשלים ${Math.abs(balance).toFixed(2)} ₪` : "יתרה"}
+              {isNegative ? "יתרה במינוס" : "יתרה"}
             </span>
           </div>
         </div>
@@ -342,17 +374,20 @@ const MembersList = ({ groupId, isAdmin = false, userId, userPhone, onLeaveGroup
                   variant="default"
                   size="sm"
                   onClick={() => {
-                    const payboxGroupLink = "https://links.payboxapp.com/k5qia1URTZb";
                     const currentBalance = member.balance || 0;
-                    const isNeg = currentBalance < 0;
-                    const message = isNeg
-                      ? `שלום ${member.name}!\n\nהיתרה שלך במינוס: ${currentBalance.toFixed(2)} ₪ (חייב/ת להשלים ${Math.abs(currentBalance).toFixed(2)} ₪).\n\nאנא השלם את הסכום לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההשלמה, המנהל יעדכן את היתרה.`
-                      : `שלום ${member.name}!\n\nהיתרה שלך נמוכה: ${currentBalance.toFixed(2)} ₪\n\nאנא הכנס 500 ₪ לקבוצת PayBox:\n${payboxGroupLink}\n\nלאחר ההפקדה, המנהל יעדכן את היתרה.`;
-                    let phoneNumber = (member.phone || "").replace(/[^0-9]/g, '');
-                    if (phoneNumber.startsWith('0')) phoneNumber = '972' + phoneNumber.slice(1);
-                    else if (!phoneNumber.startsWith('972')) phoneNumber = '972' + phoneNumber;
-                    window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
-                    toast({ title: "נשלחה הודעת WhatsApp", description: isNeg ? `בקשה להשלמת יתרה ל-${member.name}` : `בקשה להפקדה ל-${member.name}` });
+                    const message = buildDepositRequestWhatsAppMessage(
+                      member.name,
+                      currentBalance,
+                      groupName,
+                    );
+                    let phoneNumber = (member.phone || "").replace(/[^0-9]/g, "");
+                    if (phoneNumber.startsWith("0")) phoneNumber = "972" + phoneNumber.slice(1);
+                    else if (!phoneNumber.startsWith("972")) phoneNumber = "972" + phoneNumber;
+                    window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, "_blank");
+                    toast({
+                      title: "נשלחה הודעת WhatsApp",
+                      description: `בקשה להפקדת ${DEPOSIT_PER_MEMBER} ₪ ל-${member.name}`,
+                    });
                   }}
                 >
                   <MessageCircle className="w-4 h-4 ml-1.5" />
