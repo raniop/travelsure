@@ -67,7 +67,7 @@ const ContactForm = () => {
       }
 
       if (!sent) {
-        const fallback = await fetch("/api-contact.php", {
+        const fallback = await fetch("/api-contact.ashx", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
