@@ -14,7 +14,7 @@ const Purchase = () => {
             {isRTL ? "המעבר מתבצע בטאב חדש." : "Opening in a new tab."}
           </p>
           <a
-            href="https://www.ophirbit.co.il/aff/?aid=468"
+            href="https://ophir.travelsure.co.il/buyinsnew?aff=709"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-white font-semibold shadow hover:shadow-md transition"
