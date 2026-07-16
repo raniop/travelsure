@@ -54,11 +54,31 @@ const ContactForm = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-contact-email", {
-        body: formData,
-      });
+      let sent = false;
+      try {
+        const { error } = await supabase.functions.invoke("send-contact-email", {
+          body: formData,
+        });
+        if (!error) {
+          sent = true;
+        }
+      } catch {
+        sent = false;
+      }
 
-      if (error) throw error;
+      if (!sent) {
+        const fallback = await fetch("/api-contact.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (!fallback.ok) {
+          throw new Error("Fallback failed");
+        }
+      }
 
       toast({
         title: "ההודעה נשלחה בהצלחה!",
