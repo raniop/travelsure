@@ -652,6 +652,14 @@ const genderToHarel = (gender: "M" | "F" | "") => {
   return "";
 };
 
+const sanitizeNameInput = (value: string) => {
+  return value.replace(/['\u05F3\u05F4]/g, "");
+};
+
+const sanitizeHarelName = (value: string) => {
+  return sanitizeNameInput(value).trim();
+};
+
 /** ========= Page ========= */
 export default function BuyInsNew() {
   const [id, setId] = useState("");
@@ -700,6 +708,14 @@ export default function BuyInsNew() {
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      Object.values(nameNoticeTimersRef.current).forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+    };
+  }, []);
+
   const [additionalCustomers, setAdditionalCustomers] = useState<AdditionalCustomer[]>([]);
   const [selectedAdditionalCustomers, setSelectedAdditionalCustomers] = useState<Set<string>>(new Set());
   const [showAdditionalCustomersModal, setShowAdditionalCustomersModal] = useState(false);
@@ -707,8 +723,10 @@ export default function BuyInsNew() {
   const [previousCustomerIds, setPreviousCustomerIds] = useState<Record<number, string>>({});
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
+  const [nameSanitizedNotice, setNameSanitizedNotice] = useState<Record<number, boolean>>({});
 
   const didAutofillRef = useRef<Record<number, boolean>>({});
+  const nameNoticeTimersRef = useRef<Record<number, number>>({});
   const [cameFromVerifyIdentity, setCameFromVerifyIdentity] = useState(false);
 
   // טעינת נתונים מ-sessionStorage אם הגיע מ-verify-identity
@@ -912,6 +930,22 @@ export default function BuyInsNew() {
       delete updated[customerIndex];
       return updated;
     });
+  };
+
+  const triggerNameSanitizedNotice = (customerIndex: number) => {
+    setNameSanitizedNotice((prev) => ({ ...prev, [customerIndex]: true }));
+    const existingTimer = nameNoticeTimersRef.current[customerIndex];
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+    nameNoticeTimersRef.current[customerIndex] = window.setTimeout(() => {
+      setNameSanitizedNotice((prev) => {
+        const updated = { ...prev };
+        delete updated[customerIndex];
+        return updated;
+      });
+      delete nameNoticeTimersRef.current[customerIndex];
+    }, 2500);
   };
 
   const removeCustomer = (customerIndex: number) => {
@@ -1798,7 +1832,12 @@ export default function BuyInsNew() {
                         value={customer.firstNameEn}
                         onChange={(e) => {
                           clearCustomerErrors(index);
-                          const englishOnly = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
+                          const rawValue = e.target.value;
+                          const sanitized = sanitizeNameInput(rawValue);
+                          if (rawValue !== sanitized) {
+                            triggerNameSanitizedNotice(index);
+                          }
+                          const englishOnly = sanitized.replace(/[^a-zA-Z\s-]/g, '');
                           setCustomers((prev) => {
                             const updated = [...prev];
                             updated[index] = { ...updated[index], firstNameEn: englishOnly };
@@ -1814,7 +1853,12 @@ export default function BuyInsNew() {
                         value={customer.lastNameEn}
                         onChange={(e) => {
                           clearCustomerErrors(index);
-                          const englishOnly = e.target.value.replace(/[^a-zA-Z\s'-]/g, '');
+                          const rawValue = e.target.value;
+                          const sanitized = sanitizeNameInput(rawValue);
+                          if (rawValue !== sanitized) {
+                            triggerNameSanitizedNotice(index);
+                          }
+                          const englishOnly = sanitized.replace(/[^a-zA-Z\s-]/g, '');
                           setCustomers((prev) => {
                             const updated = [...prev];
                             updated[index] = { ...updated[index], lastNameEn: englishOnly };
@@ -1885,7 +1929,11 @@ export default function BuyInsNew() {
                         onChange={(e) =>
                           setCustomers((prev) => {
                             const updated = [...prev];
-                            const nextFirstNameHe = e.target.value;
+                            const rawValue = e.target.value;
+                            const nextFirstNameHe = sanitizeNameInput(rawValue);
+                            if (rawValue !== nextFirstNameHe) {
+                              triggerNameSanitizedNotice(index);
+                            }
                             const shouldCopy =
                               !updated[index].firstNameEn?.trim() &&
                               !isHebrewText(nextFirstNameHe) &&
@@ -1909,7 +1957,11 @@ export default function BuyInsNew() {
                         onChange={(e) =>
                           setCustomers((prev) => {
                             const updated = [...prev];
-                            const nextLastNameHe = e.target.value;
+                            const rawValue = e.target.value;
+                            const nextLastNameHe = sanitizeNameInput(rawValue);
+                            if (rawValue !== nextLastNameHe) {
+                              triggerNameSanitizedNotice(index);
+                            }
                             const shouldCopy =
                               !updated[index].lastNameEn?.trim() &&
                               !isHebrewText(nextLastNameHe) &&
@@ -1925,6 +1977,11 @@ export default function BuyInsNew() {
                       />
                     </div>
                   </div>
+                  {nameSanitizedNotice[index] && (
+                    <div className="mt-2 text-xs font-medium text-amber-700">
+                      ניקינו גרש/גרשיים מהשם כדי למנוע תקלה בהמשך.
+                    </div>
+                  )}
                 </div>
               </div>
             )})}
@@ -2107,10 +2164,10 @@ export default function BuyInsNew() {
                     }
                     harelParams.set(`NosPhone${idx}`, phone);
                     harelParams.set(`NosMail${idx}`, customer.email || "");
-                    harelParams.set(`NosHebNameF${idx}`, customer.firstNameHe || "");
-                    harelParams.set(`NosHebNameL${idx}`, customer.lastNameHe || "");
-                    harelParams.set(`NosEngNameF${idx}`, customer.firstNameEn || "");
-                    harelParams.set(`NosEngNameL${idx}`, customer.lastNameEn || "");
+                    harelParams.set(`NosHebNameF${idx}`, sanitizeHarelName(customer.firstNameHe || ""));
+                    harelParams.set(`NosHebNameL${idx}`, sanitizeHarelName(customer.lastNameHe || ""));
+                    harelParams.set(`NosEngNameF${idx}`, sanitizeHarelName(customer.firstNameEn || ""));
+                    harelParams.set(`NosEngNameL${idx}`, sanitizeHarelName(customer.lastNameEn || ""));
                   });
 
                   const harelUrl = `https://ophirbit.co.il/harel/?${harelParams.toString()}`;
