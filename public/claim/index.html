@@ -1052,8 +1052,8 @@
       }
 
       function renderPolicies() {
-        const copy = claimPolicyFilterCopy(claimType);
-        const relevant = filterPoliciesForClaimType(crmPolicies, claimType);
+        const copy = claimPolicyFilterCopy(claimType, baggageSubtype);
+        const relevant = filterPoliciesForClaimType(crmPolicies, claimType, baggageSubtype);
         $("policyHello").textContent = crmCustomer?.primaryName
           ? `שלום ${crmCustomer.primaryName} — ${copy.listHint}`
           : copy.listHint;
@@ -1082,7 +1082,7 @@
       }
 
       function showBlocked(reason) {
-        const copy = claimPolicyFilterCopy(claimType);
+        const copy = claimPolicyFilterCopy(claimType, baggageSubtype);
         if (reason === "no_match") {
           $("blockedTitle").textContent = copy.emptyTitle;
           $("blockedBody").textContent = copy.emptyBody;
@@ -1330,7 +1330,7 @@
           }
           crmCustomer = result.customer;
           crmPolicies = result.policies;
-          const matched = filterPoliciesForClaimType(result.policies, claimType);
+          const matched = filterPoliciesForClaimType(result.policies, claimType, baggageSubtype);
           if (matched.length === 0) {
             selectedPolicyId = "";
             showBlocked(result.policies.length > 0 ? "no_match" : "not_found");
@@ -1352,7 +1352,7 @@
 
       $("toDetailsFromPolicy").onclick = () => {
         $("policyError").textContent = "";
-        const relevant = filterPoliciesForClaimType(crmPolicies, claimType);
+        const relevant = filterPoliciesForClaimType(crmPolicies, claimType, baggageSubtype);
         const policy = relevant.find((p) => p.uid === selectedPolicyId);
         if (!crmCustomer || !policy) {
           $("policyError").textContent = "יש לבחור פוליסה";
