@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
-type BaggageSubtype = "loss" | "theft" | "delay";
+type BaggageSubtype = "loss_theft" | "delay";
 type Step = "type" | "identity" | "policy" | "details" | "files" | "blocked" | "success";
 type YesNo = "" | "yes" | "no";
 
@@ -56,10 +56,11 @@ const claimTypesOrder: ClaimType[] = ["medical", "trip_cancel", "trip_shorten", 
 const BAGGAGE_DELAY_FIXED_AMOUNT = "155 USD";
 
 const baggageSubtypeMeta: Record<BaggageSubtype, { title: string; subtitle: string }> = {
-  loss: { title: "אובדן", subtitle: "הכבודה אבדה ולא נמצאה" },
-  theft: { title: "גניבה", subtitle: "הכבודה נגנבה" },
+  loss_theft: { title: "אובדן / גניבה", subtitle: "הכבודה אבדה או נגנבה" },
   delay: { title: "איחור בהגעת כבודה", subtitle: "הכבודה הגיעה באיחור" },
 };
+
+const baggageSubtypeOrder: BaggageSubtype[] = ["loss_theft", "delay"];
 
 const claimTypeMeta: Record<
   ClaimType,
@@ -849,8 +850,8 @@ const Claim = () => {
                 <div className="mt-5 rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
                   <h3 className="text-base font-extrabold text-[#143834]">מה קרה לכבודה?</h3>
                   <p className="mt-1 text-sm text-slate-500">בחרו אחת מהאפשרויות כדי להמשיך</p>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    {(Object.keys(baggageSubtypeMeta) as BaggageSubtype[]).map((key) => {
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {baggageSubtypeOrder.map((key) => {
                       const meta = baggageSubtypeMeta[key];
                       const active = baggageSubtype === key;
                       return (

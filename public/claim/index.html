@@ -201,7 +201,7 @@
         border-top: 1px solid var(--border); background: rgba(255,255,255,.96); backdrop-filter: blur(8px);
       }
       @media (min-width: 700px) {
-        #baggageSubtypeGrid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        #baggageSubtypeGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
       }
       .policy-check {
         width: 20px; height: 20px; border-radius: 999px; border: 1px solid #cbd5e1; flex-shrink: 0;
@@ -538,10 +538,10 @@
       };
 
       const baggageSubtypes = {
-        loss: { title: "אובדן", subtitle: "הכבודה אבדה ולא נמצאה" },
-        theft: { title: "גניבה", subtitle: "הכבודה נגנבה" },
+        loss_theft: { title: "אובדן / גניבה", subtitle: "הכבודה אבדה או נגנבה" },
         delay: { title: "איחור בהגעת כבודה", subtitle: "הכבודה הגיעה באיחור" },
       };
+      const baggageSubtypeOrder = ["loss_theft", "delay"];
 
       let claimType = null;
       let baggageSubtype = null;
@@ -857,9 +857,10 @@
         const showBaggage = claimType === "baggage";
         $("baggageSubtypeWrap").classList.toggle("hidden", !showBaggage);
         if (showBaggage) {
-          $("baggageSubtypeGrid").innerHTML = Object.entries(baggageSubtypes)
-            .map(
-              ([key, meta]) => `
+          $("baggageSubtypeGrid").innerHTML = baggageSubtypeOrder
+            .map((key) => {
+              const meta = baggageSubtypes[key];
+              return `
             <button type="button" class="policy-card ${baggageSubtype === key ? "active" : ""}" data-baggage-subtype="${key}">
               <div class="policy-card-top">
                 <div>
@@ -868,8 +869,8 @@
                 </div>
                 <span class="policy-check">✓</span>
               </div>
-            </button>`
-            )
+            </button>`;
+            })
             .join("");
         }
         $("toIdentity").disabled = !claimType || (claimType === "baggage" && !baggageSubtype);
@@ -889,11 +890,11 @@
       }
 
       function policyTimeBucketForClaimType(type, baggageSub) {
-        if (type === "trip_cancel") return "future";
+        if (type === "trip_cancel") return "all";
         if (type === "trip_shorten") return "active";
         if (type === "baggage") {
           if (baggageSub === "delay") return "active";
-          // loss / theft / unset — active + past
+          // loss_theft / loss / theft / unset — active + past
           return "started";
         }
         if (type === "medical") return "started";
@@ -929,7 +930,7 @@
             pastTitle: "נסיעות שעברו",
           };
         }
-        if (type === "baggage" && (baggageSub === "loss" || baggageSub === "theft")) {
+        if (type === "baggage" && (baggageSub === "loss" || baggageSub === "theft" || baggageSub === "loss_theft")) {
           return {
             listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
             emptyTitle: "לא מצאנו נסיעה מתאימה",
@@ -971,7 +972,10 @@
           };
         }
         return {
-          listHint: "בחרו את הנסיעה הרלוונטית לתביעה",
+          listHint:
+            type === "trip_cancel"
+              ? "מוצגות כל הפוליסות — כולל נסיעות עתידיות וגם כאלה שכבר פגו"
+              : "בחרו את הנסיעה הרלוונטית לתביעה",
           emptyTitle: "לא מצאנו פוליסה במערכת",
           emptyBody:
             "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.",

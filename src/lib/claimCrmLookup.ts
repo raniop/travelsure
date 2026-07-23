@@ -299,7 +299,14 @@ export type ClaimPolicyTimeBucket = "future" | "active" | "started" | "all";
 
 export type ClaimTypeForPolicyFilter = "medical" | "trip_cancel" | "trip_shorten" | "baggage" | string;
 
-export type BaggageSubtypeForPolicyFilter = "loss" | "theft" | "delay" | string | null | undefined;
+export type BaggageSubtypeForPolicyFilter =
+  | "loss"
+  | "theft"
+  | "loss_theft"
+  | "delay"
+  | string
+  | null
+  | undefined;
 
 /** Which policies are relevant for this claim type (and baggage subtype when relevant). */
 export const policyTimeBucketForClaimType = (
@@ -308,8 +315,8 @@ export const policyTimeBucketForClaimType = (
 ): ClaimPolicyTimeBucket => {
   switch (claimType) {
     case "trip_cancel":
-      // ביטול לפני יציאה — רק נסיעות שעדיין לא יצאו
-      return "future";
+      // ביטול לפני יציאה — גם עתידיות וגם כאלה שכבר פגו (מגישים אחרי פקיעה)
+      return "all";
     case "trip_shorten":
       // קיצור מחו״ל — רק נסיעה שכרגע פעילה
       return "active";
@@ -317,7 +324,13 @@ export const policyTimeBucketForClaimType = (
       // איחור בכבודה — רק נסיעה פעילה כעת
       if (baggageSubtype === "delay") return "active";
       // אובדן / גניבה — גם במהלך הנסיעה וגם אחרי שחזרתם
-      if (baggageSubtype === "loss" || baggageSubtype === "theft") return "started";
+      if (
+        baggageSubtype === "loss" ||
+        baggageSubtype === "theft" ||
+        baggageSubtype === "loss_theft"
+      ) {
+        return "started";
+      }
       // לפני בחירת תת־סוג — מציגים את כל מה שיכול להתאים
       return "started";
     case "medical":
@@ -382,7 +395,7 @@ export const claimPolicyFilterCopy = (
     };
   }
 
-  if (claimType === "baggage" && (baggageSubtype === "loss" || baggageSubtype === "theft")) {
+  if (claimType === "baggage" && (baggageSubtype === "loss" || baggageSubtype === "theft" || baggageSubtype === "loss_theft")) {
     return {
       listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
       emptyTitle: "לא מצאנו נסיעה מתאימה",
@@ -423,7 +436,10 @@ export const claimPolicyFilterCopy = (
       };
     default:
       return {
-        listHint: "בחרו את הנסיעה הרלוונטית לתביעה",
+        listHint:
+          claimType === "trip_cancel"
+            ? "מוצגות כל הפוליסות — כולל נסיעות עתידיות וגם כאלה שכבר פגו"
+            : "בחרו את הנסיעה הרלוונטית לתביעה",
         emptyTitle: "לא מצאנו פוליסה במערכת",
         emptyBody:
           "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור בטלפון או במייל.",
