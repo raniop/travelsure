@@ -30,26 +30,31 @@ const fileToBase64 = (file: File): Promise<string> =>
   });
 
 const buildClaimMessage = (payload: Record<string, unknown>, files: File[], claimNumber: string) => {
-  const lines: string[] = [
-    "=== תביעה חדשה מטופס TravelSure ===",
-    `מספר תביעה: ${claimNumber}`,
-    `סוג תביעה: ${payload.claimTypeLabel || ""}`,
-    `שם: ${payload.fullName || ""}`,
-    `ת.ז.: ${payload.idNumber || ""}`,
-    `אימייל: ${payload.email || ""}`,
-    `נייד: ${payload.mobile || payload.phone || ""}`,
-    `פוליסה: ${payload.policyNumber || ""}`,
-    `תאריך אירוע: ${payload.incidentDate || ""}`,
-    `מדינה: ${payload.country || ""}`,
-    `סכום: ${payload.totalClaimed || ""}`,
-    `בנק: ${payload.bankName || ""} / סניף ${payload.branchNumber || ""} / חשבון ${payload.accountNumber || ""}`,
-    "",
-    "תיאור:",
-    String(payload.details || ""),
-    "",
-    `קבצים שנבחרו (${files.length}): ${files.map((f) => `${f.name} (${Math.round(f.size / 1024)}KB)`).join(", ")}`,
+  const rows: Array<[string, string]> = [
+    ["מספר תביעה", claimNumber],
+    ["סוג תביעה", String(payload.claimTypeLabel || "")],
+    ["שם", String(payload.fullName || "")],
+    ["ת.ז.", String(payload.idNumber || "")],
+    ["אימייל", String(payload.email || "")],
+    ["נייד", String(payload.mobile || payload.phone || "")],
+    ["פוליסה", String(payload.policyNumber || "")],
+    ["תאריך אירוע", String(payload.incidentDate || "")],
+    ["מדינה", String(payload.country || "")],
+    ["סכום", String(payload.totalClaimed || "")],
+    [
+      "בנק / סניף / חשבון",
+      `${payload.bankName || ""} / ${payload.branchNumber || ""} / ${payload.accountNumber || ""}`,
+    ],
+    ["תיאור", String(payload.details || "")],
+    [
+      "קבצים",
+      `${files.length}: ${files.map((f) => `${f.name} (${Math.round(f.size / 1024)}KB)`).join(", ")}`,
+    ],
   ];
-  return lines.join("\n").slice(0, 4800);
+  // Multiline (for updated function) + compact separators (readable if HTML collapses newlines)
+  const multiline = ["=== תביעה חדשה מטופס TravelSure ===", ...rows.map(([k, v]) => `${k}: ${v}`)].join("\n");
+  const compact = rows.map(([k, v]) => `• ${k}: ${v}`).join("   |   ");
+  return `${multiline}\n\n---\n${compact}`.slice(0, 4800);
 };
 
 type InvokeResult = { ok: boolean; mode?: string };
