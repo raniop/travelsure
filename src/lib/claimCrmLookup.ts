@@ -243,7 +243,7 @@ const startOfTodayMs = () => {
   return d.getTime();
 };
 
-/** Upcoming/active = endDate today or later (or startDate in future if no end). Past = already ended. */
+/** Upcoming/active = endDate today or later. Past = already ended. Both grouped by trip year. */
 export const groupClaimPolicies = (policies: ClaimCrmPolicy[]) => {
   const today = startOfTodayMs();
   const upcoming: ClaimCrmPolicy[] = [];
@@ -260,5 +260,38 @@ export const groupClaimPolicies = (policies: ClaimCrmPolicy[]) => {
   upcoming.sort((a, b) => (dateMs(a.startDate) || 0) - (dateMs(b.startDate) || 0));
   past.sort((a, b) => (dateMs(b.endDate) || dateMs(b.startDate) || 0) - (dateMs(a.endDate) || dateMs(a.startDate) || 0));
 
-  return { upcoming, past };
+  return {
+    upcoming,
+    past,
+    upcomingByYear: groupPoliciesByYear(upcoming, "asc"),
+    pastByYear: groupPoliciesByYear(past, "desc"),
+  };
+};
+
+const policyYear = (policy: ClaimCrmPolicy): number => {
+  const fromStart = normalizeDate(policy.startDate).slice(0, 4);
+  const fromEnd = normalizeDate(policy.endDate).slice(0, 4);
+  const y = Number(fromStart || fromEnd || fromIssue(policy.issueDate));
+  return Number.isFinite(y) && y > 1900 ? y : 0;
+};
+
+const fromIssue = (issueDate: string) => normalizeDate(issueDate).slice(0, 4);
+
+export const groupPoliciesByYear = (
+  policies: ClaimCrmPolicy[],
+  yearOrder: "asc" | "desc" = "desc"
+): { year: number; policies: ClaimCrmPolicy[] }[] => {
+  const map = new Map<number, ClaimCrmPolicy[]>();
+  for (const policy of policies) {
+    const year = policyYear(policy);
+    const list = map.get(year) || [];
+    list.push(policy);
+    map.set(year, list);
+  }
+
+  const years = Array.from(map.keys()).sort((a, b) => (yearOrder === "desc" ? b - a : a - b));
+  return years.map((year) => ({
+    year,
+    policies: map.get(year) || [],
+  }));
 };

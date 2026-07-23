@@ -797,17 +797,17 @@ const Claim = () => {
           ) : null}
 
           {step === "policy" ? (
-            <div className="p-6 sm:p-8">
+            <div className="flex flex-col p-6 sm:p-8">
               <h2 className="text-2xl font-extrabold text-[#143834]">באיזו פוליסה להגיש תביעה?</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {crmCustomer?.primaryName ? `שלום ${crmCustomer.primaryName} — ` : ""}
                 בחרו את הנסיעה הרלוונטית לתביעה
               </p>
 
-              <div className="mt-6 space-y-7">
-                {groupedPolicies.upcoming.length ? (
-                  <section>
-                    <div className="mb-3 flex items-center gap-2">
+              <div className="mt-5 max-h-[min(58vh,620px)] space-y-6 overflow-y-auto pe-1">
+                {groupedPolicies.upcomingByYear.length ? (
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2">
                       <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#e8f4f1] text-[#2f6b63]">
                         <Plane className="h-4 w-4" />
                       </span>
@@ -816,39 +816,61 @@ const Claim = () => {
                         <p className="text-xs text-slate-500">{groupedPolicies.upcoming.length} פוליסות</p>
                       </div>
                     </div>
-                    <div className="grid gap-2.5">{groupedPolicies.upcoming.map(renderPolicyCard)}</div>
+                    {groupedPolicies.upcomingByYear.map(({ year, policies }) => (
+                      <div key={`up-${year}`}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="rounded-full bg-[#e8f4f1] px-2.5 py-0.5 text-xs font-bold text-[#2f6b63]">
+                            {year || "ללא שנה"}
+                          </span>
+                          <span className="text-xs text-slate-400">{policies.length}</span>
+                        </div>
+                        <div className="grid gap-2.5 sm:grid-cols-2">{policies.map(renderPolicyCard)}</div>
+                      </div>
+                    ))}
                   </section>
                 ) : null}
 
-                {groupedPolicies.past.length ? (
-                  <section>
-                    <div className="mb-3 flex items-center gap-2">
+                {groupedPolicies.pastByYear.length ? (
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2">
                       <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
                         <History className="h-4 w-4" />
                       </span>
                       <div>
                         <h3 className="text-sm font-extrabold text-[#143834]">נסיעות שעברו</h3>
-                        <p className="text-xs text-slate-500">{groupedPolicies.past.length} פוליסות</p>
+                        <p className="text-xs text-slate-500">{groupedPolicies.past.length} פוליסות · לפי שנים</p>
                       </div>
                     </div>
-                    <div className="grid gap-2.5">{groupedPolicies.past.map(renderPolicyCard)}</div>
+                    {groupedPolicies.pastByYear.map(({ year, policies }) => (
+                      <div key={`past-${year}`}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                            {year || "ללא שנה"}
+                          </span>
+                          <span className="text-xs text-slate-400">{policies.length}</span>
+                        </div>
+                        <div className="grid gap-2.5 sm:grid-cols-2">{policies.map(renderPolicyCard)}</div>
+                      </div>
+                    ))}
                   </section>
                 ) : null}
               </div>
 
               {lookupError ? <p className="mt-3 text-xs text-rose-600">{lookupError}</p> : null}
-              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("identity")}>
-                  חזרה
-                </Button>
-                <Button
-                  type="button"
-                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
-                  disabled={!selectedPolicyUid}
-                  onClick={handlePolicyContinue}
-                >
-                  המשך למילוי פרטים
-                </Button>
+              <div className="sticky bottom-0 z-10 mt-4 -mx-6 border-t border-slate-100 bg-white/95 px-6 pb-1 pt-4 backdrop-blur sm:-mx-8 sm:px-8">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                  <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("identity")}>
+                    חזרה
+                  </Button>
+                  <Button
+                    type="button"
+                    className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
+                    disabled={!selectedPolicyUid}
+                    onClick={handlePolicyContinue}
+                  >
+                    המשך למילוי פרטים
+                  </Button>
+                </div>
               </div>
             </div>
           ) : null}

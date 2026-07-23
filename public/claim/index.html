@@ -182,6 +182,24 @@
       .policy-dates { margin-top: 6px; font-size: 13px; color: #64748b; line-height: 1.4; }
       .policy-dates strong { color: var(--brand-dark); font-weight: 700; }
       .policy-dates .sep { margin: 0 8px; color: #cbd5e1; }
+      .policy-year {
+        display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 8px;
+      }
+      .policy-year-badge {
+        display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 800;
+        background: #f1f5f9; color: #475569;
+      }
+      .policy-year-badge.upcoming { background: #e8f4f1; color: var(--brand); }
+      .policy-year-count { font-size: 12px; color: var(--muted); }
+      .policy-list { display: grid; gap: 8px; }
+      @media (min-width: 700px) { .policy-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      .policy-scroll {
+        max-height: min(58vh, 620px); overflow-y: auto; padding-inline-end: 4px; margin-top: 8px;
+      }
+      .policy-actions-sticky {
+        position: sticky; bottom: 0; z-index: 5; margin-top: 14px; padding-top: 14px;
+        border-top: 1px solid var(--border); background: rgba(255,255,255,.96); backdrop-filter: blur(8px);
+      }
       @media (min-width: 700px) {
         #baggageSubtypeGrid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
       }
@@ -297,9 +315,9 @@
         <div id="step-policy" class="hidden">
           <h2>באיזו פוליסה להגיש תביעה?</h2>
           <p class="muted" id="policyHello">נמצאו כמה פוליסות. בחרו את הרלוונטית</p>
-          <div class="type-grid" id="policyGrid"></div>
+          <div class="policy-scroll" id="policyGrid"></div>
           <div id="policyError" class="error"></div>
-          <div class="row-actions">
+          <div class="row-actions policy-actions-sticky">
             <button type="button" class="btn btn-outline" id="backToIdentity">חזרה</button>
             <button type="button" class="btn btn-primary" id="toDetailsFromPolicy" disabled>המשך למילוי פרטים</button>
           </div>
@@ -679,7 +697,28 @@
           (a, b) =>
             (dateMs(b.endDate) || dateMs(b.startDate) || 0) - (dateMs(a.endDate) || dateMs(a.startDate) || 0)
         );
-        return { upcoming, past };
+        return {
+          upcoming,
+          past,
+          upcomingByYear: groupByYear(upcoming, "asc"),
+          pastByYear: groupByYear(past, "desc"),
+        };
+      }
+
+      function policyYear(policy) {
+        const y = Number(String(policy.startDate || policy.endDate || policy.issueDate || "").slice(0, 4));
+        return Number.isFinite(y) && y > 1900 ? y : 0;
+      }
+
+      function groupByYear(policies, order) {
+        const map = new Map();
+        for (const policy of policies) {
+          const year = policyYear(policy);
+          if (!map.has(year)) map.set(year, []);
+          map.get(year).push(policy);
+        }
+        const years = Array.from(map.keys()).sort((a, b) => (order === "desc" ? b - a : a - b));
+        return years.map((year) => ({ year, policies: map.get(year) }));
       }
 
       function policyCardHtml(p) {
@@ -698,11 +737,26 @@
         </button>`;
       }
 
+      function yearBlockHtml(groups, badgeClass) {
+        return groups
+          .map(
+            ({ year, policies }) => `
+          <div>
+            <div class="policy-year">
+              <span class="policy-year-badge ${badgeClass}">${year || "ללא שנה"}</span>
+              <span class="policy-year-count">${policies.length}</span>
+            </div>
+            <div class="policy-list">${policies.map(policyCardHtml).join("")}</div>
+          </div>`
+          )
+          .join("");
+      }
+
       function renderPolicies() {
         $("policyHello").textContent = crmCustomer?.primaryName
           ? `שלום ${crmCustomer.primaryName} — בחרו את הנסיעה הרלוונטית לתביעה`
           : "בחרו את הנסיעה הרלוונטית לתביעה";
-        const { upcoming, past } = groupPolicies(crmPolicies);
+        const { upcoming, past, upcomingByYear, pastByYear } = groupPolicies(crmPolicies);
         let html = "";
         if (upcoming.length) {
           html += `<section class="policy-section">
@@ -710,16 +764,16 @@
               <span class="policy-section-icon">✈️</span>
               <div><h4>נסיעות עתידיות / פעילות</h4><small>${upcoming.length} פוליסות</small></div>
             </div>
-            <div class="policy-list">${upcoming.map(policyCardHtml).join("")}</div>
+            ${yearBlockHtml(upcomingByYear, "upcoming")}
           </section>`;
         }
         if (past.length) {
           html += `<section class="policy-section">
             <div class="policy-section-head">
               <span class="policy-section-icon past">🕘</span>
-              <div><h4>נסיעות שעברו</h4><small>${past.length} פוליסות</small></div>
+              <div><h4>נסיעות שעברו</h4><small>${past.length} פוליסות · לפי שנים</small></div>
             </div>
-            <div class="policy-list">${past.map(policyCardHtml).join("")}</div>
+            ${yearBlockHtml(pastByYear, "")}
           </section>`;
         }
         $("policyGrid").innerHTML = html || `<p class="muted">לא נמצאו פוליסות להצגה</p>`;
