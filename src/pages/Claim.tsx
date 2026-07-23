@@ -8,6 +8,8 @@ import {
   CLAIM_CONTACT,
   ClaimCrmCustomer,
   ClaimCrmPolicy,
+  formatClaimDateDisplay,
+  groupClaimPolicies,
   isValidIsraeliId,
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
@@ -19,12 +21,14 @@ import {
   Luggage,
   Loader2,
   Phone,
+  Plane,
   PlaneLanding,
   Plus,
   Send,
   ShieldCheck,
   Trash2,
   Mail,
+  History,
 } from "lucide-react";
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
@@ -231,6 +235,51 @@ const Claim = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
+  const groupedPolicies = useMemo(() => groupClaimPolicies(crmPolicies), [crmPolicies]);
+
+  const renderPolicyCard = (policy: ClaimCrmPolicy) => {
+    const active = selectedPolicyId === policy.fullPolicyID;
+    return (
+      <button
+        key={policy.fullPolicyID}
+        type="button"
+        onClick={() => setSelectedPolicyId(policy.fullPolicyID)}
+        className={`rounded-2xl border p-4 text-right transition ${
+          active
+            ? "border-[#2f6b63] bg-[#2f6b63]/5 shadow-md ring-1 ring-[#2f6b63]/25"
+            : "border-slate-200 bg-white hover:border-[#2f6b63]/35 hover:shadow-sm"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="font-bold tracking-wide text-[#143834]">פוליסה {policy.fullPolicyID}</div>
+            {policy.areaName ? (
+              <div className="mt-1 inline-flex rounded-full bg-[#e8f4f1] px-2.5 py-0.5 text-xs font-semibold text-[#2f6b63]">
+                {policy.areaName}
+              </div>
+            ) : null}
+            <div className="mt-3 grid gap-1.5 text-sm text-slate-600 sm:grid-cols-2">
+              <div>
+                <span className="text-slate-400">יציאה · </span>
+                <span className="font-semibold text-[#143834]">{formatClaimDateDisplay(policy.startDate) || "—"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">חזרה · </span>
+                <span className="font-semibold text-[#143834]">{formatClaimDateDisplay(policy.endDate) || "—"}</span>
+              </div>
+            </div>
+          </div>
+          <span
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+              active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
+            }`}
+          >
+            <Check className="h-3 w-3" />
+          </span>
+        </div>
+      </button>
+    );
+  };
 
   const applyCustomerAndPolicy = (customer: ClaimCrmCustomer, policy: ClaimCrmPolicy) => {
     setFormData((prev) => ({
@@ -695,43 +744,41 @@ const Claim = () => {
               <h2 className="text-2xl font-extrabold text-[#143834]">באיזו פוליסה להגיש תביעה?</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {crmCustomer?.primaryName ? `שלום ${crmCustomer.primaryName} — ` : ""}
-                נמצאו כמה פוליסות. בחרו את הרלוונטית
+                בחרו את הנסיעה הרלוונטית לתביעה
               </p>
-              <div className="mt-5 grid gap-3">
-                {crmPolicies.map((policy) => {
-                  const active = selectedPolicyId === policy.fullPolicyID;
-                  return (
-                    <button
-                      key={policy.fullPolicyID}
-                      type="button"
-                      onClick={() => setSelectedPolicyId(policy.fullPolicyID)}
-                      className={`rounded-2xl border p-4 text-right transition ${
-                        active
-                          ? "border-[#2f6b63] bg-[#2f6b63]/5 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-[#2f6b63]/40"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-bold text-[#143834]">פוליסה {policy.fullPolicyID}</div>
-                          <div className="mt-1 text-sm text-slate-500">
-                            {[policy.startDate && `יציאה: ${policy.startDate}`, policy.endDate && `חזרה: ${policy.endDate}`, policy.areaName]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </div>
-                        </div>
-                        <span
-                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                            active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
-                          }`}
-                        >
-                          <Check className="h-3 w-3" />
-                        </span>
+
+              <div className="mt-6 space-y-7">
+                {groupedPolicies.upcoming.length ? (
+                  <section>
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#e8f4f1] text-[#2f6b63]">
+                        <Plane className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-[#143834]">נסיעות עתידיות / פעילות</h3>
+                        <p className="text-xs text-slate-500">{groupedPolicies.upcoming.length} פוליסות</p>
                       </div>
-                    </button>
-                  );
-                })}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">{groupedPolicies.upcoming.map(renderPolicyCard)}</div>
+                  </section>
+                ) : null}
+
+                {groupedPolicies.past.length ? (
+                  <section>
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                        <History className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-[#143834]">נסיעות שעברו</h3>
+                        <p className="text-xs text-slate-500">{groupedPolicies.past.length} פוליסות</p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">{groupedPolicies.past.map(renderPolicyCard)}</div>
+                  </section>
+                ) : null}
               </div>
+
               {lookupError ? <p className="mt-3 text-xs text-rose-600">{lookupError}</p> : null}
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
                 <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("identity")}>

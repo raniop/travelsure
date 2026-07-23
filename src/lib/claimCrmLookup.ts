@@ -170,3 +170,47 @@ export const CLAIM_CONTACT = {
   email: "ophir@ophirins.co.il",
   emailHref: "mailto:ophir@ophirins.co.il",
 };
+
+/** Display CRM / ISO dates as DD/MM/YYYY */
+export const formatClaimDateDisplay = (value: string): string => {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const dmy = s.match(/^(\d{2})[./-](\d{2})[./-](\d{4})/);
+  if (dmy) return `${dmy[1]}/${dmy[2]}/${dmy[3]}`;
+  return s;
+};
+
+const dateMs = (value: string): number => {
+  const s = normalizeDate(value);
+  if (!s) return Number.NaN;
+  const t = new Date(`${s}T12:00:00`).getTime();
+  return Number.isFinite(t) ? t : Number.NaN;
+};
+
+const startOfTodayMs = () => {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  return d.getTime();
+};
+
+/** Upcoming/active = endDate today or later (or startDate in future if no end). Past = already ended. */
+export const groupClaimPolicies = (policies: ClaimCrmPolicy[]) => {
+  const today = startOfTodayMs();
+  const upcoming: ClaimCrmPolicy[] = [];
+  const past: ClaimCrmPolicy[] = [];
+
+  for (const policy of policies) {
+    const end = dateMs(policy.endDate);
+    const start = dateMs(policy.startDate);
+    const isPast = Number.isFinite(end) ? end < today : Number.isFinite(start) ? start < today : false;
+    if (isPast) past.push(policy);
+    else upcoming.push(policy);
+  }
+
+  upcoming.sort((a, b) => (dateMs(a.startDate) || 0) - (dateMs(b.startDate) || 0));
+  past.sort((a, b) => (dateMs(b.endDate) || dateMs(b.startDate) || 0) - (dateMs(a.endDate) || dateMs(a.startDate) || 0));
+
+  return { upcoming, past };
+};
