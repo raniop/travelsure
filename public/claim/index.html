@@ -1312,18 +1312,54 @@
             });
           }
 
-          const fnRes = await fetch(CLAIM_FN_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({ payload, files: filesPayload }),
-          });
-          if (fnRes.ok) {
-            const data = await fnRes.json().catch(() => ({}));
-            if (!data.error) return true;
+          async function postJson(url, bodyObj) {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify(bodyObj),
+            });
+            if (!res.ok) return false;
+            const data = await res.json().catch(() => ({}));
+            return !data.error;
+          }
+
+          if (await postJson(CLAIM_FN_URL, { payload, files: filesPayload })) return true;
+
+          const claimMessage = [
+            "=== תביעה חדשה מטופס TravelSure ===",
+            "סוג תביעה: " + (payload.claimTypeLabel || ""),
+            "שם: " + (payload.fullName || ""),
+            "ת.ז.: " + (payload.idNumber || ""),
+            "אימייל: " + (payload.email || ""),
+            "נייד: " + (payload.mobile || ""),
+            "פוליסה: " + (payload.policyNumber || ""),
+            "תאריך אירוע: " + (payload.incidentDate || ""),
+            "מדינה: " + (payload.country || ""),
+            "סכום: " + (payload.totalClaimed || ""),
+            "בנק: " + (payload.bankName || "") + " / סניף " + (payload.branchNumber || "") + " / חשבון " + (payload.accountNumber || ""),
+            "",
+            "תיאור:",
+            payload.details || "",
+            "",
+            "קבצים שנבחרו (" + selectedFiles.length + "): " + selectedFiles.map((f) => f.name).join(", "),
+          ].join("\n").slice(0, 4800);
+
+          if (
+            await postJson(`${SUPABASE_URL}/functions/v1/send-contact-email`, {
+              type: "claim",
+              name: payload.fullName || "תביעה",
+              email: payload.email || "",
+              phone: payload.mobile || "",
+              message: claimMessage,
+              claimPayload: payload,
+              files: filesPayload,
+            })
+          ) {
+            return true;
           }
 
           const body = new FormData();
