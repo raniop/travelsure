@@ -413,9 +413,14 @@
           <p class="tiny">בחירת בנק וסניף מבוססת על נתוני בנק ישראל. מעל 15,000 ₪ יש לצרף צילום שיק / אישור בנק.</p>
 
           <h3>הצהרות</h3>
-          <label class="check" id="waiverWrap"><input type="checkbox" name="medicalWaiver" /> אני מאשר/ת ויתור על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי לצורך בירור התביעה.</label>
-          <label class="check"><input type="checkbox" name="authorizeAgent" /> אני מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי</label>
-          <label class="check"><input type="checkbox" name="declaration" /> הנני מצהיר/ה כי הפרטים שמסרתי נכונים ומלאים *</label>
+          <label class="check" id="declarationWrap">
+            <input type="checkbox" name="declaration" id="declarationCheck" />
+            <span id="declarationText">אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים; מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי.</span>
+          </label>
+          <label class="field" id="agentNameWrap" style="display:none;margin-top:8px">שם הסוכן (אופציונלי)<input name="agentName" /></label>
+          <label class="check"><input type="checkbox" name="marketingConsent" /> אני מסכים/ה לקבל הצעות שיווקיות מקבוצת הראל (אופציונלי)</label>
+          <input type="hidden" name="medicalWaiver" id="medicalWaiver" value="" />
+          <input type="hidden" name="authorizeAgent" id="authorizeAgent" value="" />
 
           <div class="row-actions">
             <button type="button" class="btn btn-outline" id="backFromDetails">חזרה</button>
@@ -846,7 +851,10 @@
         $("hmoFields").classList.toggle("hidden", claimType !== "medical");
         $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
         $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
-        $("waiverWrap").classList.toggle("hidden", claimType === "baggage");
+        const needsMedical = claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten";
+        $("declarationText").textContent = needsMedical
+          ? "אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים; מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי; ומוותר/ת על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי לצורך בירור התביעה."
+          : "אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים; מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי.";
         $("reasonWrap").classList.toggle("hidden", claimType !== "trip_cancel" && claimType !== "trip_shorten");
         $("totalWrap").classList.toggle("hidden", claimType !== "medical" && claimType !== "baggage");
         $("incidentLabel").textContent = claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע";
@@ -970,9 +978,6 @@
           $("detailsError").textContent = "יש לבחור בנק וסניף ולמלא מספר חשבון"; return;
         }
         if (!form.declaration.checked) { $("detailsError").textContent = "יש לאשר את ההצהרה"; return; }
-        if (claimType !== "baggage" && !form.medicalWaiver.checked) {
-          $("detailsError").textContent = "יש לאשר ויתור על סודיות רפואית"; return;
-        }
         if ((claimType === "trip_cancel" || claimType === "trip_shorten") && !get("claimReason")) {
           $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור"; return;
         }
@@ -1012,7 +1017,11 @@
           incidentDate: get("incidentDate"), country: get("country"), details: get("details"),
           totalClaimed: get("totalClaimed"), amount: get("totalClaimed"),
           bankName: get("bankName"), bankCode: get("bankCode"), branchName: get("branchName"), branchNumber: get("branchNumber"), accountNumber: get("accountNumber"),
-          medicalWaiver: form.medicalWaiver.checked, authorizeAgent: form.authorizeAgent.checked, declaration: form.declaration.checked,
+          medicalWaiver:
+            form.declaration.checked &&
+            (claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten"),
+          authorizeAgent: form.declaration.checked,
+          declaration: form.declaration.checked,
           expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
           baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
           crmMatched: true,
@@ -1143,6 +1152,10 @@
         if (!e.target.closest("#branchSearch") && !e.target.closest("#branchSuggestions")) {
           $("branchSuggestions").classList.add("hidden");
         }
+      });
+
+      $("declarationCheck").addEventListener("change", () => {
+        $("agentNameWrap").style.display = $("declarationCheck").checked ? "block" : "none";
       });
 
       initBanks();

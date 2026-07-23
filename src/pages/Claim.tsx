@@ -461,12 +461,6 @@ const Claim = () => {
     if (!formData.accountNumber.trim()) next.accountNumber = "שדה חובה";
     if (!formData.declaration) next.declaration = "יש לאשר את ההצהרה";
 
-    const needsMedicalWaiver =
-      claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten";
-    if (needsMedicalWaiver && !formData.medicalWaiver) {
-      next.medicalWaiver = "יש לאשר ויתור על סודיות רפואית";
-    }
-
     if (claimType === "medical") {
       if (!formData.totalClaimed.trim()) next.totalClaimed = "שדה חובה";
     }
@@ -1490,31 +1484,43 @@ const Claim = () => {
 
               <section className="space-y-3">
                 <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">הצהרות</h3>
-                {(claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten") ? (
-                  <label className="flex items-start gap-3 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      className="mt-1"
-                      checked={formData.medicalWaiver}
-                      onChange={(e) => setField("medicalWaiver", e.target.checked)}
-                    />
-                    <span>
-                      אני מאשר/ת ויתור על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי ממוסדות רפואיים לצורך בירור התביעה.
-                    </span>
-                  </label>
-                ) : null}
-                {errors.medicalWaiver ? <p className="text-xs text-rose-600">{errors.medicalWaiver}</p> : null}
-                <label className="flex items-start gap-3 text-sm text-slate-700">
+                <label className="flex items-start gap-3 text-sm font-medium text-slate-800">
                   <input
                     type="checkbox"
                     className="mt-1"
-                    checked={formData.authorizeAgent}
-                    onChange={(e) => setField("authorizeAgent", e.target.checked)}
+                    checked={formData.declaration}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setFormData((prev) => ({
+                        ...prev,
+                        declaration: checked,
+                        authorizeAgent: checked,
+                        medicalWaiver:
+                          claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten"
+                            ? checked
+                            : false,
+                      }));
+                      if (errors.declaration) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.declaration;
+                          delete next.medicalWaiver;
+                          return next;
+                        });
+                      }
+                    }}
                   />
-                  <span>אני מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי</span>
+                  <span>
+                    אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים; מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי
+                    {claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten"
+                      ? "; ומוותר/ת על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי לצורך בירור התביעה"
+                      : ""}
+                    .
+                  </span>
                 </label>
-                {formData.authorizeAgent ? (
-                  <Field label="שם הסוכן">
+                {errors.declaration ? <p className="text-xs text-rose-600">{errors.declaration}</p> : null}
+                {formData.declaration ? (
+                  <Field label="שם הסוכן (אופציונלי)">
                     <Input className="bg-slate-50" value={formData.agentName} onChange={(e) => setField("agentName", e.target.value)} />
                   </Field>
                 ) : null}
@@ -1527,16 +1533,6 @@ const Claim = () => {
                   />
                   <span>אני מסכים/ה לקבל הצעות שיווקיות מקבוצת הראל (אופציונלי)</span>
                 </label>
-                <label className="flex items-start gap-3 text-sm font-medium text-slate-800">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={formData.declaration}
-                    onChange={(e) => setField("declaration", e.target.checked)}
-                  />
-                  <span>הנני מצהיר/ה כי הפרטים שמסרתי נכונים ומלאים *</span>
-                </label>
-                {errors.declaration ? <p className="text-xs text-rose-600">{errors.declaration}</p> : null}
               </section>
 
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
