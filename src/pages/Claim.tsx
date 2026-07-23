@@ -5,21 +5,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.avif";
 import {
+  CLAIM_CONTACT,
+  ClaimCrmCustomer,
+  ClaimCrmPolicy,
+  isValidIsraeliId,
+  lookupClaimCustomerById,
+} from "@/lib/claimCrmLookup";
+import {
   BriefcaseMedical,
   CalendarX2,
   Check,
   FileUp,
   Luggage,
   Loader2,
+  Phone,
   PlaneLanding,
   Plus,
   Send,
   ShieldCheck,
   Trash2,
+  Mail,
 } from "lucide-react";
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
-type Step = "type" | "details" | "files";
+type Step = "type" | "identity" | "policy" | "details" | "files" | "blocked";
 type YesNo = "" | "yes" | "no";
 
 type ExpenseRow = { date: string; type: string; amount: string; receiptAttached: boolean };
@@ -156,18 +165,6 @@ const initialForm = {
   totalClaimed: "",
 };
 
-const isValidIsraeliId = (id: string) => {
-  const s = id.trim().replace(/[^\d]/g, "").padStart(9, "0");
-  if (!/^\d{9}$/.test(s)) return false;
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let n = Number(s[i]) * ((i % 2) + 1);
-    if (n > 9) n -= 9;
-    sum += n;
-  }
-  return sum % 10 === 0;
-};
-
 const Field = ({
   label,
   required,
@@ -221,6 +218,12 @@ const Claim = () => {
   const [step, setStep] = useState<Step>("type");
   const [claimType, setClaimType] = useState<ClaimType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupId, setLookupId] = useState("");
+  const [lookupError, setLookupError] = useState("");
+  const [crmCustomer, setCrmCustomer] = useState<ClaimCrmCustomer | null>(null);
+  const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
+  const [selectedPolicyId, setSelectedPolicyId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([emptyExpense()]);
@@ -228,6 +231,23 @@ const Claim = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
+
+  const applyCustomerAndPolicy = (customer: ClaimCrmCustomer, policy: ClaimCrmPolicy) => {
+    setFormData((prev) => ({
+      ...prev,
+      firstName: customer.firstNameHe || prev.firstName,
+      lastName: customer.lastNameHe || prev.lastName,
+      idNumber: customer.id || prev.idNumber,
+      birthDate: customer.birthDate || prev.birthDate,
+      mobile: customer.phone || prev.mobile,
+      email: customer.email || prev.email,
+      policyNumber: policy.fullPolicyID,
+      tripStartDate: policy.startDate || prev.tripStartDate,
+      tripEndDate: policy.endDate || prev.tripEndDate,
+      country: policy.areaName || prev.country,
+    }));
+    setSelectedPolicyId(policy.fullPolicyID);
+  };
 
   const setField = <K extends keyof typeof initialForm>(name: K, value: (typeof initialForm)[K]) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -238,6 +258,56 @@ const Claim = () => {
         return next;
       });
     }
+  };
+
+  const handleIdentityLookup = async () => {
+    setLookupError("");
+    if (!isValidIsraeliId(lookupId)) {
+      setLookupError("תעודת זהות לא תקינה");
+      return;
+    }
+    setIsLookingUp(true);
+    try {
+      const result = await lookupClaimCustomerById(lookupId);
+      if (!result.ok) {
+        if (result.reason === "invalid_id") {
+          setLookupError("תעודת זהות לא תקינה");
+          return;
+        }
+        setCrmCustomer(null);
+        setCrmPolicies([]);
+        setSelectedPolicyId("");
+        setStep("blocked");
+        return;
+      }
+
+      setCrmCustomer(result.customer);
+      setCrmPolicies(result.policies);
+      if (result.policies.length === 1) {
+        applyCustomerAndPolicy(result.customer, result.policies[0]);
+        setStep("details");
+      } else {
+        setSelectedPolicyId("");
+        setStep("policy");
+      }
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handlePolicyContinue = () => {
+    if (!crmCustomer || !selectedPolicyId) {
+      setLookupError("יש לבחור פוליסה");
+      return;
+    }
+    const policy = crmPolicies.find((p) => p.fullPolicyID === selectedPolicyId);
+    if (!policy) {
+      setLookupError("יש לבחור פוליסה");
+      return;
+    }
+    setLookupError("");
+    applyCustomerAndPolicy(crmCustomer, policy);
+    setStep("details");
   };
 
   const validateDetails = () => {
@@ -307,6 +377,9 @@ const Claim = () => {
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         expenses: claimType === "medical" ? expenses : undefined,
         baggageItems: claimType === "baggage" ? baggageItems : undefined,
+        crmMatched: true,
+        selectedPolicyId: selectedPolicyId || formData.policyNumber,
+        crmCustomerName: crmCustomer?.primaryName || "",
         submittedAt: new Date().toISOString(),
       };
 
@@ -331,6 +404,11 @@ const Claim = () => {
       setFiles([]);
       setErrors({});
       setClaimType(null);
+      setCrmCustomer(null);
+      setCrmPolicies([]);
+      setSelectedPolicyId("");
+      setLookupId("");
+      setLookupError("");
       setStep("type");
     } catch (error) {
       console.error("Claim submit failed:", error);
@@ -346,10 +424,15 @@ const Claim = () => {
 
   const steps: { id: Step; label: string }[] = [
     { id: "type", label: "סוג תביעה" },
+    { id: "identity", label: "זיהוי" },
     { id: "details", label: "פרטים" },
     { id: "files", label: "מסמכים" },
   ];
-  const stepIndex = steps.findIndex((s) => s.id === step);
+  const progressStep: Step = step === "policy" ? "identity" : step === "blocked" ? "identity" : step;
+  const stepIndex = Math.max(
+    0,
+    steps.findIndex((s) => s.id === progressStep)
+  );
 
   return (
     <div className="claim-page relative min-h-screen overflow-hidden font-heebo" dir="rtl">
@@ -550,9 +633,158 @@ const Claim = () => {
                 className="claim-cta mt-6 h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white shadow-lg shadow-[#2f6b63]/25 disabled:opacity-50"
                 size="lg"
                 disabled={!claimType}
-                onClick={() => setStep("details")}
+                onClick={() => {
+                  setLookupError("");
+                  setStep("identity");
+                }}
               >
-                המשך למילוי פרטים
+                המשך לזיהוי לקוח
+              </Button>
+            </div>
+          ) : null}
+
+          {step === "identity" ? (
+            <div className="p-6 sm:p-8">
+              {claimType && activeMeta ? (
+                <div className="mb-5 rounded-2xl border border-[#2f6b63]/10 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
+                  <p className="text-xs font-bold tracking-wide text-[#2f6b63]">{activeMeta.short}</p>
+                  <h2 className="text-xl font-extrabold text-[#143834]">{activeMeta.title}</h2>
+                </div>
+              ) : null}
+              <h2 className="text-2xl font-extrabold text-[#143834]">זיהוי לפי תעודת זהות</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                נאתר את הפרטים והפוליסות שלך במערכת — רק לקוחות עם פוליסה פעילה אצלנו יכולים להגיש תביעה
+              </p>
+              <div className="mt-6 max-w-md">
+                <Field label="תעודת זהות" required error={lookupError}>
+                  <Input
+                    className="bg-slate-50 text-lg tracking-wide"
+                    inputMode="numeric"
+                    maxLength={9}
+                    value={lookupId}
+                    onChange={(e) => setLookupId(e.target.value.replace(/[^\d]/g, "").slice(0, 9))}
+                    placeholder="9 ספרות"
+                  />
+                </Field>
+              </div>
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("type")}>
+                  חזרה
+                </Button>
+                <Button
+                  type="button"
+                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
+                  disabled={isLookingUp || lookupId.length < 5}
+                  onClick={handleIdentityLookup}
+                >
+                  {isLookingUp ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      מזהה...
+                    </>
+                  ) : (
+                    "זיהוי והמשך"
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {step === "policy" ? (
+            <div className="p-6 sm:p-8">
+              <h2 className="text-2xl font-extrabold text-[#143834]">באיזו פוליסה להגיש תביעה?</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {crmCustomer?.primaryName ? `שלום ${crmCustomer.primaryName} — ` : ""}
+                נמצאו כמה פוליסות. בחרו את הרלוונטית
+              </p>
+              <div className="mt-5 grid gap-3">
+                {crmPolicies.map((policy) => {
+                  const active = selectedPolicyId === policy.fullPolicyID;
+                  return (
+                    <button
+                      key={policy.fullPolicyID}
+                      type="button"
+                      onClick={() => setSelectedPolicyId(policy.fullPolicyID)}
+                      className={`rounded-2xl border p-4 text-right transition ${
+                        active
+                          ? "border-[#2f6b63] bg-[#2f6b63]/5 shadow-sm"
+                          : "border-slate-200 bg-white hover:border-[#2f6b63]/40"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-[#143834]">פוליסה {policy.fullPolicyID}</div>
+                          <div className="mt-1 text-sm text-slate-500">
+                            {[policy.startDate && `יציאה: ${policy.startDate}`, policy.endDate && `חזרה: ${policy.endDate}`, policy.areaName]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                        </div>
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
+                          }`}
+                        >
+                          <Check className="h-3 w-3" />
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {lookupError ? <p className="mt-3 text-xs text-rose-600">{lookupError}</p> : null}
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("identity")}>
+                  חזרה
+                </Button>
+                <Button
+                  type="button"
+                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
+                  disabled={!selectedPolicyId}
+                  onClick={handlePolicyContinue}
+                >
+                  המשך למילוי פרטים
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {step === "blocked" ? (
+            <div className="p-6 text-center sm:p-10">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
+                <ShieldCheck className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-extrabold text-[#143834]">לא מצאנו פוליסה במערכת</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-600">
+                הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות —
+                נשמח לעזור בטלפון או במייל.
+              </p>
+              <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3">
+                <a
+                  href={CLAIM_CONTACT.phoneHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#2f6b63]/25"
+                >
+                  <Phone className="h-4 w-4" />
+                  {CLAIM_CONTACT.phoneDisplay}
+                </a>
+                <a
+                  href={CLAIM_CONTACT.emailHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-[#143834]"
+                >
+                  <Mail className="h-4 w-4 text-[#2f6b63]" />
+                  {CLAIM_CONTACT.email}
+                </a>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-6 h-11 rounded-2xl"
+                onClick={() => {
+                  setLookupError("");
+                  setStep("identity");
+                }}
+              >
+                ניסיון עם תעודת זהות אחרת
               </Button>
             </div>
           ) : null}
@@ -568,7 +800,10 @@ const Claim = () => {
               <div className="rounded-2xl border border-[#2f6b63]/10 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
                 <p className="text-xs font-bold tracking-wide text-[#2f6b63]">{activeMeta.short}</p>
                 <h2 className="text-xl font-extrabold text-[#143834]">{activeMeta.title}</h2>
-                <p className="mt-1 text-sm text-slate-500">{activeMeta.subtitle}</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {crmCustomer?.primaryName ? `שלום ${crmCustomer.primaryName} — ` : ""}
+                  הפרטים נמשכו מהמערכת. ניתן לעדכן טלפון ואימייל במידת הצורך
+                </p>
               </div>
 
               <section className="space-y-4">
@@ -581,12 +816,7 @@ const Claim = () => {
                     <Input className="bg-slate-50" value={formData.firstName} onChange={(e) => setField("firstName", e.target.value)} />
                   </Field>
                   <Field label="תעודת זהות" required error={errors.idNumber}>
-                    <Input
-                      className="bg-slate-50"
-                      inputMode="numeric"
-                      value={formData.idNumber}
-                      onChange={(e) => setField("idNumber", e.target.value.replace(/[^\d]/g, "").slice(0, 9))}
-                    />
+                    <Input className="bg-slate-100" inputMode="numeric" value={formData.idNumber} readOnly />
                   </Field>
                   <Field label="תאריך לידה" required error={errors.birthDate}>
                     <Input className="bg-slate-50" type="date" value={formData.birthDate} onChange={(e) => setField("birthDate", e.target.value)} />
@@ -632,7 +862,7 @@ const Claim = () => {
                 <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ב. פרטי הפוליסה</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="מספר פוליסה" required error={errors.policyNumber}>
-                    <Input className="bg-slate-50" value={formData.policyNumber} onChange={(e) => setField("policyNumber", e.target.value)} />
+                    <Input className="bg-slate-100" value={formData.policyNumber} readOnly />
                   </Field>
                   <Field label="סוג פוליסה">
                     <Input className="bg-slate-50" value={formData.policyType} onChange={(e) => setField("policyType", e.target.value)} />
@@ -1050,7 +1280,12 @@ const Claim = () => {
               </section>
 
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("type")}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-2xl"
+                  onClick={() => setStep(crmPolicies.length > 1 ? "policy" : "identity")}
+                >
                   חזרה
                 </Button>
                 <Button
