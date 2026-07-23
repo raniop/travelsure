@@ -3,45 +3,72 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { BriefcaseMedical, Luggage, Loader2, Plane, Plus, Send, Trash2 } from "lucide-react";
+import {
+  BriefcaseMedical,
+  CalendarX2,
+  Luggage,
+  Loader2,
+  PlaneLanding,
+  Plus,
+  Send,
+  Trash2,
+} from "lucide-react";
 
-type ClaimType = "medical" | "trip_change" | "baggage";
+type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
 type Step = "type" | "details" | "files";
 type YesNo = "" | "yes" | "no";
 
 type ExpenseRow = { date: string; type: string; amount: string; receiptAttached: boolean };
 type BaggageRow = { item: string; purchaseDate: string; purchasePrice: string; receiptAttached: boolean };
 
+const claimTypesOrder: ClaimType[] = ["medical", "trip_cancel", "trip_shorten", "baggage"];
+
 const claimTypeMeta: Record<
   ClaimType,
-  { title: string; short: string; subtitle: string; docs: string[]; icon: typeof Plane }
+  { title: string; short: string; subtitle: string; docs: string[]; icon: typeof BriefcaseMedical }
 > = {
   medical: {
-    title: "החזר הוצאות רפואיות בחו״ל",
+    title: "הוצאות רפואיות בחו״ל (שלא באשפוז)",
     short: "רפואי",
-    subtitle: "אשפוז, רופא, תרופות ובדיקות",
+    subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
     docs: [
       "עותק פוליסה",
-      "סיכום רפואי / דוח רופא מחו״ל",
+      "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
       "חשבון מפורט",
       "קבלות תשלום מקוריות",
-      "באשפוז: מכתב שחרור + חשבון בית חולים",
     ],
     icon: BriefcaseMedical,
   },
-  trip_change: {
-    title: "ביטול או קיצור נסיעה",
-    short: "נסיעה",
-    subtitle: "ביטול לפני יציאה או קיצור במהלך",
+  trip_cancel: {
+    title: "ביטול נסיעה טרם היציאה",
+    short: "ביטול",
+    subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
     docs: [
       "עותק פוליסה",
-      "מסלול הנסיעה המקורי",
-      "כרטיס טיסה וקבלה מקוריים",
-      "אישור סוכן על החזר/חלק שלא נוצל",
-      "אישור רופא על אי-כשירות לטוס / צורך בקיצור",
-      "במקרה משפחתי: אישור רפואי/פטירה + הוכחת קרבה",
+      "העתק תוכנית / מסלול הנסיעה",
+      "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
+      "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)",
+      "אישור רפואי על אי-כשירות לטוס",
+      "דוח רפואי / סיכום אשפוז",
+      "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
     ],
-    icon: Plane,
+    icon: CalendarX2,
+  },
+  trip_shorten: {
+    title: "קיצור נסיעה מחו״ל",
+    short: "קיצור",
+    subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
+    docs: [
+      "עותק פוליסה",
+      "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
+      "תוכנית נסיעה מקורית",
+      "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
+      "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)",
+      "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת",
+      "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת",
+      "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
+    ],
+    icon: PlaneLanding,
   },
   baggage: {
     title: "מטען / כבודה",
@@ -105,7 +132,7 @@ const initialForm = {
   incidentDate: "",
   country: "",
   details: "",
-  tripSubtype: "" as "" | "cancel" | "shorten",
+  claimReason: "",
   preexisting: "" as YesNo,
   preexistingDetails: "",
   duringFlight: "" as YesNo,
@@ -223,20 +250,27 @@ const Claim = () => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) next.email = "אימייל לא תקין";
     if (!formData.policyNumber.trim()) next.policyNumber = "שדה חובה";
     if (!formData.incidentDate.trim()) next.incidentDate = "שדה חובה";
-    if (!formData.country.trim()) next.country = "שדה חובה";
+    if (!formData.country.trim()) {
+      next.country = claimType === "trip_cancel" ? "שדה חובה — מדינת היעד" : "שדה חובה";
+    }
     if (!formData.details.trim()) next.details = "שדה חובה";
     if (!formData.bankName.trim()) next.bankName = "שדה חובה";
     if (!formData.branchNumber.trim()) next.branchNumber = "שדה חובה";
     if (!formData.accountNumber.trim()) next.accountNumber = "שדה חובה";
     if (!formData.declaration) next.declaration = "יש לאשר את ההצהרה";
 
+    const needsMedicalWaiver =
+      claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten";
+    if (needsMedicalWaiver && !formData.medicalWaiver) {
+      next.medicalWaiver = "יש לאשר ויתור על סודיות רפואית";
+    }
+
     if (claimType === "medical") {
-      if (!formData.medicalWaiver) next.medicalWaiver = "יש לאשר ויתור על סודיות רפואית";
       if (!formData.totalClaimed.trim()) next.totalClaimed = "שדה חובה";
     }
 
-    if (claimType === "trip_change" && !formData.tripSubtype) {
-      next.tripSubtype = "יש לבחור ביטול או קיצור";
+    if (claimType === "trip_cancel" || claimType === "trip_shorten") {
+      if (!formData.claimReason.trim()) next.claimReason = "שדה חובה";
     }
 
     if (claimType === "baggage") {
@@ -362,8 +396,8 @@ const Claim = () => {
             <div className="p-6 sm:p-8">
               <h2 className="mb-1 text-lg font-bold text-[#1a4a45]">מה סוג התביעה?</h2>
               <p className="mb-6 text-sm text-slate-500">בחרו את הקטגוריה המתאימה ביותר</p>
-              <div className="grid gap-3">
-                {(["medical", "trip_change", "baggage"] as ClaimType[]).map((type) => {
+              <div className="grid gap-3 sm:grid-cols-2">
+                {claimTypesOrder.map((type) => {
                   const meta = claimTypeMeta[type];
                   const Icon = meta.icon;
                   const active = claimType === type;
@@ -566,26 +600,18 @@ const Claim = () => {
 
               <section className="space-y-4">
                 <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ד. תיאור המקרה</h3>
-                {claimType === "trip_change" ? (
-                  <Field label="סוג אירוע" required error={errors.tripSubtype}>
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <label className="inline-flex items-center gap-2">
-                        <input
-                          type="radio"
-                          checked={formData.tripSubtype === "cancel"}
-                          onChange={() => setField("tripSubtype", "cancel")}
-                        />
-                        ביטול נסיעה
-                      </label>
-                      <label className="inline-flex items-center gap-2">
-                        <input
-                          type="radio"
-                          checked={formData.tripSubtype === "shorten"}
-                          onChange={() => setField("tripSubtype", "shorten")}
-                        />
-                        קיצור נסיעה
-                      </label>
-                    </div>
+                {(claimType === "trip_cancel" || claimType === "trip_shorten") ? (
+                  <Field
+                    label={claimType === "trip_cancel" ? "סיבת הביטול" : "סיבת הקיצור"}
+                    required
+                    error={errors.claimReason}
+                  >
+                    <Input
+                      className="bg-slate-50"
+                      value={formData.claimReason}
+                      onChange={(e) => setField("claimReason", e.target.value)}
+                      placeholder="לדוגמה: מחלה, אשפוז בן משפחה, וכו׳"
+                    />
                   </Field>
                 ) : null}
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -605,7 +631,11 @@ const Claim = () => {
                       onChange={(e) => setField("tripEndDate", e.target.value)}
                     />
                   </Field>
-                  <Field label="תאריך האירוע" required error={errors.incidentDate}>
+                  <Field
+                    label={claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע"}
+                    required
+                    error={errors.incidentDate}
+                  >
                     <Input
                       className="bg-slate-50"
                       type="date"
@@ -613,7 +643,17 @@ const Claim = () => {
                       onChange={(e) => setField("incidentDate", e.target.value)}
                     />
                   </Field>
-                  <Field label="הארץ בה אירע המקרה" required error={errors.country}>
+                  <Field
+                    label={
+                      claimType === "trip_cancel"
+                        ? "מדינת היעד"
+                        : claimType === "trip_shorten"
+                          ? "הארץ בה אירע המקרה"
+                          : "הארץ בה אירע המקרה"
+                    }
+                    required
+                    error={errors.country}
+                  >
                     <Input className="bg-slate-50" value={formData.country} onChange={(e) => setField("country", e.target.value)} />
                   </Field>
                 </div>
@@ -841,7 +881,7 @@ const Claim = () => {
 
               <section className="space-y-3">
                 <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">הצהרות</h3>
-                {claimType === "medical" ? (
+                {(claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten") ? (
                   <label className="flex items-start gap-3 text-sm text-slate-700">
                     <input
                       type="checkbox"

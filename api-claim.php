@@ -63,8 +63,12 @@ $yesNo = function ($value) {
 };
 
 $tripSubtypeLabel = '';
-if (($payload['tripSubtype'] ?? '') === 'cancel') $tripSubtypeLabel = 'ביטול נסיעה';
-if (($payload['tripSubtype'] ?? '') === 'shorten') $tripSubtypeLabel = 'קיצור נסיעה';
+if (($payload['claimType'] ?? '') === 'trip_cancel' || ($payload['tripSubtype'] ?? '') === 'cancel') {
+    $tripSubtypeLabel = 'ביטול נסיעה';
+}
+if (($payload['claimType'] ?? '') === 'trip_shorten' || ($payload['tripSubtype'] ?? '') === 'shorten') {
+    $tripSubtypeLabel = 'קיצור נסיעה';
+}
 
 $fieldsMap = [
     'claimTypeLabel' => 'סוג תביעה',
