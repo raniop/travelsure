@@ -489,7 +489,7 @@
     <script>
       const SUPABASE_URL = "https://zhsfjwpwxjeysvstgsus.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpoc2Zqd3B3eGpleXN2c3Rnc3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2NjUyNjQsImV4cCI6MjA4MjI0MTI2NH0.kU8g5NpJv1bpkvDLuWqg4vXc6xuGbka3pE9bD9sKl3Y";
-      const CLAIM_FN_URL = `${SUPABASE_URL}/functions/v1/send-claim-email`;
+      const CONTACT_FN_URL = `${SUPABASE_URL}/functions/v1/send-contact-email`;
       const OPHIR_FALLBACKS = [
         "https://ophir.travelsure.co.il/api-claim.ashx",
         "https://ophir.travelsure.co.il/api-claim.php",
@@ -1311,21 +1311,23 @@
           }
 
           async function postJson(url, bodyObj) {
-            const res = await fetch(url, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify(bodyObj),
-            });
-            if (!res.ok) return false;
-            const data = await res.json().catch(() => ({}));
-            return !data.error;
+            try {
+              const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify(bodyObj),
+              });
+              if (!res.ok) return false;
+              const data = await res.json().catch(() => ({}));
+              return !data.error;
+            } catch (_) {
+              return false;
+            }
           }
-
-          if (await postJson(CLAIM_FN_URL, { payload, files: filesPayload })) return true;
 
           const claimMessage = [
             "=== תביעה חדשה מטופס TravelSure ===",
@@ -1346,19 +1348,18 @@
             "קבצים שנבחרו (" + selectedFiles.length + "): " + selectedFiles.map((f) => f.name).join(", "),
           ].join("\n").slice(0, 4800);
 
-          if (
-            await postJson(`${SUPABASE_URL}/functions/v1/send-contact-email`, {
-              type: "claim",
-              name: payload.fullName || "תביעה",
-              email: payload.email || "",
-              phone: payload.mobile || "",
-              message: claimMessage,
-              claimPayload: payload,
-              files: filesPayload,
-            })
-          ) {
-            return true;
-          }
+          const contactBody = {
+            type: "claim",
+            name: payload.fullName || "תביעה",
+            email: payload.email || "",
+            phone: payload.mobile || "",
+            message: claimMessage,
+            claimPayload: payload,
+            files: filesPayload,
+          };
+
+          // Primary: live CORS-safe function (do not call unpublished send-claim-email — it CORS-fails the page)
+          if (await postJson(CONTACT_FN_URL, contactBody)) return true;
 
           const body = new FormData();
           body.append("payload", JSON.stringify(payload));

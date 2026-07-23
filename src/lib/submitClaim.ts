@@ -40,7 +40,7 @@ const buildClaimMessage = (payload: Record<string, unknown>, files: File[]) => {
   return lines.join("\n").slice(0, 4800);
 };
 
-/** Submit claim via Supabase (CORS-safe), with Ophir IIS fallback after FTP deploy. */
+/** Submit claim via live Supabase contact function (CORS-safe). */
 export async function submitClaimRequest(payload: Record<string, unknown>, files: File[]) {
   const filesPayload = await Promise.all(
     files.map(async (file) => ({
@@ -51,16 +51,17 @@ export async function submitClaimRequest(payload: Record<string, unknown>, files
   );
 
   const tryInvoke = async (fn: string, body: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke(fn, { body });
-    if (!error && data && !(data as { error?: string }).error) return true;
-    return false;
+    try {
+      const { data, error } = await supabase.functions.invoke(fn, { body });
+      if (!error && data && !(data as { error?: string }).error) return true;
+      return false;
+    } catch {
+      return false;
+    }
   };
 
-  if (await tryInvoke("send-claim-email", { payload, files: filesPayload })) {
-    return { ok: true as const };
-  }
-
-  // Existing live function — works today for details; after Lovable publish also sends attachments.
+  // Primary: send-contact-email is already deployed and CORS-ok.
+  // Do not call unpublished send-claim-email first — browsers log a CORS error and it used to abort submit.
   const contactBody = {
     type: "claim",
     name: String(payload.fullName || "תביעה"),
