@@ -13,6 +13,7 @@ import {
   isValidIsraeliId,
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
+import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -1046,7 +1047,7 @@ const Claim = () => {
                     <Input className="bg-slate-100" inputMode="numeric" value={formData.idNumber} readOnly />
                   </Field>
                   <Field label="תאריך לידה" required error={errors.birthDate}>
-                    <Input className="bg-slate-50" type="date" value={formData.birthDate} onChange={(e) => setField("birthDate", e.target.value)} />
+                    <ClaimDateInput value={formData.birthDate} onChange={(v) => setField("birthDate", v)} />
                   </Field>
                   <Field label="רחוב">
                     <Input className="bg-slate-50" value={formData.street} onChange={(e) => setField("street", e.target.value)} />
@@ -1192,32 +1193,17 @@ const Claim = () => {
                 ) : null}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="תאריך יציאה מהארץ">
-                    <Input
-                      className="bg-slate-50"
-                      type="date"
-                      value={formData.tripStartDate}
-                      onChange={(e) => setField("tripStartDate", e.target.value)}
-                    />
+                    <ClaimDateInput value={formData.tripStartDate} onChange={(v) => setField("tripStartDate", v)} />
                   </Field>
                   <Field label="תאריך חזרה לארץ">
-                    <Input
-                      className="bg-slate-50"
-                      type="date"
-                      value={formData.tripEndDate}
-                      onChange={(e) => setField("tripEndDate", e.target.value)}
-                    />
+                    <ClaimDateInput value={formData.tripEndDate} onChange={(v) => setField("tripEndDate", v)} />
                   </Field>
                   <Field
                     label={claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע"}
                     required
                     error={errors.incidentDate}
                   >
-                    <Input
-                      className="bg-slate-50"
-                      type="date"
-                      value={formData.incidentDate}
-                      onChange={(e) => setField("incidentDate", e.target.value)}
-                    />
+                    <ClaimDateInput value={formData.incidentDate} onChange={(v) => setField("incidentDate", v)} />
                   </Field>
                   <Field
                     label={
@@ -1248,15 +1234,14 @@ const Claim = () => {
                   <div className="space-y-3">
                     {expenses.map((row, idx) => (
                       <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4">
-                        <Input
-                          className="bg-slate-50"
-                          type="date"
+                        <ClaimDateInput
                           value={row.date}
-                          onChange={(e) => {
+                          onChange={(v) => {
                             const next = [...expenses];
-                            next[idx] = { ...row, date: e.target.value };
+                            next[idx] = { ...row, date: v };
                             setExpenses(next);
                           }}
+                          aria-label="תאריך טיפול"
                           placeholder="תאריך טיפול"
                         />
                         <Input
@@ -1345,15 +1330,15 @@ const Claim = () => {
                           }}
                           placeholder="פריט"
                         />
-                        <Input
-                          className="bg-slate-50"
-                          type="date"
+                        <ClaimDateInput
                           value={row.purchaseDate}
-                          onChange={(e) => {
+                          onChange={(v) => {
                             const next = [...baggageItems];
-                            next[idx] = { ...row, purchaseDate: e.target.value };
+                            next[idx] = { ...row, purchaseDate: v };
                             setBaggageItems(next);
                           }}
+                          aria-label="תאריך רכישה"
+                          placeholder="תאריך רכישה"
                         />
                         <Input
                           className="bg-slate-50"

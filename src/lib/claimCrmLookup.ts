@@ -32,10 +32,15 @@ const normalizeDate = (d: unknown): string => {
   const s = String(d ?? "").trim();
   if (!s) return "";
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  const m2 = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-  if (m2) return `${m2[3]}-${m2[2]}-${m2[1]}`;
+  const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (m) {
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    const year = Number(m[3]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+  }
   return s;
 };
 
@@ -219,15 +224,62 @@ export const CLAIM_CONTACT = {
   emailHref: "mailto:ophir@ophirins.co.il",
 };
 
-/** Display CRM / ISO dates as DD/MM/YYYY */
-export const formatClaimDateDisplay = (value: string): string => {
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+const isValidYmd = (year: number, month: number, day: number) => {
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return false;
+  if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const dt = new Date(year, month - 1, day);
+  return dt.getFullYear() === year && dt.getMonth() === month - 1 && dt.getDate() === day;
+};
+
+/** Parse user/CRM date text to ISO YYYY-MM-DD. Always treats slash dates as DD/MM/YYYY. */
+export const parseClaimDateToIso = (value: string): string => {
   const s = String(value ?? "").trim();
   if (!s) return "";
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
-  const dmy = s.match(/^(\d{2})[./-](\d{2})[./-](\d{4})/);
-  if (dmy) return `${dmy[1]}/${dmy[2]}/${dmy[3]}`;
+  if (iso) {
+    const y = +iso[1];
+    const m = +iso[2];
+    const d = +iso[3];
+    return isValidYmd(y, m, d) ? `${iso[1]}-${iso[2]}-${iso[3]}` : "";
+  }
+  const dmy = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (dmy) {
+    const d = +dmy[1];
+    const m = +dmy[2];
+    const y = +dmy[3];
+    return isValidYmd(y, m, d) ? `${y}-${pad2(m)}-${pad2(d)}` : "";
+  }
+  const digits = s.replace(/\D/g, "");
+  if (digits.length === 8) {
+    const d = +digits.slice(0, 2);
+    const m = +digits.slice(2, 4);
+    const y = +digits.slice(4, 8);
+    return isValidYmd(y, m, d) ? `${y}-${pad2(m)}-${pad2(d)}` : "";
+  }
+  return "";
+};
+
+/** Display CRM / ISO dates as DD/MM/YYYY (never locale-dependent). */
+export const formatClaimDateDisplay = (value: string): string => {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+  const iso = parseClaimDateToIso(s) || (s.match(/^(\d{4})-(\d{2})-(\d{2})/) ? s.slice(0, 10) : "");
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   return s;
+};
+
+/** Live mask while typing: 29072026 → 29/07/2026 */
+export const maskClaimDateInput = (raw: string): string => {
+  const digits = String(raw ?? "").replace(/\D/g, "").slice(0, 8);
+  const dd = digits.slice(0, 2);
+  const mm = digits.slice(2, 4);
+  const yyyy = digits.slice(4, 8);
+  if (digits.length <= 2) return dd;
+  if (digits.length <= 4) return `${dd}/${mm}`;
+  return `${dd}/${mm}/${yyyy}`;
 };
 
 const dateMs = (value: string): number => {

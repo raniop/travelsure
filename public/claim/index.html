@@ -272,6 +272,18 @@
       }
       .file-list .remove-file:hover { background: #fecaca; }
       #filesHint { margin-top: 8px; font-size: 12px; color: var(--brand); font-weight: 700; min-height: 1.2em; }
+      .date-il-wrap { position: relative; display: block; }
+      .date-il-wrap > input[type="text"] {
+        width: 100%; padding-left: 42px; text-align: left; direction: ltr;
+      }
+      .date-il-btn {
+        position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+        width: 28px; height: 28px; border: 0; border-radius: 8px;
+        background: transparent; color: var(--brand); cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; padding: 0;
+      }
+      .date-il-btn:hover { background: #e8f4f1; }
+      .date-il-native { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
     </style>
   </head>
   <body>
@@ -367,7 +379,7 @@
             <label class="field">שם משפחה <span class="req">*</span><input name="lastName" required /></label>
             <label class="field">שם פרטי <span class="req">*</span><input name="firstName" required /></label>
             <label class="field">תעודת זהות <span class="req">*</span><input name="idNumber" inputmode="numeric" maxlength="9" required readonly /></label>
-            <label class="field">תאריך לידה <span class="req">*</span><input name="birthDate" type="date" required /></label>
+            <label class="field">תאריך לידה <span class="req">*</span><input name="birthDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="bday" required /></label>
             <label class="field">רחוב<input name="street" /></label>
             <label class="field">מספר בית<input name="houseNumber" /></label>
             <label class="field">יישוב<input name="city" /></label>
@@ -392,9 +404,9 @@
           <h3>ג. תיאור המקרה</h3>
           <div class="grid grid-2">
             <label class="field" id="reasonWrap">סיבה <span class="req">*</span><input name="claimReason" /></label>
-            <label class="field">תאריך יציאה מהארץ<input name="tripStartDate" type="date" /></label>
-            <label class="field">תאריך חזרה לארץ<input name="tripEndDate" type="date" /></label>
-            <label class="field"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" type="date" required /></label>
+            <label class="field">תאריך יציאה מהארץ<input name="tripStartDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
+            <label class="field">תאריך חזרה לארץ<input name="tripEndDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
+            <label class="field"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" required /></label>
             <label class="field"><span id="countryLabel">הארץ בה אירע המקרה</span> <span class="req">*</span><input name="country" required /></label>
             <label class="field" style="grid-column:1/-1">תיאור מדויק ומפורט של המקרה <span class="req">*</span><textarea name="details" required></textarea></label>
             <label class="field" id="totalWrap">סה״כ הסכום הנתבע וסוג המטבע <span class="req">*</span><input name="totalClaimed" /></label>
@@ -532,12 +544,126 @@
       }
 
       function normalizeDate(d) {
-        const s = String(d || "").trim();
+        return parseDateToIso(d) || String(d || "").trim();
+      }
+
+      function pad2(n) { return String(n).padStart(2, "0"); }
+
+      function isValidYmd(year, month, day) {
+        if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return false;
+        if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+        const dt = new Date(year, month - 1, day);
+        return dt.getFullYear() === year && dt.getMonth() === month - 1 && dt.getDate() === day;
+      }
+
+      /** Always DD/MM/YYYY — never browser/OS locale. */
+      function parseDateToIso(value) {
+        const s = String(value || "").trim();
         if (!s) return "";
-        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-        const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-        return s;
+        const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) {
+          const y = +iso[1], m = +iso[2], d = +iso[3];
+          return isValidYmd(y, m, d) ? `${iso[1]}-${iso[2]}-${iso[3]}` : "";
+        }
+        const dmy = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+        if (dmy) {
+          const d = +dmy[1], m = +dmy[2], y = +dmy[3];
+          return isValidYmd(y, m, d) ? `${y}-${pad2(m)}-${pad2(d)}` : "";
+        }
+        const digits = s.replace(/\D/g, "");
+        if (digits.length === 8) {
+          const d = +digits.slice(0, 2), m = +digits.slice(2, 4), y = +digits.slice(4, 8);
+          return isValidYmd(y, m, d) ? `${y}-${pad2(m)}-${pad2(d)}` : "";
+        }
+        return "";
+      }
+
+      function formatDateDisplay(value) {
+        const iso = parseDateToIso(value);
+        if (!iso) return String(value || "").trim();
+        const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "").trim();
+      }
+
+      function maskDateInput(raw) {
+        const digits = String(raw || "").replace(/\D/g, "").slice(0, 8);
+        const dd = digits.slice(0, 2);
+        const mm = digits.slice(2, 4);
+        const yyyy = digits.slice(4, 8);
+        if (digits.length <= 2) return dd;
+        if (digits.length <= 4) return `${dd}/${mm}`;
+        return `${dd}/${mm}/${yyyy}`;
+      }
+
+      function setDateInputValue(input, value) {
+        if (!input) return;
+        wireDateInput(input);
+        const iso = parseDateToIso(value);
+        input.value = iso ? formatDateDisplay(iso) : "";
+        const native = input.parentElement && input.parentElement.querySelector(".date-il-native");
+        if (native) native.value = iso || "";
+      }
+
+      function wireDateInput(input) {
+        if (!input || input.dataset.dateWired === "1") return input;
+        input.dataset.dateWired = "1";
+        input.type = "text";
+        input.classList.add("date-il");
+        if (!input.placeholder) input.placeholder = "DD/MM/YYYY";
+        input.dir = "ltr";
+        input.setAttribute("inputmode", "numeric");
+        input.setAttribute("autocomplete", input.getAttribute("autocomplete") || "off");
+        input.spellcheck = false;
+
+        const wrap = document.createElement("span");
+        wrap.className = "date-il-wrap";
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "date-il-btn";
+        btn.setAttribute("aria-label", "בחירת תאריך מלוח שנה");
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+
+        const native = document.createElement("input");
+        native.type = "date";
+        native.className = "date-il-native";
+        native.tabIndex = -1;
+        native.setAttribute("aria-hidden", "true");
+
+        wrap.appendChild(btn);
+        wrap.appendChild(native);
+
+        const initialIso = parseDateToIso(input.value);
+        if (initialIso) {
+          input.value = formatDateDisplay(initialIso);
+          native.value = initialIso;
+        }
+
+        input.addEventListener("input", () => {
+          input.value = maskDateInput(input.value);
+        });
+        input.addEventListener("blur", () => {
+          const iso = parseDateToIso(input.value);
+          if (iso) {
+            input.value = formatDateDisplay(iso);
+            native.value = iso;
+          } else if (!String(input.value || "").trim()) {
+            native.value = "";
+          }
+        });
+        btn.addEventListener("click", () => {
+          try { native.showPicker(); } catch (_) { native.click(); }
+        });
+        native.addEventListener("change", () => {
+          input.value = formatDateDisplay(native.value);
+        });
+        return input;
+      }
+
+      function wireAllDateInputs(root) {
+        (root || document).querySelectorAll("input.date-il, input[type='date']").forEach(wireDateInput);
       }
 
       function pickStr(...vals) {
@@ -698,16 +824,6 @@
         $("toIdentity").disabled = !claimType || (claimType === "baggage" && !baggageSubtype);
       }
 
-      function formatDateDisplay(value) {
-        const s = String(value || "").trim();
-        if (!s) return "";
-        const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
-        const dmy = s.match(/^(\d{2})[./-](\d{2})[./-](\d{4})/);
-        if (dmy) return `${dmy[1]}/${dmy[2]}/${dmy[3]}`;
-        return s;
-      }
-
       function dateMs(value) {
         const s = normalizeDate(value);
         if (!s) return NaN;
@@ -820,12 +936,12 @@
         form.lastName.value = customer.lastNameHe || "";
         form.firstName.value = customer.firstNameHe || "";
         form.idNumber.value = customer.id || "";
-        form.birthDate.value = customer.birthDate || "";
+        setDateInputValue(form.birthDate, customer.birthDate || "");
         form.mobile.value = customer.phone || "";
         form.email.value = customer.email || "";
         form.policyNumber.value = policy.fullPolicyID || "";
-        form.tripStartDate.value = policy.startDate || "";
-        form.tripEndDate.value = policy.endDate || "";
+        setDateInputValue(form.tripStartDate, policy.startDate || "");
+        setDateInputValue(form.tripEndDate, policy.endDate || "");
         form.country.value = policy.areaName || form.country.value || "";
         selectedPolicyId = policy.uid;
         $("detailsHello").textContent = customer.primaryName
@@ -838,26 +954,30 @@
         row.className = "item-row";
         row.innerHTML = `
           <input placeholder="פריט" value="${data.item || ""}" data-k="item" />
-          <input type="date" value="${data.purchaseDate || ""}" data-k="purchaseDate" />
+          <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" value="${formatDateDisplay(data.purchaseDate || "")}" data-k="purchaseDate" />
           <input placeholder="מחיר רכישה" value="${data.purchasePrice || ""}" data-k="purchasePrice" />
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("baggageItems").children.length > 1) row.remove();
         };
         $("baggageItems").appendChild(row);
+        wireAllDateInputs(row);
       }
 
       function addExpenseRow(data = {}) {
         const row = document.createElement("div");
         row.className = "item-row";
         row.innerHTML = `
-          <input type="date" value="${data.date || ""}" data-k="date" />
+          <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" value="${formatDateDisplay(data.date || "")}" data-k="date" />
           <input placeholder="סוג הוצאה" value="${data.type || ""}" data-k="type" />
           <input placeholder="סכום + מטבע" value="${data.amount || ""}" data-k="amount" />
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("expenseItems").children.length > 1) row.remove();
         };
+        $("expenseItems").appendChild(row);
+        wireAllDateInputs(row);
+      }
         $("expenseItems").appendChild(row);
       }
 
@@ -892,7 +1012,9 @@
         return Array.from(container.children).map((row) => {
           const obj = {};
           row.querySelectorAll("[data-k]").forEach((el) => {
-            obj[el.dataset.k] = el.value.trim();
+            const key = el.dataset.k;
+            const raw = el.value.trim();
+            obj[key] = key === "date" || key === "purchaseDate" ? (parseDateToIso(raw) || raw) : raw;
           });
           return obj;
         });
@@ -1066,14 +1188,22 @@
         e.preventDefault();
         $("detailsError").textContent = "";
         const fd = new FormData(form);
-        const get = (k) => String(fd.get(k) || "").trim();
-        if (!get("lastName") || !get("firstName") || !get("idNumber") || !get("birthDate") || !get("mobile") || !get("email")) {
+        const dateKeys = new Set(["birthDate", "tripStartDate", "tripEndDate", "incidentDate"]);
+        const getRaw = (k) => String(fd.get(k) || "").trim();
+        const get = (k) => {
+          const raw = getRaw(k);
+          return dateKeys.has(k) ? (parseDateToIso(raw) || raw) : raw;
+        };
+        if (!getRaw("lastName") || !getRaw("firstName") || !getRaw("idNumber") || !getRaw("birthDate") || !getRaw("mobile") || !getRaw("email")) {
           $("detailsError").textContent = "יש למלא את כל שדות החובה בפרטים האישיים"; return;
+        }
+        if (!parseDateToIso(getRaw("birthDate"))) {
+          $("detailsError").textContent = "תאריך לידה לא תקין — יש להזין בפורמט יום/חודש/שנה (לדוגמה 29/07/2026)"; return;
         }
         if (!isValidIsraeliId(get("idNumber"))) { $("detailsError").textContent = "תעודת זהות לא תקינה"; return; }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) { $("detailsError").textContent = "אימייל לא תקין"; return; }
         if (!get("policyNumber")) { $("detailsError").textContent = "חסר מספר פוליסה"; return; }
-        if (!get("incidentDate")) {
+        if (!getRaw("incidentDate")) {
           $("detailsError").textContent = "יש למלא את תאריך האירוע";
           const el = form.incidentDate;
           if (el) {
@@ -1081,6 +1211,10 @@
             el.scrollIntoView({ behavior: "smooth", block: "center" });
             el.style.borderColor = "#dc2626";
           }
+          return;
+        }
+        if (!parseDateToIso(getRaw("incidentDate"))) {
+          $("detailsError").textContent = "תאריך האירוע לא תקין — יש להזין בפורמט יום/חודש/שנה (לדוגמה 29/07/2026)";
           return;
         }
         if (!get("country")) { $("detailsError").textContent = "יש למלא את המדינה / מיקום האירוע"; return; }
@@ -1109,7 +1243,11 @@
         if (!selectedFiles.length) { status.textContent = "יש לצרף לפחות מסמך אחד"; status.classList.add("err"); return; }
 
         const fd = new FormData(form);
-        const get = (k) => String(fd.get(k) || "").trim();
+        const dateKeys = new Set(["birthDate", "tripStartDate", "tripEndDate", "incidentDate"]);
+        const get = (k) => {
+          const raw = String(fd.get(k) || "").trim();
+          return dateKeys.has(k) ? (parseDateToIso(raw) || raw) : raw;
+        };
         const meta = types[claimType];
         const payload = {
           claimType, claimTypeLabel: meta.title,
@@ -1270,6 +1408,7 @@
       });
 
       initBanks();
+      wireAllDateInputs();
       renderTypes();
       renderSteps();
     </script>
