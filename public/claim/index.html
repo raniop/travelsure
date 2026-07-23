@@ -515,19 +515,19 @@
           title: "הוצאות רפואיות בחו״ל (שלא באשפוז)",
           short: "רפואי",
           subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
-          docs: ["עותק פוליסה", "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "חשבון מפורט", "קבלות תשלום מקוריות"],
+          docs: ["דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "חשבון מפורט", "קבלות תשלום מקוריות"],
         },
         trip_cancel: {
           title: "ביטול נסיעה טרם היציאה",
           short: "ביטול",
           subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
-          docs: ["עותק פוליסה", "העתק תוכנית / מסלול הנסיעה", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)", "אישור רפואי על אי-כשירות לטוס", "דוח רפואי / סיכום אשפוז", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
+          docs: ["העתק תוכנית / מסלול הנסיעה", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)", "אישור רפואי על אי-כשירות לטוס", "דוח רפואי / סיכום אשפוז", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
         },
         trip_shorten: {
           title: "קיצור נסיעה מחו״ל",
           short: "קיצור",
           subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
-          docs: ["עותק פוליסה", "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "תוכנית נסיעה מקורית", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)", "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת", "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
+          docs: ["דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "תוכנית נסיעה מקורית", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)", "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת", "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
         },
         baggage: {
           title: "מטען / כבודה",
@@ -1154,12 +1154,38 @@
         $("hmoFields").classList.toggle("hidden", claimType !== "medical");
         $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
         $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
+        const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
+        $("baggageItems").classList.toggle("hidden", isBaggageDelay);
+        // Fixed amount notice for delay
+        let delayNotice = $("baggageDelayNotice");
+        if (!delayNotice) {
+          delayNotice = document.createElement("div");
+          delayNotice.id = "baggageDelayNotice";
+          delayNotice.className = "banner";
+          delayNotice.innerHTML =
+            "<strong>סכום פיצוי קבוע לאיחור בכבודה: 155 USD</strong><br><span class='tiny'>אין צורך בפירוט פריטים — הסכום נקבע לפי תנאי הפוליסה.</span>";
+          $("baggageWrap").insertBefore(delayNotice, $("baggageItems"));
+        }
+        delayNotice.classList.toggle("hidden", !isBaggageDelay);
+        $("addBaggage").classList.toggle("hidden", isBaggageDelay);
+        if (isBaggageDelay) {
+          form.totalClaimed.value = "155 USD";
+          form.totalClaimed.readOnly = true;
+        } else if (claimType === "baggage") {
+          if (form.totalClaimed.value === "155 USD") form.totalClaimed.value = "";
+          form.totalClaimed.readOnly = false;
+        } else {
+          form.totalClaimed.readOnly = false;
+        }
         const needsMedical = claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten";
         $("declarationText").textContent = needsMedical
           ? "אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים; מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי; ומוותר/ת על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי לצורך בירור התביעה."
           : "אני מאשר/ת כי הפרטים שמסרתי נכונים ומלאים; מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי.";
         $("reasonWrap").classList.toggle("hidden", claimType !== "trip_cancel" && claimType !== "trip_shorten");
-        $("totalWrap").classList.toggle("hidden", claimType !== "medical" && claimType !== "baggage");
+        $("totalWrap").classList.toggle(
+          "hidden",
+          claimType !== "medical" && (claimType !== "baggage" || isBaggageDelay)
+        );
         $("incidentLabel").textContent = claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע";
         $("countryLabel").textContent = claimType === "trip_cancel" ? "מדינת היעד" : "הארץ בה אירע המקרה";
         $("reasonWrap").innerHTML =
@@ -1195,6 +1221,7 @@
         if (!btn) return;
         baggageSubtype = btn.dataset.baggageSubtype;
         renderTypes();
+        syncTypeUi();
       });
 
       $("policyGrid").addEventListener("click", (e) => {
@@ -1404,10 +1431,10 @@
         if ((claimType === "trip_cancel" || claimType === "trip_shorten") && !get("claimReason")) {
           $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור"; return;
         }
-        if ((claimType === "medical" || claimType === "baggage") && !get("totalClaimed")) {
+        if ((claimType === "medical" || (claimType === "baggage" && baggageSubtype !== "delay")) && !get("totalClaimed")) {
           $("detailsError").textContent = "יש למלא סה״כ סכום נתבע"; return;
         }
-        if (claimType === "baggage") {
+        if (claimType === "baggage" && baggageSubtype !== "delay") {
           const items = collectRows($("baggageItems")).filter((r) => r.item);
           if (!items.length) { $("detailsError").textContent = "יש לפרט לפחות פריט אחד בכבודה"; return; }
         }
@@ -1441,7 +1468,10 @@
           policyNumber: get("policyNumber"), policyType: get("policyType"), purchasedWhere: get("purchasedWhere"),
           claimReason: get("claimReason"), tripStartDate: get("tripStartDate"), tripEndDate: get("tripEndDate"),
           incidentDate: get("incidentDate"), country: get("country"), details: get("details"),
-          totalClaimed: get("totalClaimed"), amount: get("totalClaimed"),
+          totalClaimed:
+            claimType === "baggage" && baggageSubtype === "delay" ? "155 USD" : get("totalClaimed"),
+          amount:
+            claimType === "baggage" && baggageSubtype === "delay" ? "155 USD" : get("totalClaimed"),
           bankName: get("bankName"), bankCode: get("bankCode"), branchName: get("branchName"), branchNumber: get("branchNumber"), accountNumber: get("accountNumber"),
           medicalWaiver:
             form.declaration.checked &&
@@ -1450,7 +1480,10 @@
           declaration: form.declaration.checked,
           marketingConsent: !!(form.marketingConsent && form.marketingConsent.checked),
           expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
-          baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
+          baggageItems:
+            claimType === "baggage" && baggageSubtype !== "delay"
+              ? collectRows($("baggageItems")).filter((r) => r.item)
+              : undefined,
           crmMatched: true,
           selectedPolicyId: get("policyNumber"),
           crmCustomerName: crmCustomer?.primaryName || "",

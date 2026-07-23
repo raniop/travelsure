@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { buildClaimPdfBase64 } from "./claimPdf.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM = Deno.env.get("RESEND_FROM") || "TravelSure <noreply@travelsure.co.il>";
@@ -209,7 +210,7 @@ function buildClaimStaffHtml(
       <div style="margin:0 0 8px;">
         <h3 style="margin:0 0 8px;font-size:15px;color:#0f766e;">קבצים מצורפים</h3>
         <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;">${files}</div>
-        <p style="margin:8px 0 0;color:#6b7280;font-size:13px;">הקבצים מצורפים גם כקבצים למייל זה.</p>
+        <p style="margin:8px 0 0;color:#6b7280;font-size:13px;">מצורף גם קובץ PDF מסודר של התביעה, בנוסף לקבצים שהלקוח העלה.</p>
       </div>
     </div>
   </div>
@@ -307,6 +308,16 @@ const handler = async (req: Request): Promise<Response> => {
         emailAttachments.map((file) => file.filename),
       );
 
+      const claimPdf = await buildClaimPdfBase64(
+        claim,
+        claimNumber,
+        emailAttachments.map((file) => file.filename),
+      );
+      const staffMailAttachments = [
+        ...(claimPdf ? [claimPdf] : []),
+        ...emailAttachments,
+      ];
+
       const staffRecipients = [
         "rani@ophirins.co.il",
         "eli@ophirins.co.il",
@@ -324,11 +335,25 @@ const handler = async (req: Request): Promise<Response> => {
             reply_to: replyTo,
             subject: staffSubject,
             html: staffHtml,
-            attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
+            attachments: staffMailAttachments.length > 0 ? staffMailAttachments : undefined,
           }).catch(async (err) => {
-            // If attachments blow the provider limit, still deliver the claim details.
-            if (emailAttachments.length === 0) throw err;
-            console.error(`Staff email with attachments failed for ${to}, retrying without files:`, err);
+            // If attachments blow the provider limit, still deliver the claim details + PDF if possible.
+            console.error(`Staff email with all attachments failed for ${to}, retrying with PDF only:`, err);
+            const pdfOnly = claimPdf ? [claimPdf] : [];
+            if (pdfOnly.length) {
+              try {
+                return await sendResendEmail({
+                  from: RESEND_FROM,
+                  to: [to],
+                  reply_to: replyTo,
+                  subject: staffSubject,
+                  html: staffHtml,
+                  attachments: pdfOnly,
+                });
+              } catch (pdfErr) {
+                console.error(`Staff email with PDF only failed for ${to}:`, pdfErr);
+              }
+            }
             return sendResendEmail({
               from: RESEND_FROM,
               to: [to],

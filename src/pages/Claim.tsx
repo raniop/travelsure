@@ -53,6 +53,8 @@ type BaggageRow = { item: string; purchaseDate: string; purchasePrice: string; r
 
 const claimTypesOrder: ClaimType[] = ["medical", "trip_cancel", "trip_shorten", "baggage"];
 
+const BAGGAGE_DELAY_FIXED_AMOUNT = "155 USD";
+
 const baggageSubtypeMeta: Record<BaggageSubtype, { title: string; subtitle: string }> = {
   loss: { title: "אובדן", subtitle: "הכבודה אבדה ולא נמצאה" },
   theft: { title: "גניבה", subtitle: "הכבודה נגנבה" },
@@ -68,7 +70,6 @@ const claimTypeMeta: Record<
     short: "רפואי",
     subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
     docs: [
-      "עותק פוליסה",
       "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
       "חשבון מפורט",
       "קבלות תשלום מקוריות",
@@ -80,7 +81,6 @@ const claimTypeMeta: Record<
     short: "ביטול",
     subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
     docs: [
-      "עותק פוליסה",
       "העתק תוכנית / מסלול הנסיעה",
       "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
       "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)",
@@ -95,7 +95,6 @@ const claimTypeMeta: Record<
     short: "קיצור",
     subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
     docs: [
-      "עותק פוליסה",
       "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
       "תוכנית נסיעה מקורית",
       "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
@@ -270,6 +269,7 @@ const Claim = () => {
   } | null>(null);
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
+  const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
   const relevantPolicies = useMemo(
     () => filterPoliciesForClaimType(crmPolicies, claimType, baggageSubtype),
     [crmPolicies, claimType, baggageSubtype]
@@ -299,6 +299,17 @@ const Claim = () => {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (claimType === "baggage" && baggageSubtype === "delay") {
+      setFormData((prev) =>
+        prev.totalClaimed === BAGGAGE_DELAY_FIXED_AMOUNT
+          ? prev
+          : { ...prev, totalClaimed: BAGGAGE_DELAY_FIXED_AMOUNT }
+      );
+      setBaggageItems([emptyBaggage()]);
+    }
+  }, [claimType, baggageSubtype]);
 
   const selectBank = (code: string) => {
     const bank = banks.find((b) => b.code === code);
@@ -534,9 +545,13 @@ const Claim = () => {
     }
 
     if (claimType === "baggage") {
-      if (!formData.totalClaimed.trim()) next.totalClaimed = "שדה חובה";
-      const hasItem = baggageItems.some((r) => r.item.trim());
-      if (!hasItem) next.baggageItems = "יש לפרט לפחות פריט אחד";
+      if (baggageSubtype === "delay") {
+        // Fixed compensation — no itemization required
+      } else {
+        if (!formData.totalClaimed.trim()) next.totalClaimed = "שדה חובה";
+        const hasItem = baggageItems.some((r) => r.item.trim());
+        if (!hasItem) next.baggageItems = "יש לפרט לפחות פריט אחד";
+      }
     }
 
     setErrors(next);
@@ -566,7 +581,12 @@ const Claim = () => {
           claimType === "baggage" && baggageSubtype ? baggageSubtypeMeta[baggageSubtype].title : undefined,
         fullName,
         expenses: claimType === "medical" ? expenses : undefined,
-        baggageItems: claimType === "baggage" ? baggageItems : undefined,
+        baggageItems:
+          claimType === "baggage" && baggageSubtype !== "delay" ? baggageItems : undefined,
+        totalClaimed:
+          claimType === "baggage" && baggageSubtype === "delay"
+            ? BAGGAGE_DELAY_FIXED_AMOUNT
+            : formData.totalClaimed,
         crmMatched: true,
         selectedPolicyId: formData.policyNumber,
         selectedPolicyUid,
@@ -1370,78 +1390,88 @@ const Claim = () => {
               {claimType === "baggage" ? (
                 <section className="space-y-4">
                   <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ה. פירוט מרכיבי התביעה</h3>
-                  <div className="space-y-3">
-                    {baggageItems.map((row, idx) => (
-                      <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4">
-                        <Input
-                          className="bg-slate-50"
-                          value={row.item}
-                          onChange={(e) => {
-                            const next = [...baggageItems];
-                            next[idx] = { ...row, item: e.target.value };
-                            setBaggageItems(next);
-                          }}
-                          placeholder="פריט"
-                        />
-                        <ClaimDateInput
-                          value={row.purchaseDate}
-                          onChange={(v) => {
-                            const next = [...baggageItems];
-                            next[idx] = { ...row, purchaseDate: v };
-                            setBaggageItems(next);
-                          }}
-                          aria-label="תאריך רכישה"
-                          placeholder="תאריך רכישה"
-                        />
-                        <Input
-                          className="bg-slate-50"
-                          value={row.purchasePrice}
-                          onChange={(e) => {
-                            const next = [...baggageItems];
-                            next[idx] = { ...row, purchasePrice: e.target.value };
-                            setBaggageItems(next);
-                          }}
-                          placeholder="מחיר רכישה"
-                        />
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="inline-flex items-center gap-2 text-xs text-slate-600">
-                            <input
-                              type="checkbox"
-                              checked={row.receiptAttached}
+                  {isBaggageDelay ? (
+                    <div className="rounded-2xl border border-[#2f6b63]/15 bg-[#e8f4f1]/60 p-4">
+                      <p className="text-sm font-bold text-[#143834]">סכום פיצוי קבוע לאיחור בכבודה</p>
+                      <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#2f6b63]">155 USD</p>
+                      <p className="mt-2 text-xs text-slate-500">אין צורך בפירוט פריטים — הסכום נקבע לפי תנאי הפוליסה.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        {baggageItems.map((row, idx) => (
+                          <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4">
+                            <Input
+                              className="bg-slate-50"
+                              value={row.item}
                               onChange={(e) => {
                                 const next = [...baggageItems];
-                                next[idx] = { ...row, receiptAttached: e.target.checked };
+                                next[idx] = { ...row, item: e.target.value };
                                 setBaggageItems(next);
                               }}
+                              placeholder="פריט"
                             />
-                            צורפה קבלה
-                          </label>
-                          {baggageItems.length > 1 ? (
-                            <button
-                              type="button"
-                              className="text-rose-500"
-                              onClick={() => setBaggageItems(baggageItems.filter((_, i) => i !== idx))}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          ) : null}
-                        </div>
+                            <ClaimDateInput
+                              value={row.purchaseDate}
+                              onChange={(v) => {
+                                const next = [...baggageItems];
+                                next[idx] = { ...row, purchaseDate: v };
+                                setBaggageItems(next);
+                              }}
+                              aria-label="תאריך רכישה"
+                              placeholder="תאריך רכישה"
+                            />
+                            <Input
+                              className="bg-slate-50"
+                              value={row.purchasePrice}
+                              onChange={(e) => {
+                                const next = [...baggageItems];
+                                next[idx] = { ...row, purchasePrice: e.target.value };
+                                setBaggageItems(next);
+                              }}
+                              placeholder="מחיר רכישה"
+                            />
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+                                <input
+                                  type="checkbox"
+                                  checked={row.receiptAttached}
+                                  onChange={(e) => {
+                                    const next = [...baggageItems];
+                                    next[idx] = { ...row, receiptAttached: e.target.checked };
+                                    setBaggageItems(next);
+                                  }}
+                                />
+                                צורפה קבלה
+                              </label>
+                              {baggageItems.length > 1 ? (
+                                <button
+                                  type="button"
+                                  className="text-rose-500"
+                                  onClick={() => setBaggageItems(baggageItems.filter((_, i) => i !== idx))}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  {errors.baggageItems ? <p className="text-xs text-rose-600">{errors.baggageItems}</p> : null}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-xl"
-                    onClick={() => setBaggageItems([...baggageItems, emptyBaggage()])}
-                  >
-                    <Plus className="h-4 w-4" />
-                    הוסף פריט
-                  </Button>
-                  <Field label="סה״כ הסכום הנתבע וסוג המטבע" required error={errors.totalClaimed}>
-                    <Input className="bg-slate-50" value={formData.totalClaimed} onChange={(e) => setField("totalClaimed", e.target.value)} />
-                  </Field>
+                      {errors.baggageItems ? <p className="text-xs text-rose-600">{errors.baggageItems}</p> : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => setBaggageItems([...baggageItems, emptyBaggage()])}
+                      >
+                        <Plus className="h-4 w-4" />
+                        הוסף פריט
+                      </Button>
+                      <Field label="סה״כ הסכום הנתבע וסוג המטבע" required error={errors.totalClaimed}>
+                        <Input className="bg-slate-50" value={formData.totalClaimed} onChange={(e) => setField("totalClaimed", e.target.value)} />
+                      </Field>
+                    </>
+                  )}
                   <YesNoField
                     label="האם האובדן/נזק אירע במסגרת הטיסה?"
                     value={formData.duringFlight}
