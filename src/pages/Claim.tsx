@@ -227,7 +227,7 @@ const Claim = () => {
   const [lookupError, setLookupError] = useState("");
   const [crmCustomer, setCrmCustomer] = useState<ClaimCrmCustomer | null>(null);
   const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
-  const [selectedPolicyId, setSelectedPolicyId] = useState("");
+  const [selectedPolicyUid, setSelectedPolicyUid] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([emptyExpense()]);
@@ -238,39 +238,40 @@ const Claim = () => {
   const groupedPolicies = useMemo(() => groupClaimPolicies(crmPolicies), [crmPolicies]);
 
   const renderPolicyCard = (policy: ClaimCrmPolicy) => {
-    const active = selectedPolicyId === policy.fullPolicyID;
+    const active = selectedPolicyUid === policy.uid;
+    const start = formatClaimDateDisplay(policy.startDate) || "—";
+    const end = formatClaimDateDisplay(policy.endDate) || "—";
     return (
       <button
-        key={policy.fullPolicyID}
+        key={policy.uid}
         type="button"
-        onClick={() => setSelectedPolicyId(policy.fullPolicyID)}
-        className={`rounded-2xl border p-4 text-right transition ${
+        onClick={() => setSelectedPolicyUid(policy.uid)}
+        className={`w-full rounded-2xl border px-4 py-3.5 text-right transition ${
           active
-            ? "border-[#2f6b63] bg-[#2f6b63]/5 shadow-md ring-1 ring-[#2f6b63]/25"
-            : "border-slate-200 bg-white hover:border-[#2f6b63]/35 hover:shadow-sm"
+            ? "border-[#2f6b63] bg-[#2f6b63]/5 shadow-sm ring-1 ring-[#2f6b63]/20"
+            : "border-slate-200 bg-white hover:border-[#2f6b63]/35"
         }`}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="font-bold tracking-wide text-[#143834]">פוליסה {policy.fullPolicyID}</div>
-            {policy.areaName ? (
-              <div className="mt-1 inline-flex rounded-full bg-[#e8f4f1] px-2.5 py-0.5 text-xs font-semibold text-[#2f6b63]">
-                {policy.areaName}
-              </div>
-            ) : null}
-            <div className="mt-3 grid gap-1.5 text-sm text-slate-600 sm:grid-cols-2">
-              <div>
-                <span className="text-slate-400">יציאה · </span>
-                <span className="font-semibold text-[#143834]">{formatClaimDateDisplay(policy.startDate) || "—"}</span>
-              </div>
-              <div>
-                <span className="text-slate-400">חזרה · </span>
-                <span className="font-semibold text-[#143834]">{formatClaimDateDisplay(policy.endDate) || "—"}</span>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-[#143834]">פוליסה {policy.fullPolicyID}</span>
+              {policy.areaName ? (
+                <span className="rounded-full bg-[#e8f4f1] px-2.5 py-0.5 text-xs font-semibold text-[#2f6b63]">
+                  {policy.areaName}
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-1.5 text-sm text-slate-600">
+              <span className="text-slate-400">יציאה</span>{" "}
+              <span className="font-semibold text-[#143834]">{start}</span>
+              <span className="mx-2 text-slate-300">|</span>
+              <span className="text-slate-400">חזרה</span>{" "}
+              <span className="font-semibold text-[#143834]">{end}</span>
             </div>
           </div>
           <span
-            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
               active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
             }`}
           >
@@ -295,7 +296,7 @@ const Claim = () => {
       tripEndDate: policy.endDate || prev.tripEndDate,
       country: policy.areaName || prev.country,
     }));
-    setSelectedPolicyId(policy.fullPolicyID);
+    setSelectedPolicyUid(policy.uid);
   };
 
   const setField = <K extends keyof typeof initialForm>(name: K, value: (typeof initialForm)[K]) => {
@@ -325,7 +326,7 @@ const Claim = () => {
         }
         setCrmCustomer(null);
         setCrmPolicies([]);
-        setSelectedPolicyId("");
+        setSelectedPolicyUid("");
         setStep("blocked");
         return;
       }
@@ -336,7 +337,7 @@ const Claim = () => {
         applyCustomerAndPolicy(result.customer, result.policies[0]);
         setStep("details");
       } else {
-        setSelectedPolicyId("");
+        setSelectedPolicyUid("");
         setStep("policy");
       }
     } finally {
@@ -345,11 +346,11 @@ const Claim = () => {
   };
 
   const handlePolicyContinue = () => {
-    if (!crmCustomer || !selectedPolicyId) {
+    if (!crmCustomer || !selectedPolicyUid) {
       setLookupError("יש לבחור פוליסה");
       return;
     }
-    const policy = crmPolicies.find((p) => p.fullPolicyID === selectedPolicyId);
+    const policy = crmPolicies.find((p) => p.uid === selectedPolicyUid);
     if (!policy) {
       setLookupError("יש לבחור פוליסה");
       return;
@@ -427,7 +428,8 @@ const Claim = () => {
         expenses: claimType === "medical" ? expenses : undefined,
         baggageItems: claimType === "baggage" ? baggageItems : undefined,
         crmMatched: true,
-        selectedPolicyId: selectedPolicyId || formData.policyNumber,
+        selectedPolicyId: formData.policyNumber,
+        selectedPolicyUid,
         crmCustomerName: crmCustomer?.primaryName || "",
         submittedAt: new Date().toISOString(),
       };
@@ -455,7 +457,7 @@ const Claim = () => {
       setClaimType(null);
       setCrmCustomer(null);
       setCrmPolicies([]);
-      setSelectedPolicyId("");
+      setSelectedPolicyUid("");
       setLookupId("");
       setLookupError("");
       setStep("type");
@@ -759,7 +761,7 @@ const Claim = () => {
                         <p className="text-xs text-slate-500">{groupedPolicies.upcoming.length} פוליסות</p>
                       </div>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">{groupedPolicies.upcoming.map(renderPolicyCard)}</div>
+                    <div className="grid gap-2.5">{groupedPolicies.upcoming.map(renderPolicyCard)}</div>
                   </section>
                 ) : null}
 
@@ -774,7 +776,7 @@ const Claim = () => {
                         <p className="text-xs text-slate-500">{groupedPolicies.past.length} פוליסות</p>
                       </div>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">{groupedPolicies.past.map(renderPolicyCard)}</div>
+                    <div className="grid gap-2.5">{groupedPolicies.past.map(renderPolicyCard)}</div>
                   </section>
                 ) : null}
               </div>
@@ -787,7 +789,7 @@ const Claim = () => {
                 <Button
                   type="button"
                   className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
-                  disabled={!selectedPolicyId}
+                  disabled={!selectedPolicyUid}
                   onClick={handlePolicyContinue}
                 >
                   המשך למילוי פרטים

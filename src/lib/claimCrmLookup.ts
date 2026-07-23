@@ -9,7 +9,10 @@ export type ClaimCrmCustomer = {
 };
 
 export type ClaimCrmPolicy = {
+  /** Unique UI key — one row per fullPolicyID after keeping latest addition. */
+  uid: string;
   fullPolicyID: string;
+  policyDoc: number;
   issueDate: string;
   startDate: string;
   endDate: string;
@@ -81,14 +84,53 @@ const mapPerson = (person: Record<string, unknown>, fallbackId: string): ClaimCr
   };
 };
 
-const mapPolicy = (p: Record<string, unknown>): ClaimCrmPolicy => ({
-  fullPolicyID: pickStr(p.fullPolicyID, p.policyNumber, p.policyId, p.PolicyNumber),
-  issueDate: normalizeDate(p.issueDate),
-  startDate: normalizeDate(p.startDate),
-  endDate: normalizeDate(p.endDate),
-  areaName: pickStr(p.areaName, p.destination, p.country),
-  clientName: pickStr(p.clientName),
-});
+const policyDocNum = (v: unknown): number => {
+  const n = Number(String(v ?? "").trim());
+  return Number.isFinite(n) ? n : 0;
+};
+
+const mapPolicy = (p: Record<string, unknown>): ClaimCrmPolicy => {
+  const fullPolicyID = pickStr(p.fullPolicyID, p.policyNumber, p.policyId, p.PolicyNumber);
+  const policyDoc = policyDocNum(p.policyDoc ?? p.PolicyDoc ?? p.docNumber);
+  const issueDate = normalizeDate(p.issueDate);
+  const startDate = normalizeDate(p.startDate);
+  const endDate = normalizeDate(p.endDate);
+  const areaName = pickStr(p.areaName, p.destination, p.country);
+  const clientName = pickStr(p.clientName);
+
+  return {
+    uid: fullPolicyID,
+    fullPolicyID,
+    policyDoc,
+    issueDate,
+    startDate,
+    endDate,
+    areaName,
+    clientName,
+  };
+};
+
+/** Keep only the latest addition (highest policyDoc) for each fullPolicyID. */
+export const keepLatestPolicyAdditions = (policies: ClaimCrmPolicy[]): ClaimCrmPolicy[] => {
+  const best = new Map<string, ClaimCrmPolicy>();
+
+  for (const policy of policies) {
+    if (!policy.fullPolicyID) continue;
+    const prev = best.get(policy.fullPolicyID);
+    if (!prev) {
+      best.set(policy.fullPolicyID, policy);
+      continue;
+    }
+    const prevIssue = new Date(prev.issueDate || 0).getTime();
+    const nextIssue = new Date(policy.issueDate || 0).getTime();
+    const isNewer =
+      policy.policyDoc > prev.policyDoc ||
+      (policy.policyDoc === prev.policyDoc && nextIssue >= prevIssue);
+    if (isNewer) best.set(policy.fullPolicyID, policy);
+  }
+
+  return Array.from(best.values());
+};
 
 export const normalizeIsraeliId = (id: string) => id.trim().replace(/[^\d]/g, "").padStart(9, "0");
 
@@ -148,11 +190,17 @@ export async function lookupClaimCustomerById(idInput: string): Promise<ClaimCrm
 
     if (!foundPerson) return { ok: false, reason: "not_found" };
 
-    const policies = policiesRaw
-      .map((p: Record<string, unknown>) => mapPolicy(p))
-      .filter((p) => p.fullPolicyID);
+    const policies = keepLatestPolicyAdditions(
+      policiesRaw.map((p: Record<string, unknown>) => mapPolicy(p)).filter((p) => p.fullPolicyID)
+    );
 
     if (!policies.length) return { ok: false, reason: "not_found" };
+
+    policies.sort((a, b) => {
+      const ad = new Date(a.issueDate || 0).getTime();
+      const bd = new Date(b.issueDate || 0).getTime();
+      return bd - ad;
+    });
 
     return {
       ok: true,

@@ -163,28 +163,26 @@
       .policy-section-head h4 { margin: 0; font-size: 14px; color: var(--brand-dark); }
       .policy-section-head small { color: var(--muted); font-size: 12px; }
       .policy-card {
-        text-align: right; border: 1px solid rgba(226,232,240,.95); border-radius: 18px; padding: 14px 16px;
-        background: rgba(255,255,255,.97); cursor: pointer; transition: .22s ease; width: 100%;
+        text-align: right; border: 1px solid rgba(226,232,240,.95); border-radius: 16px; padding: 12px 14px;
+        background: #fff; cursor: pointer; transition: .18s ease; width: 100%;
         font-family: inherit; position: relative;
       }
-      .policy-card:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -22px rgba(15,23,42,.4); border-color: rgba(47,107,99,.35); }
+      .policy-card:hover { border-color: rgba(47,107,99,.35); box-shadow: 0 8px 20px -16px rgba(15,23,42,.35); }
       .policy-card.active {
         border-color: var(--brand);
-        background: linear-gradient(145deg, rgba(47,107,99,.08), rgba(255,255,255,.98) 55%);
-        box-shadow: 0 12px 28px -18px rgba(31,75,70,.5);
+        background: rgba(47,107,99,.06);
+        box-shadow: 0 0 0 1px rgba(47,107,99,.18);
       }
-      .policy-card-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-      .policy-id { font-weight: 800; color: var(--brand-dark); font-size: 15px; letter-spacing: .02em; }
+      .policy-card-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+      .policy-id { font-weight: 800; color: var(--brand-dark); font-size: 14px; }
       .policy-area {
-        display: inline-flex; margin-top: 6px; padding: 3px 10px; border-radius: 999px;
-        background: #e8f4f1; color: var(--brand); font-size: 12px; font-weight: 700;
+        display: inline-flex; margin-inline-start: 8px; padding: 2px 9px; border-radius: 999px; vertical-align: middle;
+        background: #e8f4f1; color: var(--brand); font-size: 11px; font-weight: 700;
       }
-      .policy-dates {
-        margin-top: 12px; display: grid; gap: 6px; grid-template-columns: 1fr;
-      }
-      @media (min-width: 520px) { .policy-dates { grid-template-columns: 1fr 1fr; } }
-      .policy-dates div { font-size: 13px; color: #475569; }
+      .policy-dates { margin-top: 6px; font-size: 13px; color: #64748b; line-height: 1.4; }
       .policy-dates strong { color: var(--brand-dark); font-weight: 700; }
+      .policy-dates .sep { margin: 0 8px; color: #cbd5e1; }
+      .policy-list { display: grid; gap: 8px; }
       .policy-check {
         width: 20px; height: 20px; border-radius: 999px; border: 1px solid #cbd5e1; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center; color: transparent; background: #fff; font-size: 11px;
@@ -523,14 +521,40 @@
             email: pickStr(found.email, found.mail),
             phone: pickStr(found.phone, found.mobile, found.cell),
           };
-          const policies = policiesRaw
-            .map((p) => ({
-              fullPolicyID: pickStr(p.fullPolicyID, p.policyNumber, p.policyId),
+          const mapped = [];
+          for (const p of policiesRaw) {
+            const fullPolicyID = pickStr(p.fullPolicyID, p.policyNumber, p.policyId);
+            if (!fullPolicyID) continue;
+            const policyDoc = Number(String(p.policyDoc ?? p.PolicyDoc ?? "0").trim());
+            mapped.push({
+              uid: fullPolicyID,
+              fullPolicyID,
+              policyDoc: Number.isFinite(policyDoc) ? policyDoc : 0,
+              issueDate: normalizeDate(p.issueDate),
               startDate: normalizeDate(p.startDate),
               endDate: normalizeDate(p.endDate),
               areaName: pickStr(p.areaName, p.destination),
-            }))
-            .filter((p) => p.fullPolicyID);
+            });
+          }
+
+          // Keep only the latest addition (highest policyDoc) per policy number.
+          const best = new Map();
+          for (const policy of mapped) {
+            const prev = best.get(policy.fullPolicyID);
+            if (!prev) {
+              best.set(policy.fullPolicyID, policy);
+              continue;
+            }
+            const prevIssue = new Date(prev.issueDate || 0).getTime();
+            const nextIssue = new Date(policy.issueDate || 0).getTime();
+            const isNewer =
+              policy.policyDoc > prev.policyDoc ||
+              (policy.policyDoc === prev.policyDoc && nextIssue >= prevIssue);
+            if (isNewer) best.set(policy.fullPolicyID, policy);
+          }
+          const policies = Array.from(best.values()).sort(
+            (a, b) => new Date(b.issueDate || 0).getTime() - new Date(a.issueDate || 0).getTime()
+          );
           if (!policies.length) return { ok: false, reason: "not_found" };
           return { ok: true, customer, policies };
         } catch {
@@ -626,19 +650,15 @@
       }
 
       function policyCardHtml(p) {
-        const active = selectedPolicyId === p.fullPolicyID;
-        const area = p.areaName
-          ? `<span class="policy-area">${p.areaName}</span>`
-          : "";
-        return `<button type="button" class="policy-card ${active ? "active" : ""}" data-policy="${p.fullPolicyID}">
+        const active = selectedPolicyId === p.uid;
+        const area = p.areaName ? `<span class="policy-area">${p.areaName}</span>` : "";
+        const start = formatDateDisplay(p.startDate) || "—";
+        const end = formatDateDisplay(p.endDate) || "—";
+        return `<button type="button" class="policy-card ${active ? "active" : ""}" data-policy="${p.uid}">
           <div class="policy-card-top">
             <div>
-              <div class="policy-id">פוליסה ${p.fullPolicyID}</div>
-              ${area}
-              <div class="policy-dates">
-                <div>יציאה · <strong>${formatDateDisplay(p.startDate) || "—"}</strong></div>
-                <div>חזרה · <strong>${formatDateDisplay(p.endDate) || "—"}</strong></div>
-              </div>
+              <div><span class="policy-id">פוליסה ${p.fullPolicyID}</span>${area}</div>
+              <div class="policy-dates">יציאה <strong>${start}</strong><span class="sep">|</span>חזרה <strong>${end}</strong></div>
             </div>
             <span class="policy-check">✓</span>
           </div>
@@ -657,7 +677,7 @@
               <span class="policy-section-icon">✈️</span>
               <div><h4>נסיעות עתידיות / פעילות</h4><small>${upcoming.length} פוליסות</small></div>
             </div>
-            <div class="type-grid">${upcoming.map(policyCardHtml).join("")}</div>
+            <div class="policy-list">${upcoming.map(policyCardHtml).join("")}</div>
           </section>`;
         }
         if (past.length) {
@@ -666,7 +686,7 @@
               <span class="policy-section-icon past">🕘</span>
               <div><h4>נסיעות שעברו</h4><small>${past.length} פוליסות</small></div>
             </div>
-            <div class="type-grid">${past.map(policyCardHtml).join("")}</div>
+            <div class="policy-list">${past.map(policyCardHtml).join("")}</div>
           </section>`;
         }
         $("policyGrid").innerHTML = html || `<p class="muted">לא נמצאו פוליסות להצגה</p>`;
@@ -684,7 +704,7 @@
         form.tripStartDate.value = policy.startDate || "";
         form.tripEndDate.value = policy.endDate || "";
         form.country.value = policy.areaName || form.country.value || "";
-        selectedPolicyId = policy.fullPolicyID;
+        selectedPolicyId = policy.uid;
         $("detailsHello").textContent = customer.primaryName
           ? `שלום ${customer.primaryName} — הפרטים נמשכו מהמערכת`
           : "הפרטים נמשכו מהמערכת";
@@ -819,7 +839,7 @@
 
       $("toDetailsFromPolicy").onclick = () => {
         $("policyError").textContent = "";
-        const policy = crmPolicies.find((p) => p.fullPolicyID === selectedPolicyId);
+        const policy = crmPolicies.find((p) => p.uid === selectedPolicyId);
         if (!crmCustomer || !policy) {
           $("policyError").textContent = "יש לבחור פוליסה";
           return;
@@ -888,7 +908,7 @@
           expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
           baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
           crmMatched: true,
-          selectedPolicyId: selectedPolicyId || get("policyNumber"),
+          selectedPolicyId: get("policyNumber"),
           crmCustomerName: crmCustomer?.primaryName || "",
           submittedAt: new Date().toISOString(),
         };
