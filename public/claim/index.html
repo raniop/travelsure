@@ -971,9 +971,14 @@
         }
         if (!isValidIsraeliId(get("idNumber"))) { $("detailsError").textContent = "תעודת זהות לא תקינה"; return; }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) { $("detailsError").textContent = "אימייל לא תקין"; return; }
-        if (!get("policyNumber") || !get("incidentDate") || !get("country") || !get("details")) {
-          $("detailsError").textContent = "יש למלא פוליסה, תאריך, מדינה ותיאור מקרה"; return;
+        if (!get("policyNumber")) { $("detailsError").textContent = "חסר מספר פוליסה"; return; }
+        if (!get("incidentDate")) {
+          $("detailsError").textContent = "יש למלא את תאריך האירוע";
+          form.incidentDate?.focus?.();
+          return;
         }
+        if (!get("country")) { $("detailsError").textContent = "יש למלא את המדינה / מיקום האירוע"; return; }
+        if (!get("details")) { $("detailsError").textContent = "יש למלא תיאור מדויק של המקרה"; return; }
         if (!get("bankName") || !get("branchNumber") || !get("accountNumber")) {
           $("detailsError").textContent = "יש לבחור בנק וסניף ולמלא מספר חשבון"; return;
         }
