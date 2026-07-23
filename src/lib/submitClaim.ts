@@ -5,6 +5,17 @@ const OPHIR_CLAIM_ENDPOINTS = [
   "https://ophir.travelsure.co.il/api-claim.php",
 ];
 
+const STAFF_NOTIFY = ["rani@ophirins.co.il", "eli@ophirins.co.il"] as const;
+
+export const generateClaimNumber = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `TS-${y}${m}${day}-${rand}`;
+};
+
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -18,9 +29,10 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-const buildClaimMessage = (payload: Record<string, unknown>, files: File[]) => {
+const buildClaimMessage = (payload: Record<string, unknown>, files: File[], claimNumber: string) => {
   const lines: string[] = [
     "=== תביעה חדשה מטופס TravelSure ===",
+    `מספר תביעה: ${claimNumber}`,
     `סוג תביעה: ${payload.claimTypeLabel || ""}`,
     `שם: ${payload.fullName || ""}`,
     `ת.ז.: ${payload.idNumber || ""}`,
@@ -40,8 +52,13 @@ const buildClaimMessage = (payload: Record<string, unknown>, files: File[]) => {
   return lines.join("\n").slice(0, 4800);
 };
 
-/** Submit claim via live Supabase contact function (CORS-safe). */
+type InvokeResult = { ok: boolean; mode?: string };
+
+/** Submit claim via live Supabase contact function (CORS-safe). Always notifies Rani + Eli. */
 export async function submitClaimRequest(payload: Record<string, unknown>, files: File[]) {
+  const claimNumber = String(payload.claimNumber || generateClaimNumber());
+  const fullPayload = { ...payload, claimNumber };
+
   const filesPayload = await Promise.all(
     files.map(async (file) => ({
       name: file.name,
@@ -50,45 +67,78 @@ export async function submitClaimRequest(payload: Record<string, unknown>, files
     }))
   );
 
-  const tryInvoke = async (fn: string, body: Record<string, unknown>) => {
+  const message = buildClaimMessage(fullPayload, files, claimNumber);
+
+  const tryInvoke = async (body: Record<string, unknown>): Promise<InvokeResult> => {
     try {
-      const { data, error } = await supabase.functions.invoke(fn, { body });
-      if (!error && data && !(data as { error?: string }).error) return true;
-      return false;
+      const { data, error } = await supabase.functions.invoke("send-contact-email", { body });
+      if (!error && data && !(data as { error?: string }).error) {
+        return { ok: true, mode: String((data as { mode?: string }).mode || "") };
+      }
+      return { ok: false };
     } catch {
-      return false;
+      return { ok: false };
     }
   };
 
-  // Primary: send-contact-email is already deployed and CORS-ok.
-  // Do not call unpublished send-claim-email first — browsers log a CORS error and it used to abort submit.
-  const contactBody = {
+  const primary = await tryInvoke({
     type: "claim",
-    name: String(payload.fullName || "תביעה"),
-    email: String(payload.email || ""),
-    phone: String(payload.mobile || payload.phone || ""),
-    message: buildClaimMessage(payload, files),
-    claimPayload: payload,
+    claimNumber,
+    name: String(fullPayload.fullName || "תביעה"),
+    email: String(fullPayload.email || ""),
+    phone: String(fullPayload.mobile || fullPayload.phone || ""),
+    message,
+    claimPayload: fullPayload,
     files: filesPayload,
-  };
-  if (await tryInvoke("send-contact-email", contactBody)) {
-    return { ok: true as const };
+  });
+
+  // Old deployed function only emails ophir@. Fan-out claim text to Rani + Eli explicitly.
+  if (primary.ok && primary.mode !== "claim") {
+    await Promise.all(
+      STAFF_NOTIFY.map((staffEmail) =>
+        tryInvoke({
+          name: `תביעה ${claimNumber} — ${String(fullPayload.fullName || "")}`.trim(),
+          email: staffEmail,
+          phone: String(fullPayload.mobile || fullPayload.phone || ""),
+          message,
+        })
+      )
+    );
+  }
+
+  if (primary.ok) {
+    return { ok: true as const, claimNumber };
+  }
+
+  // If primary failed, still try to notify staff directly.
+  const staffOk = await Promise.all(
+    STAFF_NOTIFY.map((staffEmail) =>
+      tryInvoke({
+        name: `תביעה ${claimNumber} — ${String(fullPayload.fullName || "")}`.trim(),
+        email: staffEmail,
+        phone: String(fullPayload.mobile || fullPayload.phone || ""),
+        message,
+      })
+    )
+  );
+  if (staffOk.some((r) => r.ok)) {
+    return { ok: true as const, claimNumber };
   }
 
   const body = new FormData();
-  body.append("payload", JSON.stringify(payload));
+  body.append("payload", JSON.stringify(fullPayload));
   files.forEach((file) => body.append("files[]", file));
 
   let lastError = "claim submit failed";
   for (const url of OPHIR_CLAIM_ENDPOINTS) {
     try {
       const res = await fetch(url, { method: "POST", body });
-      if (res.ok) return { ok: true as const };
+      if (res.ok) return { ok: true as const, claimNumber };
       lastError = `HTTP ${res.status}`;
     } catch (err) {
       lastError = err instanceof Error ? err.message : "network error";
     }
   }
 
-  return { ok: false as const, error: lastError };
+  return { ok: false as const, error: lastError, claimNumber };
 }

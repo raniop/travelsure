@@ -14,7 +14,7 @@ import {
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
-import { submitClaimRequest } from "@/lib/submitClaim";
+import { generateClaimNumber, submitClaimRequest } from "@/lib/submitClaim";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -43,7 +43,7 @@ import {
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
 type BaggageSubtype = "loss" | "theft" | "delay";
-type Step = "type" | "identity" | "policy" | "details" | "files" | "blocked";
+type Step = "type" | "identity" | "policy" | "details" | "files" | "blocked" | "success";
 type YesNo = "" | "yes" | "no";
 
 type ExpenseRow = { date: string; type: string; amount: string; receiptAttached: boolean };
@@ -258,6 +258,13 @@ const Claim = () => {
   const [allBranches, setAllBranches] = useState<IsraeliBranch[]>([]);
   const [branchQuery, setBranchQuery] = useState("");
   const [branchMenuOpen, setBranchMenuOpen] = useState(false);
+  const [submittedClaimNumber, setSubmittedClaimNumber] = useState("");
+  const [submittedSummary, setSubmittedSummary] = useState<{
+    fullName: string;
+    claimTypeLabel: string;
+    email: string;
+    filesCount: number;
+  } | null>(null);
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
   const groupedPolicies = useMemo(() => groupClaimPolicies(crmPolicies), [crmPolicies]);
@@ -528,14 +535,17 @@ const Claim = () => {
     if (!claimType || !activeMeta || !validateFiles()) return;
     setIsSubmitting(true);
     try {
+      const claimNumber = generateClaimNumber();
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const payload = {
         ...formData,
+        claimNumber,
         claimType,
         claimTypeLabel: activeMeta.title,
         baggageSubtype: claimType === "baggage" ? baggageSubtype : undefined,
         baggageSubtypeLabel:
           claimType === "baggage" && baggageSubtype ? baggageSubtypeMeta[baggageSubtype].title : undefined,
-        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+        fullName,
         expenses: claimType === "medical" ? expenses : undefined,
         baggageItems: claimType === "baggage" ? baggageItems : undefined,
         crmMatched: true,
@@ -548,9 +558,12 @@ const Claim = () => {
       const result = await submitClaimRequest(payload, files);
       if (!result.ok) throw new Error(result.error || "claim_submit_failed");
 
-      toast({
-        title: "התביעה נשלחה בהצלחה",
-        description: "הצוות קיבל את הפנייה ויחזור אליך בהקדם.",
+      setSubmittedClaimNumber(result.claimNumber || claimNumber);
+      setSubmittedSummary({
+        fullName,
+        claimTypeLabel: activeMeta.title,
+        email: formData.email,
+        filesCount: files.length,
       });
 
       setFormData(initialForm);
@@ -565,7 +578,7 @@ const Claim = () => {
       setSelectedPolicyUid("");
       setLookupId("");
       setLookupError("");
-      setStep("type");
+      setStep("success");
     } catch (error) {
       console.error("Claim submit failed:", error);
       toast({
@@ -584,7 +597,12 @@ const Claim = () => {
     { id: "details", label: "פרטים" },
     { id: "files", label: "מסמכים" },
   ];
-  const progressStep: Step = step === "policy" ? "identity" : step === "blocked" ? "identity" : step;
+  const progressStep: Step =
+    step === "policy" || step === "blocked"
+      ? "identity"
+      : step === "success"
+        ? "files"
+        : step;
   const stepIndex = Math.max(
     0,
     steps.findIndex((s) => s.id === progressStep)
@@ -1686,6 +1704,56 @@ const Claim = () => {
                   )}
                 </Button>
               </div>
+            </div>
+          ) : null}
+
+          {step === "success" ? (
+            <div className="p-6 text-center sm:p-10">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f4f1] text-[#2f6b63]">
+                <Check className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-extrabold text-[#143834]">התביעה נשלחה בהצלחה</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+                הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה למעקב.
+              </p>
+              <div className="mx-auto mt-6 max-w-md rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-5 text-right">
+                <p className="text-xs font-bold text-[#2f6b63]">מספר תביעה</p>
+                <p className="mt-1 font-mono text-2xl font-extrabold tracking-wide text-[#143834]" dir="ltr">
+                  {submittedClaimNumber}
+                </p>
+                {submittedSummary ? (
+                  <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
+                    <li>
+                      <span className="font-bold text-[#143834]">שם: </span>
+                      {submittedSummary.fullName}
+                    </li>
+                    <li>
+                      <span className="font-bold text-[#143834]">סוג: </span>
+                      {submittedSummary.claimTypeLabel}
+                    </li>
+                    <li>
+                      <span className="font-bold text-[#143834]">אימייל: </span>
+                      {submittedSummary.email}
+                    </li>
+                    <li>
+                      <span className="font-bold text-[#143834]">קבצים: </span>
+                      {submittedSummary.filesCount}
+                    </li>
+                  </ul>
+                ) : null}
+              </div>
+              <p className="mt-4 text-xs text-slate-500">העתק נשלח לצוות הטיפול בתביעות (רני / אלי).</p>
+              <Button
+                type="button"
+                className="claim-cta mt-6 h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white"
+                onClick={() => {
+                  setSubmittedClaimNumber("");
+                  setSubmittedSummary(null);
+                  setStep("type");
+                }}
+              >
+                תביעה חדשה
+              </Button>
             </div>
           ) : null}
         </div>

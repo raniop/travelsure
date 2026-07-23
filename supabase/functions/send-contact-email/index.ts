@@ -3,13 +3,15 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 8;
+const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const CLAIM_RECIPIENTS = ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"];
 
 type ClaimFile = {
   name?: string;
@@ -23,6 +25,7 @@ interface ContactEmailRequest {
   phone?: string;
   message: string;
   type?: string;
+  claimNumber?: string;
   claimPayload?: Record<string, unknown>;
   files?: ClaimFile[];
 }
@@ -50,7 +53,7 @@ const checkRateLimit = (clientIp: string): boolean => {
 const validateInput = (data: ContactEmailRequest): { valid: boolean; error?: string } => {
   const { name, email, message } = data;
   if (!name || !email || !message) return { valid: false, error: "Missing required fields" };
-  if (name.length > 120) return { valid: false, error: "Name too long" };
+  if (name.length > 160) return { valid: false, error: "Name too long" };
   if (email.length > 255) return { valid: false, error: "Email too long" };
   if (message.length > 20000) return { valid: false, error: "Message too long" };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { valid: false, error: "Invalid email format" };
@@ -137,6 +140,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    if (!RESEND_API_KEY) throw new Error("Missing RESEND_API_KEY");
+
     const data = (await req.json()) as ContactEmailRequest;
     const validation = validateInput(data);
     if (!validation.valid) {
@@ -147,70 +152,102 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { name, email, phone, message } = data;
-    const isClaim = data.type === "claim" || Boolean(data.claimPayload);
+    const claimNumber = String(data.claimNumber || data.claimPayload?.claimNumber || "").trim();
+    const isClaim = data.type === "claim" || Boolean(data.claimPayload) || Boolean(claimNumber);
     const attachments = buildAttachments(data.files);
     const safeName = escapeHtml(name);
     const safeEmail = escapeHtml(email);
     const safePhone = escapeHtml(phone || "");
     const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>");
+    const safeClaimNumber = escapeHtml(claimNumber || "ללא מספר");
 
-    const title = isClaim ? "תביעה חדשה מהאתר" : "פנייה חדשה מהאתר";
-    const recipients = isClaim
-      ? ["ophir@ophirins.co.il", "rani@ophirins.co.il", "eli@ophirins.co.il"]
-      : ["ophir@ophirins.co.il"];
-
-    const businessEmailHtml = `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <h1 style="color: #1a5a5a;">${title}</h1>
-        <p style="color:#64748b;font-size:13px;">אופיר ושות׳ סוכנות לביטוח</p>
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px;">
-          <p><strong>שם:</strong> ${safeName}</p>
-          <p><strong>אימייל:</strong> ${safeEmail}</p>
-          <p><strong>טלפון:</strong> ${safePhone || "לא צוין"}</p>
-          <p><strong>${isClaim ? "פרטי התביעה" : "הודעה"}:</strong></p>
-          <p style="background-color: white; padding: 15px; border-radius: 5px;">${safeMessage}</p>
-          ${
-            attachments.length
-              ? `<p style="margin-top:12px;"><strong>קבצים מצורפים:</strong> ${attachments.length}</p>`
-              : isClaim
-                ? `<p style="margin-top:12px;color:#b45309;"><strong>שים לב:</strong> לא התקבלו קבצים תקינים בבקשה זו.</p>`
-                : ""
-          }
+    if (isClaim) {
+      const businessEmailHtml = `
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; color:#0f172a;">
+          <div style="background:linear-gradient(135deg,#1f4b46,#2f6b63);padding:22px;border-radius:12px 12px 0 0;">
+            <h1 style="color:#fff;margin:0;font-size:22px;">תביעה חדשה מהאתר</h1>
+            <p style="color:#bbf7d0;margin:8px 0 0;">אופיר ושות׳ סוכנות לביטוח</p>
+          </div>
+          <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 12px 12px;">
+            <p style="margin:0 0 12px;"><strong>מספר תביעה:</strong> <span style="font-size:18px;color:#1f4b46;">${safeClaimNumber}</span></p>
+            <p><strong>שם:</strong> ${safeName}</p>
+            <p><strong>אימייל:</strong> ${safeEmail}</p>
+            <p><strong>טלפון:</strong> ${safePhone || "לא צוין"}</p>
+            <p><strong>פרטי התביעה:</strong></p>
+            <div style="background:#fff;padding:14px;border-radius:8px;border:1px solid #e2e8f0;">${safeMessage}</div>
+            <p style="margin-top:14px;"><strong>קבצים מצורפים:</strong> ${attachments.length ? attachments.length : "אין"}</p>
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
-    await sendEmail({
-      to: recipients,
-      subject: isClaim ? `תביעה חדשה: ${name}` : `פנייה חדשה מ-${name}`,
-      html: businessEmailHtml,
-      replyTo: email,
-      attachments,
-    });
+      await sendEmail({
+        to: CLAIM_RECIPIENTS,
+        subject: `תביעה חדשה ${claimNumber ? `(${claimNumber})` : ""}: ${name}`.replace(/\s+/g, " ").trim(),
+        html: businessEmailHtml,
+        replyTo: email,
+        attachments,
+      });
 
-    if (!isClaim) {
       const customerEmailHtml = `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 100%); padding: 30px; text-align: center;">
+          <div style="background: linear-gradient(135deg, #1f4b46 0%, #2f6b63 100%); padding: 28px; text-align: center;">
             <h1 style="color: white; margin: 0;">TravelSure</h1>
-            <p style="color: #4ade80; margin: 10px 0 0 0;">ביטוח נסיעות לחו״ל</p>
+            <p style="color: #4ade80; margin: 10px 0 0 0;">אופיר ושות׳ סוכנות לביטוח</p>
           </div>
-          <div style="padding: 30px; background-color: #f9f9f9;">
+          <div style="padding: 28px; background-color: #f9f9f9;">
             <h2 style="color: #1a5a5a;">שלום ${safeName},</h2>
-            <p>תודה שפנית אלינו!</p>
-            <p>קיבלנו את הודעתך ונחזור אליך בהקדם האפשרי.</p>
-            <p>בברכה,<br>צוות TravelSure - אופיר ושות׳ סוכנות לביטוח</p>
+            <p>התביעה התקבלה בהצלחה במערכת.</p>
+            <p style="font-size:18px;"><strong>מספר תביעה:</strong> ${safeClaimNumber}</p>
+            <p>הצוות שלנו יבדוק את הפרטים והמסמכים ויחזור אליך בהקדם.</p>
+            <p>בברכה,<br>צוות TravelSure</p>
           </div>
         </div>
       `;
       await sendEmail({
         to: [email],
-        subject: "קיבלנו את פנייתך - TravelSure",
+        subject: `התביעה התקבלה - ${safeClaimNumber} | TravelSure`,
         html: customerEmailHtml,
+      });
+
+      return new Response(JSON.stringify({ success: true, mode: "claim", claimNumber: claimNumber || null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    return new Response(JSON.stringify({ success: true, message: "Message sent successfully" }), {
+    const businessEmailHtml = `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #1a5a5a;">פנייה חדשה מהאתר</h1>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px;">
+          <p><strong>שם:</strong> ${safeName}</p>
+          <p><strong>אימייל:</strong> ${safeEmail}</p>
+          <p><strong>טלפון:</strong> ${safePhone || "לא צוין"}</p>
+          <p><strong>הודעה:</strong></p>
+          <p style="background-color: white; padding: 15px; border-radius: 5px;">${safeMessage}</p>
+        </div>
+      </div>
+    `;
+
+    await sendEmail({
+      to: ["ophir@ophirins.co.il"],
+      subject: `פנייה חדשה מ-${name}`,
+      html: businessEmailHtml,
+      replyTo: email,
+    });
+
+    await sendEmail({
+      to: [email],
+      subject: "קיבלנו את פנייתך - TravelSure",
+      html: `
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a5a5a;">שלום ${safeName},</h2>
+          <p>תודה שפנית אלינו! קיבלנו את הודעתך ונחזור אליך בהקדם.</p>
+          <p>בברכה,<br>צוות TravelSure - אופיר ושות׳ סוכנות לביטוח</p>
+        </div>
+      `,
+    });
+
+    return new Response(JSON.stringify({ success: true, mode: "contact" }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

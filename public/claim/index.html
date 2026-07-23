@@ -482,6 +482,21 @@
           </div>
           <div id="status" class="status hidden"></div>
         </div>
+
+        <div id="step-success" class="hidden" style="text-align:center;padding:18px 8px 8px">
+          <div style="width:64px;height:64px;border-radius:999px;background:#e8f4f1;color:var(--brand);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px">✓</div>
+          <h2 style="margin-bottom:6px">התביעה נשלחה בהצלחה</h2>
+          <p class="muted" style="margin:0 auto;max-width:420px">הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה למעקב.</p>
+          <div style="margin:18px auto 0;max-width:420px;text-align:right;border:1px solid rgba(47,107,99,.15);border-radius:18px;padding:16px;background:linear-gradient(90deg,#e8f4f1,#fff)">
+            <div style="font-size:12px;font-weight:800;color:var(--brand)">מספר תביעה</div>
+            <div id="successClaimNumber" dir="ltr" style="margin-top:4px;font-family:ui-monospace,monospace;font-size:24px;font-weight:900;color:var(--brand-dark);letter-spacing:.04em"></div>
+            <ul id="successSummary" style="margin:14px 0 0;padding:0 18px 0 0;color:#475569;font-size:14px;line-height:1.7"></ul>
+          </div>
+          <p class="tiny" style="margin-top:12px">העתק נשלח לצוות הטיפול בתביעות (רני / אלי).</p>
+          <div class="row-actions" style="justify-content:center;margin-top:18px">
+            <button type="button" class="btn btn-primary" id="newClaimBtn">תביעה חדשה</button>
+          </div>
+        </div>
       </div>
       <p class="footer-note">השליחה מאובטחת · הפרטים ישמשו לטיפול בתביעה בלבד</p>
     </div>
@@ -772,29 +787,39 @@
           { id: "details", label: "פרטים" },
           { id: "files", label: "מסמכים" },
         ];
-        const progressStep = step === "policy" || step === "blocked" ? "identity" : step;
+        const progressStep =
+          step === "policy" || step === "blocked" ? "identity" : step === "success" ? "files" : step;
         const idx = Math.max(0, steps.findIndex((s) => s.id === progressStep));
         $("progressText").textContent = `שלב ${idx + 1} מתוך ${steps.length}`;
-        $("progressLabel").textContent = steps[idx].label;
+        $("progressLabel").textContent = step === "success" ? "סיכום" : steps[idx].label;
         $("progressFill").style.width = `${((idx + 1) / steps.length) * 100}%`;
         $("stepsBar").innerHTML = steps
           .map((s, i) => {
-            const cls = i === idx ? "active" : i < idx ? "done" : "";
-            const labelCls = i === idx ? "active" : "";
-            return `<div class="step-dot ${cls}">${i < idx ? "✓" : i + 1}</div><span class="step-label ${labelCls}">${s.label}</span>${i < steps.length - 1 ? '<span style="width:24px;height:1px;background:#e2e8f0;display:inline-block"></span>' : ""}`;
+            const done = step === "success" || i < idx;
+            const cls = step === "success" ? "done" : i === idx ? "active" : done ? "done" : "";
+            const labelCls = step !== "success" && i === idx ? "active" : "";
+            return `<div class="step-dot ${cls}">${done ? "✓" : i + 1}</div><span class="step-label ${labelCls}">${s.label}</span>${i < steps.length - 1 ? '<span style="width:24px;height:1px;background:#e2e8f0;display:inline-block"></span>' : ""}`;
           })
           .join("");
       }
 
       function showStep(next) {
         step = next;
-        ["type", "identity", "policy", "blocked", "details", "files"].forEach((id) => {
-          const el = $(`step-${id === "details" ? "details" : id}`);
+        ["type", "identity", "policy", "blocked", "details", "files", "success"].forEach((id) => {
           if (id === "details") $("step-details").classList.toggle("hidden", next !== "details");
           else if ($(`step-${id}`)) $(`step-${id}`).classList.toggle("hidden", next !== id);
         });
         renderSteps();
         window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function generateClaimNumber() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        return `TS-${y}${m}${day}-${rand}`;
       }
 
       function renderTypes() {
@@ -1301,6 +1326,9 @@
         }
 
         async function submitClaim() {
+          const claimNumber = generateClaimNumber();
+          payload.claimNumber = claimNumber;
+
           const filesPayload = [];
           for (const file of selectedFiles) {
             filesPayload.push({
@@ -1310,9 +1338,9 @@
             });
           }
 
-          async function postJson(url, bodyObj) {
+          async function postJson(bodyObj) {
             try {
-              const res = await fetch(url, {
+              const res = await fetch(CONTACT_FN_URL, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -1321,16 +1349,18 @@
                 },
                 body: JSON.stringify(bodyObj),
               });
-              if (!res.ok) return false;
+              if (!res.ok) return { ok: false };
               const data = await res.json().catch(() => ({}));
-              return !data.error;
+              if (data.error) return { ok: false };
+              return { ok: true, mode: data.mode || "" };
             } catch (_) {
-              return false;
+              return { ok: false };
             }
           }
 
           const claimMessage = [
             "=== תביעה חדשה מטופס TravelSure ===",
+            "מספר תביעה: " + claimNumber,
             "סוג תביעה: " + (payload.claimTypeLabel || ""),
             "שם: " + (payload.fullName || ""),
             "ת.ז.: " + (payload.idNumber || ""),
@@ -1348,18 +1378,33 @@
             "קבצים שנבחרו (" + selectedFiles.length + "): " + selectedFiles.map((f) => f.name).join(", "),
           ].join("\n").slice(0, 4800);
 
-          const contactBody = {
+          const primary = await postJson({
             type: "claim",
+            claimNumber,
             name: payload.fullName || "תביעה",
             email: payload.email || "",
             phone: payload.mobile || "",
             message: claimMessage,
             claimPayload: payload,
             files: filesPayload,
-          };
+          });
 
-          // Primary: live CORS-safe function (do not call unpublished send-claim-email — it CORS-fails the page)
-          if (await postJson(CONTACT_FN_URL, contactBody)) return true;
+          // Old function only emails ophir@ — also notify Rani + Eli with the claim text.
+          if (primary.ok && primary.mode !== "claim") {
+            const staff = ["rani@ophirins.co.il", "eli@ophirins.co.il"];
+            await Promise.all(
+              staff.map((staffEmail) =>
+                postJson({
+                  name: "תביעה " + claimNumber + " — " + (payload.fullName || ""),
+                  email: staffEmail,
+                  phone: payload.mobile || "",
+                  message: claimMessage,
+                })
+              )
+            );
+          }
+
+          if (primary.ok) return { ok: true, claimNumber };
 
           const body = new FormData();
           body.append("payload", JSON.stringify(payload));
@@ -1367,26 +1412,31 @@
           for (const url of OPHIR_FALLBACKS) {
             try {
               const res = await fetch(url, { method: "POST", body });
-              if (res.ok) return true;
+              if (res.ok) return { ok: true, claimNumber };
             } catch (_) {}
           }
-          return false;
+          return { ok: false, claimNumber };
         }
 
         $("submitBtn").disabled = true;
         $("submitBtn").textContent = "שולח...";
         try {
-          const ok = await submitClaim();
-          if (!ok) throw new Error("fail");
-          status.textContent = "התביעה נשלחה בהצלחה. הצוות יחזור אליכם בהקדם.";
-          status.classList.add("ok");
+          const result = await submitClaim();
+          if (!result.ok) throw new Error("fail");
+          $("successClaimNumber").textContent = result.claimNumber || "";
+          $("successSummary").innerHTML =
+            "<li><strong>שם:</strong> " + (payload.fullName || "") + "</li>" +
+            "<li><strong>סוג:</strong> " + (payload.claimTypeLabel || "") + "</li>" +
+            "<li><strong>אימייל:</strong> " + (payload.email || "") + "</li>" +
+            "<li><strong>קבצים:</strong> " + selectedFiles.length + "</li>";
           form.reset(); $("files").value = ""; selectedFiles = []; renderSelectedFiles();
           claimType = null; baggageSubtype = null;
           crmCustomer = null; crmPolicies = []; selectedPolicyId = "";
           $("baggageItems").innerHTML = ""; $("expenseItems").innerHTML = "";
           renderTypes();
-          setTimeout(() => showStep("type"), 1200);
+          showStep("success");
         } catch (err) {
+          status.classList.remove("hidden");
           status.textContent = "שגיאה בשליחת התביעה. נסו שוב בעוד מספר דקות.";
           status.classList.add("err");
         } finally {
@@ -1394,6 +1444,8 @@
           $("submitBtn").textContent = "שליחת תביעה";
         }
       };
+
+      $("newClaimBtn").onclick = () => showStep("type");
 
       let banksData = { banks: [], branches: [] };
       let currentBankBranches = [];
