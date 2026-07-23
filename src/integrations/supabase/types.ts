@@ -16,16 +16,16 @@ export type Database = {
     Tables: {
       claim_counters: {
         Row: {
-          year: number
           last_value: number
+          year: number
         }
         Insert: {
-          year: number
           last_value?: number
+          year: number
         }
         Update: {
-          year?: number
           last_value?: number
+          year?: number
         }
         Relationships: []
       }
@@ -34,10 +34,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      next_claim_number: {
-        Args: { p_year?: number }
-        Returns: string
-      }
+      next_claim_number: { Args: { p_year?: number }; Returns: string }
     }
     Enums: {
       [_ in never]: never

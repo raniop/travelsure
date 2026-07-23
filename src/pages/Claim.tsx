@@ -409,7 +409,7 @@ const Claim = () => {
     try {
       const result = await lookupClaimCustomerById(lookupId);
       if (!result.ok) {
-        if (result.reason === "invalid_id") {
+        if ((result as { ok: false; reason: string }).reason === "invalid_id") {
           setLookupError("תעודת זהות לא תקינה");
           return;
         }
