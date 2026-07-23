@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -246,6 +246,8 @@ const Claim = () => {
   const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
   const [selectedPolicyUid, setSelectedPolicyUid] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState(initialForm);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([emptyExpense()]);
   const [baggageItems, setBaggageItems] = useState<BaggageRow[]>([emptyBaggage()]);
@@ -436,6 +438,38 @@ const Claim = () => {
     setLookupError("");
     applyCustomerAndPolicy(crmCustomer, policy);
     setStep("details");
+  };
+
+  const addFiles = (incoming: FileList | File[] | null | undefined) => {
+    const next = Array.from(incoming || []);
+    if (!next.length) return;
+    setFiles((prev) => {
+      const merged = [...prev];
+      next.forEach((file) => {
+        const exists = merged.some(
+          (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+        );
+        if (!exists) merged.push(file);
+      });
+      return merged;
+    });
+    if (errors.files) {
+      setErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.files;
+        return copy;
+      });
+    }
+  };
+
+  const removeFileAt = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const validateDetails = () => {
@@ -1572,42 +1606,80 @@ const Claim = () => {
                 </ul>
               </div>
 
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#2f6b63]/30 bg-gradient-to-b from-[#f3faf7] to-white px-4 py-12 text-center transition hover:border-[#2f6b63] hover:shadow-md">
+              <label
+                className={`relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-12 text-center transition ${
+                  isDraggingFiles
+                    ? "border-[#2f6b63] bg-[#e8f4f1]/70 shadow-md"
+                    : "border-[#2f6b63]/30 bg-gradient-to-b from-[#f3faf7] to-white hover:border-[#2f6b63] hover:shadow-md"
+                }`}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingFiles(true);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingFiles(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingFiles(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingFiles(false);
+                  addFiles(e.dataTransfer.files);
+                }}
+              >
                 <input
+                  ref={fileInputRef}
                   type="file"
                   multiple
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"
                   onChange={(e) => {
-                    setFiles(Array.from(e.target.files || []));
-                    if (errors.files) {
-                      setErrors((prev) => {
-                        const next = { ...prev };
-                        delete next.files;
-                        return next;
-                      });
-                    }
+                    addFiles(e.target.files);
+                    e.target.value = "";
                   }}
                 />
-                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
+                <div className="pointer-events-none mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
                   <FileUp className="h-6 w-6" />
                 </div>
-                <div className="text-sm font-bold text-[#143834]">לחצו לבחירת קבצים או גררו לכאן</div>
-                <div className="mt-1 text-xs text-slate-500">PDF / JPG / PNG / DOC — ניתן לצרף מספר קבצים</div>
+                <div className="pointer-events-none text-sm font-bold text-[#143834]">לחצו לבחירת קבצים או גררו לכאן</div>
+                <div className="pointer-events-none mt-1 text-xs text-slate-500">PDF / JPG / PNG / DOC — ניתן לצרף מספר קבצים</div>
               </label>
 
               {files.length > 0 ? (
-                <ul className="mt-4 space-y-2">
-                  {files.map((file) => (
-                    <li
-                      key={`${file.name}-${file.size}`}
-                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
-                    >
-                      <Check className="h-4 w-4 shrink-0 text-[#2f6b63]" />
-                      {file.name}
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <p className="mt-3 text-xs font-bold text-[#2f6b63]">
+                    {files.length === 1 ? "קובץ אחד נבחר" : `${files.length} קבצים נבחרו`}
+                  </p>
+                  <ul className="mt-2 space-y-2">
+                    {files.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
+                      >
+                        <Check className="h-4 w-4 shrink-0 text-[#2f6b63]" />
+                        <span className="min-w-0 flex-1 truncate" title={file.name}>
+                          {file.name}
+                        </span>
+                        <span className="shrink-0 text-xs text-slate-400">{formatFileSize(file.size)}</span>
+                        <button
+                          type="button"
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100"
+                          aria-label={`הסרת ${file.name}`}
+                          onClick={() => removeFileAt(index)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : null}
               {errors.files ? <p className="mt-2 text-xs text-rose-600">{errors.files}</p> : null}
 
