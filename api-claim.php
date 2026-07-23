@@ -90,6 +90,9 @@ $fieldsMap = [
     'hmoBranch' => 'סניף קופ״ח',
     'hmoAddress' => 'כתובת סניף',
     'policyNumber' => 'מספר פוליסה',
+    'selectedPolicyId' => 'פוליסה שנבחרה',
+    'crmMatched' => 'זוהה ב-CRM',
+    'crmCustomerName' => 'שם מ-CRM',
     'policyType' => 'סוג פוליסה',
     'purchasedWhere' => 'היכן נרכשה',
     'notifiedCreditCard' => 'הודעה לחברת אשראי',
@@ -132,6 +135,7 @@ $fieldsMap = [
 ];
 
 $payload['tripSubtypeLabel'] = $tripSubtypeLabel;
+$payload['crmMatched'] = $yesNo($payload['crmMatched'] ?? '');
 $payload['notifiedCreditCard'] = $yesNo($payload['notifiedCreditCard'] ?? '');
 $payload['medicalExtension'] = $yesNo($payload['medicalExtension'] ?? '');
 $payload['claimedElsewhere'] = $yesNo($payload['claimedElsewhere'] ?? '');

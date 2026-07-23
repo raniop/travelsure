@@ -187,7 +187,7 @@
       <div class="hero">
         <img class="logo" src="/claim/logo.avif" alt="TravelSure" />
         <h1 class="title">הגשת תביעה</h1>
-        <p class="subtitle">תהליך דיגיטלי ברור, מאובטח ומותאם לדרישות הראל — ב־3 שלבים בלבד</p>
+        <p class="subtitle">תהליך דיגיטלי ברור, מאובטח ומותאם לדרישות הראל — זיהוי לקוח מהמערכת</p>
         <div class="chips">
           <span class="chip">מאובטח ומוצפן</span>
           <span class="chip">לפי הנחיות הראל</span>
@@ -197,10 +197,10 @@
 
       <div class="progress-wrap">
         <div class="progress-meta">
-          <span id="progressText">שלב 1 מתוך 3</span>
+          <span id="progressText">שלב 1 מתוך 4</span>
           <span id="progressLabel">סוג תביעה</span>
         </div>
-        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:33%"></div></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:25%"></div></div>
         <div class="steps" id="stepsBar"></div>
       </div>
 
@@ -210,7 +210,49 @@
           <p class="muted">בחרו קטגוריה — נתאים עבורכם את השדות והמסמכים</p>
           <div class="type-grid" id="typeGrid"></div>
           <div class="row-actions">
-            <button type="button" class="btn btn-primary" id="toDetails" disabled style="width:100%">המשך למילוי פרטים</button>
+            <button type="button" class="btn btn-primary" id="toIdentity" disabled style="width:100%">המשך לזיהוי לקוח</button>
+          </div>
+        </div>
+
+        <div id="step-identity" class="hidden">
+          <div class="banner">
+            <div class="tag" id="identityTypeLabel"></div>
+            <h3 id="identityTypeTitle"></h3>
+          </div>
+          <h2>זיהוי לפי תעודת זהות</h2>
+          <p class="muted">נאתר את הפרטים והפוליסות שלך במערכת — רק לקוחות עם פוליסה אצלנו יכולים להגיש תביעה</p>
+          <label class="field">תעודת זהות <span class="req">*</span>
+            <input id="lookupId" inputmode="numeric" maxlength="9" placeholder="9 ספרות" />
+          </label>
+          <div id="identityError" class="error"></div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-outline" id="backToTypeFromIdentity">חזרה</button>
+            <button type="button" class="btn btn-primary" id="lookupBtn">זיהוי והמשך</button>
+          </div>
+        </div>
+
+        <div id="step-policy" class="hidden">
+          <h2>באיזו פוליסה להגיש תביעה?</h2>
+          <p class="muted" id="policyHello">נמצאו כמה פוליסות. בחרו את הרלוונטית</p>
+          <div class="type-grid" id="policyGrid"></div>
+          <div id="policyError" class="error"></div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-outline" id="backToIdentity">חזרה</button>
+            <button type="button" class="btn btn-primary" id="toDetailsFromPolicy" disabled>המשך למילוי פרטים</button>
+          </div>
+        </div>
+
+        <div id="step-blocked" class="hidden" style="text-align:center;padding:12px 4px 8px">
+          <h2>לא מצאנו פוליסה במערכת</h2>
+          <p class="muted" style="max-width:420px;margin:8px auto 18px">
+            הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.
+          </p>
+          <div class="row-actions" style="justify-content:center">
+            <a class="btn btn-primary" href="tel:+972732721111">073-272-1111</a>
+            <a class="btn btn-outline" href="mailto:ophir@ophirins.co.il">ophir@ophirins.co.il</a>
+          </div>
+          <div class="row-actions" style="justify-content:center">
+            <button type="button" class="btn btn-outline" id="retryIdentity">ניסיון עם תעודת זהות אחרת</button>
           </div>
         </div>
 
@@ -218,13 +260,14 @@
           <div class="banner">
             <div class="tag" id="selectedTypeLabel"></div>
             <h3 id="selectedTypeTitle"></h3>
+            <p class="tiny" id="detailsHello" style="margin:6px 0 0"></p>
           </div>
 
           <h3>א. פרטים אישיים</h3>
           <div class="grid grid-2">
             <label class="field">שם משפחה <span class="req">*</span><input name="lastName" required /></label>
             <label class="field">שם פרטי <span class="req">*</span><input name="firstName" required /></label>
-            <label class="field">תעודת זהות <span class="req">*</span><input name="idNumber" inputmode="numeric" maxlength="9" required /></label>
+            <label class="field">תעודת זהות <span class="req">*</span><input name="idNumber" inputmode="numeric" maxlength="9" required readonly /></label>
             <label class="field">תאריך לידה <span class="req">*</span><input name="birthDate" type="date" required /></label>
             <label class="field">רחוב<input name="street" /></label>
             <label class="field">מספר בית<input name="houseNumber" /></label>
@@ -242,7 +285,7 @@
 
           <h3>ב. פרטי הפוליסה</h3>
           <div class="grid grid-2">
-            <label class="field">מספר פוליסה <span class="req">*</span><input name="policyNumber" required /></label>
+            <label class="field">מספר פוליסה <span class="req">*</span><input name="policyNumber" required readonly /></label>
             <label class="field">סוג פוליסה<input name="policyType" /></label>
             <label class="field" style="grid-column:1/-1">היכן נרכשה הפוליסה<input name="purchasedWhere" /></label>
           </div>
@@ -284,7 +327,7 @@
           <label class="check"><input type="checkbox" name="declaration" /> הנני מצהיר/ה כי הפרטים שמסרתי נכונים ומלאים *</label>
 
           <div class="row-actions">
-            <button type="button" class="btn btn-outline" id="backToType">חזרה</button>
+            <button type="button" class="btn btn-outline" id="backFromDetails">חזרה</button>
             <button type="submit" class="btn btn-primary">המשך למסמכים</button>
           </div>
           <div id="detailsError" class="error"></div>
@@ -343,6 +386,10 @@
 
       let claimType = null;
       let step = "type";
+      let crmCustomer = null;
+      let crmPolicies = [];
+      let selectedPolicyId = "";
+      const CRM_URL = "https://mobile.ophirins.co.il/api/Policy/GetById";
       const $ = (id) => document.getElementById(id);
       const form = $("step-details");
 
@@ -358,13 +405,85 @@
         return sum % 10 === 0;
       }
 
+      function normalizeDate(d) {
+        const s = String(d || "").trim();
+        if (!s) return "";
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+        const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+        return s;
+      }
+
+      function pickStr(...vals) {
+        for (const v of vals) {
+          const s = String(v ?? "").trim();
+          if (s) return s;
+        }
+        return "";
+      }
+
+      async function lookupById(rawId) {
+        const normalizedId = String(rawId).replace(/[^\d]/g, "").padStart(9, "0");
+        if (!isValidIsraeliId(normalizedId)) return { ok: false, reason: "invalid_id" };
+        try {
+          const res = await fetch(`${CRM_URL}?id=${encodeURIComponent(normalizedId)}`, {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (!res.ok) return { ok: false, reason: "upstream" };
+          const data = await res.json();
+          const policiesRaw = Array.isArray(data) ? data : [];
+          if (!policiesRaw.length) return { ok: false, reason: "not_found" };
+          policiesRaw.sort((a, b) => new Date(String(b.issueDate || 0)).getTime() - new Date(String(a.issueDate || 0)).getTime());
+
+          let found = null;
+          for (const policy of policiesRaw) {
+            if (!Array.isArray(policy.customers)) continue;
+            for (const cust of policy.customers) {
+              const cid = String(cust.personId || cust.id || "").trim();
+              if (cid.padStart(9, "0") === normalizedId || cid === rawId) {
+                found = cust;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          if (!found) return { ok: false, reason: "not_found" };
+
+          const primaryName = pickStr(found.clientName, found.name, found.fullName);
+          const customer = {
+            id: normalizedId,
+            primaryName,
+            firstNameHe: pickStr(found.firstName, found.firstNameHe, found.hebFname, primaryName.split(/\s+/)[0]),
+            lastNameHe: pickStr(found.lastName, found.lastNameHe, found.hebLname, primaryName.split(/\s+/).slice(1).join(" ")),
+            birthDate: normalizeDate(found.birthDate || found.dateOfBirth || found.dob),
+            email: pickStr(found.email, found.mail),
+            phone: pickStr(found.phone, found.mobile, found.cell),
+          };
+          const policies = policiesRaw
+            .map((p) => ({
+              fullPolicyID: pickStr(p.fullPolicyID, p.policyNumber, p.policyId),
+              startDate: normalizeDate(p.startDate),
+              endDate: normalizeDate(p.endDate),
+              areaName: pickStr(p.areaName, p.destination),
+            }))
+            .filter((p) => p.fullPolicyID);
+          if (!policies.length) return { ok: false, reason: "not_found" };
+          return { ok: true, customer, policies };
+        } catch {
+          return { ok: false, reason: "network" };
+        }
+      }
+
       function renderSteps() {
         const steps = [
           { id: "type", label: "סוג תביעה" },
+          { id: "identity", label: "זיהוי" },
           { id: "details", label: "פרטים" },
           { id: "files", label: "מסמכים" },
         ];
-        const idx = steps.findIndex((s) => s.id === step);
+        const progressStep = step === "policy" || step === "blocked" ? "identity" : step;
+        const idx = Math.max(0, steps.findIndex((s) => s.id === progressStep));
         $("progressText").textContent = `שלב ${idx + 1} מתוך ${steps.length}`;
         $("progressLabel").textContent = steps[idx].label;
         $("progressFill").style.width = `${((idx + 1) / steps.length) * 100}%`;
@@ -379,9 +498,11 @@
 
       function showStep(next) {
         step = next;
-        $("step-type").classList.toggle("hidden", next !== "type");
-        $("step-details").classList.toggle("hidden", next !== "details");
-        $("step-files").classList.toggle("hidden", next !== "files");
+        ["type", "identity", "policy", "blocked", "details", "files"].forEach((id) => {
+          const el = $(`step-${id === "details" ? "details" : id}`);
+          if (id === "details") $("step-details").classList.toggle("hidden", next !== "details");
+          else if ($(`step-${id}`)) $(`step-${id}`).classList.toggle("hidden", next !== id);
+        });
         renderSteps();
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -400,7 +521,40 @@
           </button>`
           )
           .join("");
-        $("toDetails").disabled = !claimType;
+        $("toIdentity").disabled = !claimType;
+      }
+
+      function renderPolicies() {
+        $("policyHello").textContent = crmCustomer?.primaryName
+          ? `שלום ${crmCustomer.primaryName} — נמצאו כמה פוליסות. בחרו את הרלוונטית`
+          : "נמצאו כמה פוליסות. בחרו את הרלוונטית";
+        $("policyGrid").innerHTML = crmPolicies
+          .map((p) => {
+            const active = selectedPolicyId === p.fullPolicyID;
+            const meta = [p.startDate && `יציאה: ${p.startDate}`, p.endDate && `חזרה: ${p.endDate}`, p.areaName].filter(Boolean).join(" · ");
+            return `<button type="button" class="type-btn ${active ? "active" : ""}" data-policy="${p.fullPolicyID}">
+              <div class="type-copy"><strong>פוליסה ${p.fullPolicyID}</strong><span>${meta || "ללא פירוט נוסף"}</span></div>
+            </button>`;
+          })
+          .join("");
+        $("toDetailsFromPolicy").disabled = !selectedPolicyId;
+      }
+
+      function applyCustomerAndPolicy(customer, policy) {
+        form.lastName.value = customer.lastNameHe || "";
+        form.firstName.value = customer.firstNameHe || "";
+        form.idNumber.value = customer.id || "";
+        form.birthDate.value = customer.birthDate || "";
+        form.mobile.value = customer.phone || "";
+        form.email.value = customer.email || "";
+        form.policyNumber.value = policy.fullPolicyID || "";
+        form.tripStartDate.value = policy.startDate || "";
+        form.tripEndDate.value = policy.endDate || "";
+        form.country.value = policy.areaName || form.country.value || "";
+        selectedPolicyId = policy.fullPolicyID;
+        $("detailsHello").textContent = customer.primaryName
+          ? `שלום ${customer.primaryName} — הפרטים נמשכו מהמערכת`
+          : "הפרטים נמשכו מהמערכת";
       }
 
       function addBaggageRow(data = {}) {
@@ -436,6 +590,8 @@
         if (!meta) return;
         $("selectedTypeLabel").textContent = meta.short;
         $("selectedTypeTitle").textContent = meta.title;
+        $("identityTypeLabel").textContent = meta.short;
+        $("identityTypeTitle").textContent = meta.title;
         $("filesTypeLabel").textContent = meta.short;
         $("hmoFields").classList.toggle("hidden", claimType !== "medical");
         $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
@@ -470,11 +626,74 @@
         renderTypes();
       });
 
-      $("toDetails").onclick = () => { syncTypeUi(); showStep("details"); };
-      $("backToType").onclick = () => showStep("type");
+      $("policyGrid").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-policy]");
+        if (!btn) return;
+        selectedPolicyId = btn.dataset.policy;
+        renderPolicies();
+      });
+
+      $("toIdentity").onclick = () => {
+        syncTypeUi();
+        $("identityError").textContent = "";
+        showStep("identity");
+      };
+      $("backToTypeFromIdentity").onclick = () => showStep("type");
+      $("backToIdentity").onclick = () => showStep("identity");
+      $("retryIdentity").onclick = () => showStep("identity");
+      $("backFromDetails").onclick = () => showStep(crmPolicies.length > 1 ? "policy" : "identity");
       $("backToDetails").onclick = () => showStep("details");
       $("addBaggage").onclick = () => addBaggageRow();
       $("addExpense").onclick = () => addExpenseRow();
+
+      $("lookupBtn").onclick = async () => {
+        $("identityError").textContent = "";
+        const id = $("lookupId").value.trim();
+        if (!isValidIsraeliId(id)) {
+          $("identityError").textContent = "תעודת זהות לא תקינה";
+          return;
+        }
+        $("lookupBtn").disabled = true;
+        $("lookupBtn").textContent = "מזהה...";
+        try {
+          const result = await lookupById(id);
+          if (!result.ok) {
+            if (result.reason === "invalid_id") {
+              $("identityError").textContent = "תעודת זהות לא תקינה";
+              return;
+            }
+            crmCustomer = null;
+            crmPolicies = [];
+            selectedPolicyId = "";
+            showStep("blocked");
+            return;
+          }
+          crmCustomer = result.customer;
+          crmPolicies = result.policies;
+          if (result.policies.length === 1) {
+            applyCustomerAndPolicy(result.customer, result.policies[0]);
+            showStep("details");
+          } else {
+            selectedPolicyId = "";
+            renderPolicies();
+            showStep("policy");
+          }
+        } finally {
+          $("lookupBtn").disabled = false;
+          $("lookupBtn").textContent = "זיהוי והמשך";
+        }
+      };
+
+      $("toDetailsFromPolicy").onclick = () => {
+        $("policyError").textContent = "";
+        const policy = crmPolicies.find((p) => p.fullPolicyID === selectedPolicyId);
+        if (!crmCustomer || !policy) {
+          $("policyError").textContent = "יש לבחור פוליסה";
+          return;
+        }
+        applyCustomerAndPolicy(crmCustomer, policy);
+        showStep("details");
+      };
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -535,6 +754,9 @@
           medicalWaiver: form.medicalWaiver.checked, authorizeAgent: form.authorizeAgent.checked, declaration: form.declaration.checked,
           expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
           baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
+          crmMatched: true,
+          selectedPolicyId: selectedPolicyId || get("policyNumber"),
+          crmCustomerName: crmCustomer?.primaryName || "",
           submittedAt: new Date().toISOString(),
         };
 
@@ -550,6 +772,7 @@
           status.textContent = "התביעה נשלחה בהצלחה. הצוות יחזור אליכם בהקדם.";
           status.classList.add("ok");
           form.reset(); $("files").value = ""; claimType = null;
+          crmCustomer = null; crmPolicies = []; selectedPolicyId = "";
           $("baggageItems").innerHTML = ""; $("expenseItems").innerHTML = "";
           renderTypes();
           setTimeout(() => showStep("type"), 1200);
