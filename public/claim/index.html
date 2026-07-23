@@ -357,8 +357,8 @@
         </div>
 
         <div id="step-blocked" class="hidden" style="text-align:center;padding:12px 4px 8px">
-          <h2>לא מצאנו פוליסה במערכת</h2>
-          <p class="muted" style="max-width:420px;margin:8px auto 18px">
+          <h2 id="blockedTitle">לא מצאנו פוליסה במערכת</h2>
+          <p class="muted" id="blockedBody" style="max-width:420px;margin:8px auto 18px">
             הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.
           </p>
           <div class="row-actions" style="justify-content:center">
@@ -366,6 +366,7 @@
             <a class="btn btn-outline" href="mailto:ophir@ophirins.co.il">ophir@ophirins.co.il</a>
           </div>
           <div class="row-actions" style="justify-content:center">
+            <button type="button" class="btn btn-primary hidden" id="changeClaimTypeBtn">בחירת סוג תביעה אחר</button>
             <button type="button" class="btn btn-outline" id="retryIdentity">ניסיון עם תעודת זהות אחרת</button>
           </div>
         </div>
@@ -881,10 +882,81 @@
         return Number.isFinite(t) ? t : NaN;
       }
 
-      function groupPolicies(policies) {
+      function startOfTodayMs() {
         const today = new Date();
         today.setHours(12, 0, 0, 0);
-        const todayMs = today.getTime();
+        return today.getTime();
+      }
+
+      function policyTimeBucketForClaimType(type) {
+        if (type === "trip_cancel") return "future";
+        if (type === "trip_shorten" || type === "baggage") return "active";
+        if (type === "medical") return "started";
+        return "all";
+      }
+
+      function isPolicyInTimeBucket(policy, bucket, todayMs) {
+        const start = dateMs(policy.startDate);
+        const end = dateMs(policy.endDate);
+        if (bucket === "future") return Number.isFinite(start) && start > todayMs;
+        if (bucket === "active") {
+          return Number.isFinite(start) && Number.isFinite(end) && start <= todayMs && end >= todayMs;
+        }
+        if (bucket === "started") return Number.isFinite(start) && start <= todayMs;
+        return true;
+      }
+
+      function filterPoliciesForClaimType(policies, type) {
+        const bucket = policyTimeBucketForClaimType(type);
+        if (bucket === "all") return policies;
+        const today = startOfTodayMs();
+        return policies.filter((p) => isPolicyInTimeBucket(p, bucket, today));
+      }
+
+      function claimPolicyFilterCopy(type) {
+        const bucket = policyTimeBucketForClaimType(type);
+        if (bucket === "future") {
+          return {
+            listHint: "מוצגות רק נסיעות עתידיות שטרם יצאו — מתאים לביטול לפני היציאה",
+            emptyTitle: "לא מצאנו נסיעה עתידית",
+            emptyBody:
+              "לסוג תביעה זה נדרשת פוליסה עם תאריך יציאה עתידי. אם יש לכם נסיעה פעילה או שעברה — בחרו סוג תביעה אחר, או צרו קשר עם הסוכנות.",
+            upcomingTitle: "נסיעות עתידיות",
+            pastTitle: "נסיעות שעברו",
+          };
+        }
+        if (bucket === "active") {
+          return {
+            listHint: "מוצגות רק נסיעות שפעילות כרגע (יצאתם וכאן חזרה עדיין לא עברה)",
+            emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
+            emptyBody:
+              "לסוג תביעה זה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
+            upcomingTitle: "נסיעות פעילות כעת",
+            pastTitle: "נסיעות שעברו",
+          };
+        }
+        if (bucket === "started") {
+          return {
+            listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו",
+            emptyTitle: "לא מצאנו נסיעה מתאימה",
+            emptyBody:
+              "לסוג תביעה זה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+            upcomingTitle: "נסיעות פעילות כעת",
+            pastTitle: "נסיעות שעברו",
+          };
+        }
+        return {
+          listHint: "בחרו את הנסיעה הרלוונטית לתביעה",
+          emptyTitle: "לא מצאנו פוליסה במערכת",
+          emptyBody:
+            "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.",
+          upcomingTitle: "נסיעות עתידיות / פעילות",
+          pastTitle: "נסיעות שעברו",
+        };
+      }
+
+      function groupPolicies(policies) {
+        const todayMs = startOfTodayMs();
         const upcoming = [];
         const past = [];
         for (const policy of policies) {
@@ -955,16 +1027,18 @@
       }
 
       function renderPolicies() {
+        const copy = claimPolicyFilterCopy(claimType);
+        const relevant = filterPoliciesForClaimType(crmPolicies, claimType);
         $("policyHello").textContent = crmCustomer?.primaryName
-          ? `שלום ${crmCustomer.primaryName} — בחרו את הנסיעה הרלוונטית לתביעה`
-          : "בחרו את הנסיעה הרלוונטית לתביעה";
-        const { upcoming, past, upcomingByYear, pastByYear } = groupPolicies(crmPolicies);
+          ? `שלום ${crmCustomer.primaryName} — ${copy.listHint}`
+          : copy.listHint;
+        const { upcoming, past, upcomingByYear, pastByYear } = groupPolicies(relevant);
         let html = "";
         if (upcoming.length) {
           html += `<section class="policy-section">
             <div class="policy-section-head">
               <span class="policy-section-icon">✈️</span>
-              <div><h4>נסיעות עתידיות / פעילות</h4><small>${upcoming.length} פוליסות</small></div>
+              <div><h4>${copy.upcomingTitle}</h4><small>${upcoming.length} פוליסות</small></div>
             </div>
             ${yearBlockHtml(upcomingByYear, "upcoming")}
           </section>`;
@@ -973,13 +1047,28 @@
           html += `<section class="policy-section">
             <div class="policy-section-head">
               <span class="policy-section-icon past">🕘</span>
-              <div><h4>נסיעות שעברו</h4><small>${past.length} פוליסות · לפי שנים</small></div>
+              <div><h4>${copy.pastTitle}</h4><small>${past.length} פוליסות · לפי שנים</small></div>
             </div>
             ${yearBlockHtml(pastByYear, "")}
           </section>`;
         }
         $("policyGrid").innerHTML = html || `<p class="muted">לא נמצאו פוליסות להצגה</p>`;
         $("toDetailsFromPolicy").disabled = !selectedPolicyId;
+      }
+
+      function showBlocked(reason) {
+        const copy = claimPolicyFilterCopy(claimType);
+        if (reason === "no_match") {
+          $("blockedTitle").textContent = copy.emptyTitle;
+          $("blockedBody").textContent = copy.emptyBody;
+          $("changeClaimTypeBtn").classList.remove("hidden");
+        } else {
+          $("blockedTitle").textContent = "לא מצאנו פוליסה במערכת";
+          $("blockedBody").textContent =
+            "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.";
+          $("changeClaimTypeBtn").classList.add("hidden");
+        }
+        showStep("blocked");
       }
 
       function applyCustomerAndPolicy(customer, policy) {
@@ -1098,6 +1187,15 @@
       $("backToTypeFromIdentity").onclick = () => showStep("type");
       $("backToIdentity").onclick = () => showStep("identity");
       $("retryIdentity").onclick = () => showStep("identity");
+      $("changeClaimTypeBtn").onclick = () => {
+        crmCustomer = null;
+        crmPolicies = [];
+        selectedPolicyId = "";
+        claimType = null;
+        baggageSubtype = null;
+        renderTypes();
+        showStep("type");
+      };
       $("backFromDetails").onclick = () => showStep(crmPolicies.length > 1 ? "policy" : "identity");
       $("backToDetails").onclick = () => showStep("details");
       $("addBaggage").onclick = () => addBaggageRow();
@@ -1202,13 +1300,19 @@
             crmCustomer = null;
             crmPolicies = [];
             selectedPolicyId = "";
-            showStep("blocked");
+            showBlocked("not_found");
             return;
           }
           crmCustomer = result.customer;
           crmPolicies = result.policies;
-          if (result.policies.length === 1) {
-            applyCustomerAndPolicy(result.customer, result.policies[0]);
+          const matched = filterPoliciesForClaimType(result.policies, claimType);
+          if (matched.length === 0) {
+            selectedPolicyId = "";
+            showBlocked(result.policies.length > 0 ? "no_match" : "not_found");
+            return;
+          }
+          if (matched.length === 1) {
+            applyCustomerAndPolicy(result.customer, matched[0]);
             showStep("details");
           } else {
             selectedPolicyId = "";
@@ -1223,7 +1327,8 @@
 
       $("toDetailsFromPolicy").onclick = () => {
         $("policyError").textContent = "";
-        const policy = crmPolicies.find((p) => p.uid === selectedPolicyId);
+        const relevant = filterPoliciesForClaimType(crmPolicies, claimType);
+        const policy = relevant.find((p) => p.uid === selectedPolicyId);
         if (!crmCustomer || !policy) {
           $("policyError").textContent = "יש לבחור פוליסה";
           return;

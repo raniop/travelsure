@@ -295,6 +295,112 @@ const startOfTodayMs = () => {
   return d.getTime();
 };
 
+export type ClaimPolicyTimeBucket = "future" | "active" | "started" | "all";
+
+export type ClaimTypeForPolicyFilter = "medical" | "trip_cancel" | "trip_shorten" | "baggage" | string;
+
+/** Which policies are relevant for this claim type. */
+export const policyTimeBucketForClaimType = (
+  claimType: ClaimTypeForPolicyFilter | null | undefined
+): ClaimPolicyTimeBucket => {
+  switch (claimType) {
+    case "trip_cancel":
+      // ביטול לפני יציאה — רק נסיעות שעדיין לא יצאו
+      return "future";
+    case "trip_shorten":
+      // קיצור מחו״ל — רק נסיעה שכרגע פעילה
+      return "active";
+    case "baggage":
+      // מטען / איחור / אובדן / גניבה — במהלך הנסיעה
+      return "active";
+    case "medical":
+      // רפואי בחו״ל — נסיעה שהתחילה (פעילה או שכבר חזרו)
+      return "started";
+    default:
+      return "all";
+  }
+};
+
+export const isPolicyInTimeBucket = (
+  policy: ClaimCrmPolicy,
+  bucket: ClaimPolicyTimeBucket,
+  todayMs: number = startOfTodayMs()
+): boolean => {
+  const start = dateMs(policy.startDate);
+  const end = dateMs(policy.endDate);
+
+  switch (bucket) {
+    case "future":
+      return Number.isFinite(start) && start > todayMs;
+    case "active":
+      return (
+        Number.isFinite(start) &&
+        Number.isFinite(end) &&
+        start <= todayMs &&
+        end >= todayMs
+      );
+    case "started":
+      return Number.isFinite(start) && start <= todayMs;
+    case "all":
+    default:
+      return true;
+  }
+};
+
+export const filterPoliciesForClaimType = (
+  policies: ClaimCrmPolicy[],
+  claimType: ClaimTypeForPolicyFilter | null | undefined
+): ClaimCrmPolicy[] => {
+  const bucket = policyTimeBucketForClaimType(claimType);
+  if (bucket === "all") return policies;
+  const today = startOfTodayMs();
+  return policies.filter((policy) => isPolicyInTimeBucket(policy, bucket, today));
+};
+
+export const claimPolicyFilterCopy = (
+  claimType: ClaimTypeForPolicyFilter | null | undefined
+): { listHint: string; emptyTitle: string; emptyBody: string; upcomingTitle: string; pastTitle: string } => {
+  const bucket = policyTimeBucketForClaimType(claimType);
+  switch (bucket) {
+    case "future":
+      return {
+        listHint: "מוצגות רק נסיעות עתידיות שטרם יצאו — מתאים לביטול לפני היציאה",
+        emptyTitle: "לא מצאנו נסיעה עתידית",
+        emptyBody:
+          "לסוג תביעה זה נדרשת פוליסה עם תאריך יציאה עתידי. אם יש לכם נסיעה פעילה או שעברה — בחרו סוג תביעה אחר, או צרו קשר עם הסוכנות.",
+        upcomingTitle: "נסיעות עתידיות",
+        pastTitle: "נסיעות שעברו",
+      };
+    case "active":
+      return {
+        listHint: "מוצגות רק נסיעות שפעילות כרגע (יצאתם ותאריך החזרה עדיין לא עבר)",
+        emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
+        emptyBody:
+          "לסוג תביעה זה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
+        upcomingTitle: "נסיעות פעילות כעת",
+        pastTitle: "נסיעות שעברו",
+      };
+    case "started":
+      return {
+        listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו",
+        emptyTitle: "לא מצאנו נסיעה מתאימה",
+        emptyBody:
+          "לסוג תביעה זה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+        upcomingTitle: "נסיעות פעילות כעת",
+        pastTitle: "נסיעות שעברו",
+      };
+    default:
+      return {
+        listHint: "בחרו את הנסיעה הרלוונטית לתביעה",
+        emptyTitle: "לא מצאנו פוליסה במערכת",
+        emptyBody:
+          "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור בטלפון או במייל.",
+        upcomingTitle: "נסיעות עתידיות / פעילות",
+        pastTitle: "נסיעות שעברו",
+      };
+  }
+};
+
 /** Upcoming/active = endDate today or later. Past = already ended. Both grouped by trip year. */
 export const groupClaimPolicies = (policies: ClaimCrmPolicy[]) => {
   const today = startOfTodayMs();

@@ -8,6 +8,8 @@ import {
   CLAIM_CONTACT,
   ClaimCrmCustomer,
   ClaimCrmPolicy,
+  claimPolicyFilterCopy,
+  filterPoliciesForClaimType,
   formatClaimDateDisplay,
   groupClaimPolicies,
   isValidIsraeliId,
@@ -246,6 +248,7 @@ const Claim = () => {
   const [lookupError, setLookupError] = useState("");
   const [crmCustomer, setCrmCustomer] = useState<ClaimCrmCustomer | null>(null);
   const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
+  const [blockedReason, setBlockedReason] = useState<"not_found" | "no_match">("not_found");
   const [selectedPolicyUid, setSelectedPolicyUid] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
@@ -267,7 +270,12 @@ const Claim = () => {
   } | null>(null);
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
-  const groupedPolicies = useMemo(() => groupClaimPolicies(crmPolicies), [crmPolicies]);
+  const relevantPolicies = useMemo(
+    () => filterPoliciesForClaimType(crmPolicies, claimType),
+    [crmPolicies, claimType]
+  );
+  const policyFilterCopy = useMemo(() => claimPolicyFilterCopy(claimType), [claimType]);
+  const groupedPolicies = useMemo(() => groupClaimPolicies(relevantPolicies), [relevantPolicies]);
   const bankBranches = useMemo(
     () => branchesForBank({ banks, branches: allBranches }, formData.bankCode),
     [banks, allBranches, formData.bankCode]
@@ -416,14 +424,24 @@ const Claim = () => {
         setCrmCustomer(null);
         setCrmPolicies([]);
         setSelectedPolicyUid("");
+        setBlockedReason("not_found");
         setStep("blocked");
         return;
       }
 
       setCrmCustomer(result.customer);
       setCrmPolicies(result.policies);
-      if (result.policies.length === 1) {
-        applyCustomerAndPolicy(result.customer, result.policies[0]);
+
+      const matched = filterPoliciesForClaimType(result.policies, claimType);
+      if (matched.length === 0) {
+        setSelectedPolicyUid("");
+        setBlockedReason(result.policies.length > 0 ? "no_match" : "not_found");
+        setStep("blocked");
+        return;
+      }
+
+      if (matched.length === 1) {
+        applyCustomerAndPolicy(result.customer, matched[0]);
         setStep("details");
       } else {
         setSelectedPolicyUid("");
@@ -439,7 +457,7 @@ const Claim = () => {
       setLookupError("יש לבחור פוליסה");
       return;
     }
-    const policy = crmPolicies.find((p) => p.uid === selectedPolicyUid);
+    const policy = relevantPolicies.find((p) => p.uid === selectedPolicyUid);
     if (!policy) {
       setLookupError("יש לבחור פוליסה");
       return;
@@ -910,7 +928,7 @@ const Claim = () => {
               <h2 className="text-2xl font-extrabold text-[#143834]">באיזו פוליסה להגיש תביעה?</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {crmCustomer?.primaryName ? `שלום ${crmCustomer.primaryName} — ` : ""}
-                בחרו את הנסיעה הרלוונטית לתביעה
+                {policyFilterCopy.listHint}
               </p>
 
               <div className="mt-5 max-h-[min(58vh,620px)] space-y-6 overflow-y-auto pe-1">
@@ -921,7 +939,7 @@ const Claim = () => {
                         <Plane className="h-4 w-4" />
                       </span>
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#143834]">נסיעות עתידיות / פעילות</h3>
+                        <h3 className="text-sm font-extrabold text-[#143834]">{policyFilterCopy.upcomingTitle}</h3>
                         <p className="text-xs text-slate-500">{groupedPolicies.upcoming.length} פוליסות</p>
                       </div>
                     </div>
@@ -946,7 +964,7 @@ const Claim = () => {
                         <History className="h-4 w-4" />
                       </span>
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#143834]">נסיעות שעברו</h3>
+                        <h3 className="text-sm font-extrabold text-[#143834]">{policyFilterCopy.pastTitle}</h3>
                         <p className="text-xs text-slate-500">{groupedPolicies.past.length} פוליסות · לפי שנים</p>
                       </div>
                     </div>
@@ -989,10 +1007,13 @@ const Claim = () => {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
                 <ShieldCheck className="h-8 w-8" />
               </div>
-              <h2 className="text-2xl font-extrabold text-[#143834]">לא מצאנו פוליסה במערכת</h2>
+              <h2 className="text-2xl font-extrabold text-[#143834]">
+                {blockedReason === "no_match" ? policyFilterCopy.emptyTitle : "לא מצאנו פוליסה במערכת"}
+              </h2>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-600">
-                הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות —
-                נשמח לעזור בטלפון או במייל.
+                {blockedReason === "no_match"
+                  ? policyFilterCopy.emptyBody
+                  : "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור בטלפון או במייל."}
               </p>
               <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3">
                 <a
@@ -1010,17 +1031,36 @@ const Claim = () => {
                   {CLAIM_CONTACT.email}
                 </a>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-6 h-11 rounded-2xl"
-                onClick={() => {
-                  setLookupError("");
-                  setStep("identity");
-                }}
-              >
-                ניסיון עם תעודת זהות אחרת
-              </Button>
+              <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                {blockedReason === "no_match" ? (
+                  <Button
+                    type="button"
+                    className="h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white"
+                    onClick={() => {
+                      setLookupError("");
+                      setCrmPolicies([]);
+                      setCrmCustomer(null);
+                      setSelectedPolicyUid("");
+                      setClaimType(null);
+                      setBaggageSubtype(null);
+                      setStep("type");
+                    }}
+                  >
+                    בחירת סוג תביעה אחר
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-2xl"
+                  onClick={() => {
+                    setLookupError("");
+                    setStep("identity");
+                  }}
+                >
+                  ניסיון עם תעודת זהות אחרת
+                </Button>
+              </div>
             </div>
           ) : null}
 
@@ -1569,7 +1609,7 @@ const Claim = () => {
                   type="button"
                   variant="outline"
                   className="h-11 rounded-2xl"
-                  onClick={() => setStep(crmPolicies.length > 1 ? "policy" : "identity")}
+                  onClick={() => setStep(relevantPolicies.length > 1 ? "policy" : "identity")}
                 >
                   חזרה
                 </Button>
