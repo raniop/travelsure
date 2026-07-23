@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>הגשת תביעה | TravelSure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       :root {
         --brand: #2f6b63;
-        --brand-dark: #1f4b46;
+        --brand-dark: #143834;
+        --brand-mid: #1f4b46;
         --accent: #4ade80;
         --text: #0f172a;
         --muted: #64748b;
@@ -16,116 +20,199 @@
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: Arial, Helvetica, sans-serif;
+        font-family: "Heebo", Arial, sans-serif;
         color: var(--text);
         min-height: 100vh;
-        background: radial-gradient(ellipse at top, #e8f4f1 0%, #f7faf9 45%, #eef2f1 100%);
+        background:
+          radial-gradient(1200px 600px at 85% -10%, rgba(74, 222, 128, 0.22), transparent 55%),
+          radial-gradient(900px 500px at -10% 20%, rgba(47, 107, 99, 0.18), transparent 50%),
+          linear-gradient(180deg, #f3faf7 0%, #eef6f3 40%, #e7f0ed 100%);
+        overflow-x: hidden;
       }
-      .wrap { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
-      .hero { text-align: center; margin-bottom: 24px; }
-      .brand { margin: 0; font-size: 14px; font-weight: 700; color: var(--brand); letter-spacing: 0.04em; }
-      .title { margin: 8px 0 0; font-size: 32px; color: var(--brand-dark); }
-      .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
-      .steps {
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-        margin-bottom: 20px; flex-wrap: wrap;
+      .orb {
+        position: fixed; border-radius: 9999px; filter: blur(42px); pointer-events: none; z-index: 0;
+        animation: float 10s ease-in-out infinite;
       }
+      .orb-a { width: 280px; height: 280px; background: rgba(47,107,99,.18); top: 8%; left: -6%; }
+      .orb-b { width: 220px; height: 220px; background: rgba(74,222,128,.2); top: 55%; right: -4%; animation-delay: -3s; }
+      @keyframes float {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-18px) scale(1.05); }
+      }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(18px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes shine {
+        0%, 55% { left: -40%; }
+        100% { left: 120%; }
+      }
+      .wrap { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; padding: 28px 16px 64px; }
+      .hero { text-align: center; margin-bottom: 22px; animation: rise .55s ease-out both; }
+      .logo {
+        width: min(220px, 58vw); height: auto; display: block; margin: 0 auto;
+        filter: drop-shadow(0 8px 18px rgba(20,56,52,.12));
+      }
+      .title { margin: 18px 0 0; font-size: clamp(28px, 5vw, 40px); color: var(--brand-dark); font-weight: 900; letter-spacing: -0.02em; }
+      .subtitle { margin: 10px auto 0; max-width: 460px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--brand-mid);
+        background: rgba(255,255,255,.72); border: 1px solid rgba(47,107,99,.15); backdrop-filter: blur(8px);
+      }
+      .progress-wrap { margin-bottom: 18px; animation: rise .55s ease-out .08s both; }
+      .progress-meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+      .progress-meta span:last-child { color: var(--brand); }
+      .progress-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,.8); overflow: hidden; box-shadow: inset 0 1px 2px rgba(15,23,42,.06); }
+      .progress-fill {
+        height: 100%; border-radius: 999px;
+        background: linear-gradient(90deg, #1f4b46, #2f6b63, #4ade80);
+        transition: width .45s cubic-bezier(.22,1,.36,1);
+      }
+      .steps { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
       .step-dot {
-        width: 28px; height: 28px; border-radius: 999px; display: inline-flex;
-        align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
-        border: 1px solid var(--border); background: #fff; color: #94a3b8;
+        width: 30px; height: 30px; border-radius: 999px; display: inline-flex;
+        align-items: center; justify-content: center; font-size: 12px; font-weight: 800;
+        border: 1px solid rgba(255,255,255,.8); background: rgba(255,255,255,.65); color: #94a3b8;
       }
-      .step-dot.active { background: var(--brand); color: #fff; border-color: var(--brand); }
-      .step-dot.done { background: rgba(47,107,99,.15); color: var(--brand); border-color: transparent; }
-      .step-label { font-size: 12px; color: #94a3b8; }
-      .step-label.active { color: var(--brand-dark); font-weight: 700; }
+      .step-dot.active { background: var(--brand); color: #fff; border-color: var(--brand); box-shadow: 0 10px 20px rgba(47,107,99,.35); }
+      .step-dot.done { background: rgba(47,107,99,.18); color: var(--brand); border-color: transparent; }
+      .step-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+      .step-label.active { color: var(--brand-dark); font-weight: 800; }
       .card {
-        background: #fff; border: 1px solid rgba(255,255,255,.7); border-radius: 20px;
-        box-shadow: 0 20px 50px -30px rgba(15,23,42,.35); padding: 24px; position: relative; overflow: hidden;
+        background: rgba(255,255,255,.88); border: 1px solid rgba(255,255,255,.85); border-radius: 28px;
+        box-shadow: 0 30px 80px -40px rgba(20,56,52,.55); padding: 28px; position: relative; overflow: hidden;
+        backdrop-filter: blur(14px); animation: rise .55s ease-out .16s both;
       }
       .card::before {
         content: ""; position: absolute; inset: 0 0 auto 0; height: 6px;
         background: linear-gradient(90deg, #1f4b46 0%, #2f6b63 50%, #4ade80 100%);
       }
-      h2 { margin: 0 0 6px; font-size: 18px; color: var(--brand-dark); }
+      h2 { margin: 0 0 6px; font-size: 24px; color: var(--brand-dark); font-weight: 900; }
       h3 {
-        margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;
-        font-size: 14px; color: var(--brand-dark);
+        margin: 26px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;
+        font-size: 14px; color: var(--brand-dark); font-weight: 800;
       }
-      .muted { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+      .muted { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
       .grid { display: grid; gap: 14px; }
       @media (min-width: 700px) { .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      label.field { display: block; font-size: 13px; font-weight: 600; color: #334155; }
+      label.field { display: block; font-size: 13px; font-weight: 700; color: #334155; }
       label.field span.req { color: #dc2626; margin-right: 4px; }
       input, textarea, select {
-        width: 100%; margin-top: 6px; border: 1px solid #d7e3f5; border-radius: 12px;
-        padding: 11px 14px; font-size: 14px; background: #f8fafc; outline: none;
+        width: 100%; margin-top: 6px; border: 1px solid #d7e3f5; border-radius: 14px;
+        padding: 12px 14px; font-size: 14px; background: #f8fafc; outline: none; font-family: inherit;
       }
       input:focus, textarea:focus, select:focus {
         border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.2); background: #fff;
       }
       textarea { min-height: 110px; resize: vertical; }
-      .type-grid { display: grid; gap: 10px; }
+      .type-grid { display: grid; gap: 12px; }
       @media (min-width: 700px) { .type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .type-btn {
-        text-align: right; border: 1px solid var(--border); border-radius: 14px; padding: 14px;
-        background: #fff; cursor: pointer; transition: .15s ease;
+        text-align: right; border: 1px solid rgba(226,232,240,.95); border-radius: 18px; padding: 16px;
+        background: rgba(255,255,255,.92); cursor: pointer; transition: .25s ease; min-height: 118px;
+        position: relative; overflow: hidden;
       }
-      .type-btn:hover { border-color: rgba(47,107,99,.4); }
-      .type-btn.active { border-color: var(--brand); background: rgba(47,107,99,.05); box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-      .type-btn strong { display: block; color: var(--brand-dark); margin-bottom: 4px; }
-      .type-btn span { color: var(--muted); font-size: 13px; }
-      .yesno { display: flex; gap: 16px; margin-top: 8px; font-size: 14px; font-weight: 400; }
+      .type-btn::after {
+        content: ""; position: absolute; inset: auto -40% -60% auto; width: 140px; height: 140px;
+        background: radial-gradient(circle, rgba(74,222,128,.18), transparent 70%);
+      }
+      .type-btn:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -24px rgba(15,23,42,.45); }
+      .type-btn.active {
+        border-color: var(--brand);
+        background: linear-gradient(145deg, rgba(47,107,99,.08), rgba(255,255,255,.95) 55%);
+        box-shadow: 0 16px 36px -20px rgba(31,75,70,.55);
+      }
+      .type-btn strong { display: block; color: var(--brand-dark); margin-bottom: 6px; font-size: 15px; position: relative; z-index: 1; }
+      .type-btn span { color: var(--muted); font-size: 13px; line-height: 1.45; position: relative; z-index: 1; }
       .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #334155; margin: 10px 0; }
       .check input { width: auto; margin-top: 2px; }
       .docs { margin: 0; padding-right: 18px; color: #475569; font-size: 13px; line-height: 1.7; }
-      .row-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+      .row-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
       .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        border: none; border-radius: 12px; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+        border: none; border-radius: 16px; padding: 13px 18px; font-size: 15px; font-weight: 800; cursor: pointer;
+        font-family: inherit;
       }
       .btn-primary {
+        position: relative; overflow: hidden;
         background: linear-gradient(90deg, #1f4b46, #2f6b63, #3f8677); color: #fff; min-width: 180px;
+        box-shadow: 0 14px 28px -12px rgba(47,107,99,.45);
+      }
+      .btn-primary::before {
+        content: ""; position: absolute; inset: 0 auto 0 -40%; width: 35%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+        transform: skewX(-20deg); animation: shine 2.8s ease-in-out infinite;
       }
       .btn-outline { background: #fff; border: 1px solid var(--border); color: #334155; }
-      .btn:disabled { opacity: .65; cursor: not-allowed; }
-      .error { color: #dc2626; font-size: 12px; margin-top: 4px; }
-      .status { margin-top: 14px; text-align: center; font-size: 13px; padding: 10px 12px; border-radius: 10px; background: #f1f5f9; }
+      .btn:disabled { opacity: .55; cursor: not-allowed; }
+      .error { color: #dc2626; font-size: 12px; margin-top: 8px; }
+      .status { margin-top: 14px; text-align: center; font-size: 13px; padding: 10px 12px; border-radius: 12px; background: #f1f5f9; }
       .status.ok { background: #dcfce7; color: #15803d; }
       .status.err { background: #fee2e2; color: #b91c1c; }
       .hidden { display: none !important; }
       .item-row {
-        display: grid; gap: 8px; border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 8px;
+        display: grid; gap: 8px; border: 1px solid var(--border); border-radius: 14px; padding: 10px; margin-bottom: 8px;
+        background: #fff;
       }
       @media (min-width: 700px) { .item-row { grid-template-columns: 1.2fr 1fr 1fr auto; align-items: center; } }
       .tiny { font-size: 12px; color: var(--muted); }
+      .banner {
+        border-radius: 18px; padding: 14px 16px; margin-bottom: 8px;
+        border: 1px solid rgba(47,107,99,.12);
+        background: linear-gradient(90deg, #e8f4f1, #ffffff);
+      }
+      .banner .tag { font-size: 12px; font-weight: 800; color: var(--brand); letter-spacing: .04em; }
+      .banner h3 { margin: 2px 0 0; border: 0; padding: 0; font-size: 18px; }
+      .drop {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        border: 2px dashed rgba(47,107,99,.3); border-radius: 18px; padding: 36px 16px; margin-top: 14px;
+        background: linear-gradient(180deg, #f3faf7, #fff); cursor: pointer; transition: .2s ease;
+      }
+      .drop:hover { border-color: var(--brand); box-shadow: 0 10px 24px -16px rgba(47,107,99,.45); }
+      .footer-note { text-align: center; margin-top: 18px; font-size: 12px; color: var(--muted); }
     </style>
   </head>
   <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
     <div class="wrap">
       <div class="hero">
-        <p class="brand">TravelSure</p>
+        <img class="logo" src="/claim/logo.avif" alt="TravelSure" />
         <h1 class="title">הגשת תביעה</h1>
-        <p class="subtitle">טופס דיגיטלי לפי דרישות הראל — שלב אחר שלב</p>
+        <p class="subtitle">תהליך דיגיטלי ברור, מאובטח ומותאם לדרישות הראל — ב־3 שלבים בלבד</p>
+        <div class="chips">
+          <span class="chip">מאובטח ומוצפן</span>
+          <span class="chip">לפי הנחיות הראל</span>
+          <span class="chip">מענה עד 30 יום</span>
+        </div>
       </div>
 
-      <div class="steps" id="stepsBar"></div>
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span id="progressText">שלב 1 מתוך 3</span>
+          <span id="progressLabel">סוג תביעה</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:33%"></div></div>
+        <div class="steps" id="stepsBar"></div>
+      </div>
 
       <div class="card">
-        <!-- Step 1 -->
         <div id="step-type">
           <h2>מה סוג התביעה?</h2>
-          <p class="muted">בחרו את הקטגוריה המתאימה ביותר</p>
+          <p class="muted">בחרו קטגוריה — נתאים עבורכם את השדות והמסמכים</p>
           <div class="type-grid" id="typeGrid"></div>
           <div class="row-actions">
-            <button type="button" class="btn btn-primary" id="toDetails" disabled>המשך למילוי פרטים</button>
+            <button type="button" class="btn btn-primary" id="toDetails" disabled style="width:100%">המשך למילוי פרטים</button>
           </div>
         </div>
 
-        <!-- Step 2 -->
         <form id="step-details" class="hidden" novalidate>
-          <p class="tiny" id="selectedTypeLabel"></p>
-          <h2 id="selectedTypeTitle"></h2>
+          <div class="banner">
+            <div class="tag" id="selectedTypeLabel"></div>
+            <h3 id="selectedTypeTitle"></h3>
+          </div>
 
           <h3>א. פרטים אישיים</h3>
           <div class="grid grid-2">
@@ -197,15 +284,18 @@
           <div id="detailsError" class="error"></div>
         </form>
 
-        <!-- Step 3 -->
         <div id="step-files" class="hidden">
-          <h2>מסמכים לצירוף</h2>
-          <p class="muted">לפי הנחיות הראל לסוג התביעה שבחרתם</p>
+          <div class="banner">
+            <div class="tag" id="filesTypeLabel"></div>
+            <h3>צירוף מסמכים</h3>
+            <p class="tiny" style="margin:6px 0 0">צרפו את המסמכים הנדרשים — וסיימתם</p>
+          </div>
           <ul class="docs" id="docsList"></ul>
-          <label class="field" style="margin-top:16px">העלאת קבצים <span class="req">*</span>
-            <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" />
+          <label class="drop">
+            <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" hidden />
+            <strong>לחצו לבחירת קבצים או גררו לכאן</strong>
+            <span class="tiny" style="margin-top:6px">PDF / JPG / PNG / DOC — ניתן לצרף מספר קבצים</span>
           </label>
-          <p class="tiny">ניתן לצרף מספר קבצים. גודל מומלץ עד 10MB לקובץ.</p>
           <div class="row-actions">
             <button type="button" class="btn btn-outline" id="backToDetails">חזרה</button>
             <button type="button" class="btn btn-primary" id="submitBtn">שליחת תביעה</button>
@@ -213,6 +303,7 @@
           <div id="status" class="status hidden"></div>
         </div>
       </div>
+      <p class="footer-note">השליחה מאובטחת · הפרטים ישמשו לטיפול בתביעה בלבד</p>
     </div>
 
     <script>
@@ -222,59 +313,30 @@
           title: "הוצאות רפואיות בחו״ל (שלא באשפוז)",
           short: "רפואי",
           subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
-          docs: [
-            "עותק פוליסה",
-            "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
-            "חשבון מפורט",
-            "קבלות תשלום מקוריות",
-          ],
+          docs: ["עותק פוליסה", "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "חשבון מפורט", "קבלות תשלום מקוריות"],
         },
         trip_cancel: {
           title: "ביטול נסיעה טרם היציאה",
           short: "ביטול",
           subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
-          docs: [
-            "עותק פוליסה",
-            "העתק תוכנית / מסלול הנסיעה",
-            "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
-            "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)",
-            "אישור רפואי על אי-כשירות לטוס",
-            "דוח רפואי / סיכום אשפוז",
-            "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
-          ],
+          docs: ["עותק פוליסה", "העתק תוכנית / מסלול הנסיעה", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)", "אישור רפואי על אי-כשירות לטוס", "דוח רפואי / סיכום אשפוז", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
         },
         trip_shorten: {
           title: "קיצור נסיעה מחו״ל",
           short: "קיצור",
           subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
-          docs: [
-            "עותק פוליסה",
-            "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
-            "תוכנית נסיעה מקורית",
-            "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
-            "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)",
-            "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת",
-            "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת",
-            "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
-          ],
+          docs: ["עותק פוליסה", "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "תוכנית נסיעה מקורית", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)", "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת", "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
         },
         baggage: {
           title: "מטען / כבודה",
           short: "מטען",
           subtitle: "אובדן, גניבה או נזק לכבודה",
-          docs: [
-            "דו״ח משטרה במקור ממקום ומזמן האירוע",
-            "קבלות רכישה על הרכוש שאבד/נגנב",
-            "בשחזור מסמכים: קבלות שחזור",
-            "באיחור כבודה: קבלות ציוד חיוני",
-            "אם אצל מוביל אווירי: תשובת חברת התעופה",
-          ],
+          docs: ["דו״ח משטרה במקור ממקום ומזמן האירוע", "קבלות רכישה על הרכוש שאבד/נגנב", "בשחזור מסמכים: קבלות שחזור", "באיחור כבודה: קבלות ציוד חיוני", "אם אצל מוביל אווירי: תשובת חברת התעופה"],
         },
       };
 
       let claimType = null;
       let step = "type";
-
       const $ = (id) => document.getElementById(id);
       const form = $("step-details");
 
@@ -297,11 +359,14 @@
           { id: "files", label: "מסמכים" },
         ];
         const idx = steps.findIndex((s) => s.id === step);
+        $("progressText").textContent = `שלב ${idx + 1} מתוך ${steps.length}`;
+        $("progressLabel").textContent = steps[idx].label;
+        $("progressFill").style.width = `${((idx + 1) / steps.length) * 100}%`;
         $("stepsBar").innerHTML = steps
           .map((s, i) => {
             const cls = i === idx ? "active" : i < idx ? "done" : "";
             const labelCls = i === idx ? "active" : "";
-            return `<div class="step-dot ${cls}">${i + 1}</div><span class="step-label ${labelCls}">${s.label}</span>${i < steps.length - 1 ? '<span style="width:24px;height:1px;background:#e2e8f0;display:inline-block"></span>' : ""}`;
+            return `<div class="step-dot ${cls}">${i < idx ? "✓" : i + 1}</div><span class="step-label ${labelCls}">${s.label}</span>${i < steps.length - 1 ? '<span style="width:24px;height:1px;background:#e2e8f0;display:inline-block"></span>' : ""}`;
           })
           .join("");
       }
@@ -361,6 +426,7 @@
         if (!meta) return;
         $("selectedTypeLabel").textContent = meta.short;
         $("selectedTypeTitle").textContent = meta.title;
+        $("filesTypeLabel").textContent = meta.short;
         $("hmoFields").classList.toggle("hidden", claimType !== "medical");
         $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
         $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
@@ -394,10 +460,7 @@
         renderTypes();
       });
 
-      $("toDetails").onclick = () => {
-        syncTypeUi();
-        showStep("details");
-      };
+      $("toDetails").onclick = () => { syncTypeUi(); showStep("details"); };
       $("backToType").onclick = () => showStep("type");
       $("backToDetails").onclick = () => showStep("details");
       $("addBaggage").onclick = () => addBaggageRow();
@@ -408,49 +471,30 @@
         $("detailsError").textContent = "";
         const fd = new FormData(form);
         const get = (k) => String(fd.get(k) || "").trim();
-
         if (!get("lastName") || !get("firstName") || !get("idNumber") || !get("birthDate") || !get("mobile") || !get("email")) {
-          $("detailsError").textContent = "יש למלא את כל שדות החובה בפרטים האישיים";
-          return;
+          $("detailsError").textContent = "יש למלא את כל שדות החובה בפרטים האישיים"; return;
         }
-        if (!isValidIsraeliId(get("idNumber"))) {
-          $("detailsError").textContent = "תעודת זהות לא תקינה";
-          return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) {
-          $("detailsError").textContent = "אימייל לא תקין";
-          return;
-        }
+        if (!isValidIsraeliId(get("idNumber"))) { $("detailsError").textContent = "תעודת זהות לא תקינה"; return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) { $("detailsError").textContent = "אימייל לא תקין"; return; }
         if (!get("policyNumber") || !get("incidentDate") || !get("country") || !get("details")) {
-          $("detailsError").textContent = "יש למלא פוליסה, תאריך, מדינה ותיאור מקרה";
-          return;
+          $("detailsError").textContent = "יש למלא פוליסה, תאריך, מדינה ותיאור מקרה"; return;
         }
         if (!get("bankName") || !get("branchNumber") || !get("accountNumber")) {
-          $("detailsError").textContent = "יש למלא פרטי חשבון בנק";
-          return;
+          $("detailsError").textContent = "יש למלא פרטי חשבון בנק"; return;
         }
-        if (!form.declaration.checked) {
-          $("detailsError").textContent = "יש לאשר את ההצהרה";
-          return;
-        }
+        if (!form.declaration.checked) { $("detailsError").textContent = "יש לאשר את ההצהרה"; return; }
         if (claimType !== "baggage" && !form.medicalWaiver.checked) {
-          $("detailsError").textContent = "יש לאשר ויתור על סודיות רפואית";
-          return;
+          $("detailsError").textContent = "יש לאשר ויתור על סודיות רפואית"; return;
         }
         if ((claimType === "trip_cancel" || claimType === "trip_shorten") && !get("claimReason")) {
-          $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור";
-          return;
+          $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור"; return;
         }
         if ((claimType === "medical" || claimType === "baggage") && !get("totalClaimed")) {
-          $("detailsError").textContent = "יש למלא סה״כ סכום נתבע";
-          return;
+          $("detailsError").textContent = "יש למלא סה״כ סכום נתבע"; return;
         }
         if (claimType === "baggage") {
           const items = collectRows($("baggageItems")).filter((r) => r.item);
-          if (!items.length) {
-            $("detailsError").textContent = "יש לפרט לפחות פריט אחד בכבודה";
-            return;
-          }
+          if (!items.length) { $("detailsError").textContent = "יש לפרט לפחות פריט אחד בכבודה"; return; }
         }
         showStep("files");
       });
@@ -460,52 +504,25 @@
         status.className = "status";
         status.classList.remove("hidden");
         const files = Array.from($("files").files || []);
-        if (!files.length) {
-          status.textContent = "יש לצרף לפחות מסמך אחד";
-          status.classList.add("err");
-          return;
-        }
+        if (!files.length) { status.textContent = "יש לצרף לפחות מסמך אחד"; status.classList.add("err"); return; }
 
         const fd = new FormData(form);
         const get = (k) => String(fd.get(k) || "").trim();
         const meta = types[claimType];
         const payload = {
-          claimType,
-          claimTypeLabel: meta.title,
-          lastName: get("lastName"),
-          firstName: get("firstName"),
+          claimType, claimTypeLabel: meta.title,
+          lastName: get("lastName"), firstName: get("firstName"),
           fullName: `${get("firstName")} ${get("lastName")}`.trim(),
-          idNumber: get("idNumber"),
-          birthDate: get("birthDate"),
-          street: get("street"),
-          houseNumber: get("houseNumber"),
-          city: get("city"),
-          zip: get("zip"),
-          homePhone: get("homePhone"),
-          mobile: get("mobile"),
-          phone: get("mobile"),
-          email: get("email"),
-          hmoName: get("hmoName"),
-          hmoBranch: get("hmoBranch"),
-          hmoAddress: get("hmoAddress"),
-          policyNumber: get("policyNumber"),
-          policyType: get("policyType"),
-          purchasedWhere: get("purchasedWhere"),
-          claimReason: get("claimReason"),
-          tripStartDate: get("tripStartDate"),
-          tripEndDate: get("tripEndDate"),
-          incidentDate: get("incidentDate"),
-          country: get("country"),
-          details: get("details"),
-          totalClaimed: get("totalClaimed"),
-          amount: get("totalClaimed"),
-          bankName: get("bankName"),
-          branchName: get("branchName"),
-          branchNumber: get("branchNumber"),
-          accountNumber: get("accountNumber"),
-          medicalWaiver: form.medicalWaiver.checked,
-          authorizeAgent: form.authorizeAgent.checked,
-          declaration: form.declaration.checked,
+          idNumber: get("idNumber"), birthDate: get("birthDate"),
+          street: get("street"), houseNumber: get("houseNumber"), city: get("city"), zip: get("zip"),
+          homePhone: get("homePhone"), mobile: get("mobile"), phone: get("mobile"), email: get("email"),
+          hmoName: get("hmoName"), hmoBranch: get("hmoBranch"), hmoAddress: get("hmoAddress"),
+          policyNumber: get("policyNumber"), policyType: get("policyType"), purchasedWhere: get("purchasedWhere"),
+          claimReason: get("claimReason"), tripStartDate: get("tripStartDate"), tripEndDate: get("tripEndDate"),
+          incidentDate: get("incidentDate"), country: get("country"), details: get("details"),
+          totalClaimed: get("totalClaimed"), amount: get("totalClaimed"),
+          bankName: get("bankName"), branchName: get("branchName"), branchNumber: get("branchNumber"), accountNumber: get("accountNumber"),
+          medicalWaiver: form.medicalWaiver.checked, authorizeAgent: form.authorizeAgent.checked, declaration: form.declaration.checked,
           expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
           baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
           submittedAt: new Date().toISOString(),
@@ -522,11 +539,8 @@
           if (!res.ok) throw new Error("fail");
           status.textContent = "התביעה נשלחה בהצלחה. הצוות יחזור אליכם בהקדם.";
           status.classList.add("ok");
-          form.reset();
-          $("files").value = "";
-          claimType = null;
-          $("baggageItems").innerHTML = "";
-          $("expenseItems").innerHTML = "";
+          form.reset(); $("files").value = ""; claimType = null;
+          $("baggageItems").innerHTML = ""; $("expenseItems").innerHTML = "";
           renderTypes();
           setTimeout(() => showStep("type"), 1200);
         } catch (err) {

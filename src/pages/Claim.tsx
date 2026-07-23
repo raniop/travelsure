@@ -3,14 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import logo from "@/assets/logo.avif";
 import {
   BriefcaseMedical,
   CalendarX2,
+  Check,
+  FileUp,
   Luggage,
   Loader2,
   PlaneLanding,
   Plus,
   Send,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 
@@ -348,56 +352,160 @@ const Claim = () => {
   const stepIndex = steps.findIndex((s) => s.id === step);
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background: "radial-gradient(ellipse at top, #e8f4f1 0%, #f7faf9 45%, #eef2f1 100%)",
-      }}
-    >
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14" dir="rtl">
-        <header className="mb-8 text-center">
-          <p className="text-sm font-semibold tracking-wide text-[#2f6b63]">TravelSure</p>
-          <h1 className="mt-2 text-3xl font-bold text-[#1a4a45] sm:text-4xl">הגשת תביעה</h1>
-          <p className="mt-2 text-sm text-slate-600">טופס דיגיטלי לפי דרישות הראל — שלב אחר שלב</p>
+    <div className="claim-page relative min-h-screen overflow-hidden font-heebo" dir="rtl">
+      <style>{`
+        .claim-page {
+          background:
+            radial-gradient(1200px 600px at 85% -10%, rgba(74, 222, 128, 0.22), transparent 55%),
+            radial-gradient(900px 500px at -10% 20%, rgba(47, 107, 99, 0.18), transparent 50%),
+            linear-gradient(180deg, #f3faf7 0%, #eef6f3 40%, #e7f0ed 100%);
+        }
+        .claim-orb {
+          position: absolute;
+          border-radius: 9999px;
+          filter: blur(40px);
+          pointer-events: none;
+          animation: claim-float 10s ease-in-out infinite;
+        }
+        .claim-orb-a { width: 280px; height: 280px; background: rgba(47,107,99,.18); top: 8%; left: -6%; }
+        .claim-orb-b { width: 220px; height: 220px; background: rgba(74,222,128,.2); top: 55%; right: -4%; animation-delay: -3s; }
+        @keyframes claim-float {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-18px) scale(1.05); }
+        }
+        @keyframes claim-rise {
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .claim-rise { animation: claim-rise .55s ease-out both; }
+        .claim-rise-d1 { animation-delay: .08s; }
+        .claim-rise-d2 { animation-delay: .16s; }
+        .claim-rise-d3 { animation-delay: .24s; }
+        .claim-type-card {
+          position: relative;
+          overflow: hidden;
+          transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
+        }
+        .claim-type-card::after {
+          content: "";
+          position: absolute;
+          inset: auto -40% -60% auto;
+          width: 160px; height: 160px;
+          background: radial-gradient(circle, rgba(74,222,128,.18), transparent 70%);
+          transition: transform .35s ease;
+        }
+        .claim-type-card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -24px rgba(15,23,42,.45); }
+        .claim-type-card:hover::after { transform: scale(1.3); }
+        .claim-type-card.active {
+          border-color: #2f6b63;
+          background: linear-gradient(145deg, rgba(47,107,99,.08), rgba(255,255,255,.95) 55%);
+          box-shadow: 0 16px 36px -20px rgba(31,75,70,.55);
+        }
+        .claim-cta {
+          position: relative;
+          overflow: hidden;
+        }
+        .claim-cta::before {
+          content: "";
+          position: absolute;
+          inset: 0 auto 0 -40%;
+          width: 35%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+          transform: skewX(-20deg);
+          animation: claim-shine 2.8s ease-in-out infinite;
+        }
+        @keyframes claim-shine {
+          0%, 55% { left: -40%; }
+          100% { left: 120%; }
+        }
+        .claim-progress-fill {
+          transition: width .45s cubic-bezier(.22,1,.36,1);
+        }
+      `}</style>
+
+      <div className="claim-orb claim-orb-a" />
+      <div className="claim-orb claim-orb-b" />
+
+      <div className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-12">
+        <header className="claim-rise mb-8 text-center">
+          <img
+            src={logo}
+            alt="TravelSure"
+            className="mx-auto h-20 w-auto drop-shadow-sm sm:h-28"
+          />
+          <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-[#143834] sm:text-4xl">
+            הגשת תביעה
+          </h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
+            תהליך דיגיטלי ברור, מאובטח ומותאם לדרישות הראל — ב־3 שלבים בלבד
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/70 px-3 py-1.5 backdrop-blur">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#2f6b63]" />
+              מאובטח ומוצפן
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/70 px-3 py-1.5 backdrop-blur">
+              לפי הנחיות הראל
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/70 px-3 py-1.5 backdrop-blur">
+              מענה עד 30 יום
+            </span>
+          </div>
         </header>
 
-        <div className="mb-8 flex items-center justify-center gap-2">
-          {steps.map((s, idx) => {
-            const done = idx < stepIndex;
-            const active = idx === stepIndex;
-            return (
-              <div key={s.id} className="flex items-center gap-2">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                    active
-                      ? "bg-[#2f6b63] text-white"
-                      : done
-                        ? "bg-[#2f6b63]/20 text-[#2f6b63]"
-                        : "border border-slate-200 bg-white text-slate-400"
-                  }`}
-                >
-                  {idx + 1}
+        <div className="claim-rise claim-rise-d1 mb-6">
+          <div className="mb-3 flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>
+              שלב {stepIndex + 1} מתוך {steps.length}
+            </span>
+            <span className="text-[#2f6b63]">{steps[stepIndex]?.label}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white/80 shadow-inner">
+            <div
+              className="claim-progress-fill h-full rounded-full bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]"
+              style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            {steps.map((s, idx) => {
+              const done = idx < stepIndex;
+              const active = idx === stepIndex;
+              return (
+                <div key={s.id} className="flex items-center gap-2">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+                      active
+                        ? "bg-[#2f6b63] text-white shadow-lg shadow-[#2f6b63]/35"
+                        : done
+                          ? "bg-[#2f6b63]/20 text-[#2f6b63]"
+                          : "border border-white/80 bg-white/60 text-slate-400"
+                    }`}
+                  >
+                    {done ? <Check className="h-4 w-4" /> : idx + 1}
+                  </div>
+                  <span className={`hidden text-xs font-medium sm:inline ${active ? "text-[#143834]" : "text-slate-400"}`}>
+                    {s.label}
+                  </span>
+                  {idx < steps.length - 1 ? (
+                    <div className={`mx-1 h-px w-6 sm:w-10 ${done ? "bg-[#2f6b63]" : "bg-slate-200"}`} />
+                  ) : null}
                 </div>
-                <span className={`hidden text-xs font-medium sm:inline ${active ? "text-[#1a4a45]" : "text-slate-400"}`}>
-                  {s.label}
-                </span>
-                {idx < steps.length - 1 ? (
-                  <div className={`mx-1 h-px w-6 sm:w-10 ${done ? "bg-[#2f6b63]" : "bg-slate-200"}`} />
-                ) : null}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-white/70 bg-white/90 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
+        <div className="claim-rise claim-rise-d2 overflow-hidden rounded-[28px] border border-white/80 bg-white/85 shadow-[0_30px_80px_-40px_rgba(20,56,52,0.55)] backdrop-blur-xl">
           <div className="h-1.5 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
 
           {step === "type" ? (
-            <div className="p-6 sm:p-8">
-              <h2 className="mb-1 text-lg font-bold text-[#1a4a45]">מה סוג התביעה?</h2>
-              <p className="mb-6 text-sm text-slate-500">בחרו את הקטגוריה המתאימה ביותר</p>
+            <div className="p-6 sm:p-9">
+              <div className="mb-6 text-center sm:text-right">
+                <h2 className="text-2xl font-extrabold text-[#143834]">מה סוג התביעה?</h2>
+                <p className="mt-1 text-sm text-slate-500">בחרו קטגוריה — נתאים עבורכם את השדות והמסמכים</p>
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                {claimTypesOrder.map((type) => {
+                {claimTypesOrder.map((type, i) => {
                   const meta = claimTypeMeta[type];
                   const Icon = meta.icon;
                   const active = claimType === type;
@@ -406,22 +514,32 @@ const Claim = () => {
                       key={type}
                       type="button"
                       onClick={() => setClaimType(type)}
-                      className={`flex items-start gap-4 rounded-xl border p-4 text-right transition ${
-                        active
-                          ? "border-[#2f6b63] bg-[#2f6b63]/5 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-[#2f6b63]/40"
+                      className={`claim-type-card claim-rise flex min-h-[118px] items-start gap-4 rounded-2xl border border-slate-200/90 bg-white/90 p-4 text-right ${
+                        active ? "active" : ""
                       }`}
+                      style={{ animationDelay: `${0.08 + i * 0.06}s` }}
                     >
                       <div
-                        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                          active ? "bg-[#2f6b63] text-white" : "bg-slate-100 text-[#2f6b63]"
+                        className={`relative z-10 mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
+                          active
+                            ? "bg-gradient-to-br from-[#1f4b46] to-[#2f6b63] text-white shadow-md shadow-[#2f6b63]/30"
+                            : "bg-[#e8f4f1] text-[#2f6b63]"
                         }`}
                       >
                         <Icon className="h-5 w-5" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-[#1a4a45]">{meta.title}</div>
-                        <div className="mt-0.5 text-sm text-slate-500">{meta.subtitle}</div>
+                      <div className="relative z-10 min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-bold leading-snug text-[#143834]">{meta.title}</div>
+                          <span
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+                              active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
+                            }`}
+                          >
+                            <Check className="h-3 w-3" />
+                          </span>
+                        </div>
+                        <div className="mt-1 text-sm leading-relaxed text-slate-500">{meta.subtitle}</div>
                       </div>
                     </button>
                   );
@@ -429,7 +547,7 @@ const Claim = () => {
               </div>
               <Button
                 type="button"
-                className="mt-6 w-full rounded-xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white"
+                className="claim-cta mt-7 h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white shadow-lg shadow-[#2f6b63]/25 disabled:opacity-50"
                 size="lg"
                 disabled={!claimType}
                 onClick={() => setStep("details")}
@@ -441,15 +559,16 @@ const Claim = () => {
 
           {step === "details" && claimType && activeMeta ? (
             <form
-              className="space-y-8 p-6 sm:p-8"
+              className="space-y-8 p-6 sm:p-9"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (validateDetails()) setStep("files");
               }}
             >
-              <div>
-                <p className="text-xs font-semibold text-[#2f6b63]">{activeMeta.short}</p>
-                <h2 className="text-lg font-bold text-[#1a4a45]">{activeMeta.title}</h2>
+              <div className="rounded-2xl border border-[#2f6b63]/10 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
+                <p className="text-xs font-bold tracking-wide text-[#2f6b63]">{activeMeta.short}</p>
+                <h2 className="text-xl font-extrabold text-[#143834]">{activeMeta.title}</h2>
+                <p className="mt-1 text-sm text-slate-500">{activeMeta.subtitle}</p>
               </div>
 
               <section className="space-y-4">
@@ -931,12 +1050,12 @@ const Claim = () => {
               </section>
 
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                <Button type="button" variant="outline" className="rounded-xl" onClick={() => setStep("type")}>
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("type")}>
                   חזרה
                 </Button>
                 <Button
                   type="submit"
-                  className="rounded-xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white sm:min-w-[200px]"
+                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
                   size="lg"
                 >
                   המשך לצירוף מסמכים
@@ -946,22 +1065,23 @@ const Claim = () => {
           ) : null}
 
           {step === "files" && claimType && activeMeta ? (
-            <div className="p-6 sm:p-8">
-              <div className="mb-6">
-                <p className="text-xs font-semibold text-[#2f6b63]">{activeMeta.short}</p>
-                <h2 className="text-lg font-bold text-[#1a4a45]">צירוף מסמכים</h2>
+            <div className="p-6 sm:p-9">
+              <div className="mb-6 rounded-2xl border border-[#2f6b63]/10 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
+                <p className="text-xs font-bold tracking-wide text-[#2f6b63]">{activeMeta.short}</p>
+                <h2 className="text-xl font-extrabold text-[#143834]">צירוף מסמכים</h2>
+                <p className="mt-1 text-sm text-slate-500">צרפו את המסמכים הנדרשים — וסיימתם</p>
               </div>
 
-              <div className="mb-5 rounded-xl bg-slate-50 p-4">
-                <p className="mb-2 text-sm font-semibold text-[#1a4a45]">מסמכים נדרשים לפי סוג התביעה:</p>
-                <ul className="list-disc space-y-1 pr-5 text-sm text-slate-600">
+              <div className="mb-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                <p className="mb-2 text-sm font-bold text-[#143834]">מסמכים נדרשים לפי סוג התביעה:</p>
+                <ul className="list-disc space-y-1.5 pr-5 text-sm text-slate-600">
                   {activeMeta.docs.map((doc) => (
                     <li key={doc}>{doc}</li>
                   ))}
                 </ul>
               </div>
 
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center transition hover:border-[#2f6b63] hover:bg-[#2f6b63]/5">
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#2f6b63]/30 bg-gradient-to-b from-[#f3faf7] to-white px-4 py-12 text-center transition hover:border-[#2f6b63] hover:shadow-md">
                 <input
                   type="file"
                   multiple
@@ -978,14 +1098,21 @@ const Claim = () => {
                     }
                   }}
                 />
-                <div className="text-sm font-semibold text-[#1a4a45]">לחצו לבחירת קבצים</div>
-                <div className="mt-1 text-xs text-slate-500">PDF / JPG / PNG / DOC</div>
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
+                  <FileUp className="h-6 w-6" />
+                </div>
+                <div className="text-sm font-bold text-[#143834]">לחצו לבחירת קבצים או גררו לכאן</div>
+                <div className="mt-1 text-xs text-slate-500">PDF / JPG / PNG / DOC — ניתן לצרף מספר קבצים</div>
               </label>
 
               {files.length > 0 ? (
                 <ul className="mt-4 space-y-2">
                   {files.map((file) => (
-                    <li key={`${file.name}-${file.size}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                    <li
+                      key={`${file.name}-${file.size}`}
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
+                    >
+                      <Check className="h-4 w-4 shrink-0 text-[#2f6b63]" />
                       {file.name}
                     </li>
                   ))}
@@ -994,13 +1121,13 @@ const Claim = () => {
               {errors.files ? <p className="mt-2 text-xs text-rose-600">{errors.files}</p> : null}
 
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                <Button type="button" variant="outline" className="rounded-xl" onClick={() => setStep("details")} disabled={isSubmitting}>
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("details")} disabled={isSubmitting}>
                   חזרה
                 </Button>
                 <Button
                   type="button"
                   size="lg"
-                  className="rounded-xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white sm:min-w-[200px]"
+                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
                   disabled={isSubmitting}
                   onClick={handleSubmit}
                 >
@@ -1020,6 +1147,10 @@ const Claim = () => {
             </div>
           ) : null}
         </div>
+
+        <p className="claim-rise claim-rise-d3 mt-6 text-center text-xs text-slate-500">
+          השליחה מאובטחת · הפרטים ישמשו לטיפול בתביעה בלבד
+        </p>
       </div>
     </div>
   );
