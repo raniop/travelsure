@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.send-tirosh-lead]
 verify_jwt = false
+
+[functions.send-claim-email]
+verify_jwt = false

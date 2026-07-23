@@ -14,6 +14,7 @@ import {
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
+import { submitClaimRequest } from "@/lib/submitClaim";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -544,15 +545,8 @@ const Claim = () => {
         submittedAt: new Date().toISOString(),
       };
 
-      const body = new FormData();
-      body.append("payload", JSON.stringify(payload));
-      files.forEach((file) => body.append("files[]", file));
-
-      const response = await fetch("https://ophir.travelsure.co.il/api-claim.php", {
-        method: "POST",
-        body,
-      });
-      if (!response.ok) throw new Error("claim_submit_failed");
+      const result = await submitClaimRequest(payload, files);
+      if (!result.ok) throw new Error(result.error || "claim_submit_failed");
 
       toast({
         title: "התביעה נשלחה בהצלחה",
@@ -682,7 +676,7 @@ const Claim = () => {
             הגשת תביעה
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
-            תהליך דיגיטלי ברור, מאובטח ומותאם לדרישות הראל — ב־3 שלבים בלבד
+            תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5 backdrop-blur">
@@ -690,7 +684,7 @@ const Claim = () => {
               מאובטח ומוצפן
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5 backdrop-blur">
-              לפי הנחיות הראל
+              אופיר ושות׳ סוכנות לביטוח
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5 backdrop-blur">
               מענה עד 30 יום
@@ -1550,7 +1544,7 @@ const Claim = () => {
                     checked={formData.marketingConsent}
                     onChange={(e) => setField("marketingConsent", e.target.checked)}
                   />
-                  <span>אני מסכים/ה לקבל הצעות שיווקיות מקבוצת הראל (אופציונלי)</span>
+                  <span>אני מסכים/ה לקבל הצעות שיווקיות מאופיר ושות׳ סוכנות לביטוח (אופציונלי)</span>
                 </label>
               </section>
 
