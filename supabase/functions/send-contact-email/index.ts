@@ -230,7 +230,7 @@ function buildClaimCustomerHtml(claimNumber: string, firstName: string): string 
       <p style="margin:0 0 12px;">תביעת ביטוח הנסיעות שלך התקבלה במערכת TravelSure.</p>
       <p style="margin:0 0 12px;font-size:20px;letter-spacing:0.5px;">מספר התביעה שלך: <strong>${esc(claimNumber)}</strong></p>
       <p style="margin:0 0 12px;">שמור/י מספר זה למעקב מול הסוכנות.</p>
-      <p style="margin:0;color:#6b7280;font-size:13px;">TravelSure · אופיר ושות׳ סוכנות לביטוח<br>טלפון: 03-6244444 · אימייל: ophir@ophir-ins.co.il</p>
+      <p style="margin:0;color:#6b7280;font-size:13px;">TravelSure · אופיר ושות׳ סוכנות לביטוח<br>טלפון: 03-6244444 · אימייל: ophir@ophirins.co.il</p>
     </div>
   </div>
 </body>
@@ -307,14 +307,49 @@ const handler = async (req: Request): Promise<Response> => {
         emailAttachments.map((file) => file.filename),
       );
 
-      await sendResendEmail({
-        from: RESEND_FROM,
-        to: ["rani@ophir-ins.co.il", "eli@ophir-ins.co.il", "ophir@ophir-ins.co.il"],
-        reply_to: email || String(claim.email || "") || undefined,
-        subject: `תביעת ביטוח נסיעות חדשה · ${claimNumber}`,
-        html: staffHtml,
-        attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
-      });
+      const staffRecipients = [
+        "rani@ophirins.co.il",
+        "eli@ophirins.co.il",
+        "ophir@ophirins.co.il",
+      ];
+      const replyTo = email || String(claim.email || "") || undefined;
+      const staffSubject = `תביעת ביטוח נסיעות חדשה · ${claimNumber}`;
+
+      // Send to each staff mailbox separately so one bad address never blocks the others.
+      const staffResults = await Promise.allSettled(
+        staffRecipients.map((to) =>
+          sendResendEmail({
+            from: RESEND_FROM,
+            to: [to],
+            reply_to: replyTo,
+            subject: staffSubject,
+            html: staffHtml,
+            attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
+          }).catch(async (err) => {
+            // If attachments blow the provider limit, still deliver the claim details.
+            if (emailAttachments.length === 0) throw err;
+            console.error(`Staff email with attachments failed for ${to}, retrying without files:`, err);
+            return sendResendEmail({
+              from: RESEND_FROM,
+              to: [to],
+              reply_to: replyTo,
+              subject: staffSubject,
+              html: staffHtml,
+            });
+          }),
+        ),
+      );
+
+      const staffOk = staffResults.some((r) => r.status === "fulfilled");
+      if (!staffOk) {
+        console.error("All staff claim emails failed:", staffResults);
+        throw new Error("Failed to notify claim staff");
+      }
+      for (const result of staffResults) {
+        if (result.status === "rejected") {
+          console.error("Partial staff claim email failure:", result.reason);
+        }
+      }
 
       const customerEmail = email || String(claim.email || "");
       if (customerEmail) {
@@ -341,7 +376,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await sendResendEmail({
       from: RESEND_FROM,
-      to: ["rani@ophir-ins.co.il", "eli@ophir-ins.co.il"],
+      to: ["rani@ophirins.co.il", "eli@ophirins.co.il"],
       reply_to: email,
       subject: subject || `פנייה חדשה מ-${name}`,
       html: `
