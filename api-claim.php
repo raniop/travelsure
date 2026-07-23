@@ -123,6 +123,7 @@ $fieldsMap = [
     'providerName' => 'מוסד רפואי / נותן שירות',
     'claimReason' => 'סיבת ביטול / קיצור',
     'bankName' => 'בנק',
+    'bankCode' => 'קוד בנק',
     'branchName' => 'שם סניף',
     'branchNumber' => 'מספר סניף',
     'accountNumber' => 'מספר חשבון',

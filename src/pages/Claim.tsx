@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,14 @@ import {
   isValidIsraeliId,
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
+import {
+  IsraeliBank,
+  IsraeliBranch,
+  branchesForBank,
+  filterBranches,
+  findBranchByCode,
+  loadIsraeliBanksData,
+} from "@/lib/israeliBanks";
 import {
   BriefcaseMedical,
   CalendarX2,
@@ -165,6 +173,7 @@ const initialForm = {
   airlineCompensation: "" as YesNo,
   airlineCompensationAmount: "",
   bankName: "",
+  bankCode: "",
   branchName: "",
   branchNumber: "",
   accountNumber: "",
@@ -241,9 +250,70 @@ const Claim = () => {
   const [expenses, setExpenses] = useState<ExpenseRow[]>([emptyExpense()]);
   const [baggageItems, setBaggageItems] = useState<BaggageRow[]>([emptyBaggage()]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [banks, setBanks] = useState<IsraeliBank[]>([]);
+  const [allBranches, setAllBranches] = useState<IsraeliBranch[]>([]);
+  const [branchQuery, setBranchQuery] = useState("");
+  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
   const groupedPolicies = useMemo(() => groupClaimPolicies(crmPolicies), [crmPolicies]);
+  const bankBranches = useMemo(
+    () => branchesForBank({ banks, branches: allBranches }, formData.bankCode),
+    [banks, allBranches, formData.bankCode]
+  );
+  const branchSuggestions = useMemo(
+    () => filterBranches(bankBranches, branchQuery || formData.branchName || formData.branchNumber),
+    [bankBranches, branchQuery, formData.branchName, formData.branchNumber]
+  );
+
+  useEffect(() => {
+    let alive = true;
+    loadIsraeliBanksData().then((data) => {
+      if (!alive) return;
+      setBanks(data.banks);
+      setAllBranches(data.branches);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const selectBank = (code: string) => {
+    const bank = banks.find((b) => b.code === code);
+    setFormData((prev) => ({
+      ...prev,
+      bankCode: code,
+      bankName: bank?.name || "",
+      branchName: "",
+      branchNumber: "",
+    }));
+    setBranchQuery("");
+    setBranchMenuOpen(false);
+    if (errors.bankName) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.bankName;
+        return next;
+      });
+    }
+  };
+
+  const selectBranch = (branch: IsraeliBranch) => {
+    setFormData((prev) => ({
+      ...prev,
+      branchName: branch.city ? `${branch.name} (${branch.city})` : branch.name,
+      branchNumber: branch.code,
+    }));
+    setBranchQuery("");
+    setBranchMenuOpen(false);
+    if (errors.branchNumber) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.branchNumber;
+        return next;
+      });
+    }
+  };
 
   const renderPolicyCard = (policy: ClaimCrmPolicy) => {
     const active = selectedPolicyUid === policy.uid;
@@ -1342,19 +1412,80 @@ const Claim = () => {
                 <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">אופן תשלום (העברה בנקאית)</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="בנק" required error={errors.bankName}>
-                    <Input className="bg-slate-50" value={formData.bankName} onChange={(e) => setField("bankName", e.target.value)} />
-                  </Field>
-                  <Field label="שם סניף">
-                    <Input className="bg-slate-50" value={formData.branchName} onChange={(e) => setField("branchName", e.target.value)} />
-                  </Field>
-                  <Field label="מספר סניף" required error={errors.branchNumber}>
-                    <Input className="bg-slate-50" value={formData.branchNumber} onChange={(e) => setField("branchNumber", e.target.value)} />
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-slate-50 px-3 py-2 text-sm"
+                      value={formData.bankCode}
+                      onChange={(e) => selectBank(e.target.value)}
+                    >
+                      <option value="">בחרו בנק</option>
+                      {banks.map((bank) => (
+                        <option key={bank.code} value={bank.code}>
+                          {bank.name}
+                        </option>
+                      ))}
+                    </select>
                   </Field>
                   <Field label="מספר חשבון" required error={errors.accountNumber}>
                     <Input className="bg-slate-50" value={formData.accountNumber} onChange={(e) => setField("accountNumber", e.target.value)} />
                   </Field>
+                  <Field label="סניף (חיפוש לפי שם / מספר / עיר)" required error={errors.branchNumber} className="sm:col-span-2">
+                    <div className="relative">
+                      <Input
+                        className="bg-slate-50"
+                        disabled={!formData.bankCode}
+                        placeholder={formData.bankCode ? "הקלידו שם סניף, מספר או עיר" : "בחרו בנק קודם"}
+                        value={
+                          branchMenuOpen
+                            ? branchQuery
+                            : formData.branchNumber
+                              ? `${formData.branchNumber} · ${formData.branchName}`
+                              : branchQuery
+                        }
+                        onFocus={() => {
+                          setBranchMenuOpen(true);
+                          setBranchQuery("");
+                        }}
+                        onChange={(e) => {
+                          const q = e.target.value;
+                          setBranchQuery(q);
+                          setBranchMenuOpen(true);
+                          const match = findBranchByCode(bankBranches, q);
+                          if (match) selectBranch(match);
+                          else setField("branchNumber", q.replace(/[^\d]/g, ""));
+                        }}
+                        onBlur={() => {
+                          // allow click on suggestion
+                          window.setTimeout(() => setBranchMenuOpen(false), 150);
+                        }}
+                      />
+                      {branchMenuOpen && formData.bankCode ? (
+                        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                          {branchSuggestions.length ? (
+                            branchSuggestions.map((branch) => (
+                              <button
+                                key={`${branch.bankCode}-${branch.code}`}
+                                type="button"
+                                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-right text-sm hover:bg-[#e8f4f1]"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => selectBranch(branch)}
+                              >
+                                <span className="font-semibold text-[#143834]">
+                                  {branch.code} · {branch.name}
+                                </span>
+                                <span className="text-xs text-slate-500">{branch.city}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-slate-500">לא נמצאו סניפים תואמים</div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  </Field>
                 </div>
-                <p className="text-xs text-slate-500">מעל 15,000 ₪ יש לצרף צילום שיק / אישור בנק על פרטי החשבון.</p>
+                <p className="text-xs text-slate-500">
+                  בחירת בנק וסניף מבוססת על נתוני בנק ישראל. מעל 15,000 ₪ יש לצרף צילום שיק / אישור בנק על פרטי החשבון.
+                </p>
               </section>
 
               <section className="space-y-3">

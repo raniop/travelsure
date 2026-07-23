@@ -396,11 +396,21 @@
 
           <h3>אופן תשלום (העברה בנקאית)</h3>
           <div class="grid grid-2">
-            <label class="field">בנק <span class="req">*</span><input name="bankName" required /></label>
-            <label class="field">שם סניף<input name="branchName" /></label>
-            <label class="field">מספר סניף <span class="req">*</span><input name="branchNumber" required /></label>
+            <label class="field">בנק <span class="req">*</span>
+              <select name="bankCode" id="bankCode" required>
+                <option value="">בחרו בנק</option>
+              </select>
+              <input type="hidden" name="bankName" id="bankName" />
+            </label>
             <label class="field">מספר חשבון <span class="req">*</span><input name="accountNumber" required /></label>
+            <label class="field" style="grid-column:1/-1;position:relative">סניף (חיפוש לפי שם / מספר / עיר) <span class="req">*</span>
+              <input id="branchSearch" name="branchSearch" placeholder="בחרו בנק קודם" disabled autocomplete="off" />
+              <input type="hidden" name="branchName" id="branchName" />
+              <input type="hidden" name="branchNumber" id="branchNumber" required />
+              <div id="branchSuggestions" class="hidden" style="position:absolute;inset-inline:0;top:100%;z-index:20;max-height:220px;overflow:auto;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 30px -18px rgba(15,23,42,.45)"></div>
+            </label>
           </div>
+          <p class="tiny">בחירת בנק וסניף מבוססת על נתוני בנק ישראל. מעל 15,000 ₪ יש לצרף צילום שיק / אישור בנק.</p>
 
           <h3>הצהרות</h3>
           <label class="check" id="waiverWrap"><input type="checkbox" name="medicalWaiver" /> אני מאשר/ת ויתור על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי לצורך בירור התביעה.</label>
@@ -957,7 +967,7 @@
           $("detailsError").textContent = "יש למלא פוליסה, תאריך, מדינה ותיאור מקרה"; return;
         }
         if (!get("bankName") || !get("branchNumber") || !get("accountNumber")) {
-          $("detailsError").textContent = "יש למלא פרטי חשבון בנק"; return;
+          $("detailsError").textContent = "יש לבחור בנק וסניף ולמלא מספר חשבון"; return;
         }
         if (!form.declaration.checked) { $("detailsError").textContent = "יש לאשר את ההצהרה"; return; }
         if (claimType !== "baggage" && !form.medicalWaiver.checked) {
@@ -1001,7 +1011,7 @@
           claimReason: get("claimReason"), tripStartDate: get("tripStartDate"), tripEndDate: get("tripEndDate"),
           incidentDate: get("incidentDate"), country: get("country"), details: get("details"),
           totalClaimed: get("totalClaimed"), amount: get("totalClaimed"),
-          bankName: get("bankName"), branchName: get("branchName"), branchNumber: get("branchNumber"), accountNumber: get("accountNumber"),
+          bankName: get("bankName"), bankCode: get("bankCode"), branchName: get("branchName"), branchNumber: get("branchNumber"), accountNumber: get("accountNumber"),
           medicalWaiver: form.medicalWaiver.checked, authorizeAgent: form.authorizeAgent.checked, declaration: form.declaration.checked,
           expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
           baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
@@ -1036,6 +1046,106 @@
         }
       };
 
+      let banksData = { banks: [], branches: [] };
+      let currentBankBranches = [];
+
+      function branchLabel(b) {
+        return b.city ? `${b.code} · ${b.name} (${b.city})` : `${b.code} · ${b.name}`;
+      }
+
+      function setBranch(branch) {
+        $("branchNumber").value = branch ? branch.code : "";
+        $("branchName").value = branch ? (branch.city ? `${branch.name} (${branch.city})` : branch.name) : "";
+        $("branchSearch").value = branch ? branchLabel(branch) : "";
+        $("branchSuggestions").classList.add("hidden");
+      }
+
+      function renderBranchSuggestions(query) {
+        const box = $("branchSuggestions");
+        if (!$("bankCode").value) {
+          box.classList.add("hidden");
+          return;
+        }
+        const q = String(query || "").trim().toLowerCase();
+        let list = currentBankBranches;
+        if (q) {
+          list = currentBankBranches.filter((b) => {
+            const hay = `${b.code} ${b.name} ${b.city}`.toLowerCase();
+            return hay.includes(q) || b.code.replace(/^0+/, "") === q.replace(/^0+/, "");
+          });
+        }
+        list = list.slice(0, 40);
+        if (!list.length) {
+          box.innerHTML = `<div style="padding:10px 12px;color:#64748b;font-size:13px">לא נמצאו סניפים תואמים</div>`;
+          box.classList.remove("hidden");
+          return;
+        }
+        box.innerHTML = list
+          .map(
+            (b) =>
+              `<button type="button" data-br="${b.code}" style="display:flex;justify-content:space-between;gap:10px;width:100%;border:0;background:#fff;padding:9px 12px;text-align:right;cursor:pointer;font-family:inherit">
+                <strong style="color:var(--brand-dark)">${b.code} · ${b.name}</strong>
+                <span style="color:#64748b;font-size:12px">${b.city || ""}</span>
+              </button>`
+          )
+          .join("");
+        box.classList.remove("hidden");
+      }
+
+      async function initBanks() {
+        try {
+          const res = await fetch("/data/israeliBanks.json", { cache: "force-cache" });
+          if (!res.ok) return;
+          banksData = await res.json();
+          const sel = $("bankCode");
+          sel.innerHTML =
+            `<option value="">בחרו בנק</option>` +
+            (banksData.banks || [])
+              .map((b) => `<option value="${b.code}">${b.name}</option>`)
+              .join("");
+        } catch (_) {}
+      }
+
+      $("bankCode").addEventListener("change", () => {
+        const code = $("bankCode").value;
+        const bank = (banksData.banks || []).find((b) => b.code === code);
+        $("bankName").value = bank ? bank.name : "";
+        currentBankBranches = (banksData.branches || [])
+          .filter((b) => b.bankCode === code)
+          .sort((a, b) => a.name.localeCompare(b.name, "he"));
+        setBranch(null);
+        $("branchSearch").disabled = !code;
+        $("branchSearch").placeholder = code ? "הקלידו שם סניף, מספר או עיר" : "בחרו בנק קודם";
+      });
+
+      $("branchSearch").addEventListener("focus", () => renderBranchSuggestions(""));
+      $("branchSearch").addEventListener("input", (e) => {
+        const q = e.target.value;
+        renderBranchSuggestions(q);
+        const digits = q.replace(/[^\d]/g, "");
+        const match = currentBankBranches.find(
+          (b) => b.code === digits || b.code.replace(/^0+/, "") === digits.replace(/^0+/, "")
+        );
+        if (match) setBranch(match);
+        else {
+          $("branchNumber").value = digits;
+          $("branchName").value = "";
+        }
+      });
+      $("branchSuggestions").addEventListener("mousedown", (e) => {
+        const btn = e.target.closest("[data-br]");
+        if (!btn) return;
+        e.preventDefault();
+        const branch = currentBankBranches.find((b) => b.code === btn.dataset.br);
+        if (branch) setBranch(branch);
+      });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("#branchSearch") && !e.target.closest("#branchSuggestions")) {
+          $("branchSuggestions").classList.add("hidden");
+        }
+      });
+
+      initBanks();
       renderTypes();
       renderSteps();
     </script>
