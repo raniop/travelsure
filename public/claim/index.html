@@ -814,12 +814,28 @@
       }
 
       function generateClaimNumber() {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        const rand = Math.floor(1000 + Math.random() * 9000);
-        return `TS-${y}${m}${day}-${rand}`;
+        const year = new Date().getFullYear();
+        return String(year) + String(Date.now()).slice(-4);
+      }
+
+      async function allocateClaimNumber() {
+        try {
+          const year = new Date().getFullYear();
+          const res = await fetch(SUPABASE_URL + "/rest/v1/rpc/next_claim_number", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: "Bearer " + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ p_year: year }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data) return String(data);
+          }
+        } catch (_) {}
+        return generateClaimNumber();
       }
 
       function renderTypes() {
@@ -1326,15 +1342,19 @@
         }
 
         async function submitClaim() {
-          const claimNumber = generateClaimNumber();
-          payload.claimNumber = claimNumber;
+          // Server allocates professional sequential number: 20260001, 20260002, ...
+          delete payload.claimNumber;
 
           const filesPayload = [];
           for (const file of selectedFiles) {
+            const content = await fileToBase64(file);
             filesPayload.push({
               name: file.name,
+              filename: file.name,
               contentType: file.type || "application/octet-stream",
-              contentBase64: await fileToBase64(file),
+              type: file.type || "application/octet-stream",
+              contentBase64: content,
+              content: content,
             });
           }
 
@@ -1352,7 +1372,7 @@
               if (!res.ok) return { ok: false };
               const data = await res.json().catch(() => ({}));
               if (data.error) return { ok: false };
-              return { ok: true, mode: data.mode || "" };
+              return { ok: true, mode: data.mode || "", claimNumber: data.claimNumber || "" };
             } catch (_) {
               return { ok: false };
             }
@@ -1360,7 +1380,6 @@
 
           const claimMessage = [
             "=== תביעה חדשה מטופס TravelSure ===",
-            "מספר תביעה: " + claimNumber,
             "סוג תביעה: " + (payload.claimTypeLabel || ""),
             "שם: " + (payload.fullName || ""),
             "ת.ז.: " + (payload.idNumber || ""),
@@ -1379,32 +1398,47 @@
           ].join("\n").slice(0, 4800);
 
           const primary = await postJson({
+            mode: "claim",
             type: "claim",
-            claimNumber,
             name: payload.fullName || "תביעה",
             email: payload.email || "",
             phone: payload.mobile || "",
             message: claimMessage,
             claimPayload: payload,
             files: filesPayload,
+            attachments: filesPayload.map((f) => ({
+              filename: f.filename,
+              content: f.content,
+              type: f.type,
+            })),
           });
+
+          let resolvedNumber = primary.claimNumber || "";
+          if (!resolvedNumber) {
+            resolvedNumber = await allocateClaimNumber();
+          }
+          payload.claimNumber = resolvedNumber;
 
           // Old function only emails ophir@ — also notify Rani + Eli with the claim text.
           if (primary.ok && primary.mode !== "claim") {
             const staff = ["rani@ophirins.co.il", "eli@ophirins.co.il"];
+            const fanout = claimMessage.replace(
+              "=== תביעה חדשה מטופס TravelSure ===",
+              "=== תביעה חדשה מטופס TravelSure ===\nמספר תביעה: " + resolvedNumber
+            );
             await Promise.all(
               staff.map((staffEmail) =>
                 postJson({
-                  name: "תביעה " + claimNumber + " — " + (payload.fullName || ""),
+                  name: "תביעה " + resolvedNumber + " — " + (payload.fullName || ""),
                   email: staffEmail,
                   phone: payload.mobile || "",
-                  message: claimMessage,
+                  message: fanout,
                 })
               )
             );
           }
 
-          if (primary.ok) return { ok: true, claimNumber };
+          if (primary.ok) return { ok: true, claimNumber: resolvedNumber };
 
           const body = new FormData();
           body.append("payload", JSON.stringify(payload));
@@ -1412,10 +1446,10 @@
           for (const url of OPHIR_FALLBACKS) {
             try {
               const res = await fetch(url, { method: "POST", body });
-              if (res.ok) return { ok: true, claimNumber };
+              if (res.ok) return { ok: true, claimNumber: resolvedNumber };
             } catch (_) {}
           }
-          return { ok: false, claimNumber };
+          return { ok: false, claimNumber: resolvedNumber };
         }
 
         $("submitBtn").disabled = true;

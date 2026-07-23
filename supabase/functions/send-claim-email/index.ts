@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -31,6 +32,7 @@ const yesNo = (value: unknown): string => {
 };
 
 const fieldLabels: Record<string, string> = {
+  claimNumber: "מספר תביעה",
   claimTypeLabel: "סוג תביעה",
   baggageSubtypeLabel: "סוג תביעת מטען",
   fullName: "שם מלא",
@@ -257,14 +259,35 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    let claimNumber = String(payload.claimNumber || "").trim();
+    if (!/^\d{8,}$/.test(claimNumber)) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && serviceRole) {
+        try {
+          const admin = createClient(supabaseUrl, serviceRole);
+          const year = new Date().getFullYear();
+          const { data, error } = await admin.rpc("next_claim_number", { p_year: year });
+          if (!error && data) claimNumber = String(data);
+        } catch (err) {
+          console.error("next_claim_number failed:", err);
+        }
+      }
+      if (!claimNumber) {
+        claimNumber = `${new Date().getFullYear()}${String(Date.now()).slice(-4)}`;
+      }
+      payload.claimNumber = claimNumber;
+    }
+
     const html =
       `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;">` +
       `<h2 style="margin:0 0 12px;color:#1f4b46;">הוגשה תביעה חדשה באתר TravelSure</h2>` +
+      `<p style="margin:0 0 8px;font-size:18px;letter-spacing:0.5px;"><strong>מספר תביעה: ${escapeHtml(claimNumber)}</strong></p>` +
       `<p style="margin:0 0 12px;color:#64748b;font-size:13px;">אופיר ושות׳ סוכנות לביטוח</p>` +
       `<table style="border-collapse:collapse;width:100%;max-width:900px;">${buildRowsHtml(payload)}</table>` +
       `</div>`;
 
-    const subject = `תביעה חדשה: ${claimTypeLabel} - ${fullName}`;
+    const subject = `תביעה חדשה · ${claimNumber} · ${claimTypeLabel} - ${fullName}`;
     const recipients = ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"];
 
     const response = await fetch("https://api.resend.com/emails", {
@@ -289,7 +312,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Email service error");
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, claimNumber }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

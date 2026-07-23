@@ -1,259 +1,378 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RESEND_FROM = Deno.env.get("RESEND_FROM") || "TravelSure <noreply@travelsure.co.il>";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CLAIM_RECIPIENTS = ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"];
-
-type ClaimFile = {
-  name?: string;
-  contentType?: string;
-  contentBase64?: string;
-};
-
 interface ContactEmailRequest {
   name: string;
   email: string;
   phone?: string;
+  subject?: string;
   message: string;
+  mode?: string;
   type?: string;
   claimNumber?: string;
   claimPayload?: Record<string, unknown>;
-  files?: ClaimFile[];
+  attachments?: Array<{ filename: string; content: string; type?: string }>;
+  files?: Array<{ name?: string; contentBase64?: string; contentType?: string; filename?: string; content?: string; type?: string }>;
 }
 
-const escapeHtml = (str: string): string =>
-  String(str ?? "")
+const CLAIM_FIELD_LABELS: Record<string, string> = {
+  claimNumber: "מספר תביעה",
+  claimTypeLabel: "סוג תביעה",
+  baggageSubtypeLabel: "סוג תביעת מטען",
+  fullName: "שם מלא",
+  lastName: "שם משפחה",
+  firstName: "שם פרטי",
+  idNumber: "תעודת זהות",
+  birthDate: "תאריך לידה",
+  street: "רחוב",
+  houseNumber: "מספר בית",
+  city: "יישוב",
+  zip: "מיקוד",
+  homePhone: "טלפון בבית",
+  mobile: "טלפון נייד",
+  phone: "טלפון",
+  email: "אימייל",
+  hmoName: "קופת חולים",
+  hmoBranch: "סניף קופ״ח",
+  hmoAddress: "כתובת סניף",
+  policyNumber: "מספר פוליסה",
+  policyType: "סוג פוליסה",
+  purchasedWhere: "היכן נרכשה",
+  claimReason: "סיבת ביטול / קיצור",
+  tripStartDate: "תאריך יציאה",
+  tripEndDate: "תאריך חזרה",
+  incidentDate: "תאריך האירוע",
+  country: "מדינה / מיקום",
+  details: "תיאור המקרה",
+  totalClaimed: "סכום נתבע",
+  bankName: "בנק",
+  bankCode: "קוד בנק",
+  branchName: "שם סניף",
+  branchNumber: "מספר סניף",
+  accountNumber: "מספר חשבון",
+  notifiedCreditCard: "דיווח לחברת אשראי",
+  creditCardPolicyNumber: "מספר פוליסת אשראי",
+  medicalExtension: "הרחבה רפואית",
+  medicalExtensionPolicy: "מספר פוליסת הרחבה",
+  claimedElsewhere: "נתבע במקום אחר",
+  otherAbroadPolicy: "פוליסה אחרת בחו״ל",
+  declaration: "הצהרה",
+  marketingConsent: "הסכמה שיווקית",
+  medicalWaiver: "ויתור סודיות רפואית",
+  authorizeAgent: "הרשאת סוכן",
+  crmMatched: "זוהה ב-CRM",
+  selectedPolicyId: "פוליסה שנבחרה",
+  crmCustomerName: "שם לקוח מ-CRM",
+  agentName: "שם הסוכן",
+};
+
+function esc(value: unknown): string {
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/"/g, "&quot;");
+}
 
-const checkRateLimit = (clientIp: string): boolean => {
-  const now = Date.now();
-  const record = rateLimitMap.get(clientIp);
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(clientIp, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
+function yesNo(value: unknown): string {
+  if (value === true || value === "true" || value === "yes") return "כן";
+  if (value === false || value === "false" || value === "no") return "לא";
+  if (typeof value === "string") return value;
+  return "";
+}
+
+function isClaimMode(body: ContactEmailRequest): boolean {
+  return body.mode === "claim" || body.type === "claim" || Boolean(body.claimPayload);
+}
+
+function isSequentialClaimNumber(value: string): boolean {
+  // Professional format: YYYYNNNN → 20260001
+  return /^\d{4}\d{4,}$/.test(value);
+}
+
+async function allocateClaimNumber(preferred?: string): Promise<string> {
+  const cleaned = String(preferred || "").trim();
+  // Only trust numbers that already look like sequential claim IDs from our counter.
+  // Always allocate server-side when missing so we never invent random IDs.
+  if (isSequentialClaimNumber(cleaned)) return cleaned;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (supabaseUrl && serviceRole) {
+    try {
+      const admin = createClient(supabaseUrl, serviceRole);
+      const year = new Date().getFullYear();
+      const { data, error } = await admin.rpc("next_claim_number", { p_year: year });
+      if (!error && data) return String(data);
+      console.error("next_claim_number RPC failed:", error);
+    } catch (err) {
+      console.error("allocateClaimNumber error:", err);
+    }
   }
-  if (record.count >= RATE_LIMIT_MAX) return false;
-  record.count++;
-  return true;
-};
 
-const validateInput = (data: ContactEmailRequest): { valid: boolean; error?: string } => {
-  const { name, email, message } = data;
-  if (!name || !email || !message) return { valid: false, error: "Missing required fields" };
-  if (name.length > 160) return { valid: false, error: "Name too long" };
-  if (email.length > 255) return { valid: false, error: "Email too long" };
-  if (message.length > 20000) return { valid: false, error: "Message too long" };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { valid: false, error: "Invalid email format" };
-  return { valid: true };
-};
+  const year = new Date().getFullYear();
+  return `${year}${String(Date.now()).slice(-4)}`;
+}
 
-const decodeBase64Size = (b64: string): number => {
-  const cleaned = b64.replace(/\s/g, "");
-  const padding = cleaned.endsWith("==") ? 2 : cleaned.endsWith("=") ? 1 : 0;
-  return Math.max(0, Math.floor((cleaned.length * 3) / 4) - padding);
-};
-
-const buildAttachments = (files: ClaimFile[] | undefined) => {
-  if (!Array.isArray(files) || !files.length) return [];
-  const allowedExt = new Set(["pdf", "jpg", "jpeg", "png", "doc", "docx", "heic"]);
-  const attachments: { filename: string; content: string; contentType?: string }[] = [];
-  let total = 0;
-  for (const file of files.slice(0, 12)) {
-    const name = String(file?.name ?? "attachment").trim() || "attachment";
-    const b64 = String(file?.contentBase64 ?? "").replace(/^data:[^;]+;base64,/, "").trim();
-    if (!b64) continue;
-    const ext = name.split(".").pop()?.toLowerCase() || "";
-    if (!allowedExt.has(ext)) continue;
-    const size = decodeBase64Size(b64);
-    if (size <= 0 || size > 8 * 1024 * 1024) continue;
-    total += size;
-    if (total > 20 * 1024 * 1024) break;
-    attachments.push({
-      filename: name.replace(/[^\w.\u0590-\u05FF-]+/g, "_") || `file.${ext}`,
-      content: b64,
-      contentType: file.contentType || undefined,
-    });
+function buildPayloadRows(payload: Record<string, unknown>): string {
+  const rows: string[] = [];
+  for (const [key, label] of Object.entries(CLAIM_FIELD_LABELS)) {
+    if (!(key in payload)) continue;
+    let value: unknown = payload[key];
+    if (typeof value === "boolean") value = yesNo(value);
+    if (value === undefined || value === null || String(value).trim() === "") continue;
+    rows.push(`<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;width:38%;vertical-align:top;">${esc(label)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:600;vertical-align:top;white-space:pre-wrap;">${esc(value)}</td>
+    </tr>`);
   }
-  return attachments;
-};
 
-const sendEmail = async (opts: {
-  to: string[];
-  subject: string;
-  html: string;
-  replyTo?: string;
-  attachments?: { filename: string; content: string; contentType?: string }[];
-}) => {
+  const expenses = payload.expenses;
+  if (Array.isArray(expenses) && expenses.length) {
+    const items = expenses
+      .map((item) => {
+        if (!item || typeof item !== "object") return "";
+        const row = item as Record<string, unknown>;
+        const line = [row.date, row.type, row.amount].map((v) => String(v ?? "").trim()).filter(Boolean).join(" | ");
+        return line ? `<li>${esc(line)}</li>` : "";
+      })
+      .filter(Boolean)
+      .join("");
+    if (items) {
+      rows.push(`<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;vertical-align:top;">פירוט הוצאות</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;"><ul style="margin:0;padding:0 18px 0 0;">${items}</ul></td>
+      </tr>`);
+    }
+  }
+
+  const baggageItems = payload.baggageItems;
+  if (Array.isArray(baggageItems) && baggageItems.length) {
+    const items = baggageItems
+      .map((item) => {
+        if (!item || typeof item !== "object") return "";
+        const row = item as Record<string, unknown>;
+        if (!String(row.item ?? "").trim()) return "";
+        const line = [row.item, row.purchaseDate, row.purchasePrice, row.receiptAttached ? "קבלה: כן" : "קבלה: לא"]
+          .map((v) => String(v ?? "").trim())
+          .filter(Boolean)
+          .join(" | ");
+        return `<li>${esc(line)}</li>`;
+      })
+      .filter(Boolean)
+      .join("");
+    if (items) {
+      rows.push(`<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;vertical-align:top;">פירוט כבודה</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;"><ul style="margin:0;padding:0 18px 0 0;">${items}</ul></td>
+      </tr>`);
+    }
+  }
+
+  return rows.join("");
+}
+
+function buildClaimStaffHtml(
+  claim: Record<string, unknown>,
+  claimNumber: string,
+  attachmentNames: string[],
+): string {
+  const rows = buildPayloadRows({ ...claim, claimNumber });
+  const files =
+    attachmentNames.length > 0
+      ? `<ul style="margin:0;padding:0 18px 0 0;color:#111827;">${attachmentNames
+          .map((name) => `<li style="margin:0 0 6px;">${esc(name)}</li>`)
+          .join("")}</ul>`
+      : `<p style="margin:0;color:#6b7280;">לא צורפו קבצים</p>`;
+
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:720px;margin:24px auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="background:linear-gradient(135deg,#0f766e,#0d9488);padding:22px 24px;color:#fff;">
+      <div style="font-size:13px;opacity:.9;">TravelSure · אופיר ושות׳ סוכנות לביטוח</div>
+      <h1 style="margin:8px 0 0;font-size:24px;">תביעת ביטוח נסיעות חדשה</h1>
+      <p style="margin:8px 0 0;font-size:18px;letter-spacing:0.5px;">מספר תביעה: <strong>${esc(claimNumber)}</strong></p>
+    </div>
+    <div style="padding:22px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;margin:0 0 18px;">
+        ${rows}
+      </table>
+      <div style="margin:0 0 8px;">
+        <h3 style="margin:0 0 8px;font-size:15px;color:#0f766e;">קבצים מצורפים</h3>
+        <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fff;">${files}</div>
+        <p style="margin:8px 0 0;color:#6b7280;font-size:13px;">הקבצים מצורפים גם כקבצים למייל זה.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function buildClaimCustomerHtml(claimNumber: string, firstName: string): string {
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:640px;margin:24px auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="background:linear-gradient(135deg,#0f766e,#0d9488);padding:22px 24px;color:#fff;">
+      <h1 style="margin:0;font-size:22px;">תביעתך התקבלה בהצלחה</h1>
+    </div>
+    <div style="padding:22px 24px;color:#111827;line-height:1.7;">
+      <p style="margin:0 0 12px;">שלום ${esc(firstName || "לקוח/ה")},</p>
+      <p style="margin:0 0 12px;">תביעת ביטוח הנסיעות שלך התקבלה במערכת TravelSure.</p>
+      <p style="margin:0 0 12px;font-size:20px;letter-spacing:0.5px;">מספר התביעה שלך: <strong>${esc(claimNumber)}</strong></p>
+      <p style="margin:0 0 12px;">שמור/י מספר זה למעקב מול הסוכנות.</p>
+      <p style="margin:0;color:#6b7280;font-size:13px;">TravelSure · אופיר ושות׳ סוכנות לביטוח<br>טלפון: 03-6244444 · אימייל: ophir@ophir-ins.co.il</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function normalizeAttachments(body: ContactEmailRequest): Array<{ filename: string; content: string; type?: string }> {
+  const fromAttachments = (body.attachments || [])
+    .filter((file) => file?.filename && file?.content)
+    .map((file) => ({
+      filename: file.filename,
+      content: String(file.content).replace(/^data:[^;]+;base64,/, ""),
+      ...(file.type ? { type: file.type } : {}),
+    }));
+
+  if (fromAttachments.length) return fromAttachments;
+
+  return (body.files || [])
+    .map((file) => {
+      const filename = String(file.filename || file.name || "").trim();
+      const content = String(file.content || file.contentBase64 || "")
+        .replace(/^data:[^;]+;base64,/, "")
+        .trim();
+      if (!filename || !content) return null;
+      return {
+        filename,
+        content,
+        ...(file.type || file.contentType ? { type: file.type || file.contentType } : {}),
+      };
+    })
+    .filter((file): file is { filename: string; content: string; type?: string } => Boolean(file));
+}
+
+async function sendResendEmail(payload: Record<string, unknown>) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from: "TravelSure <no-reply@travelsure.co.il>",
-      to: opts.to,
-      subject: opts.subject,
-      html: opts.html,
-      reply_to: opts.replyTo,
-      attachments: opts.attachments?.length ? opts.attachments : undefined,
-    }),
+    body: JSON.stringify(payload),
   });
-
+  const result = await response.json();
   if (!response.ok) {
-    const error = await response.text();
-    console.error("Resend API error:", error);
-    throw new Error("Email service error");
+    console.error("Resend error:", result);
+    throw new Error(result?.message || "Failed to send email");
   }
-
-  return response.json();
-};
+  return result;
+}
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const clientIp =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("cf-connecting-ip") ||
-    "unknown";
-
-  if (!checkRateLimit(clientIp)) {
-    return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
-      status: 429,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  }
-
   try {
-    if (!RESEND_API_KEY) throw new Error("Missing RESEND_API_KEY");
+    const body: ContactEmailRequest = await req.json();
+    const { name, email, phone, subject, message } = body;
 
-    const data = (await req.json()) as ContactEmailRequest;
-    const validation = validateInput(data);
-    if (!validation.valid) {
-      return new Response(JSON.stringify({ error: validation.error }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
     }
 
-    const { name, email, phone, message } = data;
-    const claimNumber = String(data.claimNumber || data.claimPayload?.claimNumber || "").trim();
-    const isClaim = data.type === "claim" || Boolean(data.claimPayload) || Boolean(claimNumber);
-    const attachments = buildAttachments(data.files);
-    const safeName = escapeHtml(name);
-    const safeEmail = escapeHtml(email);
-    const safePhone = escapeHtml(phone || "");
-    const safeMessage = escapeHtml(message).replace(/\n/g, "<br/>");
-    const safeClaimNumber = escapeHtml(claimNumber || "ללא מספר");
+    if (isClaimMode(body)) {
+      const claim = (body.claimPayload || {}) as Record<string, unknown>;
+      const claimNumber = await allocateClaimNumber(
+        String(body.claimNumber || claim.claimNumber || ""),
+      );
 
-    if (isClaim) {
-      const businessEmailHtml = `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; color:#0f172a;">
-          <div style="background:linear-gradient(135deg,#1f4b46,#2f6b63);padding:22px;border-radius:12px 12px 0 0;">
-            <h1 style="color:#fff;margin:0;font-size:22px;">תביעה חדשה מהאתר</h1>
-            <p style="color:#bbf7d0;margin:8px 0 0;">אופיר ושות׳ סוכנות לביטוח</p>
-          </div>
-          <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 12px 12px;">
-            <p style="margin:0 0 12px;"><strong>מספר תביעה:</strong> <span style="font-size:18px;color:#1f4b46;">${safeClaimNumber}</span></p>
-            <p><strong>שם:</strong> ${safeName}</p>
-            <p><strong>אימייל:</strong> ${safeEmail}</p>
-            <p><strong>טלפון:</strong> ${safePhone || "לא צוין"}</p>
-            <p><strong>פרטי התביעה:</strong></p>
-            <div style="background:#fff;padding:14px;border-radius:8px;border:1px solid #e2e8f0;">${safeMessage}</div>
-            <p style="margin-top:14px;"><strong>קבצים מצורפים:</strong> ${attachments.length ? attachments.length : "אין"}</p>
-          </div>
-        </div>
-      `;
+      const emailAttachments = normalizeAttachments(body);
+      const staffHtml = buildClaimStaffHtml(
+        claim,
+        claimNumber,
+        emailAttachments.map((file) => file.filename),
+      );
 
-      await sendEmail({
-        to: CLAIM_RECIPIENTS,
-        subject: `תביעה חדשה ${claimNumber ? `(${claimNumber})` : ""}: ${name}`.replace(/\s+/g, " ").trim(),
-        html: businessEmailHtml,
-        replyTo: email,
-        attachments,
+      await sendResendEmail({
+        from: RESEND_FROM,
+        to: ["rani@ophir-ins.co.il", "eli@ophir-ins.co.il", "ophir@ophir-ins.co.il"],
+        reply_to: email || String(claim.email || "") || undefined,
+        subject: `תביעת ביטוח נסיעות חדשה · ${claimNumber}`,
+        html: staffHtml,
+        attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
       });
 
-      const customerEmailHtml = `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #1f4b46 0%, #2f6b63 100%); padding: 28px; text-align: center;">
-            <h1 style="color: white; margin: 0;">TravelSure</h1>
-            <p style="color: #4ade80; margin: 10px 0 0 0;">אופיר ושות׳ סוכנות לביטוח</p>
-          </div>
-          <div style="padding: 28px; background-color: #f9f9f9;">
-            <h2 style="color: #1a5a5a;">שלום ${safeName},</h2>
-            <p>התביעה התקבלה בהצלחה במערכת.</p>
-            <p style="font-size:18px;"><strong>מספר תביעה:</strong> ${safeClaimNumber}</p>
-            <p>הצוות שלנו יבדוק את הפרטים והמסמכים ויחזור אליך בהקדם.</p>
-            <p>בברכה,<br>צוות TravelSure</p>
-          </div>
-        </div>
-      `;
-      await sendEmail({
-        to: [email],
-        subject: `התביעה התקבלה - ${safeClaimNumber} | TravelSure`,
-        html: customerEmailHtml,
-      });
+      const customerEmail = email || String(claim.email || "");
+      if (customerEmail) {
+        try {
+          await sendResendEmail({
+            from: RESEND_FROM,
+            to: [customerEmail],
+            subject: `אישור קבלת תביעה · ${claimNumber}`,
+            html: buildClaimCustomerHtml(
+              claimNumber,
+              String(claim.firstName || name || ""),
+            ),
+          });
+        } catch (customerErr) {
+          console.error("Customer claim confirmation failed:", customerErr);
+        }
+      }
 
-      return new Response(JSON.stringify({ success: true, mode: "claim", claimNumber: claimNumber || null }), {
+      return new Response(JSON.stringify({ success: true, mode: "claim", claimNumber }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const businessEmailHtml = `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #1a5a5a;">פנייה חדשה מהאתר</h1>
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px;">
-          <p><strong>שם:</strong> ${safeName}</p>
-          <p><strong>אימייל:</strong> ${safeEmail}</p>
-          <p><strong>טלפון:</strong> ${safePhone || "לא צוין"}</p>
-          <p><strong>הודעה:</strong></p>
-          <p style="background-color: white; padding: 15px; border-radius: 5px;">${safeMessage}</p>
-        </div>
-      </div>
-    `;
-
-    await sendEmail({
-      to: ["ophir@ophirins.co.il"],
-      subject: `פנייה חדשה מ-${name}`,
-      html: businessEmailHtml,
-      replyTo: email,
-    });
-
-    await sendEmail({
-      to: [email],
-      subject: "קיבלנו את פנייתך - TravelSure",
+    const emailResponse = await sendResendEmail({
+      from: RESEND_FROM,
+      to: ["rani@ophir-ins.co.il", "eli@ophir-ins.co.il"],
+      reply_to: email,
+      subject: subject || `פנייה חדשה מ-${name}`,
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1a5a5a;">שלום ${safeName},</h2>
-          <p>תודה שפנית אלינו! קיבלנו את הודעתך ונחזור אליך בהקדם.</p>
-          <p>בברכה,<br>צוות TravelSure - אופיר ושות׳ סוכנות לביטוח</p>
+          <h2 style="color: #0f766e;">פנייה חדשה מטופס יצירת קשר</h2>
+          <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>שם:</strong> ${esc(name)}</p>
+            <p><strong>אימייל:</strong> ${esc(email)}</p>
+            ${phone ? `<p><strong>טלפון:</strong> ${esc(phone)}</p>` : ""}
+            ${subject ? `<p><strong>נושא:</strong> ${esc(subject)}</p>` : ""}
+          </div>
+          <div style="background: #fff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h3 style="color: #334155; margin-top: 0;">הודעה:</h3>
+            <p style="white-space: pre-wrap; color: #475569;">${esc(message)}</p>
+          </div>
+          <p style="color: #94a3b8; font-size: 12px; margin-top: 20px;">
+            נשלח מטופס יצירת הקשר באתר TravelSure
+          </p>
         </div>
       `,
     });
 
-    return new Response(JSON.stringify({ success: true, mode: "contact" }), {
+    console.log("Email sent successfully:", emailResponse);
+
+    return new Response(JSON.stringify({ success: true, id: emailResponse.id }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in send-contact-email function:", error);
-    return new Response(JSON.stringify({ error: "Unable to send message. Please try again later." }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

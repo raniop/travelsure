@@ -14,13 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      claim_counters: {
+        Row: {
+          year: number
+          last_value: number
+        }
+        Insert: {
+          year: number
+          last_value?: number
+        }
+        Update: {
+          year?: number
+          last_value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      next_claim_number: {
+        Args: { p_year?: number }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

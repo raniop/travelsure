@@ -14,7 +14,7 @@ import {
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
-import { generateClaimNumber, submitClaimRequest } from "@/lib/submitClaim";
+import { submitClaimRequest } from "@/lib/submitClaim";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -535,11 +535,9 @@ const Claim = () => {
     if (!claimType || !activeMeta || !validateFiles()) return;
     setIsSubmitting(true);
     try {
-      const claimNumber = generateClaimNumber();
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const payload = {
         ...formData,
-        claimNumber,
         claimType,
         claimTypeLabel: activeMeta.title,
         baggageSubtype: claimType === "baggage" ? baggageSubtype : undefined,
@@ -558,7 +556,7 @@ const Claim = () => {
       const result = await submitClaimRequest(payload, files);
       if (!result.ok) throw new Error(result.error || "claim_submit_failed");
 
-      setSubmittedClaimNumber(result.claimNumber || claimNumber);
+      setSubmittedClaimNumber(result.claimNumber || "");
       setSubmittedSummary({
         fullName,
         claimTypeLabel: activeMeta.title,
