@@ -73,6 +73,7 @@ if (($payload['claimType'] ?? '') === 'trip_shorten' || ($payload['tripSubtype']
 $fieldsMap = [
     'claimTypeLabel' => 'סוג תביעה',
     'tripSubtypeLabel' => 'ביטול / קיצור',
+    'baggageSubtypeLabel' => 'סוג תביעת מטען',
     'fullName' => 'שם מלא',
     'lastName' => 'שם משפחה',
     'firstName' => 'שם פרטי',

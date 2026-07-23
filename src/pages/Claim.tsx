@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
+type BaggageSubtype = "loss" | "theft" | "delay";
 type Step = "type" | "identity" | "policy" | "details" | "files" | "blocked";
 type YesNo = "" | "yes" | "no";
 
@@ -39,6 +40,12 @@ type ExpenseRow = { date: string; type: string; amount: string; receiptAttached:
 type BaggageRow = { item: string; purchaseDate: string; purchasePrice: string; receiptAttached: boolean };
 
 const claimTypesOrder: ClaimType[] = ["medical", "trip_cancel", "trip_shorten", "baggage"];
+
+const baggageSubtypeMeta: Record<BaggageSubtype, { title: string; subtitle: string }> = {
+  loss: { title: "אובדן", subtitle: "הכבודה אבדה ולא נמצאה" },
+  theft: { title: "גניבה", subtitle: "הכבודה נגנבה" },
+  delay: { title: "איחור בהגעת כבודה", subtitle: "הכבודה הגיעה באיחור" },
+};
 
 const claimTypeMeta: Record<
   ClaimType,
@@ -90,7 +97,7 @@ const claimTypeMeta: Record<
   baggage: {
     title: "מטען / כבודה",
     short: "מטען",
-    subtitle: "אובדן, גניבה או נזק לכבודה",
+    subtitle: "אובדן, גניבה או איחור בהגעת כבודה",
     docs: [
       "דו״ח משטרה במקור ממקום ומזמן האירוע",
       "קבלות רכישה על הרכוש שאבד/נגנב",
@@ -221,6 +228,7 @@ const Claim = () => {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("type");
   const [claimType, setClaimType] = useState<ClaimType | null>(null);
+  const [baggageSubtype, setBaggageSubtype] = useState<BaggageSubtype | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupId, setLookupId] = useState("");
@@ -424,6 +432,9 @@ const Claim = () => {
         ...formData,
         claimType,
         claimTypeLabel: activeMeta.title,
+        baggageSubtype: claimType === "baggage" ? baggageSubtype : undefined,
+        baggageSubtypeLabel:
+          claimType === "baggage" && baggageSubtype ? baggageSubtypeMeta[baggageSubtype].title : undefined,
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         expenses: claimType === "medical" ? expenses : undefined,
         baggageItems: claimType === "baggage" ? baggageItems : undefined,
@@ -455,6 +466,7 @@ const Claim = () => {
       setFiles([]);
       setErrors({});
       setClaimType(null);
+      setBaggageSubtype(null);
       setCrmCustomer(null);
       setCrmPolicies([]);
       setSelectedPolicyUid("");
@@ -647,7 +659,10 @@ const Claim = () => {
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setClaimType(type)}
+                      onClick={() => {
+                        setClaimType(type);
+                        if (type !== "baggage") setBaggageSubtype(null);
+                      }}
                       className={`claim-type-card claim-rise flex min-h-[108px] items-start gap-4 rounded-2xl border border-slate-200/90 bg-white/95 p-4 text-right ${
                         active ? "active" : ""
                       }`}
@@ -679,11 +694,51 @@ const Claim = () => {
                   );
                 })}
               </div>
+
+              {claimType === "baggage" ? (
+                <div className="mt-5 rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
+                  <h3 className="text-base font-extrabold text-[#143834]">מה קרה לכבודה?</h3>
+                  <p className="mt-1 text-sm text-slate-500">בחרו אחת מהאפשרויות כדי להמשיך</p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    {(Object.keys(baggageSubtypeMeta) as BaggageSubtype[]).map((key) => {
+                      const meta = baggageSubtypeMeta[key];
+                      const active = baggageSubtype === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setBaggageSubtype(key)}
+                          className={`rounded-2xl border px-3 py-3 text-right transition ${
+                            active
+                              ? "border-[#2f6b63] bg-[#2f6b63]/8 shadow-sm ring-1 ring-[#2f6b63]/20"
+                              : "border-slate-200 bg-white hover:border-[#2f6b63]/35"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="font-bold text-[#143834]">{meta.title}</div>
+                              <div className="mt-0.5 text-xs text-slate-500">{meta.subtitle}</div>
+                            </div>
+                            <span
+                              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                                active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
+                              }`}
+                            >
+                              <Check className="h-3 w-3" />
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
               <Button
                 type="button"
                 className="claim-cta mt-6 h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white shadow-lg shadow-[#2f6b63]/25 disabled:opacity-50"
                 size="lg"
-                disabled={!claimType}
+                disabled={!claimType || (claimType === "baggage" && !baggageSubtype)}
                 onClick={() => {
                   setLookupError("");
                   setStep("identity");
@@ -852,6 +907,9 @@ const Claim = () => {
                 <p className="mt-1 text-sm text-slate-500">
                   {crmCustomer?.primaryName ? `שלום ${crmCustomer.primaryName} — ` : ""}
                   הפרטים נמשכו מהמערכת. ניתן לעדכן טלפון ואימייל במידת הצורך
+                  {claimType === "baggage" && baggageSubtype
+                    ? ` · סוג מטען: ${baggageSubtypeMeta[baggageSubtype].title}`
+                    : ""}
                 </p>
               </div>
 

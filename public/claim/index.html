@@ -182,7 +182,9 @@
       .policy-dates { margin-top: 6px; font-size: 13px; color: #64748b; line-height: 1.4; }
       .policy-dates strong { color: var(--brand-dark); font-weight: 700; }
       .policy-dates .sep { margin: 0 8px; color: #cbd5e1; }
-      .policy-list { display: grid; gap: 8px; }
+      @media (min-width: 700px) {
+        #baggageSubtypeGrid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+      }
       .policy-check {
         width: 20px; height: 20px; border-radius: 999px; border: 1px solid #cbd5e1; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center; color: transparent; background: #fff; font-size: 11px;
@@ -265,6 +267,11 @@
           <h2>מה סוג התביעה?</h2>
           <p class="muted">בחרו קטגוריה — נתאים עבורכם את השדות והמסמכים</p>
           <div class="type-grid" id="typeGrid"></div>
+          <div id="baggageSubtypeWrap" class="hidden" style="margin-top:16px;padding:14px;border-radius:16px;border:1px solid rgba(47,107,99,.15);background:linear-gradient(90deg,#e8f4f1,#fff)">
+            <h3 style="margin:0 0 4px;font-size:16px">מה קרה לכבודה?</h3>
+            <p class="muted" style="margin:0 0 10px">בחרו אחת מהאפשרויות כדי להמשיך</p>
+            <div class="type-grid" id="baggageSubtypeGrid" style="grid-template-columns:1fr"></div>
+          </div>
           <div class="row-actions">
             <button type="button" class="btn btn-primary" id="toIdentity" disabled style="width:100%">המשך לזיהוי לקוח</button>
           </div>
@@ -435,12 +442,19 @@
         baggage: {
           title: "מטען / כבודה",
           short: "מטען",
-          subtitle: "אובדן, גניבה או נזק לכבודה",
+          subtitle: "אובדן, גניבה או איחור בהגעת כבודה",
           docs: ["דו״ח משטרה במקור ממקום ומזמן האירוע", "קבלות רכישה על הרכוש שאבד/נגנב", "בשחזור מסמכים: קבלות שחזור", "באיחור כבודה: קבלות ציוד חיוני", "אם אצל מוביל אווירי: תשובת חברת התעופה"],
         },
       };
 
+      const baggageSubtypes = {
+        loss: { title: "אובדן", subtitle: "הכבודה אבדה ולא נמצאה" },
+        theft: { title: "גניבה", subtitle: "הכבודה נגנבה" },
+        delay: { title: "איחור בהגעת כבודה", subtitle: "הכבודה הגיעה באיחור" },
+      };
+
       let claimType = null;
+      let baggageSubtype = null;
       let step = "type";
       let crmCustomer = null;
       let crmPolicies = [];
@@ -608,7 +622,26 @@
           </button>`
           )
           .join("");
-        $("toIdentity").disabled = !claimType;
+
+        const showBaggage = claimType === "baggage";
+        $("baggageSubtypeWrap").classList.toggle("hidden", !showBaggage);
+        if (showBaggage) {
+          $("baggageSubtypeGrid").innerHTML = Object.entries(baggageSubtypes)
+            .map(
+              ([key, meta]) => `
+            <button type="button" class="policy-card ${baggageSubtype === key ? "active" : ""}" data-baggage-subtype="${key}">
+              <div class="policy-card-top">
+                <div>
+                  <div class="policy-id">${meta.title}</div>
+                  <div class="policy-dates">${meta.subtitle}</div>
+                </div>
+                <span class="policy-check">✓</span>
+              </div>
+            </button>`
+            )
+            .join("");
+        }
+        $("toIdentity").disabled = !claimType || (claimType === "baggage" && !baggageSubtype);
       }
 
       function formatDateDisplay(value) {
@@ -776,6 +809,14 @@
         const btn = e.target.closest("[data-type]");
         if (!btn) return;
         claimType = btn.dataset.type;
+        if (claimType !== "baggage") baggageSubtype = null;
+        renderTypes();
+      });
+
+      $("baggageSubtypeGrid").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-baggage-subtype]");
+        if (!btn) return;
+        baggageSubtype = btn.dataset.baggageSubtype;
         renderTypes();
       });
 
@@ -893,6 +934,9 @@
         const meta = types[claimType];
         const payload = {
           claimType, claimTypeLabel: meta.title,
+          baggageSubtype: claimType === "baggage" ? baggageSubtype : undefined,
+          baggageSubtypeLabel:
+            claimType === "baggage" && baggageSubtype ? baggageSubtypes[baggageSubtype].title : undefined,
           lastName: get("lastName"), firstName: get("firstName"),
           fullName: `${get("firstName")} ${get("lastName")}`.trim(),
           idNumber: get("idNumber"), birthDate: get("birthDate"),
@@ -924,7 +968,7 @@
           if (!res.ok) throw new Error("fail");
           status.textContent = "התביעה נשלחה בהצלחה. הצוות יחזור אליכם בהקדם.";
           status.classList.add("ok");
-          form.reset(); $("files").value = ""; claimType = null;
+          form.reset(); $("files").value = ""; claimType = null; baggageSubtype = null;
           crmCustomer = null; crmPolicies = []; selectedPolicyId = "";
           $("baggageItems").innerHTML = ""; $("expenseItems").innerHTML = "";
           renderTypes();
