@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>הגשת תביעה | TravelSure</title>
+    <style>
+      :root {
+        --brand: #2f6b63;
+        --brand-dark: #1f4b46;
+        --accent: #4ade80;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #e2e8f0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--text);
+        min-height: 100vh;
+        background: radial-gradient(ellipse at top, #e8f4f1 0%, #f7faf9 45%, #eef2f1 100%);
+      }
+      .wrap { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+      .hero { text-align: center; margin-bottom: 24px; }
+      .brand { margin: 0; font-size: 14px; font-weight: 700; color: var(--brand); letter-spacing: 0.04em; }
+      .title { margin: 8px 0 0; font-size: 32px; color: var(--brand-dark); }
+      .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+      .steps {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        margin-bottom: 20px; flex-wrap: wrap;
+      }
+      .step-dot {
+        width: 28px; height: 28px; border-radius: 999px; display: inline-flex;
+        align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+        border: 1px solid var(--border); background: #fff; color: #94a3b8;
+      }
+      .step-dot.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+      .step-dot.done { background: rgba(47,107,99,.15); color: var(--brand); border-color: transparent; }
+      .step-label { font-size: 12px; color: #94a3b8; }
+      .step-label.active { color: var(--brand-dark); font-weight: 700; }
+      .card {
+        background: #fff; border: 1px solid rgba(255,255,255,.7); border-radius: 20px;
+        box-shadow: 0 20px 50px -30px rgba(15,23,42,.35); padding: 24px; position: relative; overflow: hidden;
+      }
+      .card::before {
+        content: ""; position: absolute; inset: 0 0 auto 0; height: 6px;
+        background: linear-gradient(90deg, #1f4b46 0%, #2f6b63 50%, #4ade80 100%);
+      }
+      h2 { margin: 0 0 6px; font-size: 18px; color: var(--brand-dark); }
+      h3 {
+        margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;
+        font-size: 14px; color: var(--brand-dark);
+      }
+      .muted { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+      .grid { display: grid; gap: 14px; }
+      @media (min-width: 700px) { .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      label.field { display: block; font-size: 13px; font-weight: 600; color: #334155; }
+      label.field span.req { color: #dc2626; margin-right: 4px; }
+      input, textarea, select {
+        width: 100%; margin-top: 6px; border: 1px solid #d7e3f5; border-radius: 12px;
+        padding: 11px 14px; font-size: 14px; background: #f8fafc; outline: none;
+      }
+      input:focus, textarea:focus, select:focus {
+        border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.2); background: #fff;
+      }
+      textarea { min-height: 110px; resize: vertical; }
+      .type-grid { display: grid; gap: 10px; }
+      @media (min-width: 700px) { .type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      .type-btn {
+        text-align: right; border: 1px solid var(--border); border-radius: 14px; padding: 14px;
+        background: #fff; cursor: pointer; transition: .15s ease;
+      }
+      .type-btn:hover { border-color: rgba(47,107,99,.4); }
+      .type-btn.active { border-color: var(--brand); background: rgba(47,107,99,.05); box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+      .type-btn strong { display: block; color: var(--brand-dark); margin-bottom: 4px; }
+      .type-btn span { color: var(--muted); font-size: 13px; }
+      .yesno { display: flex; gap: 16px; margin-top: 8px; font-size: 14px; font-weight: 400; }
+      .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #334155; margin: 10px 0; }
+      .check input { width: auto; margin-top: 2px; }
+      .docs { margin: 0; padding-right: 18px; color: #475569; font-size: 13px; line-height: 1.7; }
+      .row-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        border: none; border-radius: 12px; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+      }
+      .btn-primary {
+        background: linear-gradient(90deg, #1f4b46, #2f6b63, #3f8677); color: #fff; min-width: 180px;
+      }
+      .btn-outline { background: #fff; border: 1px solid var(--border); color: #334155; }
+      .btn:disabled { opacity: .65; cursor: not-allowed; }
+      .error { color: #dc2626; font-size: 12px; margin-top: 4px; }
+      .status { margin-top: 14px; text-align: center; font-size: 13px; padding: 10px 12px; border-radius: 10px; background: #f1f5f9; }
+      .status.ok { background: #dcfce7; color: #15803d; }
+      .status.err { background: #fee2e2; color: #b91c1c; }
+      .hidden { display: none !important; }
+      .item-row {
+        display: grid; gap: 8px; border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 8px;
+      }
+      @media (min-width: 700px) { .item-row { grid-template-columns: 1.2fr 1fr 1fr auto; align-items: center; } }
+      .tiny { font-size: 12px; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <p class="brand">TravelSure</p>
+        <h1 class="title">הגשת תביעה</h1>
+        <p class="subtitle">טופס דיגיטלי לפי דרישות הראל — שלב אחר שלב</p>
+      </div>
+
+      <div class="steps" id="stepsBar"></div>
+
+      <div class="card">
+        <!-- Step 1 -->
+        <div id="step-type">
+          <h2>מה סוג התביעה?</h2>
+          <p class="muted">בחרו את הקטגוריה המתאימה ביותר</p>
+          <div class="type-grid" id="typeGrid"></div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-primary" id="toDetails" disabled>המשך למילוי פרטים</button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <form id="step-details" class="hidden" novalidate>
+          <p class="tiny" id="selectedTypeLabel"></p>
+          <h2 id="selectedTypeTitle"></h2>
+
+          <h3>א. פרטים אישיים</h3>
+          <div class="grid grid-2">
+            <label class="field">שם משפחה <span class="req">*</span><input name="lastName" required /></label>
+            <label class="field">שם פרטי <span class="req">*</span><input name="firstName" required /></label>
+            <label class="field">תעודת זהות <span class="req">*</span><input name="idNumber" inputmode="numeric" maxlength="9" required /></label>
+            <label class="field">תאריך לידה <span class="req">*</span><input name="birthDate" type="date" required /></label>
+            <label class="field">רחוב<input name="street" /></label>
+            <label class="field">מספר בית<input name="houseNumber" /></label>
+            <label class="field">יישוב<input name="city" /></label>
+            <label class="field">מיקוד<input name="zip" /></label>
+            <label class="field">טלפון בבית<input name="homePhone" /></label>
+            <label class="field">טלפון נייד <span class="req">*</span><input name="mobile" required /></label>
+            <label class="field" style="grid-column:1/-1">אימייל <span class="req">*</span><input name="email" type="email" required /></label>
+          </div>
+          <div id="hmoFields" class="grid grid-2 hidden" style="margin-top:14px">
+            <label class="field">שם קופת חולים<input name="hmoName" /></label>
+            <label class="field">סניף קופ״ח<input name="hmoBranch" /></label>
+            <label class="field" style="grid-column:1/-1">כתובת סניף<input name="hmoAddress" /></label>
+          </div>
+
+          <h3>ב. פרטי הפוליסה</h3>
+          <div class="grid grid-2">
+            <label class="field">מספר פוליסה <span class="req">*</span><input name="policyNumber" required /></label>
+            <label class="field">סוג פוליסה<input name="policyType" /></label>
+            <label class="field" style="grid-column:1/-1">היכן נרכשה הפוליסה<input name="purchasedWhere" /></label>
+          </div>
+
+          <h3>ג. תיאור המקרה</h3>
+          <div class="grid grid-2">
+            <label class="field" id="reasonWrap">סיבה <span class="req">*</span><input name="claimReason" /></label>
+            <label class="field">תאריך יציאה מהארץ<input name="tripStartDate" type="date" /></label>
+            <label class="field">תאריך חזרה לארץ<input name="tripEndDate" type="date" /></label>
+            <label class="field"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" type="date" required /></label>
+            <label class="field"><span id="countryLabel">הארץ בה אירע המקרה</span> <span class="req">*</span><input name="country" required /></label>
+            <label class="field" style="grid-column:1/-1">תיאור מדויק ומפורט של המקרה <span class="req">*</span><textarea name="details" required></textarea></label>
+            <label class="field" id="totalWrap">סה״כ הסכום הנתבע וסוג המטבע <span class="req">*</span><input name="totalClaimed" /></label>
+          </div>
+
+          <div id="baggageWrap" class="hidden">
+            <h3>פירוט כבודה</h3>
+            <div id="baggageItems"></div>
+            <button type="button" class="btn btn-outline" id="addBaggage">+ הוסף פריט</button>
+          </div>
+
+          <div id="expenseWrap" class="hidden">
+            <h3>פירוט הוצאות רפואיות</h3>
+            <div id="expenseItems"></div>
+            <button type="button" class="btn btn-outline" id="addExpense">+ הוסף הוצאה</button>
+          </div>
+
+          <h3>אופן תשלום (העברה בנקאית)</h3>
+          <div class="grid grid-2">
+            <label class="field">בנק <span class="req">*</span><input name="bankName" required /></label>
+            <label class="field">שם סניף<input name="branchName" /></label>
+            <label class="field">מספר סניף <span class="req">*</span><input name="branchNumber" required /></label>
+            <label class="field">מספר חשבון <span class="req">*</span><input name="accountNumber" required /></label>
+          </div>
+
+          <h3>הצהרות</h3>
+          <label class="check" id="waiverWrap"><input type="checkbox" name="medicalWaiver" /> אני מאשר/ת ויתור על סודיות רפואית ומסמיך/ה את הראל לקבל מידע רפואי לצורך בירור התביעה.</label>
+          <label class="check"><input type="checkbox" name="authorizeAgent" /> אני מאשר/ת לסוכן הביטוח לטפל בתביעה זו בשמי</label>
+          <label class="check"><input type="checkbox" name="declaration" /> הנני מצהיר/ה כי הפרטים שמסרתי נכונים ומלאים *</label>
+
+          <div class="row-actions">
+            <button type="button" class="btn btn-outline" id="backToType">חזרה</button>
+            <button type="submit" class="btn btn-primary">המשך למסמכים</button>
+          </div>
+          <div id="detailsError" class="error"></div>
+        </form>
+
+        <!-- Step 3 -->
+        <div id="step-files" class="hidden">
+          <h2>מסמכים לצירוף</h2>
+          <p class="muted">לפי הנחיות הראל לסוג התביעה שבחרתם</p>
+          <ul class="docs" id="docsList"></ul>
+          <label class="field" style="margin-top:16px">העלאת קבצים <span class="req">*</span>
+            <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" />
+          </label>
+          <p class="tiny">ניתן לצרף מספר קבצים. גודל מומלץ עד 10MB לקובץ.</p>
+          <div class="row-actions">
+            <button type="button" class="btn btn-outline" id="backToDetails">חזרה</button>
+            <button type="button" class="btn btn-primary" id="submitBtn">שליחת תביעה</button>
+          </div>
+          <div id="status" class="status hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "https://ophir.travelsure.co.il/api-claim.php";
+      const types = {
+        medical: {
+          title: "הוצאות רפואיות בחו״ל (שלא באשפוז)",
+          short: "רפואי",
+          subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
+          docs: [
+            "עותק פוליסה",
+            "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
+            "חשבון מפורט",
+            "קבלות תשלום מקוריות",
+          ],
+        },
+        trip_cancel: {
+          title: "ביטול נסיעה טרם היציאה",
+          short: "ביטול",
+          subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
+          docs: [
+            "עותק פוליסה",
+            "העתק תוכנית / מסלול הנסיעה",
+            "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
+            "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)",
+            "אישור רפואי על אי-כשירות לטוס",
+            "דוח רפואי / סיכום אשפוז",
+            "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
+          ],
+        },
+        trip_shorten: {
+          title: "קיצור נסיעה מחו״ל",
+          short: "קיצור",
+          subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
+          docs: [
+            "עותק פוליסה",
+            "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
+            "תוכנית נסיעה מקורית",
+            "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
+            "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)",
+            "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת",
+            "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת",
+            "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
+          ],
+        },
+        baggage: {
+          title: "מטען / כבודה",
+          short: "מטען",
+          subtitle: "אובדן, גניבה או נזק לכבודה",
+          docs: [
+            "דו״ח משטרה במקור ממקום ומזמן האירוע",
+            "קבלות רכישה על הרכוש שאבד/נגנב",
+            "בשחזור מסמכים: קבלות שחזור",
+            "באיחור כבודה: קבלות ציוד חיוני",
+            "אם אצל מוביל אווירי: תשובת חברת התעופה",
+          ],
+        },
+      };
+
+      let claimType = null;
+      let step = "type";
+
+      const $ = (id) => document.getElementById(id);
+      const form = $("step-details");
+
+      function isValidIsraeliId(id) {
+        const s = String(id || "").replace(/[^\d]/g, "").padStart(9, "0");
+        if (!/^\d{9}$/.test(s)) return false;
+        let sum = 0;
+        for (let i = 0; i < 9; i++) {
+          let n = Number(s[i]) * ((i % 2) + 1);
+          if (n > 9) n -= 9;
+          sum += n;
+        }
+        return sum % 10 === 0;
+      }
+
+      function renderSteps() {
+        const steps = [
+          { id: "type", label: "סוג תביעה" },
+          { id: "details", label: "פרטים" },
+          { id: "files", label: "מסמכים" },
+        ];
+        const idx = steps.findIndex((s) => s.id === step);
+        $("stepsBar").innerHTML = steps
+          .map((s, i) => {
+            const cls = i === idx ? "active" : i < idx ? "done" : "";
+            const labelCls = i === idx ? "active" : "";
+            return `<div class="step-dot ${cls}">${i + 1}</div><span class="step-label ${labelCls}">${s.label}</span>${i < steps.length - 1 ? '<span style="width:24px;height:1px;background:#e2e8f0;display:inline-block"></span>' : ""}`;
+          })
+          .join("");
+      }
+
+      function showStep(next) {
+        step = next;
+        $("step-type").classList.toggle("hidden", next !== "type");
+        $("step-details").classList.toggle("hidden", next !== "details");
+        $("step-files").classList.toggle("hidden", next !== "files");
+        renderSteps();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function renderTypes() {
+        $("typeGrid").innerHTML = Object.entries(types)
+          .map(
+            ([key, meta]) => `
+          <button type="button" class="type-btn ${claimType === key ? "active" : ""}" data-type="${key}">
+            <strong>${meta.title}</strong>
+            <span>${meta.subtitle}</span>
+          </button>`
+          )
+          .join("");
+        $("toDetails").disabled = !claimType;
+      }
+
+      function addBaggageRow(data = {}) {
+        const row = document.createElement("div");
+        row.className = "item-row";
+        row.innerHTML = `
+          <input placeholder="פריט" value="${data.item || ""}" data-k="item" />
+          <input type="date" value="${data.purchaseDate || ""}" data-k="purchaseDate" />
+          <input placeholder="מחיר רכישה" value="${data.purchasePrice || ""}" data-k="purchasePrice" />
+          <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
+        row.querySelector("[data-remove]").onclick = () => {
+          if ($("baggageItems").children.length > 1) row.remove();
+        };
+        $("baggageItems").appendChild(row);
+      }
+
+      function addExpenseRow(data = {}) {
+        const row = document.createElement("div");
+        row.className = "item-row";
+        row.innerHTML = `
+          <input type="date" value="${data.date || ""}" data-k="date" />
+          <input placeholder="סוג הוצאה" value="${data.type || ""}" data-k="type" />
+          <input placeholder="סכום + מטבע" value="${data.amount || ""}" data-k="amount" />
+          <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
+        row.querySelector("[data-remove]").onclick = () => {
+          if ($("expenseItems").children.length > 1) row.remove();
+        };
+        $("expenseItems").appendChild(row);
+      }
+
+      function syncTypeUi() {
+        const meta = types[claimType];
+        if (!meta) return;
+        $("selectedTypeLabel").textContent = meta.short;
+        $("selectedTypeTitle").textContent = meta.title;
+        $("hmoFields").classList.toggle("hidden", claimType !== "medical");
+        $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
+        $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
+        $("waiverWrap").classList.toggle("hidden", claimType === "baggage");
+        $("reasonWrap").classList.toggle("hidden", claimType !== "trip_cancel" && claimType !== "trip_shorten");
+        $("totalWrap").classList.toggle("hidden", claimType !== "medical" && claimType !== "baggage");
+        $("incidentLabel").textContent = claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע";
+        $("countryLabel").textContent = claimType === "trip_cancel" ? "מדינת היעד" : "הארץ בה אירע המקרה";
+        $("reasonWrap").innerHTML =
+          (claimType === "trip_cancel" ? "סיבת הביטול" : "סיבת הקיצור") +
+          ' <span class="req">*</span><input name="claimReason" />';
+        $("docsList").innerHTML = meta.docs.map((d) => `<li>${d}</li>`).join("");
+        if (!$("baggageItems").children.length) addBaggageRow();
+        if (!$("expenseItems").children.length) addExpenseRow();
+      }
+
+      function collectRows(container) {
+        return Array.from(container.children).map((row) => {
+          const obj = {};
+          row.querySelectorAll("[data-k]").forEach((el) => {
+            obj[el.dataset.k] = el.value.trim();
+          });
+          return obj;
+        });
+      }
+
+      $("typeGrid").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-type]");
+        if (!btn) return;
+        claimType = btn.dataset.type;
+        renderTypes();
+      });
+
+      $("toDetails").onclick = () => {
+        syncTypeUi();
+        showStep("details");
+      };
+      $("backToType").onclick = () => showStep("type");
+      $("backToDetails").onclick = () => showStep("details");
+      $("addBaggage").onclick = () => addBaggageRow();
+      $("addExpense").onclick = () => addExpenseRow();
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        $("detailsError").textContent = "";
+        const fd = new FormData(form);
+        const get = (k) => String(fd.get(k) || "").trim();
+
+        if (!get("lastName") || !get("firstName") || !get("idNumber") || !get("birthDate") || !get("mobile") || !get("email")) {
+          $("detailsError").textContent = "יש למלא את כל שדות החובה בפרטים האישיים";
+          return;
+        }
+        if (!isValidIsraeliId(get("idNumber"))) {
+          $("detailsError").textContent = "תעודת זהות לא תקינה";
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) {
+          $("detailsError").textContent = "אימייל לא תקין";
+          return;
+        }
+        if (!get("policyNumber") || !get("incidentDate") || !get("country") || !get("details")) {
+          $("detailsError").textContent = "יש למלא פוליסה, תאריך, מדינה ותיאור מקרה";
+          return;
+        }
+        if (!get("bankName") || !get("branchNumber") || !get("accountNumber")) {
+          $("detailsError").textContent = "יש למלא פרטי חשבון בנק";
+          return;
+        }
+        if (!form.declaration.checked) {
+          $("detailsError").textContent = "יש לאשר את ההצהרה";
+          return;
+        }
+        if (claimType !== "baggage" && !form.medicalWaiver.checked) {
+          $("detailsError").textContent = "יש לאשר ויתור על סודיות רפואית";
+          return;
+        }
+        if ((claimType === "trip_cancel" || claimType === "trip_shorten") && !get("claimReason")) {
+          $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור";
+          return;
+        }
+        if ((claimType === "medical" || claimType === "baggage") && !get("totalClaimed")) {
+          $("detailsError").textContent = "יש למלא סה״כ סכום נתבע";
+          return;
+        }
+        if (claimType === "baggage") {
+          const items = collectRows($("baggageItems")).filter((r) => r.item);
+          if (!items.length) {
+            $("detailsError").textContent = "יש לפרט לפחות פריט אחד בכבודה";
+            return;
+          }
+        }
+        showStep("files");
+      });
+
+      $("submitBtn").onclick = async () => {
+        const status = $("status");
+        status.className = "status";
+        status.classList.remove("hidden");
+        const files = Array.from($("files").files || []);
+        if (!files.length) {
+          status.textContent = "יש לצרף לפחות מסמך אחד";
+          status.classList.add("err");
+          return;
+        }
+
+        const fd = new FormData(form);
+        const get = (k) => String(fd.get(k) || "").trim();
+        const meta = types[claimType];
+        const payload = {
+          claimType,
+          claimTypeLabel: meta.title,
+          lastName: get("lastName"),
+          firstName: get("firstName"),
+          fullName: `${get("firstName")} ${get("lastName")}`.trim(),
+          idNumber: get("idNumber"),
+          birthDate: get("birthDate"),
+          street: get("street"),
+          houseNumber: get("houseNumber"),
+          city: get("city"),
+          zip: get("zip"),
+          homePhone: get("homePhone"),
+          mobile: get("mobile"),
+          phone: get("mobile"),
+          email: get("email"),
+          hmoName: get("hmoName"),
+          hmoBranch: get("hmoBranch"),
+          hmoAddress: get("hmoAddress"),
+          policyNumber: get("policyNumber"),
+          policyType: get("policyType"),
+          purchasedWhere: get("purchasedWhere"),
+          claimReason: get("claimReason"),
+          tripStartDate: get("tripStartDate"),
+          tripEndDate: get("tripEndDate"),
+          incidentDate: get("incidentDate"),
+          country: get("country"),
+          details: get("details"),
+          totalClaimed: get("totalClaimed"),
+          amount: get("totalClaimed"),
+          bankName: get("bankName"),
+          branchName: get("branchName"),
+          branchNumber: get("branchNumber"),
+          accountNumber: get("accountNumber"),
+          medicalWaiver: form.medicalWaiver.checked,
+          authorizeAgent: form.authorizeAgent.checked,
+          declaration: form.declaration.checked,
+          expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
+          baggageItems: claimType === "baggage" ? collectRows($("baggageItems")).filter((r) => r.item) : undefined,
+          submittedAt: new Date().toISOString(),
+        };
+
+        const body = new FormData();
+        body.append("payload", JSON.stringify(payload));
+        files.forEach((f) => body.append("files[]", f));
+
+        $("submitBtn").disabled = true;
+        $("submitBtn").textContent = "שולח...";
+        try {
+          const res = await fetch(API_URL, { method: "POST", body });
+          if (!res.ok) throw new Error("fail");
+          status.textContent = "התביעה נשלחה בהצלחה. הצוות יחזור אליכם בהקדם.";
+          status.classList.add("ok");
+          form.reset();
+          $("files").value = "";
+          claimType = null;
+          $("baggageItems").innerHTML = "";
+          $("expenseItems").innerHTML = "";
+          renderTypes();
+          setTimeout(() => showStep("type"), 1200);
+        } catch (err) {
+          status.textContent = "שגיאה בשליחת התביעה. נסו שוב בעוד מספר דקות.";
+          status.classList.add("err");
+        } finally {
+          $("submitBtn").disabled = false;
+          $("submitBtn").textContent = "שליחת תביעה";
+        }
+      };
+
+      renderTypes();
+      renderSteps();
+    </script>
+  </body>
+</html>
