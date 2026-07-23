@@ -103,8 +103,8 @@ if (Test-Path $dataDir) {
     }
 }
 
-# Special handling for api-bbq.ashx - upload to both /TravSure and root
-$apiFiles = @("api-bbq.ashx", "api-bbq.php", "api-shatap.ashx", "api-shatap.php")
+# Special handling for API files - upload to both /TravSure and root
+$apiFiles = @("api-bbq.ashx", "api-bbq.php", "api-shatap.ashx", "api-shatap.php", "api-contact.php", "api-claim.php")
 
 # Upload API files from project root (not from dist)
 $projectRoot = $PSScriptRoot
