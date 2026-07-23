@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Keep ophir.travelsure.co.il/claim permanently in sync with travelsure.co.il/claim (Lovable).
+      (function () {
+        var host = String(location.hostname || "").toLowerCase();
+        if (host === "ophir.travelsure.co.il" || host === "www.ophir.travelsure.co.il") {
+          location.replace("https://travelsure.co.il/claim/" + location.search + location.hash);
+        }
+      })();
+    </script>
     <title>הגשת תביעה | TravelSure</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
