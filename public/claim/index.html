@@ -398,7 +398,9 @@
       let crmCustomer = null;
       let crmPolicies = [];
       let selectedPolicyId = "";
-      const CRM_URL = "https://mobile.ophirins.co.il/api/Policy/GetById";
+      // GetById returns 401 without Bearer; GetByIdU is the public lookup (same as BuyInsNew).
+      const CRM_URL = "https://mobile.ophirins.co.il/api/policy/GetByIdU";
+      const CRM_PASS = "Admin$123";
       const $ = (id) => document.getElementById(id);
       const form = $("step-details");
 
@@ -435,10 +437,13 @@
         const normalizedId = String(rawId).replace(/[^\d]/g, "").padStart(9, "0");
         if (!isValidIsraeliId(normalizedId)) return { ok: false, reason: "invalid_id" };
         try {
-          const res = await fetch(`${CRM_URL}?id=${encodeURIComponent(normalizedId)}`, {
-            headers: { Accept: "application/json" },
-            cache: "no-store",
-          });
+          const res = await fetch(
+            `${CRM_URL}?id=${encodeURIComponent(normalizedId)}&pass=${encodeURIComponent(CRM_PASS)}`,
+            {
+              headers: { Accept: "application/json" },
+              cache: "no-store",
+            }
+          );
           if (!res.ok) return { ok: false, reason: "upstream" };
           const data = await res.json();
           const policiesRaw = Array.isArray(data) ? data : [];

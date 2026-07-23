@@ -21,7 +21,9 @@ export type ClaimCrmLookupResult =
   | { ok: true; customer: ClaimCrmCustomer; policies: ClaimCrmPolicy[] }
   | { ok: false; reason: "invalid_id" | "not_found" | "network" | "upstream" };
 
-const CRM_GET_BY_ID = "https://mobile.ophirins.co.il/api/Policy/GetById";
+// GetById requires Bearer auth (401). GetByIdU is the public lookup used by BuyInsNew.
+const CRM_GET_BY_ID = "https://mobile.ophirins.co.il/api/policy/GetByIdU";
+const CRM_GET_BY_ID_PASS = "Admin$123";
 
 const normalizeDate = (d: unknown): string => {
   const s = String(d ?? "").trim();
@@ -111,7 +113,8 @@ export async function lookupClaimCustomerById(idInput: string): Promise<ClaimCrm
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch(`${CRM_GET_BY_ID}?id=${encodeURIComponent(normalizedId)}`, {
+    const url = `${CRM_GET_BY_ID}?id=${encodeURIComponent(normalizedId)}&pass=${encodeURIComponent(CRM_GET_BY_ID_PASS)}`;
+    const res = await fetch(url, {
       method: "GET",
       headers: { Accept: "application/json" },
       cache: "no-store",
