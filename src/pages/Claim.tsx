@@ -426,68 +426,72 @@ const Claim = () => {
       <div className="claim-orb claim-orb-a" />
       <div className="claim-orb claim-orb-b" />
 
-      <div className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-12">
-        <header className="claim-rise mb-8 text-center">
+      <div
+        className={`relative z-10 mx-auto flex max-w-3xl flex-col px-4 py-3 sm:py-4 ${
+          step === "type" ? "min-h-[100dvh] justify-center" : "py-5 sm:py-6"
+        }`}
+      >
+        <header className="claim-rise mb-3 text-center">
           <img
             src={logo}
             alt="TravelSure"
-            className="mx-auto h-20 w-auto drop-shadow-sm sm:h-28"
+            className="mx-auto h-14 w-auto drop-shadow-sm sm:h-16"
           />
-          <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-[#143834] sm:text-4xl">
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#143834] sm:text-[26px]">
             הגשת תביעה
           </h1>
-          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
+          <p className="mx-auto mt-1 max-w-md text-xs text-slate-600 sm:text-[13px]">
             תהליך דיגיטלי ברור, מאובטח ומותאם לדרישות הראל — ב־3 שלבים בלבד
           </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/70 px-3 py-1.5 backdrop-blur">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#2f6b63]" />
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-semibold text-[#1f4b46] sm:text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#2f6b63]/15 bg-white/70 px-2.5 py-1 backdrop-blur">
+              <ShieldCheck className="h-3 w-3 text-[#2f6b63]" />
               מאובטח ומוצפן
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/70 px-3 py-1.5 backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#2f6b63]/15 bg-white/70 px-2.5 py-1 backdrop-blur">
               לפי הנחיות הראל
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/70 px-3 py-1.5 backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#2f6b63]/15 bg-white/70 px-2.5 py-1 backdrop-blur">
               מענה עד 30 יום
             </span>
           </div>
         </header>
 
-        <div className="claim-rise claim-rise-d1 mb-6">
-          <div className="mb-3 flex items-center justify-between text-xs font-semibold text-slate-500">
+        <div className="claim-rise claim-rise-d1 mb-3">
+          <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-slate-500">
             <span>
               שלב {stepIndex + 1} מתוך {steps.length}
             </span>
             <span className="text-[#2f6b63]">{steps[stepIndex]?.label}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white/80 shadow-inner">
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/80 shadow-inner">
             <div
               className="claim-progress-fill h-full rounded-full bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]"
               style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
             />
           </div>
-          <div className="mt-3 flex items-center justify-center gap-2">
+          <div className="mt-2 flex items-center justify-center gap-1.5">
             {steps.map((s, idx) => {
               const done = idx < stepIndex;
               const active = idx === stepIndex;
               return (
-                <div key={s.id} className="flex items-center gap-2">
+                <div key={s.id} className="flex items-center gap-1.5">
                   <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition ${
                       active
-                        ? "bg-[#2f6b63] text-white shadow-lg shadow-[#2f6b63]/35"
+                        ? "bg-[#2f6b63] text-white shadow-md shadow-[#2f6b63]/35"
                         : done
                           ? "bg-[#2f6b63]/20 text-[#2f6b63]"
                           : "border border-white/80 bg-white/60 text-slate-400"
                     }`}
                   >
-                    {done ? <Check className="h-4 w-4" /> : idx + 1}
+                    {done ? <Check className="h-3.5 w-3.5" /> : idx + 1}
                   </div>
-                  <span className={`hidden text-xs font-medium sm:inline ${active ? "text-[#143834]" : "text-slate-400"}`}>
+                  <span className={`hidden text-[11px] font-medium sm:inline ${active ? "text-[#143834]" : "text-slate-400"}`}>
                     {s.label}
                   </span>
                   {idx < steps.length - 1 ? (
-                    <div className={`mx-1 h-px w-6 sm:w-10 ${done ? "bg-[#2f6b63]" : "bg-slate-200"}`} />
+                    <div className={`mx-0.5 h-px w-5 sm:w-8 ${done ? "bg-[#2f6b63]" : "bg-slate-200"}`} />
                   ) : null}
                 </div>
               );
@@ -495,16 +499,16 @@ const Claim = () => {
           </div>
         </div>
 
-        <div className="claim-rise claim-rise-d2 overflow-hidden rounded-[28px] border border-white/80 bg-white/85 shadow-[0_30px_80px_-40px_rgba(20,56,52,0.55)] backdrop-blur-xl">
-          <div className="h-1.5 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
+        <div className="claim-rise claim-rise-d2 overflow-hidden rounded-2xl border border-white/80 bg-white/85 shadow-[0_24px_60px_-40px_rgba(20,56,52,0.55)] backdrop-blur-xl">
+          <div className="h-1 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
 
           {step === "type" ? (
-            <div className="p-6 sm:p-9">
-              <div className="mb-6 text-center sm:text-right">
-                <h2 className="text-2xl font-extrabold text-[#143834]">מה סוג התביעה?</h2>
-                <p className="mt-1 text-sm text-slate-500">בחרו קטגוריה — נתאים עבורכם את השדות והמסמכים</p>
+            <div className="p-4 sm:p-5">
+              <div className="mb-3 text-center sm:text-right">
+                <h2 className="text-lg font-extrabold text-[#143834]">מה סוג התביעה?</h2>
+                <p className="mt-0.5 text-xs text-slate-500">בחרו קטגוריה — נתאים עבורכם את השדות והמסמכים</p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {claimTypesOrder.map((type, i) => {
                   const meta = claimTypeMeta[type];
                   const Icon = meta.icon;
@@ -514,32 +518,32 @@ const Claim = () => {
                       key={type}
                       type="button"
                       onClick={() => setClaimType(type)}
-                      className={`claim-type-card claim-rise flex min-h-[118px] items-start gap-4 rounded-2xl border border-slate-200/90 bg-white/90 p-4 text-right ${
+                      className={`claim-type-card claim-rise flex items-start gap-3 rounded-xl border border-slate-200/90 bg-white/90 p-3 text-right ${
                         active ? "active" : ""
                       }`}
-                      style={{ animationDelay: `${0.08 + i * 0.06}s` }}
+                      style={{ animationDelay: `${0.05 + i * 0.04}s` }}
                     >
                       <div
-                        className={`relative z-10 mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
+                        className={`relative z-10 mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${
                           active
                             ? "bg-gradient-to-br from-[#1f4b46] to-[#2f6b63] text-white shadow-md shadow-[#2f6b63]/30"
                             : "bg-[#e8f4f1] text-[#2f6b63]"
                         }`}
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-4 w-4" />
                       </div>
                       <div className="relative z-10 min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="font-bold leading-snug text-[#143834]">{meta.title}</div>
+                          <div className="text-sm font-bold leading-snug text-[#143834]">{meta.title}</div>
                           <span
-                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+                            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
                               active ? "border-[#2f6b63] bg-[#2f6b63] text-white" : "border-slate-300 bg-white text-transparent"
                             }`}
                           >
-                            <Check className="h-3 w-3" />
+                            <Check className="h-2.5 w-2.5" />
                           </span>
                         </div>
-                        <div className="mt-1 text-sm leading-relaxed text-slate-500">{meta.subtitle}</div>
+                        <div className="mt-0.5 text-[11px] leading-snug text-slate-500">{meta.subtitle}</div>
                       </div>
                     </button>
                   );
@@ -547,7 +551,7 @@ const Claim = () => {
               </div>
               <Button
                 type="button"
-                className="claim-cta mt-7 h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white shadow-lg shadow-[#2f6b63]/25 disabled:opacity-50"
+                className="claim-cta mt-4 h-10 w-full rounded-xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-sm font-bold text-white shadow-lg shadow-[#2f6b63]/25 disabled:opacity-50"
                 size="lg"
                 disabled={!claimType}
                 onClick={() => setStep("details")}
@@ -1148,7 +1152,7 @@ const Claim = () => {
           ) : null}
         </div>
 
-        <p className="claim-rise claim-rise-d3 mt-6 text-center text-xs text-slate-500">
+        <p className="claim-rise claim-rise-d3 mt-3 text-center text-[11px] text-slate-500">
           השליחה מאובטחת · הפרטים ישמשו לטיפול בתביעה בלבד
         </p>
       </div>
