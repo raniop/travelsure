@@ -888,9 +888,14 @@
         return today.getTime();
       }
 
-      function policyTimeBucketForClaimType(type) {
+      function policyTimeBucketForClaimType(type, baggageSub) {
         if (type === "trip_cancel") return "future";
-        if (type === "trip_shorten" || type === "baggage") return "active";
+        if (type === "trip_shorten") return "active";
+        if (type === "baggage") {
+          if (baggageSub === "delay") return "active";
+          // loss / theft / unset — active + past
+          return "started";
+        }
         if (type === "medical") return "started";
         return "all";
       }
@@ -906,15 +911,35 @@
         return true;
       }
 
-      function filterPoliciesForClaimType(policies, type) {
-        const bucket = policyTimeBucketForClaimType(type);
+      function filterPoliciesForClaimType(policies, type, baggageSub) {
+        const bucket = policyTimeBucketForClaimType(type, baggageSub);
         if (bucket === "all") return policies;
         const today = startOfTodayMs();
         return policies.filter((p) => isPolicyInTimeBucket(p, bucket, today));
       }
 
-      function claimPolicyFilterCopy(type) {
-        const bucket = policyTimeBucketForClaimType(type);
+      function claimPolicyFilterCopy(type, baggageSub) {
+        if (type === "baggage" && baggageSub === "delay") {
+          return {
+            listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה",
+            emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
+            emptyBody:
+              "לאיחור בכבודה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
+            upcomingTitle: "נסיעות פעילות כעת",
+            pastTitle: "נסיעות שעברו",
+          };
+        }
+        if (type === "baggage" && (baggageSub === "loss" || baggageSub === "theft")) {
+          return {
+            listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
+            emptyTitle: "לא מצאנו נסיעה מתאימה",
+            emptyBody:
+              "לאובדן או גניבה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+            upcomingTitle: "נסיעות פעילות כעת",
+            pastTitle: "נסיעות שעברו",
+          };
+        }
+        const bucket = policyTimeBucketForClaimType(type, baggageSub);
         if (bucket === "future") {
           return {
             listHint: "מוצגות רק נסיעות עתידיות שטרם יצאו — מתאים לביטול לפני היציאה",

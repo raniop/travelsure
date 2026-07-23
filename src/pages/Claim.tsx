@@ -271,10 +271,13 @@ const Claim = () => {
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
   const relevantPolicies = useMemo(
-    () => filterPoliciesForClaimType(crmPolicies, claimType),
-    [crmPolicies, claimType]
+    () => filterPoliciesForClaimType(crmPolicies, claimType, baggageSubtype),
+    [crmPolicies, claimType, baggageSubtype]
   );
-  const policyFilterCopy = useMemo(() => claimPolicyFilterCopy(claimType), [claimType]);
+  const policyFilterCopy = useMemo(
+    () => claimPolicyFilterCopy(claimType, baggageSubtype),
+    [claimType, baggageSubtype]
+  );
   const groupedPolicies = useMemo(() => groupClaimPolicies(relevantPolicies), [relevantPolicies]);
   const bankBranches = useMemo(
     () => branchesForBank({ banks, branches: allBranches }, formData.bankCode),
@@ -432,7 +435,7 @@ const Claim = () => {
       setCrmCustomer(result.customer);
       setCrmPolicies(result.policies);
 
-      const matched = filterPoliciesForClaimType(result.policies, claimType);
+      const matched = filterPoliciesForClaimType(result.policies, claimType, baggageSubtype);
       if (matched.length === 0) {
         setSelectedPolicyUid("");
         setBlockedReason(result.policies.length > 0 ? "no_match" : "not_found");

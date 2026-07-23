@@ -299,9 +299,12 @@ export type ClaimPolicyTimeBucket = "future" | "active" | "started" | "all";
 
 export type ClaimTypeForPolicyFilter = "medical" | "trip_cancel" | "trip_shorten" | "baggage" | string;
 
-/** Which policies are relevant for this claim type. */
+export type BaggageSubtypeForPolicyFilter = "loss" | "theft" | "delay" | string | null | undefined;
+
+/** Which policies are relevant for this claim type (and baggage subtype when relevant). */
 export const policyTimeBucketForClaimType = (
-  claimType: ClaimTypeForPolicyFilter | null | undefined
+  claimType: ClaimTypeForPolicyFilter | null | undefined,
+  baggageSubtype?: BaggageSubtypeForPolicyFilter
 ): ClaimPolicyTimeBucket => {
   switch (claimType) {
     case "trip_cancel":
@@ -311,8 +314,12 @@ export const policyTimeBucketForClaimType = (
       // קיצור מחו״ל — רק נסיעה שכרגע פעילה
       return "active";
     case "baggage":
-      // מטען / איחור / אובדן / גניבה — במהלך הנסיעה
-      return "active";
+      // איחור בכבודה — רק נסיעה פעילה כעת
+      if (baggageSubtype === "delay") return "active";
+      // אובדן / גניבה — גם במהלך הנסיעה וגם אחרי שחזרתם
+      if (baggageSubtype === "loss" || baggageSubtype === "theft") return "started";
+      // לפני בחירת תת־סוג — מציגים את כל מה שיכול להתאים
+      return "started";
     case "medical":
       // רפואי בחו״ל — נסיעה שהתחילה (פעילה או שכבר חזרו)
       return "started";
@@ -349,18 +356,43 @@ export const isPolicyInTimeBucket = (
 
 export const filterPoliciesForClaimType = (
   policies: ClaimCrmPolicy[],
-  claimType: ClaimTypeForPolicyFilter | null | undefined
+  claimType: ClaimTypeForPolicyFilter | null | undefined,
+  baggageSubtype?: BaggageSubtypeForPolicyFilter
 ): ClaimCrmPolicy[] => {
-  const bucket = policyTimeBucketForClaimType(claimType);
+  const bucket = policyTimeBucketForClaimType(claimType, baggageSubtype);
   if (bucket === "all") return policies;
   const today = startOfTodayMs();
   return policies.filter((policy) => isPolicyInTimeBucket(policy, bucket, today));
 };
 
 export const claimPolicyFilterCopy = (
-  claimType: ClaimTypeForPolicyFilter | null | undefined
+  claimType: ClaimTypeForPolicyFilter | null | undefined,
+  baggageSubtype?: BaggageSubtypeForPolicyFilter
 ): { listHint: string; emptyTitle: string; emptyBody: string; upcomingTitle: string; pastTitle: string } => {
-  const bucket = policyTimeBucketForClaimType(claimType);
+  const bucket = policyTimeBucketForClaimType(claimType, baggageSubtype);
+
+  if (claimType === "baggage" && baggageSubtype === "delay") {
+    return {
+      listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה",
+      emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
+      emptyBody:
+        "לאיחור בכבודה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
+      upcomingTitle: "נסיעות פעילות כעת",
+      pastTitle: "נסיעות שעברו",
+    };
+  }
+
+  if (claimType === "baggage" && (baggageSubtype === "loss" || baggageSubtype === "theft")) {
+    return {
+      listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
+      emptyTitle: "לא מצאנו נסיעה מתאימה",
+      emptyBody:
+        "לאובדן או גניבה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+      upcomingTitle: "נסיעות פעילות כעת",
+      pastTitle: "נסיעות שעברו",
+    };
+  }
+
   switch (bucket) {
     case "future":
       return {
