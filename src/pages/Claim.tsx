@@ -773,7 +773,7 @@ const Claim = () => {
           <img
             src={logo}
             alt="TravelSure"
-            className="mx-auto h-[88px] w-auto drop-shadow-sm sm:h-28"
+            className="mx-auto h-[78px] w-auto drop-shadow-sm sm:h-[100px]"
           />
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#143834] sm:text-4xl">
             הגשת תביעה
