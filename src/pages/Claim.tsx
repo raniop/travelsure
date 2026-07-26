@@ -16,6 +16,8 @@ import {
   lookupClaimCustomerById,
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
+import { ClaimAmountCurrencyFields } from "@/components/claim/ClaimAmountCurrencyFields";
+import { formatClaimTotal, suggestCurrencyForDestination } from "@/lib/claimCurrencies";
 import { submitClaimRequest } from "@/lib/submitClaim";
 import {
   flattenClaimDocFiles,
@@ -127,7 +129,6 @@ const initialForm = {
   hmoBranch: "",
   hmoAddress: "",
   policyNumber: "",
-  policyType: "",
   purchasedWhere: "",
   notifiedCreditCard: "" as YesNo,
   creditCardPolicyNumber: "",
@@ -145,6 +146,8 @@ const initialForm = {
   country: "",
   details: "",
   claimReason: "",
+  claimAmount: "",
+  claimCurrency: "USD",
   preexisting: "" as YesNo,
   preexistingDetails: "",
   duringFlight: "" as YesNo,
@@ -162,7 +165,6 @@ const initialForm = {
   marketingConsent: false,
   medicalWaiver: false,
   declaration: false,
-  totalClaimed: "",
 };
 
 const Field = ({
@@ -294,11 +296,11 @@ const Claim = () => {
 
   useEffect(() => {
     if (claimType === "baggage" && baggageSubtype === "delay") {
-      setFormData((prev) =>
-        prev.totalClaimed === BAGGAGE_DELAY_FIXED_AMOUNT
-          ? prev
-          : { ...prev, totalClaimed: BAGGAGE_DELAY_FIXED_AMOUNT }
-      );
+      setFormData((prev) => ({
+        ...prev,
+        claimAmount: "155",
+        claimCurrency: "USD",
+      }));
       setBaggageItems([emptyBaggage()]);
     }
   }, [claimType, baggageSubtype]);
@@ -404,6 +406,9 @@ const Claim = () => {
       tripStartDate: policy.startDate || prev.tripStartDate,
       tripEndDate: policy.endDate || prev.tripEndDate,
       country: policy.areaName || prev.country,
+      claimCurrency: prev.claimCurrency && prev.claimCurrency !== "USD"
+        ? prev.claimCurrency
+        : suggestCurrencyForDestination(policy.areaName || prev.country),
     }));
     setSelectedPolicyUid(policy.uid);
   };
@@ -563,7 +568,8 @@ const Claim = () => {
     if (!formData.declaration) next.declaration = "יש לאשר את ההצהרה";
 
     if (claimType === "medical") {
-      if (!formData.totalClaimed.trim()) next.totalClaimed = "שדה חובה";
+      if (!formData.claimAmount.trim()) next.claimAmount = "שדה חובה";
+      if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
     }
 
     if (claimType === "trip_cancel" || claimType === "trip_shorten") {
@@ -574,7 +580,8 @@ const Claim = () => {
       if (baggageSubtype === "delay") {
         // Fixed compensation — no itemization required
       } else {
-        if (!formData.totalClaimed.trim()) next.totalClaimed = "שדה חובה";
+        if (!formData.claimAmount.trim()) next.claimAmount = "שדה חובה";
+        if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
         const hasItem = baggageItems.some((r) => r.item.trim());
         if (!hasItem) next.baggageItems = "יש לפרט לפחות פריט אחד";
       }
@@ -620,7 +627,11 @@ const Claim = () => {
         totalClaimed:
           claimType === "baggage" && baggageSubtype === "delay"
             ? BAGGAGE_DELAY_FIXED_AMOUNT
-            : formData.totalClaimed,
+            : formatClaimTotal(formData.claimAmount, formData.claimCurrency),
+        claimAmount:
+          claimType === "baggage" && baggageSubtype === "delay" ? "155" : formData.claimAmount,
+        claimCurrency:
+          claimType === "baggage" && baggageSubtype === "delay" ? "USD" : formData.claimCurrency,
         crmMatched: true,
         selectedPolicyId: formData.policyNumber,
         selectedPolicyUid,
@@ -1160,7 +1171,7 @@ const Claim = () => {
                   <Field label="טלפון נייד" required error={errors.mobile}>
                     <Input className="bg-slate-50" value={formData.mobile} onChange={(e) => setField("mobile", e.target.value)} />
                   </Field>
-                  <Field label="אימייל" required error={errors.email} className="sm:col-span-2">
+                  <Field label="אימייל" required error={errors.email}>
                     <Input className="bg-slate-50" type="email" value={formData.email} onChange={(e) => setField("email", e.target.value)} />
                   </Field>
                 </div>
@@ -1169,11 +1180,8 @@ const Claim = () => {
               <section className="space-y-4">
                 <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ב. פרטי הפוליסה</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="מספר פוליסה" required error={errors.policyNumber}>
+                  <Field label="מספר פוליסה" required error={errors.policyNumber} className="sm:col-span-2">
                     <Input className="bg-slate-100" value={formData.policyNumber} readOnly />
-                  </Field>
-                  <Field label="סוג פוליסה">
-                    <Input className="bg-slate-50" value={formData.policyType} onChange={(e) => setField("policyType", e.target.value)} />
                   </Field>
                   <YesNoField
                     label="האם הודעת למוקד חברת האשראי על הנסיעה?"
@@ -1371,9 +1379,15 @@ const Claim = () => {
                     <Plus className="h-4 w-4" />
                     הוסף הוצאה
                   </Button>
-                  <Field label="סה״כ הסכום הנתבע וסוג המטבע" required error={errors.totalClaimed}>
-                    <Input className="bg-slate-50" value={formData.totalClaimed} onChange={(e) => setField("totalClaimed", e.target.value)} />
-                  </Field>
+                  <ClaimAmountCurrencyFields
+                    amount={formData.claimAmount}
+                    currency={formData.claimCurrency}
+                    destination={formData.country}
+                    amountError={errors.claimAmount}
+                    currencyError={errors.claimCurrency}
+                    onAmountChange={(v) => setField("claimAmount", v)}
+                    onCurrencyChange={(v) => setField("claimCurrency", v)}
+                  />
                   <YesNoField
                     label="האם סבלת מהמחלה לפני היציאה מהארץ?"
                     value={formData.preexisting}
@@ -1395,11 +1409,14 @@ const Claim = () => {
                 <section className="space-y-4">
                   <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ה. פירוט מרכיבי התביעה</h3>
                   {isBaggageDelay ? (
-                    <div className="rounded-2xl border border-[#2f6b63]/15 bg-[#e8f4f1]/60 p-4">
-                      <p className="text-sm font-bold text-[#143834]">סכום פיצוי קבוע לאיחור בכבודה</p>
-                      <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#2f6b63]">155 USD</p>
-                      <p className="mt-2 text-xs text-slate-500">אין צורך בפירוט פריטים — הסכום נקבע לפי תנאי הפוליסה.</p>
-                    </div>
+                    <ClaimAmountCurrencyFields
+                      amount="155"
+                      currency="USD"
+                      locked
+                      lockedHint="אין צורך בפירוט פריטים — הסכום נקבע לפי תנאי הפוליסה לאיחור כבודה."
+                      onAmountChange={() => undefined}
+                      onCurrencyChange={() => undefined}
+                    />
                   ) : (
                     <>
                       <div className="space-y-3">
@@ -1461,9 +1478,15 @@ const Claim = () => {
                         <Plus className="h-4 w-4" />
                         הוסף פריט
                       </Button>
-                      <Field label="סה״כ הסכום הנתבע וסוג המטבע" required error={errors.totalClaimed}>
-                        <Input className="bg-slate-50" value={formData.totalClaimed} onChange={(e) => setField("totalClaimed", e.target.value)} />
-                      </Field>
+                      <ClaimAmountCurrencyFields
+                        amount={formData.claimAmount}
+                        currency={formData.claimCurrency}
+                        destination={formData.country}
+                        amountError={errors.claimAmount}
+                        currencyError={errors.claimCurrency}
+                        onAmountChange={(v) => setField("claimAmount", v)}
+                        onCurrencyChange={(v) => setField("claimCurrency", v)}
+                      />
                     </>
                   )}
                   <YesNoField
