@@ -482,10 +482,7 @@ export const groupClaimPolicies = (
       continue;
     }
     // Active now (started and not ended), or missing end but already started
-    if (bucket === "active" || bucket === "started" || bucket === "all" || bucket === "future") {
-      // "active" bucket input is already filtered; still safe to include here
-      upcoming.push(policy);
-    }
+    upcoming.push(policy);
   }
 
   upcoming.sort((a, b) => (dateMs(a.startDate) || 0) - (dateMs(b.startDate) || 0));
