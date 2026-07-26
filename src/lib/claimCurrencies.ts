@@ -1,3 +1,5 @@
+import currenciesJson from "@/data/claimCurrencies.json";
+
 export type ClaimCurrency = {
   code: string;
   nameHe: string;
@@ -5,138 +7,35 @@ export type ClaimCurrency = {
   aliases: string[];
 };
 
-/** Common travel-claim currencies with Hebrew labels. */
-export const CLAIM_CURRENCIES: ClaimCurrency[] = [
-  { code: "USD", nameHe: "דולר אמריקאי", aliases: ["dollar", "דולר", "usa", "ארהב", "ארצות הברית", "אמריקה"] },
-  { code: "EUR", nameHe: "אירו", aliases: ["euro", "אירופה", "europe", "שנגן"] },
-  { code: "ILS", nameHe: "שקל חדש", aliases: ["שקל", "israel", "ישראל", "nis"] },
-  { code: "GBP", nameHe: "לירה שטרלינג", aliases: ["pound", "לירה", "אנגליה", "בריטניה", "uk", "london"] },
-  { code: "CHF", nameHe: "פרנק שוויצרי", aliases: ["franc", "פרנק", "שוויץ", "switzerland"] },
-  { code: "CAD", nameHe: "דולר קנדי", aliases: ["canada", "קנדה"] },
-  { code: "AUD", nameHe: "דולר אוסטרלי", aliases: ["australia", "אוסטרליה"] },
-  { code: "JPY", nameHe: "ין יפני", aliases: ["yen", "ין", "יפן", "japan", "טוקיו"] },
-  { code: "CNY", nameHe: "יואן סיני", aliases: ["yuan", "סין", "china", "בייג׳ין"] },
-  { code: "THB", nameHe: "בהט תאילנדי", aliases: ["baht", "בהט", "תאילנד", "thailand", "בנגקוק"] },
-  { code: "TRY", nameHe: "לירה טורקית", aliases: ["lira", "טורקיה", "turkey", "איסטנבול", "אנטליה"] },
-  { code: "AED", nameHe: "דירהם איחוד האמירויות", aliases: ["dirham", "דובאי", "אבו דאבי", "אמירויות", "uae"] },
-  { code: "EGP", nameHe: "לירה מצרית", aliases: ["egypt", "מצרים", "קהיר", "שארם"] },
-  { code: "JOD", nameHe: "דינר ירדני", aliases: ["jordan", "ירדן", "עמאן", "פטרה"] },
-  { code: "GEL", nameHe: "לארי גאורגי", aliases: ["georgia", "גאורגיה", "טביליסי", "באטומי"] },
-  { code: "CZK", nameHe: "קורונה צ׳כית", aliases: ["czech", "צ׳כיה", "פראג"] },
-  { code: "HUF", nameHe: "פורינט הונגרי", aliases: ["hungary", "הונגריה", "בודפשט"] },
-  { code: "PLN", nameHe: "זלוטי פולני", aliases: ["poland", "פולין", "ורשה", "קרקוב"] },
-  { code: "RON", nameHe: "לאו רומני", aliases: ["romania", "רומניה", "בוקרשט"] },
-  { code: "BGN", nameHe: "לב בולגרי", aliases: ["bulgaria", "בולגריה", "סופיה"] },
-  { code: "HRK", nameHe: "קונה קרואטית", aliases: ["croatia", "קרואטיה", "זגרב", "ספליט"] },
-  { code: "SEK", nameHe: "כתר שבדי", aliases: ["sweden", "שבדיה", "סטוקהולם"] },
-  { code: "NOK", nameHe: "כתר נורווגי", aliases: ["norway", "נורווגיה", "אוסלו"] },
-  { code: "DKK", nameHe: "כתר דני", aliases: ["denmark", "דנמרק", "קופנהגן"] },
-  { code: "INR", nameHe: "רופי הודי", aliases: ["india", "הודו", "דלהי", "מומבאי"] },
-  { code: "SGD", nameHe: "דולר סינגפורי", aliases: ["singapore", "סינגפור"] },
-  { code: "HKD", nameHe: "דולר הונג קונג", aliases: ["hong kong", "הונג קונג"] },
-  { code: "KRW", nameHe: "וון דרום קוריאני", aliases: ["korea", "קוריאה", "סיאול"] },
-  { code: "MXN", nameHe: "פסו מקסיקני", aliases: ["mexico", "מקסיקו", "cancun"] },
-  { code: "BRL", nameHe: "ריאל ברזילאי", aliases: ["brazil", "ברזיל", "ריו"] },
-  { code: "ZAR", nameHe: "ראנד דרום אפריקאי", aliases: ["south africa", "דרום אפריקה"] },
-  { code: "NZD", nameHe: "דולר ניו זילנדי", aliases: ["new zealand", "ניו זילנד"] },
-  { code: "RUB", nameHe: "רובל רוסי", aliases: ["russia", "רוסיה", "מוסקבה"] },
-  { code: "UAH", nameHe: "גריבנה אוקראינית", aliases: ["ukraine", "אוקראינה", "קייב"] },
-  { code: "MAD", nameHe: "דירהם מרוקאי", aliases: ["morocco", "מרוקו", "מרקש"] },
-  { code: "VND", nameHe: "דונג וייטנאמי", aliases: ["vietnam", "וייטנאם", "האנוי"] },
-  { code: "IDR", nameHe: "רופיה אינדונזית", aliases: ["indonesia", "אינדונזיה", "באלי"] },
-  { code: "PHP", nameHe: "פסו פיליפיני", aliases: ["philippines", "פיליפינים"] },
-  { code: "MYR", nameHe: "רינגיט מלזי", aliases: ["malaysia", "מלזיה"] },
-];
+/** World currencies for claim amounts — searchable by code, Hebrew name, or destination. */
+export const CLAIM_CURRENCIES: ClaimCurrency[] = currenciesJson as ClaimCurrency[];
 
-type DestinationRule = { currency: string; terms: string[] };
+const POPULAR_CODES = ["USD", "EUR", "ILS", "GBP", "CHF", "CAD", "AUD", "JPY", "THB", "TRY", "AED", "RUB"];
 
-/** Destination/country keywords → default currency. */
-const DESTINATION_CURRENCY_RULES: DestinationRule[] = [
-  { currency: "USD", terms: ["ארה״ב", "ארהב", "ארצות הברית", "אמריקה", "ניו יורק", "מיאמי", "לוס אנג׳לס", "usa", "united states", "america"] },
-  { currency: "GBP", terms: ["אנגליה", "בריטניה", "לונדון", "uk", "united kingdom", "england", "scotland", "britain"] },
-  { currency: "CHF", terms: ["שוויץ", "ציריך", "ז׳נבה", "switzerland", "zurich", "geneva"] },
-  { currency: "CAD", terms: ["קנדה", "טורונטו", "ונקובר", "canada", "toronto"] },
-  { currency: "AUD", terms: ["אוסטרליה", "סידני", "מלבורן", "australia", "sydney"] },
-  { currency: "JPY", terms: ["יפן", "טוקיו", "אוסקה", "japan", "tokyo"] },
-  { currency: "CNY", terms: ["סין", "בייג׳ין", "שנחאי", "china", "beijing"] },
-  { currency: "THB", terms: ["תאילנד", "בנגקוק", "פוקט", "thailand", "bangkok", "phuket"] },
-  { currency: "TRY", terms: ["טורקיה", "איסטנבול", "אנטליה", "turkey", "istanbul", "antalya"] },
-  { currency: "AED", terms: ["דובאי", "אבו דאבי", "אמירויות", "dubai", "uae", "abu dhabi"] },
-  { currency: "EGP", terms: ["מצרים", "קהיר", "שארם", "egypt", "cairo", "sharm"] },
-  { currency: "JOD", terms: ["ירדן", "עמאן", "פטרה", "jordan", "amman"] },
-  { currency: "GEL", terms: ["גאורגיה", "טביליסי", "באטומי", "georgia", "tbilisi", "batumi"] },
-  { currency: "CZK", terms: ["צ׳כיה", "פראג", "czech", "prague"] },
-  { currency: "HUF", terms: ["הונגריה", "בודפשט", "hungary", "budapest"] },
-  { currency: "PLN", terms: ["פולין", "ורשה", "קרקוב", "poland", "warsaw", "krakow"] },
-  { currency: "ILS", terms: ["ישראל", "תל אביב", "ירושלים", "israel", "tel aviv"] },
-  // Broad Europe → EUR (after specific European countries above)
-  {
-    currency: "EUR",
-    terms: [
-      "אירופה",
-      "europe",
-      "צרפת",
-      "פריז",
-      "france",
-      "paris",
-      "גרמניה",
-      "ברלין",
-      "germany",
-      "berlin",
-      "איטליה",
-      "רומא",
-      "italy",
-      "rome",
-      "ספרד",
-      "מדריד",
-      "ברצלונה",
-      "spain",
-      "madrid",
-      "barcelona",
-      "יוון",
-      "אתונה",
-      "greece",
-      "athens",
-      "קפריסין",
-      "לרנקה",
-      "cyprus",
-      "פורטוגל",
-      "ליסבון",
-      "portugal",
-      "lisbon",
-      "הולנד",
-      "אמסטרדם",
-      "netherlands",
-      "amsterdam",
-      "בלגיה",
-      "בריסל",
-      "belgium",
-      "אוסטריה",
-      "וינה",
-      "austria",
-      "vienna",
-      "אירלנד",
-      "דבלין",
-      "ireland",
-      "dublin",
-      "פינלנד",
-      "helsinki",
-      "קרואטיה",
-      "croatia",
-      "בולגריה",
-      "bulgaria",
-      "רומניה",
-      "romania",
-    ],
-  },
+/** Broad region labels that should map even without a specific country. */
+const DESTINATION_PRIORITY_RULES: { currency: string; terms: string[] }[] = [
+  { currency: "EUR", terms: ["אירופה", "europe", "שנגן"] },
+  { currency: "USD", terms: ["ארה״ב", "ארהב", "ארצות הברית", "united states"] },
 ];
 
 export function suggestCurrencyForDestination(destination: string): string {
   const q = String(destination || "").trim().toLowerCase();
   if (!q) return "USD";
-  for (const rule of DESTINATION_CURRENCY_RULES) {
+
+  for (const rule of DESTINATION_PRIORITY_RULES) {
     if (rule.terms.some((term) => q.includes(term.toLowerCase()))) {
       return rule.currency;
+    }
+  }
+
+  for (const c of CLAIM_CURRENCIES) {
+    if (
+      c.aliases.some((a) => {
+        const t = a.toLowerCase();
+        return q === t || q.includes(t) || (t.length >= 3 && t.includes(q));
+      })
+    ) {
+      return c.code;
     }
   }
   return "USD";
@@ -144,11 +43,28 @@ export function suggestCurrencyForDestination(destination: string): string {
 
 export function filterCurrencies(query: string): ClaimCurrency[] {
   const q = String(query || "").trim().toLowerCase();
-  if (!q) return CLAIM_CURRENCIES;
-  return CLAIM_CURRENCIES.filter((c) => {
-    const hay = `${c.code} ${c.nameHe} ${c.aliases.join(" ")}`.toLowerCase();
-    return hay.includes(q);
-  });
+  if (!q) {
+    const popular = POPULAR_CODES.map((code) => CLAIM_CURRENCIES.find((c) => c.code === code)).filter(
+      Boolean
+    ) as ClaimCurrency[];
+    const rest = CLAIM_CURRENCIES.filter((c) => !POPULAR_CODES.includes(c.code));
+    return [...popular, ...rest];
+  }
+  const scored = CLAIM_CURRENCIES.map((c) => {
+    const code = c.code.toLowerCase();
+    const name = c.nameHe.toLowerCase();
+    const aliases = c.aliases.map((a) => a.toLowerCase());
+    let score = 0;
+    if (code === q) score = 100;
+    else if (code.startsWith(q)) score = 90;
+    else if (name.includes(q)) score = 80;
+    else if (aliases.some((a) => a === q)) score = 75;
+    else if (aliases.some((a) => a.includes(q) || (q.length >= 3 && q.includes(a)))) score = 60;
+    else if (`${code} ${name} ${aliases.join(" ")}`.includes(q)) score = 40;
+    return { c, score };
+  }).filter((x) => x.score > 0);
+  scored.sort((a, b) => b.score - a.score || a.c.code.localeCompare(b.c.code));
+  return scored.map((x) => x.c);
 }
 
 export function formatClaimTotal(amount: string, currency: string): string {

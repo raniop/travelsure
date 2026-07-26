@@ -35,7 +35,7 @@ export function ClaimAmountCurrencyFields({
     () => CLAIM_CURRENCIES.find((c) => c.code === currency) || null,
     [currency]
   );
-  const suggestions = useMemo(() => filterCurrencies(query).slice(0, 12), [query]);
+  const suggestions = useMemo(() => filterCurrencies(query), [query]);
   const suggestedCode = useMemo(() => suggestCurrencyForDestination(destination), [destination]);
 
   useEffect(() => {
@@ -113,7 +113,7 @@ export function ClaimAmountCurrencyFields({
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <ul className="max-h-48 overflow-y-auto py-1">
+            <ul className="max-h-64 overflow-y-auto py-1">
               {suggestions.length ? (
                 suggestions.map((c) => (
                   <li key={c.code}>
@@ -135,9 +135,14 @@ export function ClaimAmountCurrencyFields({
                   </li>
                 ))
               ) : (
-                <li className="px-3 py-3 text-xs text-slate-500">לא נמצא מטבע תואם</li>
+                <li className="px-3 py-3 text-xs text-slate-500">לא נמצא מטבע תואם — נסו קוד מטבע (למשל RUB) או שם מדינה</li>
               )}
             </ul>
+            {suggestions.length ? (
+              <p className="border-t border-slate-100 px-3 py-1.5 text-[11px] text-slate-400">
+                {query.trim() ? `${suggestions.length} תוצאות` : `${suggestions.length} מטבעות בעולם — חפשו מדינה או קוד`}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>

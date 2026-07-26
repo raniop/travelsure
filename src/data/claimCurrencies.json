@@ -1,0 +1,1547 @@
+[
+  {
+    "code": "USD",
+    "nameHe": "דולר אמריקאי",
+    "aliases": [
+      "dollar",
+      "דולר",
+      "usa",
+      "ארהב",
+      "ארה״ב",
+      "ארצות הברית",
+      "אמריקה",
+      "united states",
+      "america",
+      "ניו יורק",
+      "מיאמי",
+      "לוס אנג׳לס"
+    ]
+  },
+  {
+    "code": "EUR",
+    "nameHe": "אירו",
+    "aliases": [
+      "euro",
+      "אירופה",
+      "europe",
+      "שנגן",
+      "צרפת",
+      "פריז",
+      "france",
+      "paris",
+      "גרמניה",
+      "ברלין",
+      "germany",
+      "berlin",
+      "איטליה",
+      "רומא",
+      "italy",
+      "rome",
+      "ספרד",
+      "מדריד",
+      "ברצלונה",
+      "spain",
+      "madrid",
+      "barcelona",
+      "יוון",
+      "אתונה",
+      "greece",
+      "athens",
+      "קפריסין",
+      "cyprus",
+      "פורטוגל",
+      "ליסבון",
+      "portugal",
+      "הולנד",
+      "אמסטרדם",
+      "netherlands",
+      "amsterdam",
+      "בלגיה",
+      "בריסל",
+      "belgium",
+      "אוסטריה",
+      "וינה",
+      "austria",
+      "vienna",
+      "אירלנד",
+      "דבלין",
+      "ireland",
+      "dublin",
+      "פינלנד",
+      "helsinki",
+      "finland",
+      "סלובקיה",
+      "slovakia",
+      "סלובניה",
+      "slovenia",
+      "אסטוניה",
+      "estonia",
+      "לטביה",
+      "latvia",
+      "ליטא",
+      "lithuania",
+      "מלטה",
+      "malta",
+      "לוקסמבורג",
+      "luxembourg",
+      "מונקו",
+      "monaco"
+    ]
+  },
+  {
+    "code": "ILS",
+    "nameHe": "שקל חדש",
+    "aliases": [
+      "שקל",
+      "israel",
+      "ישראל",
+      "nis",
+      "תל אביב",
+      "ירושלים",
+      "tel aviv"
+    ]
+  },
+  {
+    "code": "GBP",
+    "nameHe": "לירה שטרלינג",
+    "aliases": [
+      "pound",
+      "לירה",
+      "אנגליה",
+      "בריטניה",
+      "uk",
+      "london",
+      "united kingdom",
+      "england",
+      "scotland",
+      "britain",
+      "לונדון"
+    ]
+  },
+  {
+    "code": "CHF",
+    "nameHe": "פרנק שוויצרי",
+    "aliases": [
+      "franc",
+      "פרנק",
+      "שוויץ",
+      "switzerland",
+      "zurich",
+      "geneva",
+      "ציריך",
+      "ז׳נבה"
+    ]
+  },
+  {
+    "code": "CAD",
+    "nameHe": "דולר קנדי",
+    "aliases": [
+      "canada",
+      "קנדה",
+      "toronto",
+      "טורונטו",
+      "vancouver",
+      "ונקובר"
+    ]
+  },
+  {
+    "code": "AUD",
+    "nameHe": "דולר אוסטרלי",
+    "aliases": [
+      "australia",
+      "אוסטרליה",
+      "sydney",
+      "סידני",
+      "melbourne",
+      "מלבורן"
+    ]
+  },
+  {
+    "code": "JPY",
+    "nameHe": "ין יפני",
+    "aliases": [
+      "yen",
+      "ין",
+      "יפן",
+      "japan",
+      "tokyo",
+      "טוקיו",
+      "osaka",
+      "אוסקה"
+    ]
+  },
+  {
+    "code": "CNY",
+    "nameHe": "יואן סיני",
+    "aliases": [
+      "yuan",
+      "סין",
+      "china",
+      "beijing",
+      "בייג׳ין",
+      "shanghai",
+      "שנחאי",
+      "rmb"
+    ]
+  },
+  {
+    "code": "HKD",
+    "nameHe": "דולר הונג קונג",
+    "aliases": [
+      "hong kong",
+      "הונג קונג"
+    ]
+  },
+  {
+    "code": "SGD",
+    "nameHe": "דולר סינגפורי",
+    "aliases": [
+      "singapore",
+      "סינגפור"
+    ]
+  },
+  {
+    "code": "KRW",
+    "nameHe": "וון דרום קוריאני",
+    "aliases": [
+      "korea",
+      "קוריאה",
+      "seoul",
+      "סיאול",
+      "south korea",
+      "דרום קוריאה"
+    ]
+  },
+  {
+    "code": "THB",
+    "nameHe": "בהט תאילנדי",
+    "aliases": [
+      "baht",
+      "בהט",
+      "תאילנד",
+      "thailand",
+      "bangkok",
+      "בנגקוק",
+      "phuket",
+      "פוקט"
+    ]
+  },
+  {
+    "code": "TRY",
+    "nameHe": "לירה טורקית",
+    "aliases": [
+      "lira",
+      "טורקיה",
+      "turkey",
+      "istanbul",
+      "איסטנבול",
+      "antalya",
+      "אנטליה"
+    ]
+  },
+  {
+    "code": "AED",
+    "nameHe": "דירהם איחוד האמירויות",
+    "aliases": [
+      "dirham",
+      "דובאי",
+      "אבו דאבי",
+      "אמירויות",
+      "uae",
+      "dubai",
+      "abu dhabi"
+    ]
+  },
+  {
+    "code": "SAR",
+    "nameHe": "ריאל סעודי",
+    "aliases": [
+      "saudi",
+      "סעודיה",
+      "riyadh",
+      "ריאד",
+      "מכה",
+      "medina"
+    ]
+  },
+  {
+    "code": "QAR",
+    "nameHe": "ריאל קטרי",
+    "aliases": [
+      "qatar",
+      "קטאר",
+      "doha",
+      "דוחה"
+    ]
+  },
+  {
+    "code": "KWD",
+    "nameHe": "דינר כוויתי",
+    "aliases": [
+      "kuwait",
+      "כווית"
+    ]
+  },
+  {
+    "code": "BHD",
+    "nameHe": "דינר בחרייני",
+    "aliases": [
+      "bahrain",
+      "בחריין"
+    ]
+  },
+  {
+    "code": "OMR",
+    "nameHe": "ריאל עומאני",
+    "aliases": [
+      "oman",
+      "עומאן",
+      "muscat"
+    ]
+  },
+  {
+    "code": "EGP",
+    "nameHe": "לירה מצרית",
+    "aliases": [
+      "egypt",
+      "מצרים",
+      "cairo",
+      "קהיר",
+      "sharm",
+      "שארם",
+      "hurghada",
+      "חורגדה"
+    ]
+  },
+  {
+    "code": "JOD",
+    "nameHe": "דינר ירדני",
+    "aliases": [
+      "jordan",
+      "ירדן",
+      "amman",
+      "עמאן",
+      "petra",
+      "פטרה"
+    ]
+  },
+  {
+    "code": "LBP",
+    "nameHe": "לירה לבנונית",
+    "aliases": [
+      "lebanon",
+      "לבנון",
+      "beirut",
+      "ביירות"
+    ]
+  },
+  {
+    "code": "MAD",
+    "nameHe": "דירהם מרוקאי",
+    "aliases": [
+      "morocco",
+      "מרוקו",
+      "marrakech",
+      "מרקש",
+      "casablanca",
+      "קזבלנקה"
+    ]
+  },
+  {
+    "code": "TND",
+    "nameHe": "דינר תוניסאי",
+    "aliases": [
+      "tunisia",
+      "תוניסיה",
+      "tunis"
+    ]
+  },
+  {
+    "code": "DZD",
+    "nameHe": "דינר אלג׳ירי",
+    "aliases": [
+      "algeria",
+      "אלג׳יריה",
+      "algiers"
+    ]
+  },
+  {
+    "code": "LYD",
+    "nameHe": "דינר לובי",
+    "aliases": [
+      "libya",
+      "לוב"
+    ]
+  },
+  {
+    "code": "IQD",
+    "nameHe": "דינר עיראקי",
+    "aliases": [
+      "iraq",
+      "עיראק",
+      "baghdad"
+    ]
+  },
+  {
+    "code": "IRR",
+    "nameHe": "ריאל איראני",
+    "aliases": [
+      "iran",
+      "איראן",
+      "tehran"
+    ]
+  },
+  {
+    "code": "RUB",
+    "nameHe": "רובל רוסי",
+    "aliases": [
+      "russia",
+      "רוסיה",
+      "moscow",
+      "מוסקבה",
+      "rouble",
+      "ruble",
+      "רובל"
+    ]
+  },
+  {
+    "code": "UAH",
+    "nameHe": "גריבנה אוקראינית",
+    "aliases": [
+      "ukraine",
+      "אוקראינה",
+      "kyiv",
+      "kiev",
+      "קייב"
+    ]
+  },
+  {
+    "code": "BYN",
+    "nameHe": "רובל בלרוסי",
+    "aliases": [
+      "belarus",
+      "בלארוס",
+      "מינסק",
+      "minsk"
+    ]
+  },
+  {
+    "code": "GEL",
+    "nameHe": "לארי גאורגי",
+    "aliases": [
+      "georgia",
+      "גאורגיה",
+      "tbilisi",
+      "טביליסי",
+      "batumi",
+      "באטומי"
+    ]
+  },
+  {
+    "code": "AMD",
+    "nameHe": "דראם ארמני",
+    "aliases": [
+      "armenia",
+      "ארמניה",
+      "yerevan",
+      "ירוואן"
+    ]
+  },
+  {
+    "code": "AZN",
+    "nameHe": "מאנאט אזרביג׳ני",
+    "aliases": [
+      "azerbaijan",
+      "אזרביג׳ן",
+      "baku",
+      "באקו"
+    ]
+  },
+  {
+    "code": "KZT",
+    "nameHe": "טנגה קזחי",
+    "aliases": [
+      "kazakhstan",
+      "קזחסטן",
+      "almaty"
+    ]
+  },
+  {
+    "code": "UZS",
+    "nameHe": "סום אוזבקי",
+    "aliases": [
+      "uzbekistan",
+      "אוזבקיסטן",
+      "tashkent",
+      "סמרקנד",
+      "samarkand"
+    ]
+  },
+  {
+    "code": "TJS",
+    "nameHe": "סומוני טג׳יקי",
+    "aliases": [
+      "tajikistan",
+      "טג׳יקיסטן"
+    ]
+  },
+  {
+    "code": "TMT",
+    "nameHe": "מאנאט טורקמני",
+    "aliases": [
+      "turkmenistan",
+      "טורקמניסטן"
+    ]
+  },
+  {
+    "code": "KGS",
+    "nameHe": "סום קירגיזי",
+    "aliases": [
+      "kyrgyzstan",
+      "קירגיזסטן"
+    ]
+  },
+  {
+    "code": "CZK",
+    "nameHe": "קורונה צ׳כית",
+    "aliases": [
+      "czech",
+      "צ׳כיה",
+      "prague",
+      "פראג",
+      "czechia"
+    ]
+  },
+  {
+    "code": "HUF",
+    "nameHe": "פורינט הונגרי",
+    "aliases": [
+      "hungary",
+      "הונגריה",
+      "budapest",
+      "בודפשט"
+    ]
+  },
+  {
+    "code": "PLN",
+    "nameHe": "זלוטי פולני",
+    "aliases": [
+      "poland",
+      "פולין",
+      "warsaw",
+      "ורשה",
+      "krakow",
+      "קרקוב"
+    ]
+  },
+  {
+    "code": "RON",
+    "nameHe": "לאו רומני",
+    "aliases": [
+      "romania",
+      "רומניה",
+      "bucharest",
+      "בוקרשט"
+    ]
+  },
+  {
+    "code": "BGN",
+    "nameHe": "לב בולגרי",
+    "aliases": [
+      "bulgaria",
+      "בולגריה",
+      "sofia",
+      "סופיה"
+    ]
+  },
+  {
+    "code": "RSD",
+    "nameHe": "דינר סרבי",
+    "aliases": [
+      "serbia",
+      "סרביה",
+      "belgrade",
+      "בלגרד"
+    ]
+  },
+  {
+    "code": "BAM",
+    "nameHe": "מארק סחיר בוסני",
+    "aliases": [
+      "bosnia",
+      "בוסניה",
+      "sarajevo"
+    ]
+  },
+  {
+    "code": "MKD",
+    "nameHe": "דינר מקדוני",
+    "aliases": [
+      "macedonia",
+      "מקדוניה",
+      "north macedonia",
+      "צפון מקדוניה",
+      "skopje"
+    ]
+  },
+  {
+    "code": "ALL",
+    "nameHe": "לק אלבני",
+    "aliases": [
+      "albania",
+      "אלבניה",
+      "tirana"
+    ]
+  },
+  {
+    "code": "ISK",
+    "nameHe": "כתר איסלנדי",
+    "aliases": [
+      "iceland",
+      "איסלנד",
+      "reykjavik"
+    ]
+  },
+  {
+    "code": "SEK",
+    "nameHe": "כתר שבדי",
+    "aliases": [
+      "sweden",
+      "שבדיה",
+      "stockholm",
+      "סטוקהולם"
+    ]
+  },
+  {
+    "code": "NOK",
+    "nameHe": "כתר נורווגי",
+    "aliases": [
+      "norway",
+      "נורווגיה",
+      "oslo",
+      "אוסלו"
+    ]
+  },
+  {
+    "code": "DKK",
+    "nameHe": "כתר דני",
+    "aliases": [
+      "denmark",
+      "דנמרק",
+      "copenhagen",
+      "קופנהגן"
+    ]
+  },
+  {
+    "code": "INR",
+    "nameHe": "רופי הודי",
+    "aliases": [
+      "india",
+      "הודו",
+      "delhi",
+      "דלהי",
+      "mumbai",
+      "מומבאי",
+      "goa",
+      "גואה"
+    ]
+  },
+  {
+    "code": "PKR",
+    "nameHe": "רופי פקיסטני",
+    "aliases": [
+      "pakistan",
+      "פקיסטן",
+      "islamabad",
+      "karachi"
+    ]
+  },
+  {
+    "code": "BDT",
+    "nameHe": "טאקה בנגלדשי",
+    "aliases": [
+      "bangladesh",
+      "בנגלדש",
+      "dhaka"
+    ]
+  },
+  {
+    "code": "LKR",
+    "nameHe": "רופי סרי לנקי",
+    "aliases": [
+      "sri lanka",
+      "סרי לנקה",
+      "colombo"
+    ]
+  },
+  {
+    "code": "NPR",
+    "nameHe": "רופי נפאלי",
+    "aliases": [
+      "nepal",
+      "נפאל",
+      "kathmandu"
+    ]
+  },
+  {
+    "code": "MVR",
+    "nameHe": "רופיה מלדיבית",
+    "aliases": [
+      "maldives",
+      "מלדיביים",
+      "male"
+    ]
+  },
+  {
+    "code": "BTN",
+    "nameHe": "נגולטרום בהוטני",
+    "aliases": [
+      "bhutan",
+      "בהוטן"
+    ]
+  },
+  {
+    "code": "AFN",
+    "nameHe": "אפגני",
+    "aliases": [
+      "afghanistan",
+      "אפגניסטן",
+      "kabul"
+    ]
+  },
+  {
+    "code": "VND",
+    "nameHe": "דונג וייטנאמי",
+    "aliases": [
+      "vietnam",
+      "וייטנאם",
+      "hanoi",
+      "האנוי",
+      "ho chi minh",
+      "סייגון"
+    ]
+  },
+  {
+    "code": "IDR",
+    "nameHe": "רופיה אינדונזית",
+    "aliases": [
+      "indonesia",
+      "אינדונזיה",
+      "bali",
+      "באלי",
+      "jakarta"
+    ]
+  },
+  {
+    "code": "MYR",
+    "nameHe": "רינגיט מלזי",
+    "aliases": [
+      "malaysia",
+      "מלזיה",
+      "kuala lumpur"
+    ]
+  },
+  {
+    "code": "PHP",
+    "nameHe": "פסו פיליפיני",
+    "aliases": [
+      "philippines",
+      "פיליפינים",
+      "manila"
+    ]
+  },
+  {
+    "code": "TWD",
+    "nameHe": "דולר טייוואני",
+    "aliases": [
+      "taiwan",
+      "טייוואן",
+      "taipei"
+    ]
+  },
+  {
+    "code": "MOP",
+    "nameHe": "פטקה מקאו",
+    "aliases": [
+      "macau",
+      "macao",
+      "מקאו"
+    ]
+  },
+  {
+    "code": "MMK",
+    "nameHe": "קיאט מיאנמרי",
+    "aliases": [
+      "myanmar",
+      "מיאנמר",
+      "burma",
+      "בורמה",
+      "yangon"
+    ]
+  },
+  {
+    "code": "LAK",
+    "nameHe": "קיפ לאוסי",
+    "aliases": [
+      "laos",
+      "לאוס",
+      "vientiane"
+    ]
+  },
+  {
+    "code": "KHR",
+    "nameHe": "ריל קמבודי",
+    "aliases": [
+      "cambodia",
+      "קמבודיה",
+      "phnom penh",
+      "angkor"
+    ]
+  },
+  {
+    "code": "BND",
+    "nameHe": "דולר ברוניי",
+    "aliases": [
+      "brunei",
+      "ברוניי"
+    ]
+  },
+  {
+    "code": "MNT",
+    "nameHe": "טוגרוג מונגולי",
+    "aliases": [
+      "mongolia",
+      "מונגוליה",
+      "ulaanbaatar"
+    ]
+  },
+  {
+    "code": "NZD",
+    "nameHe": "דולר ניו זילנדי",
+    "aliases": [
+      "new zealand",
+      "ניו זילנד",
+      "auckland",
+      "wellington"
+    ]
+  },
+  {
+    "code": "FJD",
+    "nameHe": "דולר פיג׳י",
+    "aliases": [
+      "fiji",
+      "פיג׳י"
+    ]
+  },
+  {
+    "code": "PGK",
+    "nameHe": "קינה פפואה",
+    "aliases": [
+      "papua",
+      "פפואה",
+      "png"
+    ]
+  },
+  {
+    "code": "WST",
+    "nameHe": "טאלה סמואי",
+    "aliases": [
+      "samoa",
+      "סמואה"
+    ]
+  },
+  {
+    "code": "TOP",
+    "nameHe": "פאאנגה טונגית",
+    "aliases": [
+      "tonga",
+      "טונגה"
+    ]
+  },
+  {
+    "code": "XPF",
+    "nameHe": "פרנק פולינזי",
+    "aliases": [
+      "tahiti",
+      "טהיטי",
+      "french polynesia",
+      "פולינזיה",
+      "new caledonia"
+    ]
+  },
+  {
+    "code": "MXN",
+    "nameHe": "פסו מקסיקני",
+    "aliases": [
+      "mexico",
+      "מקסיקו",
+      "cancun",
+      "קנקון",
+      "mexico city"
+    ]
+  },
+  {
+    "code": "BRL",
+    "nameHe": "ריאל ברזילאי",
+    "aliases": [
+      "brazil",
+      "ברזיל",
+      "rio",
+      "ריו",
+      "sao paulo"
+    ]
+  },
+  {
+    "code": "ARS",
+    "nameHe": "פסו ארגנטינאי",
+    "aliases": [
+      "argentina",
+      "ארגנטינה",
+      "buenos aires",
+      "בואנוס איירס"
+    ]
+  },
+  {
+    "code": "CLP",
+    "nameHe": "פסו צ׳יליאני",
+    "aliases": [
+      "chile",
+      "צ׳ילה",
+      "santiago"
+    ]
+  },
+  {
+    "code": "COP",
+    "nameHe": "פסו קולומביאני",
+    "aliases": [
+      "colombia",
+      "קולומביה",
+      "bogota"
+    ]
+  },
+  {
+    "code": "PEN",
+    "nameHe": "סול פרואני",
+    "aliases": [
+      "peru",
+      "פרו",
+      "lima",
+      "לימה",
+      "cusco",
+      "קוסקו"
+    ]
+  },
+  {
+    "code": "UYU",
+    "nameHe": "פסו אורוגוואי",
+    "aliases": [
+      "uruguay",
+      "אורוגוואי",
+      "montevideo"
+    ]
+  },
+  {
+    "code": "PYG",
+    "nameHe": "גוארני פרגוואי",
+    "aliases": [
+      "paraguay",
+      "פרגוואי"
+    ]
+  },
+  {
+    "code": "BOB",
+    "nameHe": "בוליביאנו",
+    "aliases": [
+      "bolivia",
+      "בוליביה",
+      "la paz"
+    ]
+  },
+  {
+    "code": "VES",
+    "nameHe": "בוליבר ונצואלי",
+    "aliases": [
+      "venezuela",
+      "ונצואלה",
+      "caracas"
+    ]
+  },
+  {
+    "code": "GYD",
+    "nameHe": "דולר גיאני",
+    "aliases": [
+      "guyana",
+      "גיאנה"
+    ]
+  },
+  {
+    "code": "SRD",
+    "nameHe": "דולר סורינאמי",
+    "aliases": [
+      "suriname",
+      "סורינאם"
+    ]
+  },
+  {
+    "code": "CRC",
+    "nameHe": "קולון קוסטה ריקני",
+    "aliases": [
+      "costa rica",
+      "קוסטה ריקה",
+      "san jose"
+    ]
+  },
+  {
+    "code": "GTQ",
+    "nameHe": "קצאל גואטמלי",
+    "aliases": [
+      "guatemala",
+      "גואטמלה"
+    ]
+  },
+  {
+    "code": "HNL",
+    "nameHe": "למפירה הונדורית",
+    "aliases": [
+      "honduras",
+      "הונדורס"
+    ]
+  },
+  {
+    "code": "NIO",
+    "nameHe": "קורדובה ניקרגואה",
+    "aliases": [
+      "nicaragua",
+      "ניקרגואה"
+    ]
+  },
+  {
+    "code": "PAB",
+    "nameHe": "בלבואה פנמי",
+    "aliases": [
+      "panama",
+      "פנמה"
+    ]
+  },
+  {
+    "code": "BZD",
+    "nameHe": "דולר בליזי",
+    "aliases": [
+      "belize",
+      "בליז"
+    ]
+  },
+  {
+    "code": "SVC",
+    "nameHe": "קולון סלוודורי",
+    "aliases": [
+      "el salvador",
+      "אל סלוודור"
+    ]
+  },
+  {
+    "code": "DOP",
+    "nameHe": "פסו דומיניקני",
+    "aliases": [
+      "dominican",
+      "דומיניקנית",
+      "dominican republic",
+      "הרפובליקה הדומיניקנית",
+      "punta cana"
+    ]
+  },
+  {
+    "code": "CUP",
+    "nameHe": "פסו קובני",
+    "aliases": [
+      "cuba",
+      "קובה",
+      "havana",
+      "הוואנה"
+    ]
+  },
+  {
+    "code": "JMD",
+    "nameHe": "דולר ג׳מייקני",
+    "aliases": [
+      "jamaica",
+      "ג׳מייקה"
+    ]
+  },
+  {
+    "code": "TTD",
+    "nameHe": "דולר טרינידד",
+    "aliases": [
+      "trinidad",
+      "טרינידד"
+    ]
+  },
+  {
+    "code": "BBD",
+    "nameHe": "דולר ברבדוסי",
+    "aliases": [
+      "barbados",
+      "ברבדוס"
+    ]
+  },
+  {
+    "code": "BSD",
+    "nameHe": "דולר בהאמי",
+    "aliases": [
+      "bahamas",
+      "בהאמה"
+    ]
+  },
+  {
+    "code": "KYD",
+    "nameHe": "דולר קיימן",
+    "aliases": [
+      "cayman",
+      "קיימן"
+    ]
+  },
+  {
+    "code": "BMD",
+    "nameHe": "דולר ברמודה",
+    "aliases": [
+      "bermuda",
+      "ברמודה"
+    ]
+  },
+  {
+    "code": "AWG",
+    "nameHe": "פלורין ארובי",
+    "aliases": [
+      "aruba",
+      "ארובה"
+    ]
+  },
+  {
+    "code": "ANG",
+    "nameHe": "גילדר אנטילים",
+    "aliases": [
+      "curacao",
+      "קוראסאו",
+      "netherlands antilles"
+    ]
+  },
+  {
+    "code": "XCD",
+    "nameHe": "דולר מזרח קריבי",
+    "aliases": [
+      "caribbean",
+      "קריביים",
+      "antigua",
+      "st lucia",
+      "grenada"
+    ]
+  },
+  {
+    "code": "HTG",
+    "nameHe": "גורד האיטי",
+    "aliases": [
+      "haiti",
+      "האיטי"
+    ]
+  },
+  {
+    "code": "ZAR",
+    "nameHe": "ראנד דרום אפריקאי",
+    "aliases": [
+      "south africa",
+      "דרום אפריקה",
+      "cape town",
+      "יוהנסבורג",
+      "johannesburg"
+    ]
+  },
+  {
+    "code": "NGN",
+    "nameHe": "נאירה ניגרי",
+    "aliases": [
+      "nigeria",
+      "ניגריה",
+      "lagos",
+      "אבוג׳ה"
+    ]
+  },
+  {
+    "code": "GHS",
+    "nameHe": "סדי גאני",
+    "aliases": [
+      "ghana",
+      "גאנה",
+      "accra"
+    ]
+  },
+  {
+    "code": "KES",
+    "nameHe": "שילינג קנייתי",
+    "aliases": [
+      "kenya",
+      "קניה",
+      "nairobi",
+      "נאירובי",
+      "mombasa"
+    ]
+  },
+  {
+    "code": "TZS",
+    "nameHe": "שילינג טנזני",
+    "aliases": [
+      "tanzania",
+      "טנזניה",
+      "zanzibar",
+      "זנזיבר",
+      "dar es salaam"
+    ]
+  },
+  {
+    "code": "UGX",
+    "nameHe": "שילינג אוגנדי",
+    "aliases": [
+      "uganda",
+      "אוגנדה",
+      "kampala"
+    ]
+  },
+  {
+    "code": "RWF",
+    "nameHe": "פרנק רואנדי",
+    "aliases": [
+      "rwanda",
+      "רואנדה",
+      "kigali"
+    ]
+  },
+  {
+    "code": "ETB",
+    "nameHe": "ביר אתיופי",
+    "aliases": [
+      "ethiopia",
+      "אתיופיה",
+      "addis",
+      "אדיס אבבה"
+    ]
+  },
+  {
+    "code": "ERN",
+    "nameHe": "נאקפה אריתראי",
+    "aliases": [
+      "eritrea",
+      "אריתריאה"
+    ]
+  },
+  {
+    "code": "SOS",
+    "nameHe": "שילינג סומלי",
+    "aliases": [
+      "somalia",
+      "סומליה"
+    ]
+  },
+  {
+    "code": "DJF",
+    "nameHe": "פרנק ג׳יבוטי",
+    "aliases": [
+      "djibouti",
+      "ג׳יבוטי"
+    ]
+  },
+  {
+    "code": "SDG",
+    "nameHe": "לירה סודנית",
+    "aliases": [
+      "sudan",
+      "סודן",
+      "khartoum"
+    ]
+  },
+  {
+    "code": "SSP",
+    "nameHe": "לירה דרום סודנית",
+    "aliases": [
+      "south sudan",
+      "דרום סודן"
+    ]
+  },
+  {
+    "code": "MUR",
+    "nameHe": "רופי מאוריצי",
+    "aliases": [
+      "mauritius",
+      "מאוריציוס"
+    ]
+  },
+  {
+    "code": "SCR",
+    "nameHe": "רופי סיישלי",
+    "aliases": [
+      "seychelles",
+      "סיישל"
+    ]
+  },
+  {
+    "code": "MGA",
+    "nameHe": "אריארי מדגסקרי",
+    "aliases": [
+      "madagascar",
+      "מדגסקר"
+    ]
+  },
+  {
+    "code": "MZN",
+    "nameHe": "מטיקל מוזמביקי",
+    "aliases": [
+      "mozambique",
+      "מוזמביק"
+    ]
+  },
+  {
+    "code": "ZMW",
+    "nameHe": "קוואצ׳ה זמבית",
+    "aliases": [
+      "zambia",
+      "זמביה"
+    ]
+  },
+  {
+    "code": "ZWL",
+    "nameHe": "דולר זימבבואן",
+    "aliases": [
+      "zimbabwe",
+      "זימבבואה"
+    ]
+  },
+  {
+    "code": "BWP",
+    "nameHe": "פולה בוצוואנית",
+    "aliases": [
+      "botswana",
+      "בוצוואנה"
+    ]
+  },
+  {
+    "code": "NAD",
+    "nameHe": "דולר נמיבי",
+    "aliases": [
+      "namibia",
+      "נמיביה"
+    ]
+  },
+  {
+    "code": "AOA",
+    "nameHe": "קואנזה אנגולית",
+    "aliases": [
+      "angola",
+      "אנגולה"
+    ]
+  },
+  {
+    "code": "XOF",
+    "nameHe": "פרנק מערב אפריקאי",
+    "aliases": [
+      "senegal",
+      "סנגל",
+      "ivory coast",
+      "חוף השנהב",
+      "cote divoire",
+      "mali",
+      "מאלי",
+      "benin",
+      "טוגו",
+      "togo",
+      "burkina"
+    ]
+  },
+  {
+    "code": "XAF",
+    "nameHe": "פרנק מרכז אפריקאי",
+    "aliases": [
+      "cameroon",
+      "קמרון",
+      "chad",
+      "צ׳אד",
+      "gabon",
+      "גבון",
+      "congo",
+      "קונגו"
+    ]
+  },
+  {
+    "code": "GMD",
+    "nameHe": "דלאסי גמבי",
+    "aliases": [
+      "gambia",
+      "גמביה"
+    ]
+  },
+  {
+    "code": "SLL",
+    "nameHe": "ליאון סיירה לאונה",
+    "aliases": [
+      "sierra leone",
+      "סיירה לאונה"
+    ]
+  },
+  {
+    "code": "LRD",
+    "nameHe": "דולר ליברי",
+    "aliases": [
+      "liberia",
+      "ליבריה"
+    ]
+  },
+  {
+    "code": "CVE",
+    "nameHe": "אסקודו כף ורדה",
+    "aliases": [
+      "cape verde",
+      "כף ורדה"
+    ]
+  },
+  {
+    "code": "STD",
+    "nameHe": "דוברה סאו טומה",
+    "aliases": [
+      "sao tome",
+      "סאו טומה"
+    ]
+  },
+  {
+    "code": "MRU",
+    "nameHe": "אוגוויה מאוריטנית",
+    "aliases": [
+      "mauritania",
+      "מאוריטניה"
+    ]
+  },
+  {
+    "code": "CDF",
+    "nameHe": "פרנק קונגולזי",
+    "aliases": [
+      "drc",
+      "congo kinshasa",
+      "הרפובליקה הדמוקרטית של קונגו"
+    ]
+  },
+  {
+    "code": "MWK",
+    "nameHe": "קוואצ׳ה מלאווית",
+    "aliases": [
+      "malawi",
+      "מלאווי"
+    ]
+  },
+  {
+    "code": "SZL",
+    "nameHe": "לילנגני סווזילנדי",
+    "aliases": [
+      "eswatini",
+      "סווזילנד",
+      "swaziland"
+    ]
+  },
+  {
+    "code": "LSL",
+    "nameHe": "לוטי לסותו",
+    "aliases": [
+      "lesotho",
+      "לסותו"
+    ]
+  },
+  {
+    "code": "GNF",
+    "nameHe": "פרנק גינאי",
+    "aliases": [
+      "guinea",
+      "גינאה",
+      "conakry"
+    ]
+  },
+  {
+    "code": "HRK",
+    "nameHe": "קונה קרואטית",
+    "aliases": [
+      "croatia",
+      "קרואטיה",
+      "zagreb",
+      "זגרב",
+      "split",
+      "ספליט"
+    ]
+  },
+  {
+    "code": "FKP",
+    "nameHe": "לירה פוקלנד",
+    "aliases": [
+      "falkland",
+      "פוקלנד"
+    ]
+  },
+  {
+    "code": "GIP",
+    "nameHe": "לירה ג׳יברלטר",
+    "aliases": [
+      "gibraltar",
+      "ג׳יברלטר"
+    ]
+  },
+  {
+    "code": "SHP",
+    "nameHe": "לירה סנט הלנה",
+    "aliases": [
+      "saint helena"
+    ]
+  },
+  {
+    "code": "TVD",
+    "nameHe": "דולר טובאלו",
+    "aliases": [
+      "tuvalu"
+    ]
+  },
+  {
+    "code": "VUV",
+    "nameHe": "ואטו ונואטו",
+    "aliases": [
+      "vanuatu",
+      "ונואטו"
+    ]
+  },
+  {
+    "code": "SBD",
+    "nameHe": "דולר איי שלמה",
+    "aliases": [
+      "solomon",
+      "איי שלמה"
+    ]
+  },
+  {
+    "code": "YER",
+    "nameHe": "ריאל תימני",
+    "aliases": [
+      "yemen",
+      "תימן",
+      "sanaa"
+    ]
+  },
+  {
+    "code": "SYP",
+    "nameHe": "לירה סורית",
+    "aliases": [
+      "syria",
+      "סוריה",
+      "damascus",
+      "דמשק"
+    ]
+  },
+  {
+    "code": "KPW",
+    "nameHe": "וון צפון קוריאני",
+    "aliases": [
+      "north korea",
+      "צפון קוריאה"
+    ]
+  }
+]
