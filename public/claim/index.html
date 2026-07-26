@@ -2079,35 +2079,18 @@
         setSendingPhase(selectedFiles.length ? "preparing" : "sending");
         showStep("sending");
         try {
-          // Patch encode loop progress via wrapping submitClaim internals:
-          const originalFileToBase64 = fileToBase64;
-          let encoded = 0;
-          async function trackedFileToBase64(file) {
-            const content = await originalFileToBase64(file);
-            encoded += 1;
-            if (selectedFiles.length) {
-              setSendingPhase(encoded < selectedFiles.length ? "preparing" : "uploading");
-            }
-            return content;
+          const start = Date.now();
+          const tick = setInterval(() => {
+            const elapsed = Date.now() - start;
+            if (elapsed > 1200 && selectedFiles.length) setSendingPhase("uploading");
+            if (elapsed > 2800) setSendingPhase("sending");
+          }, 400);
+          let result;
+          try {
+            result = await submitClaim();
+          } finally {
+            clearInterval(tick);
           }
-          // redefine local used inside submitClaim by replacing function used there
-          // Easiest: inline progress updates around submitClaim call stages
-          setSendingPhase(selectedFiles.length ? "preparing" : "sending");
-          const result = await (async () => {
-            // Monkey-patch: rebuild submitClaim progress by duplicating encode here is heavy.
-            // Instead update phases around the existing submitClaim await with timers + post encode hook.
-            const start = Date.now();
-            const tick = setInterval(() => {
-              const elapsed = Date.now() - start;
-              if (elapsed > 1200 && selectedFiles.length) setSendingPhase("uploading");
-              if (elapsed > 2800) setSendingPhase("sending");
-            }, 400);
-            try {
-              return await submitClaim();
-            } finally {
-              clearInterval(tick);
-            }
-          })();
           if (!result.ok) throw new Error("fail");
           $("successClaimNumber").textContent = result.claimNumber || "";
           $("successSummary").innerHTML =
