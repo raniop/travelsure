@@ -1157,40 +1157,12 @@ const Claim = () => {
                   <Field label="תאריך לידה" required error={errors.birthDate}>
                     <ClaimDateInput value={formData.birthDate} onChange={(v) => setField("birthDate", v)} />
                   </Field>
-                  <Field label="רחוב">
-                    <Input className="bg-slate-50" value={formData.street} onChange={(e) => setField("street", e.target.value)} />
-                  </Field>
-                  <Field label="מספר בית">
-                    <Input className="bg-slate-50" value={formData.houseNumber} onChange={(e) => setField("houseNumber", e.target.value)} />
-                  </Field>
-                  <Field label="יישוב">
-                    <Input className="bg-slate-50" value={formData.city} onChange={(e) => setField("city", e.target.value)} />
-                  </Field>
-                  <Field label="מיקוד">
-                    <Input className="bg-slate-50" value={formData.zip} onChange={(e) => setField("zip", e.target.value)} />
-                  </Field>
-                  <Field label="טלפון בבית">
-                    <Input className="bg-slate-50" value={formData.homePhone} onChange={(e) => setField("homePhone", e.target.value)} />
-                  </Field>
                   <Field label="טלפון נייד" required error={errors.mobile}>
                     <Input className="bg-slate-50" value={formData.mobile} onChange={(e) => setField("mobile", e.target.value)} />
                   </Field>
                   <Field label="אימייל" required error={errors.email} className="sm:col-span-2">
                     <Input className="bg-slate-50" type="email" value={formData.email} onChange={(e) => setField("email", e.target.value)} />
                   </Field>
-                  {claimType === "medical" ? (
-                    <>
-                      <Field label="שם קופת חולים">
-                        <Input className="bg-slate-50" value={formData.hmoName} onChange={(e) => setField("hmoName", e.target.value)} />
-                      </Field>
-                      <Field label="סניף קופ״ח">
-                        <Input className="bg-slate-50" value={formData.hmoBranch} onChange={(e) => setField("hmoBranch", e.target.value)} />
-                      </Field>
-                      <Field label="כתובת סניף" className="sm:col-span-2">
-                        <Input className="bg-slate-50" value={formData.hmoAddress} onChange={(e) => setField("hmoAddress", e.target.value)} />
-                      </Field>
-                    </>
-                  ) : null}
                 </div>
               </section>
 
@@ -1202,9 +1174,6 @@ const Claim = () => {
                   </Field>
                   <Field label="סוג פוליסה">
                     <Input className="bg-slate-50" value={formData.policyType} onChange={(e) => setField("policyType", e.target.value)} />
-                  </Field>
-                  <Field label="היכן נרכשה הפוליסה" className="sm:col-span-2">
-                    <Input className="bg-slate-50" value={formData.purchasedWhere} onChange={(e) => setField("purchasedWhere", e.target.value)} />
                   </Field>
                   <YesNoField
                     label="האם הודעת למוקד חברת האשראי על הנסיעה?"

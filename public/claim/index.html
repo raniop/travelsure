@@ -384,25 +384,14 @@
             <label class="field">שם פרטי <span class="req">*</span><input name="firstName" required /></label>
             <label class="field">תעודת זהות <span class="req">*</span><input name="idNumber" inputmode="numeric" maxlength="9" required readonly /></label>
             <label class="field">תאריך לידה <span class="req">*</span><input name="birthDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="bday" required /></label>
-            <label class="field">רחוב<input name="street" /></label>
-            <label class="field">מספר בית<input name="houseNumber" /></label>
-            <label class="field">יישוב<input name="city" /></label>
-            <label class="field">מיקוד<input name="zip" /></label>
-            <label class="field">טלפון בבית<input name="homePhone" /></label>
             <label class="field">טלפון נייד <span class="req">*</span><input name="mobile" required /></label>
             <label class="field" style="grid-column:1/-1">אימייל <span class="req">*</span><input name="email" type="email" required /></label>
-          </div>
-          <div id="hmoFields" class="grid grid-2 hidden" style="margin-top:14px">
-            <label class="field">שם קופת חולים<input name="hmoName" /></label>
-            <label class="field">סניף קופ״ח<input name="hmoBranch" /></label>
-            <label class="field" style="grid-column:1/-1">כתובת סניף<input name="hmoAddress" /></label>
           </div>
 
           <h3>ב. פרטי הפוליסה</h3>
           <div class="grid grid-2">
             <label class="field">מספר פוליסה <span class="req">*</span><input name="policyNumber" required readonly /></label>
             <label class="field">סוג פוליסה<input name="policyType" /></label>
-            <label class="field" style="grid-column:1/-1">היכן נרכשה הפוליסה<input name="purchasedWhere" /></label>
           </div>
 
           <h3>ג. תיאור המקרה</h3>
@@ -463,7 +452,7 @@
           <div id="detailsError" class="error"></div>
         </form>
 
-                <div id="step-files" class="hidden">
+        <div id="step-files" class="hidden">
           <div class="banner">
             <div class="tag" id="filesTypeLabel"></div>
             <h3>צירוף מסמכים</h3>
@@ -1198,7 +1187,6 @@
         $("identityTypeLabel").textContent = meta.short;
         $("identityTypeTitle").textContent = meta.title;
         $("filesTypeLabel").textContent = meta.short;
-        $("hmoFields").classList.toggle("hidden", claimType !== "medical");
         $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
         $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
         const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
@@ -1628,10 +1616,10 @@
           lastName: get("lastName"), firstName: get("firstName"),
           fullName: `${get("firstName")} ${get("lastName")}`.trim(),
           idNumber: get("idNumber"), birthDate: get("birthDate"),
-          street: get("street"), houseNumber: get("houseNumber"), city: get("city"), zip: get("zip"),
-          homePhone: get("homePhone"), mobile: get("mobile"), phone: get("mobile"), email: get("email"),
-          hmoName: get("hmoName"), hmoBranch: get("hmoBranch"), hmoAddress: get("hmoAddress"),
-          policyNumber: get("policyNumber"), policyType: get("policyType"), purchasedWhere: get("purchasedWhere"),
+          street: "", houseNumber: "", city: "", zip: "",
+          homePhone: "", mobile: get("mobile"), phone: get("mobile"), email: get("email"),
+          hmoName: "", hmoBranch: "", hmoAddress: "",
+          policyNumber: get("policyNumber"), policyType: get("policyType"), purchasedWhere: "",
           claimReason: get("claimReason"), tripStartDate: get("tripStartDate"), tripEndDate: get("tripEndDate"),
           incidentDate: get("incidentDate"), country: get("country"), details: get("details"),
           totalClaimed:
