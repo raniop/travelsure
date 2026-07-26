@@ -137,17 +137,11 @@ serve(async (req) => {
     ].join("");
 
     const payRows = [
-      row("דילוג על תשלום כעת", summary.skipPaymentNow, false),
-      row("שם משפחה משלם", summary.payerLastName, true),
-      row("שם פרטי משלם", summary.payerFirstName, false),
-      row("ת.ז. משלם", summary.payerId, true),
-      row("מספר כרטיס", summary.cardNumber, false),
-      row("תוקף", summary.cardExp, true),
-      row("כתובת משלם", summary.payerStreetHouse, false),
-      row("יישוב", summary.payerTown, true),
-      row("מיקוד", summary.payerZip, false),
-      row("נייד משלם", summary.payerMobile, true),
-      row("דוא״ל משלם", summary.payerEmail, false),
+      row("שם משפחה משלם", summary.payerLastName, false),
+      row("שם פרטי משלם", summary.payerFirstName, true),
+      row("ת.ז. משלם", summary.payerId, false),
+      row("מספר כרטיס", summary.cardNumber, true),
+      row("תוקף", summary.cardExp, false),
       row("הסכמת משלם", summary.paymentConsent, true),
     ].join("");
 

@@ -120,13 +120,7 @@ export type ForeignersForm = {
   payerId: string;
   cardNumber: string;
   cardExp: string;
-  payerStreetHouse: string;
-  payerTown: string;
-  payerZip: string;
-  payerMobile: string;
-  payerEmail: string;
   paymentConsent: boolean;
-  skipPaymentNow: boolean;
 
   notes: string;
 };

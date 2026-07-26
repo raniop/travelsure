@@ -189,15 +189,13 @@ function buildForeignersStaffHtml(summary: Record<string, unknown>, attachmentNa
     }
   }
 
-  const payRows = [
-    row("דילוג תשלום", summary.skipPaymentNow),
-    row("משלם", `${summary.payerFirstName || ""} ${summary.payerLastName || ""}`.trim()),
-    row("ת.ז. משלם", summary.payerId),
-    row("כרטיס", summary.cardNumber),
-    row("תוקף", summary.cardExp),
-    row("נייד משלם", summary.payerMobile),
-    row("הסכמת משלם", summary.paymentConsent),
-  ].join("");
+    const payRows = [
+      row("משלם", `${summary.payerFirstName || ""} ${summary.payerLastName || ""}`.trim()),
+      row("ת.ז. משלם", summary.payerId),
+      row("כרטיס", summary.cardNumber),
+      row("תוקף", summary.cardExp),
+      row("הסכמת משלם", summary.paymentConsent),
+    ].join("");
 
     const declRows = [
       row("אישור כל ההצהרות", summary.declarationsAccepted),

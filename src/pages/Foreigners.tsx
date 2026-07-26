@@ -9,6 +9,8 @@ import {
   containsHebrew,
   createInitialForeignersForm,
   formatDateInput,
+  isValidCardExpiry,
+  isValidCardNumber,
   isValidDateDdMmYyyy,
   isValidEmail,
   PROVIDER_LABELS,
@@ -271,16 +273,14 @@ const Foreigners = () => {
       next.signatureDate = "תאריך בפורמט DD/MM/YYYY";
     }
 
-    if (!form.skipPaymentNow) {
-      if (!form.payerFirstName.trim()) next.payerFirstName = "שדה חובה";
-      if (!form.payerLastName.trim()) next.payerLastName = "שדה חובה";
-      if (!form.payerId.trim()) next.payerId = "שדה חובה";
-      const cardDigits = form.cardNumber.replace(/\s/g, "");
-      if (!/^\d{12,19}$/.test(cardDigits)) next.cardNumber = "מספר כרטיס לא תקין";
-      if (!/^\d{2}\/\d{2}$/.test(form.cardExp.trim())) next.cardExp = "פורמט MM/YY";
-      if (!form.payerMobile.trim()) next.payerMobile = "שדה חובה";
-      if (!form.paymentConsent) next.paymentConsent = "חובה לאשר";
-    }
+    if (!form.payerFirstName.trim()) next.payerFirstName = "שדה חובה";
+    if (!form.payerLastName.trim()) next.payerLastName = "שדה חובה";
+    if (!form.payerId.trim()) next.payerId = "שדה חובה";
+    if (!form.cardNumber.trim()) next.cardNumber = "שדה חובה";
+    else if (!isValidCardNumber(form.cardNumber)) next.cardNumber = "מספר כרטיס לא תקין";
+    if (!form.cardExp.trim()) next.cardExp = "שדה חובה";
+    else if (!isValidCardExpiry(form.cardExp)) next.cardExp = "תוקף לא תקין או שפג";
+    if (!form.paymentConsent) next.paymentConsent = "חובה לאשר";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -501,7 +501,7 @@ const Foreigners = () => {
                   {[
                     "ממלאים את פרטי העובד והמעסיק",
                     "עונים על הצהרת הבריאות (אפשר לסמן הכל כ־לא בלחיצה)",
-                    "מזינים פרטי תשלום (או משאירים לנו ליצור קשר)",
+                    "מזינים פרטי תשלום וכרטיס אשראי",
                     "שולחים — ואנחנו מקבלים הכל מסודר במייל",
                   ].map((text, i) => (
                     <li key={text} className="flex items-center justify-center gap-3 text-right">
@@ -1068,89 +1068,73 @@ const Foreigners = () => {
                   </Field>
                 </div>
 
-                <div className="rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
+                <div className="space-y-4">
+                  <h3 className="text-base font-bold text-[#143834]">פרטי המשלם / כרטיס אשראי</h3>
+                  <p className="text-xs text-slate-500">חובה למלא את כל פרטי המשלם והכרטיס</p>
+                  {installments && (
+                    <p className="text-xs font-semibold text-[#1f4b46]">מספר תשלומים מומלץ לפי התקופה: {installments}</p>
+                  )}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="שם משפחה משלם" required error={errors.payerLastName}>
+                      <Input {...textProps("payerLastName")} />
+                    </Field>
+                    <Field label="שם פרטי משלם" required error={errors.payerFirstName}>
+                      <Input {...textProps("payerFirstName")} />
+                    </Field>
+                    <Field label="ת.ז. משלם" required error={errors.payerId}>
+                      <Input {...textProps("payerId")} />
+                    </Field>
+                    <Field label="מספר כרטיס" required error={errors.cardNumber} hint="המספר נבדק לוולידציה">
+                      <Input
+                        value={form.cardNumber}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 19);
+                          const grouped = raw.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+                          setField("cardNumber", grouped);
+                        }}
+                        onBlur={() => {
+                          if (form.cardNumber.trim() && !isValidCardNumber(form.cardNumber)) {
+                            setErrors((prev) => ({ ...prev, cardNumber: "מספר כרטיס לא תקין" }));
+                          }
+                        }}
+                        inputMode="numeric"
+                        autoComplete="cc-number"
+                        className={`bg-slate-50 text-left ${errors.cardNumber ? "border-destructive" : ""}`}
+                        style={{ direction: "ltr", textAlign: "left" }}
+                        placeholder="XXXX XXXX XXXX XXXX"
+                      />
+                    </Field>
+                    <Field label="תוקף (MM/YY)" required error={errors.cardExp}>
+                      <Input
+                        value={form.cardExp}
+                        onChange={(e) => {
+                          const d = e.target.value.replace(/\D/g, "").slice(0, 4);
+                          setField("cardExp", d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`);
+                        }}
+                        onBlur={() => {
+                          if (form.cardExp.trim() && !isValidCardExpiry(form.cardExp)) {
+                            setErrors((prev) => ({ ...prev, cardExp: "תוקף לא תקין או שפג" }));
+                          }
+                        }}
+                        inputMode="numeric"
+                        autoComplete="cc-exp"
+                        maxLength={5}
+                        placeholder="MM/YY"
+                        className={`bg-slate-50 text-left ${errors.cardExp ? "border-destructive" : ""}`}
+                        style={{ direction: "ltr", textAlign: "left" }}
+                      />
+                    </Field>
+                  </div>
                   <label className="flex items-start gap-3 text-sm">
                     <Checkbox
-                      checked={form.skipPaymentNow}
-                      onCheckedChange={(v) => setField("skipPaymentNow", Boolean(v))}
+                      checked={form.paymentConsent}
+                      onCheckedChange={(v) => setField("paymentConsent", Boolean(v))}
                       className="mt-0.5"
                     />
-                    <span>
-                      אעדיף למסור פרטי אשראי טלפונית / לא למלא כעת
-                      <span className="mt-1 block text-xs text-slate-500">
-                        נחזור אליכם להשלמת התשלום. שאר הפרטים יישלחו כרגיל.
-                      </span>
-                    </span>
+                    <span>אני מאשר/ת חיוב הכרטיס עבור המבוטח בהתאם לתנאי הפוליסה, לרבות חידושים והארכות.</span>
                   </label>
+                  {errors.paymentConsent && <p className="text-xs text-rose-600">{errors.paymentConsent}</p>}
                 </div>
-
-                {!form.skipPaymentNow && (
-                  <div className="space-y-4">
-                    <h3 className="text-base font-bold text-[#143834]">פרטי המשלם / כרטיס אשראי</h3>
-                    {installments && (
-                      <p className="text-xs font-semibold text-[#1f4b46]">מספר תשלומים מומלץ לפי התקופה: {installments}</p>
-                    )}
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="שם משפחה משלם" required error={errors.payerLastName}>
-                        <Input {...textProps("payerLastName")} />
-                      </Field>
-                      <Field label="שם פרטי משלם" required error={errors.payerFirstName}>
-                        <Input {...textProps("payerFirstName")} />
-                      </Field>
-                      <Field label="ת.ז. משלם" required error={errors.payerId}>
-                        <Input {...textProps("payerId")} />
-                      </Field>
-                      <Field label="מספר כרטיס" required error={errors.cardNumber}>
-                        <Input
-                          value={form.cardNumber}
-                          onChange={(e) =>
-                            setField("cardNumber", e.target.value.replace(/[^\d\s]/g, "").slice(0, 23))
-                          }
-                          inputMode="numeric"
-                          className={`bg-slate-50 ${errors.cardNumber ? "border-destructive" : ""}`}
-                          placeholder="XXXX XXXX XXXX XXXX"
-                        />
-                      </Field>
-                      <Field label="תוקף (MM/YY)" required error={errors.cardExp}>
-                        <Input
-                          value={form.cardExp}
-                          onChange={(e) => {
-                            const d = e.target.value.replace(/\D/g, "").slice(0, 4);
-                            setField("cardExp", d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`);
-                          }}
-                          inputMode="numeric"
-                          maxLength={5}
-                          placeholder="MM/YY"
-                          className={`bg-slate-50 ${errors.cardExp ? "border-destructive" : ""}`}
-                        />
-                      </Field>
-                      <Field label="נייד משלם" required error={errors.payerMobile}>
-                        <Input {...textProps("payerMobile", { type: "tel" })} />
-                      </Field>
-                      <Field label="דוא״ל משלם">
-                        <Input {...textProps("payerEmail", { type: "email" })} />
-                      </Field>
-                      <Field label="רחוב ומספר">
-                        <Input {...textProps("payerStreetHouse")} />
-                      </Field>
-                      <Field label="יישוב">
-                        <Input {...textProps("payerTown")} />
-                      </Field>
-                      <Field label="מיקוד">
-                        <Input {...textProps("payerZip")} />
-                      </Field>
-                    </div>
-                    <label className="flex items-start gap-3 text-sm">
-                      <Checkbox
-                        checked={form.paymentConsent}
-                        onCheckedChange={(v) => setField("paymentConsent", Boolean(v))}
-                        className="mt-0.5"
-                      />
-                      <span>אני מאשר/ת חיוב הכרטיס עבור המבוטח בהתאם לתנאי הפוליסה, לרבות חידושים והארכות.</span>
-                    </label>
-                    {errors.paymentConsent && <p className="text-xs text-rose-600">{errors.paymentConsent}</p>}
-                  </div>
-                )}
 
                 <Field label="הערות נוספות">
                   <Textarea
@@ -1186,7 +1170,7 @@ const Foreigners = () => {
                   </p>
                   <p>
                     <strong>תשלום:</strong>{" "}
-                    {form.skipPaymentNow ? "יטופל טלפונית" : `כרטיס על שם ${form.payerFirstName} ${form.payerLastName}`}
+                    {`כרטיס על שם ${form.payerFirstName} ${form.payerLastName}`}
                   </p>
                 </div>
                 <p className="text-xs text-slate-500">

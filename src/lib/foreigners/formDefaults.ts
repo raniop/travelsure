@@ -81,13 +81,7 @@ export const createInitialForeignersForm = (): ForeignersForm => ({
   payerId: "",
   cardNumber: "",
   cardExp: "",
-  payerStreetHouse: "",
-  payerTown: "",
-  payerZip: "",
-  payerMobile: "",
-  payerEmail: "",
   paymentConsent: false,
-  skipPaymentNow: false,
 
   notes: "",
 });
@@ -114,6 +108,39 @@ export const containsHebrew = (value: string) => /[\u0590-\u05FF]/.test(value);
 
 /** Keep Latin letters, digits, and common punctuation — strip Hebrew characters. */
 export const toEnglishOnly = (value: string) => value.replace(/[\u0590-\u05FF]+/g, "");
+
+/** Luhn check for credit/debit card numbers. */
+export const isValidCardNumber = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+  if (!/^\d{13,19}$/.test(digits)) return false;
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = Number(digits[i]);
+    if (alt) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+};
+
+/** MM/YY must be a real month and not expired. */
+export const isValidCardExpiry = (value: string) => {
+  if (!/^\d{2}\/\d{2}$/.test(value.trim())) return false;
+  const [mmStr, yyStr] = value.trim().split("/");
+  const mm = Number(mmStr);
+  const yy = Number(yyStr);
+  if (mm < 1 || mm > 12) return false;
+  const now = new Date();
+  const currentYear = now.getFullYear() % 100;
+  const currentMonth = now.getMonth() + 1;
+  if (yy < currentYear) return false;
+  if (yy === currentYear && mm < currentMonth) return false;
+  return true;
+};
 
 export const suggestedInstallments = (from: string, to: string): number | null => {
   if (!isValidDateDdMmYyyy(from) || !isValidDateDdMmYyyy(to)) return null;
