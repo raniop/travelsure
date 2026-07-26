@@ -129,16 +129,11 @@ serve(async (req) => {
     const declRows = [
       row("נדחתה בקשה בעבר", summary.dismissedBefore, false),
       row("פירוט דחייה", summary.dismissedDetails, true),
-      row("הרשאת סוכן", summary.authorizeAgent, false),
-      row("הצהרת אמת", summary.healthAnswersTrue, true),
-      row("ויתור סודיות רפואית", summary.medicalConfidentialityWaiver, false),
-      row("קיבל מידע מהותי", summary.receivedEssentialInfo, true),
-      row("הסכמה לדיוור", summary.marketingConsent, false),
-      row("דיוור נוסף מקבוצת הראל", summary.marketingExtraConsent, true),
-      row("הוסבר בשפה מובנת", summary.explainedInUnderstoodLanguage, false),
-      row("שם החותם", summary.signatureName, true),
-      row("תאריך חתימה", summary.signatureDate, false),
-      row("הערות", summary.notes, true),
+      row("אישור כל ההצהרות", summary.declarationsAccepted, false),
+      row("הסכמה לדיוור מאופיר", summary.marketingConsent, true),
+      row("שם החותם", summary.signatureName, false),
+      row("תאריך חתימה", summary.signatureDate, true),
+      row("הערות", summary.notes, false),
     ].join("");
 
     const payRows = [
