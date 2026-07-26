@@ -270,6 +270,53 @@
       }
       .banner .tag { font-size: 12px; font-weight: 800; color: var(--brand); letter-spacing: .04em; }
       .banner h3 { margin: 2px 0 0; border: 0; padding: 0; font-size: 18px; }
+
+      .docs-progress {
+        margin: 14px 0 18px; padding: 12px 14px; border-radius: 16px; background: #e8f4f1;
+      }
+      .docs-progress-top { display:flex; justify-content:space-between; gap:10px; font-size:14px; font-weight:800; color:var(--brand-dark); }
+      .docs-progress-bar { margin-top:8px; height:8px; border-radius:999px; background:rgba(255,255,255,.85); overflow:hidden; }
+      .docs-progress-fill { height:100%; border-radius:999px; background:var(--brand); transition:width .35s ease; }
+      .docs-progress-fill.done { background:#059669; }
+      .docs-progress-note { margin:8px 0 0; font-size:12px; color:#64748b; }
+      .docs-section-title { margin:18px 0 10px; font-size:14px; font-weight:900; color:var(--brand-dark); }
+      .docs-section-sub { margin:-6px 0 10px; font-size:12px; color:#94a3b8; }
+      .doc-card {
+        border:1px solid #e2e8f0; border-radius:18px; padding:14px; background:#fff; margin-bottom:10px;
+      }
+      .doc-card.done { border-color:#6ee7b7; background:rgba(236,253,245,.85); }
+      .doc-card-row { display:flex; gap:12px; align-items:flex-start; }
+      .doc-num {
+        width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+        font-weight:900; font-size:14px; background:#f1f5f9; color:#64748b; flex-shrink:0;
+      }
+      .doc-card.done .doc-num { background:#10b981; color:#fff; }
+      .doc-title { margin:0; font-size:16px; font-weight:900; color:var(--brand-dark); }
+      .doc-card.done .doc-title { color:#065f46; }
+      .doc-hint { margin:3px 0 0; font-size:12px; color:#64748b; }
+      .doc-files { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
+      .doc-files li {
+        display:flex; align-items:center; gap:8px; background:#fff; border-radius:12px; padding:10px 12px;
+        box-shadow:0 1px 0 rgba(15,23,42,.04); border:1px solid #d1fae5; font-size:13px;
+      }
+      .doc-files .file-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+      .doc-files .remove-file {
+        border:0; background:transparent; color:#e11d48; font-weight:800; font-size:12px; cursor:pointer; font-family:inherit;
+      }
+      .doc-upload-btn {
+        margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px;
+        width:100%; border:0; border-radius:14px; padding:12px 14px; font-family:inherit;
+        font-size:14px; font-weight:800; cursor:pointer; background:var(--brand); color:#fff;
+      }
+      .doc-card.done .doc-upload-btn {
+        background:#fff; color:#047857; border:1px solid #a7f3d0;
+      }
+      .extra-link { margin-top:14px; }
+      .extra-link button {
+        border:0; background:transparent; color:var(--brand); font-weight:800; font-size:14px;
+        cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;
+      }
+
       .drop {
         display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
         border: 2px dashed rgba(47,107,99,.3); border-radius: 18px; padding: 36px 16px; margin-top: 14px;
@@ -486,19 +533,21 @@
         </form>
 
         <div id="step-files" class="hidden">
-          <div class="banner">
-            <div class="tag" id="filesTypeLabel"></div>
-            <h3>צירוף מסמכים</h3>
-            <p class="tiny" style="margin:6px 0 0">מומלץ לצרף קובץ ליד כל סעיף חובה. אחרי הצירוף יופיע וי ירוק. אפשר לשלוח גם בלי הכל — תופיע הודעת אישור.</p>
-            <p id="docsProgress" class="tiny" style="margin:8px 0 0;font-weight:700;color:#b45309"></p>
+          <h2 style="margin:0;font-size:24px;color:var(--brand-dark);font-weight:900">צרפו מסמכים</h2>
+          <p class="muted" style="margin:6px 0 0">לחצו על כל כפתור העלאה וצרפו קובץ. אפשר גם לשלוח בלי הכל.</p>
+          <div class="docs-progress" id="docsProgressBox">
+            <div class="docs-progress-top">
+              <span>מסמכי חובה</span>
+              <span id="docsProgressCount">0 מתוך 0</span>
+            </div>
+            <div class="docs-progress-bar"><div class="docs-progress-fill" id="docsProgressFill" style="width:0%"></div></div>
+            <p class="docs-progress-note" id="docsProgressNote">אפשר להמשיך גם בלי להשלים הכול</p>
           </div>
-          <div id="docsList" class="docs-checklist"></div>
-          <div class="extra-files-box">
-            <strong>קבצים נוספים (אופציונלי)</strong>
-            <label class="drop" id="dropZone" style="margin-top:10px;padding:18px">
-              <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" hidden />
-              <strong>הוספת קבצים נוספים</strong>
-            </label>
+          <div id="filesTypeLabel" class="hidden"></div>
+          <div id="docsList"></div>
+          <div class="extra-link">
+            <button type="button" id="extraFilesBtn">+ קובץ נוסף שלא ברשימה</button>
+            <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" hidden />
             <ul id="fileList" class="file-list"></ul>
           </div>
           <div class="row-actions">
@@ -559,36 +608,36 @@
 
       const claimDocRequirements = {
         medical: [
-          { id: "medical_report", label: "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", required: true },
+          { id: "medical_report", label: "דוח רפואי מחו״ל", hint: "מרופא מטפל — סיבת פנייה, אנמנזה ואבחנה", required: true },
           { id: "medical_invoice", label: "חשבון מפורט", required: true },
-          { id: "medical_receipts", label: "קבלות תשלום מקוריות", required: true },
+          { id: "medical_receipts", label: "קבלות תשלום", hint: "במקור", required: true },
         ],
         trip_cancel: [
-          { id: "cancel_plan", label: "העתק תוכנית / מסלול הנסיעה", required: true },
-          { id: "cancel_tickets", label: "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", required: true },
-          { id: "cancel_agent_fees", label: "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)", required: true },
-          { id: "cancel_unfit", label: "אישור רפואי על אי-כשירות לטוס", required: true },
+          { id: "cancel_plan", label: "תוכנית הנסיעה", hint: "העתק מסלול / תוכנית", required: true },
+          { id: "cancel_tickets", label: "כרטיסי טיסה וקבלה", hint: "מקוריים לחבילת הנסיעה", required: true },
+          { id: "cancel_agent_fees", label: "אישור דמי ביטול", hint: "מסוכן הנסיעות — פירוט קרקע מול טיסה", required: true },
+          { id: "cancel_unfit", label: "אישור רפואי לאי-כשירות לטוס", required: true },
           { id: "cancel_medical_summary", label: "דוח רפואי / סיכום אשפוז", required: true },
-          { id: "cancel_family", label: "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה", required: false },
+          { id: "cancel_family", label: "מסמך משפחתי", hint: "סיכום רפואי או תעודת פטירה + הוכחת קרבה", required: false },
         ],
         trip_shorten: [
-          { id: "shorten_medical_abroad", label: "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", required: true },
+          { id: "shorten_medical_abroad", label: "דוח רפואי מחו״ל", hint: "מרופא מטפל — סיבת פנייה, אנמנזה ואבחנה", required: true },
           { id: "shorten_plan", label: "תוכנית נסיעה מקורית", required: true },
-          { id: "shorten_tickets", label: "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", required: true },
-          { id: "shorten_agent_refund", label: "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)", required: true },
-          { id: "shorten_new_tickets", label: "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת", required: true },
-          { id: "shorten_medical_need", label: "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת", required: true },
-          { id: "shorten_family", label: "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה", required: false },
+          { id: "shorten_tickets", label: "כרטיסי טיסה וקבלה", hint: "מקוריים לחבילת הנסיעה", required: true },
+          { id: "shorten_agent_refund", label: "אישור החזר מסוכן", hint: "על שירותים שלא נוצלו — פירוט קרקע מול טיסה", required: true },
+          { id: "shorten_new_tickets", label: "כרטיסים חדשים / שינוי כרטיס", hint: "קבלות לחזרה מוקדמת", required: true },
+          { id: "shorten_medical_need", label: "אישור רפואי לקיצור הנסיעה", required: true },
+          { id: "shorten_family", label: "מסמך משפחתי", hint: "סיכום רפואי או תעודת פטירה + הוכחת קרבה", required: false },
         ],
         baggage_loss_theft: [
-          { id: "baggage_police", label: "דו״ח משטרה במקור ממקום ומזמן האירוע", required: true },
-          { id: "baggage_purchase", label: "קבלות רכישה על הרכוש שאבד/נגנב", required: true },
-          { id: "baggage_restore", label: "בשחזור מסמכים: קבלות שחזור", required: false },
-          { id: "baggage_airline_loss", label: "אם אצל מוביל אווירי: תשובת חברת התעופה", required: false },
+          { id: "baggage_police", label: "דו״ח משטרה", hint: "במקור, ממקום ומזמן האירוע", required: true },
+          { id: "baggage_purchase", label: "קבלות רכישה", hint: "על הרכוש שאבד או נגנב", required: true },
+          { id: "baggage_restore", label: "קבלות שחזור מסמכים", hint: "רק אם שיחזרתם מסמכים", required: false },
+          { id: "baggage_airline_loss", label: "תשובת חברת התעופה", hint: "רק אם האירוע אצל מוביל אווירי", required: false },
         ],
         baggage_delay: [
-          { id: "baggage_delay_airline", label: "דיווח איחור לחברת התעופה / PIR / תשובת חברת התעופה", required: true },
-          { id: "baggage_delay_essentials", label: "קבלות לציוד חיוני שנרכש עקב האיחור", required: true },
+          { id: "baggage_delay_airline", label: "דיווח איחור לחברת התעופה", hint: "PIR או תשובת חברת התעופה", required: true },
+          { id: "baggage_delay_essentials", label: "קבלות לציוד חיוני", hint: "שנרכש בגלל האיחור", required: true },
         ],
       };
 
@@ -1507,51 +1556,64 @@
         if (!list) return;
         const reqs = getDocumentRequirements();
         const progress = docsProgressState();
-        const prog = $("docsProgress");
-        if (prog) {
-          prog.style.color = progress.complete ? "#047857" : "#b45309";
-          prog.textContent = progress.complete
-            ? `✓ ${progress.doneCount}/${progress.requiredCount} מסמכי חובה — הכל מצורף`
-            : `${progress.doneCount}/${progress.requiredCount} מסמכי חובה · חסרים עוד ${progress.missing.length} · ניתן לשלוח עם אישור`;
+        const countEl = $("docsProgressCount");
+        const fillEl = $("docsProgressFill");
+        const noteEl = $("docsProgressNote");
+        if (countEl) countEl.textContent = progress.doneCount + " מתוך " + progress.requiredCount;
+        if (fillEl) {
+          const pct = progress.requiredCount ? Math.round((progress.doneCount / progress.requiredCount) * 100) : 0;
+          fillEl.style.width = pct + "%";
+          fillEl.classList.toggle("done", !!progress.complete);
+        }
+        if (noteEl) {
+          noteEl.textContent = progress.complete
+            ? "מעולה — כל מסמכי החובה צורפו"
+            : "אפשר להמשיך גם בלי להשלים הכול";
         }
         const submitBtn = $("submitBtn");
-        if (submitBtn && submitBtn.textContent !== "שולח...") {
-          submitBtn.disabled = false;
+        if (submitBtn && submitBtn.textContent !== "שולח...") submitBtn.disabled = false;
+
+        function cardHtml(doc, index) {
+          const files = docFilesMap[doc.id] || [];
+          const done = files.length > 0;
+          const filesHtml = files
+            .map(
+              (f, i) =>
+                `<li>
+                  <span class="file-name" title="${String(f.name).replace(/"/g, "&quot;")}">${f.name}</span>
+                  <button type="button" class="remove-file" data-remove-doc="${doc.id}" data-remove-idx="${i}">הסרה</button>
+                </li>`
+            )
+            .join("");
+          return `<div class="doc-card ${done ? "done" : ""}" data-doc-id="${doc.id}">
+            <div class="doc-card-row">
+              <div class="doc-num">${done ? "✓" : index + 1}</div>
+              <div style="flex:1;min-width:0">
+                <p class="doc-title">${doc.label}</p>
+                ${doc.hint ? `<p class="doc-hint">${doc.hint}</p>` : ""}
+                ${filesHtml ? `<ul class="doc-files">${filesHtml}</ul>` : ""}
+                <label class="doc-upload-btn">
+                  ${done ? "הוספת קובץ נוסף" : doc.required ? "העלאת קובץ" : "העלאת קובץ (לא חובה)"}
+                  <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" data-doc-upload="${doc.id}" hidden />
+                </label>
+              </div>
+            </div>
+          </div>`;
         }
 
-        list.innerHTML = reqs
-          .map((doc) => {
-            const files = docFilesMap[doc.id] || [];
-            const done = files.length > 0;
-            const filesHtml = files
-              .map(
-                (f, i) => `
-                <li>
-                  <span class="file-name" title="${String(f.name).replace(/"/g, "&quot;")}">${f.name}</span>
-                  <span class="file-meta">${formatFileSize(f.size)}</span>
-                  <button type="button" class="remove-file" data-remove-doc="${doc.id}" data-remove-idx="${i}" aria-label="הסרת קובץ">×</button>
-                </li>`
-              )
-              .join("");
-            return `
-              <div class="doc-slot ${done ? "done" : ""} ${doc.required ? "" : "optional"}" data-doc-id="${doc.id}">
-                <div class="doc-slot-top">
-                  <span class="doc-check">✓</span>
-                  <div style="flex:1;min-width:0">
-                    <p class="doc-label">
-                      ${doc.label}
-                      <span class="doc-badge ${doc.required ? "req" : "opt"}">${doc.required ? "חובה" : "אופציונלי"}</span>
-                    </p>
-                    ${filesHtml ? `<ul class="doc-files">${filesHtml}</ul>` : ""}
-                    <label class="doc-upload">
-                      ${done ? "הוספת קובץ נוסף" : "בחירת קובץ"}
-                      <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" data-doc-upload="${doc.id}" hidden />
-                    </label>
-                  </div>
-                </div>
-              </div>`;
-          })
-          .join("");
+        const required = reqs.filter((d) => d.required);
+        const optional = reqs.filter((d) => !d.required);
+        let html = "";
+        if (required.length) {
+          html += `<div class="docs-section-title">מה צריך לצרף</div>`;
+          html += required.map((d, i) => cardHtml(d, i)).join("");
+        }
+        if (optional.length) {
+          html += `<div class="docs-section-title">רק אם רלוונטי</div>`;
+          html += `<div class="docs-section-sub">אפשר לדלג על אלה</div>`;
+          html += optional.map((d, i) => cardHtml(d, i)).join("");
+        }
+        list.innerHTML = html;
         flattenAttachedFiles();
         renderExtraFiles();
       }
@@ -1601,12 +1663,15 @@
         renderDocsChecklist();
       }
 
+      if ($("extraFilesBtn")) {
+        $("extraFilesBtn").addEventListener("click", () => $("files").click());
+      }
       $("files").addEventListener("change", (e) => {
         addSelectedFiles(e.target.files);
         e.target.value = "";
       });
 
-      const dropZone = $("dropZone");
+      const dropZone = ($("files") && $("files").closest("label"));
       ["dragenter", "dragover"].forEach((evt) => {
         dropZone.addEventListener(evt, (e) => {
           e.preventDefault();

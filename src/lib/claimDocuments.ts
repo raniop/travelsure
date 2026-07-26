@@ -1,7 +1,10 @@
 export type ClaimDocRequirement = {
   id: string;
+  /** Short title shown as the main line. */
   label: string;
-  /** When false, shown in checklist but does not block submit. */
+  /** Optional one-line clarification under the title. */
+  hint?: string;
+  /** When false, shown under “if relevant” and does not block submit. */
   required: boolean;
 };
 
@@ -11,26 +14,34 @@ type BaggageSubtype = "loss_theft" | "delay" | "loss" | "theft" | null | undefin
 const medicalDocs: ClaimDocRequirement[] = [
   {
     id: "medical_report",
-    label: "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
+    label: "דוח רפואי מחו״ל",
+    hint: "מרופא מטפל — סיבת פנייה, אנמנזה ואבחנה",
     required: true,
   },
   { id: "medical_invoice", label: "חשבון מפורט", required: true },
-  { id: "medical_receipts", label: "קבלות תשלום מקוריות", required: true },
+  { id: "medical_receipts", label: "קבלות תשלום", hint: "במקור", required: true },
 ];
 
 const tripCancelDocs: ClaimDocRequirement[] = [
-  { id: "cancel_plan", label: "העתק תוכנית / מסלול הנסיעה", required: true },
-  { id: "cancel_tickets", label: "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", required: true },
+  { id: "cancel_plan", label: "תוכנית הנסיעה", hint: "העתק מסלול / תוכנית", required: true },
   {
-    id: "cancel_agent_fees",
-    label: "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)",
+    id: "cancel_tickets",
+    label: "כרטיסי טיסה וקבלה",
+    hint: "מקוריים לחבילת הנסיעה",
     required: true,
   },
-  { id: "cancel_unfit", label: "אישור רפואי על אי-כשירות לטוס", required: true },
+  {
+    id: "cancel_agent_fees",
+    label: "אישור דמי ביטול",
+    hint: "מסוכן הנסיעות — פירוט קרקע מול טיסה",
+    required: true,
+  },
+  { id: "cancel_unfit", label: "אישור רפואי לאי-כשירות לטוס", required: true },
   { id: "cancel_medical_summary", label: "דוח רפואי / סיכום אשפוז", required: true },
   {
     id: "cancel_family",
-    label: "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
+    label: "מסמך משפחתי",
+    hint: "סיכום רפואי או תעודת פטירה + הוכחת קרבה",
     required: false,
   },
 ];
@@ -38,29 +49,38 @@ const tripCancelDocs: ClaimDocRequirement[] = [
 const tripShortenDocs: ClaimDocRequirement[] = [
   {
     id: "shorten_medical_abroad",
-    label: "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
+    label: "דוח רפואי מחו״ל",
+    hint: "מרופא מטפל — סיבת פנייה, אנמנזה ואבחנה",
     required: true,
   },
   { id: "shorten_plan", label: "תוכנית נסיעה מקורית", required: true },
-  { id: "shorten_tickets", label: "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", required: true },
+  {
+    id: "shorten_tickets",
+    label: "כרטיסי טיסה וקבלה",
+    hint: "מקוריים לחבילת הנסיעה",
+    required: true,
+  },
   {
     id: "shorten_agent_refund",
-    label: "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)",
+    label: "אישור החזר מסוכן",
+    hint: "על שירותים שלא נוצלו — פירוט קרקע מול טיסה",
     required: true,
   },
   {
     id: "shorten_new_tickets",
-    label: "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת",
+    label: "כרטיסים חדשים / שינוי כרטיס",
+    hint: "קבלות לחזרה מוקדמת",
     required: true,
   },
   {
     id: "shorten_medical_need",
-    label: "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת",
+    label: "אישור רפואי לקיצור הנסיעה",
     required: true,
   },
   {
     id: "shorten_family",
-    label: "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
+    label: "מסמך משפחתי",
+    hint: "סיכום רפואי או תעודת פטירה + הוכחת קרבה",
     required: false,
   },
 ];
@@ -68,14 +88,26 @@ const tripShortenDocs: ClaimDocRequirement[] = [
 const baggageLossTheftDocs: ClaimDocRequirement[] = [
   {
     id: "baggage_police",
-    label: "דו״ח משטרה במקור ממקום ומזמן האירוע",
+    label: "דו״ח משטרה",
+    hint: "במקור, ממקום ומזמן האירוע",
     required: true,
   },
-  { id: "baggage_purchase", label: "קבלות רכישה על הרכוש שאבד/נגנב", required: true },
-  { id: "baggage_restore", label: "בשחזור מסמכים: קבלות שחזור", required: false },
+  {
+    id: "baggage_purchase",
+    label: "קבלות רכישה",
+    hint: "על הרכוש שאבד או נגנב",
+    required: true,
+  },
+  {
+    id: "baggage_restore",
+    label: "קבלות שחזור מסמכים",
+    hint: "רק אם שיחזרתם מסמכים",
+    required: false,
+  },
   {
     id: "baggage_airline_loss",
-    label: "אם אצל מוביל אווירי: תשובת חברת התעופה",
+    label: "תשובת חברת התעופה",
+    hint: "רק אם האירוע אצל מוביל אווירי",
     required: false,
   },
 ];
@@ -83,12 +115,14 @@ const baggageLossTheftDocs: ClaimDocRequirement[] = [
 const baggageDelayDocs: ClaimDocRequirement[] = [
   {
     id: "baggage_delay_airline",
-    label: "דיווח איחור לחברת התעופה / PIR / תשובת חברת התעופה",
+    label: "דיווח איחור לחברת התעופה",
+    hint: "PIR או תשובת חברת התעופה",
     required: true,
   },
   {
     id: "baggage_delay_essentials",
-    label: "קבלות לציוד חיוני שנרכש עקב האיחור",
+    label: "קבלות לציוד חיוני",
+    hint: "שנרכש בגלל האיחור",
     required: true,
   },
 ];
