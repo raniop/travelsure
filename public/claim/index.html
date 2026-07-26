@@ -261,7 +261,13 @@
         display: grid; gap: 8px; border: 1px solid var(--border); border-radius: 14px; padding: 10px; margin-bottom: 8px;
         background: #fff;
       }
-      @media (min-width: 700px) { .item-row { grid-template-columns: 1.2fr 1fr 1fr auto; align-items: center; } }
+      @media (min-width: 700px) {
+        .item-row { grid-template-columns: 1.1fr 1fr 0.9fr 0.7fr auto; align-items: center; }
+        .item-row.expense-row { grid-template-columns: 1.1fr 1fr 0.85fr 0.75fr auto; }
+      }
+      .item-row select[data-k="currency"] {
+        width: 100%; min-height: 42px; margin-top: 0; font-weight: 700; color: var(--brand-dark);
+      }
       .tiny { font-size: 12px; color: var(--muted); }
       .banner {
         border-radius: 18px; padding: 14px 16px; margin-bottom: 8px;
@@ -1473,23 +1479,36 @@
       }
 
       function syncExpenseCurrencyLabels() {
-        const code = currentClaimCurrency();
-        document.querySelectorAll("[data-expense-currency]").forEach((el) => {
-          el.textContent = code;
-        });
+        // Per-row currency selectors are independent — do not overwrite them when the claim total currency changes.
+      }
+
+      function buildExpenseCurrencyOptions(selected) {
+        const selectedCode = String(selected || currentClaimCurrency() || "USD").toUpperCase();
+        const codes = CLAIM_CURRENCIES.length
+          ? CLAIM_CURRENCIES
+          : [
+              { code: "USD", nameHe: "דולר אמריקאי" },
+              { code: "EUR", nameHe: "אירו" },
+              { code: "ILS", nameHe: "שקל חדש" },
+              { code: "GBP", nameHe: "לירה שטרלינג" },
+            ];
+        return codes
+          .map((c) => {
+            const sel = c.code === selectedCode ? " selected" : "";
+            return `<option value="${c.code}"${sel}>${c.code} · ${c.nameHe || c.code}</option>`;
+          })
+          .join("");
       }
 
       function addExpenseRow(data = {}) {
         const row = document.createElement("div");
-        row.className = "item-row";
-        const currency = currentClaimCurrency();
+        row.className = "item-row expense-row";
+        const currency = String(data.currency || currentClaimCurrency() || "USD").toUpperCase();
         row.innerHTML = `
           <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" value="${formatDateDisplay(data.date || "")}" data-k="date" />
           <input placeholder="סוג הוצאה" value="${data.type || ""}" data-k="type" />
-          <div style="display:flex;align-items:center;gap:8px;min-width:0">
-            <input placeholder="סכום" inputmode="decimal" value="${data.amount || ""}" data-k="amount" style="margin-top:0" />
-            <span data-expense-currency style="font-size:12px;font-weight:800;color:var(--brand);white-space:nowrap">${currency}</span>
-          </div>
+          <input placeholder="סכום" inputmode="decimal" value="${data.amount || ""}" data-k="amount" />
+          <select data-k="currency" aria-label="מטבע להוצאה">${buildExpenseCurrencyOptions(currency)}</select>
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("expenseItems").children.length > 1) row.remove();
@@ -2180,7 +2199,7 @@
             claimType === "medical" || claimType === "trip_cancel"
               ? collectRows($("expenseItems")).map((row) => {
                   const amount = String(row.amount || "").trim();
-                  const currency = currentClaimCurrency();
+                  const currency = String(row.currency || currentClaimCurrency() || "USD").trim().toUpperCase();
                   return {
                     ...row,
                     amount: amount ? amount + " " + currency : amount,

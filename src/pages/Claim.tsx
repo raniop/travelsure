@@ -18,6 +18,7 @@ import {
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
 import { ClaimAmountCurrencyFields } from "@/components/claim/ClaimAmountCurrencyFields";
+import { ClaimCurrencyPicker } from "@/components/claim/ClaimCurrencyPicker";
 import { formatClaimTotal, suggestCurrencyForDestination } from "@/lib/claimCurrencies";
 import { submitClaimRequest } from "@/lib/submitClaim";
 import {
@@ -58,7 +59,13 @@ type Step = "type" | "identity" | "policy" | "details" | "files" | "sending" | "
 type SubmitPhase = "preparing" | "uploading" | "sending";
 type YesNo = "" | "yes" | "no";
 
-type ExpenseRow = { date: string; type: string; amount: string; receiptAttached: boolean };
+type ExpenseRow = {
+  date: string;
+  type: string;
+  amount: string;
+  currency: string;
+  receiptAttached: boolean;
+};
 type BaggageRow = { item: string; purchaseDate: string; purchasePrice: string; receiptAttached: boolean };
 
 const claimTypesOrder: ClaimType[] = ["medical", "trip_cancel", "trip_shorten", "baggage"];
@@ -102,10 +109,11 @@ const claimTypeMeta: Record<
   },
 };
 
-const emptyExpense = (): ExpenseRow => ({
+const emptyExpense = (currency = "USD"): ExpenseRow => ({
   date: "",
   type: "",
   amount: "",
+  currency: currency || "USD",
   receiptAttached: false,
 });
 
@@ -667,13 +675,14 @@ const Claim = () => {
         country: claimType === "trip_cancel" ? "" : formData.country,
         expenses:
           claimType === "medical" || claimType === "trip_cancel"
-            ? expenses.map((row) => ({
-                ...row,
-                amount: row.amount.trim()
-                  ? `${row.amount.trim()} ${formData.claimCurrency || "USD"}`.trim()
-                  : row.amount,
-                currency: formData.claimCurrency || "USD",
-              }))
+            ? expenses.map((row) => {
+                const currency = (row.currency || formData.claimCurrency || "USD").trim().toUpperCase();
+                return {
+                  ...row,
+                  amount: row.amount.trim() ? `${row.amount.trim()} ${currency}`.trim() : row.amount,
+                  currency,
+                };
+              })
             : undefined,
         baggageItems:
           claimType === "baggage" && baggageSubtype !== "delay" ? baggageItems : undefined,
@@ -1432,7 +1441,10 @@ const Claim = () => {
                   />
                   <div className="space-y-3">
                     {expenses.map((row, idx) => (
-                      <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4">
+                      <div
+                        key={idx}
+                        className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1.1fr_1fr_1fr_auto_auto]"
+                      >
                         <ClaimDateInput
                           value={row.date}
                           onChange={(v) => {
@@ -1444,7 +1456,7 @@ const Claim = () => {
                           placeholder={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
                         />
                         <Input
-                          className="bg-slate-50 sm:col-span-1"
+                          className="bg-slate-50"
                           value={row.type}
                           onChange={(e) => {
                             const next = [...expenses];
@@ -1453,22 +1465,27 @@ const Claim = () => {
                           }}
                           placeholder="סוג הוצאה"
                         />
-                        <div className="flex items-center gap-2">
-                          <Input
-                            className="bg-slate-50"
-                            inputMode="decimal"
-                            value={row.amount}
-                            onChange={(e) => {
-                              const next = [...expenses];
-                              next[idx] = { ...row, amount: e.target.value };
-                              setExpenses(next);
-                            }}
-                            placeholder="סכום"
-                          />
-                          <span className="shrink-0 text-xs font-bold text-[#2f6b63]">
-                            {formData.claimCurrency || "USD"}
-                          </span>
-                        </div>
+                        <Input
+                          className="bg-slate-50"
+                          inputMode="decimal"
+                          value={row.amount}
+                          onChange={(e) => {
+                            const next = [...expenses];
+                            next[idx] = { ...row, amount: e.target.value };
+                            setExpenses(next);
+                          }}
+                          placeholder="סכום"
+                        />
+                        <ClaimCurrencyPicker
+                          compact
+                          value={row.currency || formData.claimCurrency || "USD"}
+                          onChange={(code) => {
+                            const next = [...expenses];
+                            next[idx] = { ...row, currency: code };
+                            setExpenses(next);
+                          }}
+                          aria-label={`מטבע להוצאה ${idx + 1}`}
+                        />
                         <div className="flex items-center justify-between gap-2">
                           <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                             <input
@@ -1495,7 +1512,12 @@ const Claim = () => {
                       </div>
                     ))}
                   </div>
-                  <Button type="button" variant="outline" className="rounded-xl" onClick={() => setExpenses([...expenses, emptyExpense()])}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={() => setExpenses([...expenses, emptyExpense(formData.claimCurrency || "USD")])}
+                  >
                     <Plus className="h-4 w-4" />
                     הוסף הוצאה
                   </Button>
