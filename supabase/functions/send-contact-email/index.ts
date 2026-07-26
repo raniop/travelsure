@@ -346,7 +346,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (isClaimMode(body)) {
       const claim = (body.claimPayload || {}) as Record<string, unknown>;
-      const isDocumentsFollowUp = claim.documentsFollowUp === true || claim.documentsFollowUp === "true";
       const claimNumber = await allocateClaimNumber(
         String(body.claimNumber || claim.claimNumber || ""),
       );
@@ -366,72 +365,6 @@ const handler = async (req: Request): Promise<Response> => {
         claimNumber,
         attachmentNamesForPdf,
       );
-
-      // Follow-up after the main claim mail: only forward document bytes to staff (no customer re-mail).
-      if (isDocumentsFollowUp) {
-        if (!emailAttachments.length) {
-          return new Response(
-            JSON.stringify({
-              success: true,
-              mode: "claim",
-              claimNumber,
-              staffSent: 0,
-              customerSent: false,
-              attachmentsSent: 0,
-              followUp: true,
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
-            },
-          );
-        }
-
-        const staffRecipients = [
-          "rani@ophirins.co.il",
-          "eli@ophirins.co.il",
-          "ophir@ophirins.co.il",
-        ];
-        const replyTo = email || String(claim.email || "") || undefined;
-        const staffSubject = `מסמכי תביעה · ${claimNumber}`;
-        const staffResults = await Promise.allSettled(
-          staffRecipients.map((to) =>
-            sendResendEmail({
-              from: RESEND_FROM,
-              to: [to],
-              reply_to: replyTo,
-              subject: staffSubject,
-              html: staffHtml,
-              attachments: emailAttachments,
-            }).catch(async (err) => {
-              console.error(`Document follow-up failed for ${to}, retrying without attachments:`, err);
-              return sendResendEmail({
-                from: RESEND_FROM,
-                to: [to],
-                reply_to: replyTo,
-                subject: staffSubject,
-                html: staffHtml,
-              });
-            }),
-          ),
-        );
-        const staffSentCount = staffResults.filter((r) => r.status === "fulfilled").length;
-        return new Response(
-          JSON.stringify({
-            success: staffSentCount > 0,
-            mode: "claim",
-            claimNumber,
-            staffSent: staffSentCount,
-            customerSent: false,
-            attachmentsSent: emailAttachments.length,
-            followUp: true,
-          }),
-          {
-            status: staffSentCount > 0 ? 200 : 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
 
       const claimPdf = await buildClaimPdfBase64(
         claim,
