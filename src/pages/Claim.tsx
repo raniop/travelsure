@@ -859,7 +859,9 @@ const Claim = () => {
             className="mx-auto h-[78px] w-auto drop-shadow-sm sm:h-[100px]"
           />
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#143834] sm:text-4xl">
-            הגשת תביעה
+            {claimType && activeMeta && step !== "type"
+              ? `הגשת תביעה - ${activeMeta.title}`
+              : "הגשת תביעה"}
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
             תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח
