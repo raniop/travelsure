@@ -20,6 +20,11 @@ interface ContactEmailRequest {
   type?: string;
   claimNumber?: string;
   claimPayload?: Record<string, unknown>;
+  foreignersPayload?: Record<string, unknown>;
+  fullName?: string;
+  employerName?: string;
+  passportNo?: string;
+  notify?: string[];
   attachments?: Array<{ filename: string; content: string; type?: string }>;
   files?: Array<{ name?: string; contentBase64?: string; contentType?: string; filename?: string; content?: string; type?: string }>;
 }
@@ -116,6 +121,125 @@ const CLAIM_DATE_FIELDS = new Set([
 
 function isClaimMode(body: ContactEmailRequest): boolean {
   return body.mode === "claim" || body.type === "claim" || Boolean(body.claimPayload);
+}
+
+function isForeignersMode(body: ContactEmailRequest): boolean {
+  return body.mode === "foreigners" || body.type === "foreigners" || Boolean(body.foreignersPayload);
+}
+
+function buildForeignersStaffHtml(summary: Record<string, unknown>, attachmentNames: string[]): string {
+  const row = (label: string, value: unknown) => {
+    const v = String(value ?? "").trim();
+    if (!v) return "";
+    return `<tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;color:#6b7280;width:38%;vertical-align:top;">${esc(label)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;color:#111827;white-space:pre-wrap;">${esc(v)}</td>
+    </tr>`;
+  };
+
+  const workerRows = [
+    row("שם פרטי", summary.firstName),
+    row("שם אמצעי", summary.middleName),
+    row("שם משפחה", summary.lastName),
+    row("מספר דרכון", summary.passportNo),
+    row("ארץ הנפקת דרכון", summary.passportCountry),
+    row("ארץ מוצא", summary.countryOfOrigin),
+    row("תאריך לידה", summary.birthDate),
+    row("מין", summary.gender),
+    row("תאריך כניסה לישראל", summary.entryDate),
+    row("תקופת ביטוח מ־", summary.insuranceFrom),
+    row("תקופת ביטוח עד", summary.insuranceTo),
+    row("עיסוק", summary.workDescription),
+    row("כתובת", summary.address),
+    row("נייד", summary.mobile),
+    row("דוא״ל", summary.email),
+    row("מטרת הגעה", summary.workPurpose),
+    row("ספק שירות", summary.provider),
+  ].join("");
+
+  const employerRows = [
+    row("מעסיק", summary.employerName),
+    row("ת.ז. / ח.פ.", summary.employerId),
+    row("טלפון מעסיק", summary.employerPhone),
+    row("נייד מעסיק", summary.employerMobile),
+    row("דוא״ל מעסיק", summary.employerEmail),
+    row("כתובת מעסיק", summary.employerAddress),
+    row("סוכן", summary.agentName),
+    row("מספר סוכן", summary.agentNo),
+  ].join("");
+
+  let healthRows = "";
+  if (Array.isArray(summary.generalHealth)) {
+    for (const item of summary.generalHealth) {
+      if (Array.isArray(item) && item.length >= 2) healthRows += row(String(item[0]), item[1]);
+    }
+  }
+
+  let conditionRows = "";
+  if (Array.isArray(summary.conditions)) {
+    for (const c of summary.conditions) {
+      if (!c || typeof c !== "object") continue;
+      const item = c as Record<string, unknown>;
+      const parts = [
+        String(item.answer || ""),
+        item.selected ? `בחירות: ${item.selected}` : "",
+        item.details ? `פירוט: ${item.details}` : "",
+        item.extras ? String(item.extras) : "",
+      ].filter(Boolean).join(" | ");
+      conditionRows += row(String(item.group || "שאלה"), parts);
+    }
+  }
+
+  const payRows = [
+    row("דילוג תשלום", summary.skipPaymentNow),
+    row("משלם", `${summary.payerFirstName || ""} ${summary.payerLastName || ""}`.trim()),
+    row("ת.ז. משלם", summary.payerId),
+    row("כרטיס", summary.cardNumber),
+    row("תוקף", summary.cardExp),
+    row("נייד משלם", summary.payerMobile),
+    row("הסכמת משלם", summary.paymentConsent),
+  ].join("");
+
+  const declRows = [
+    row("הרשאת סוכן", summary.authorizeAgent),
+    row("הצהרת אמת", summary.healthAnswersTrue),
+    row("ויתור סודיות", summary.medicalConfidentialityWaiver),
+    row("מידע מהותי", summary.receivedEssentialInfo),
+    row("דיוור", summary.marketingConsent),
+    row("שם חותם", summary.signatureName),
+    row("תאריך", summary.signatureDate),
+    row("הערות", summary.notes),
+  ].join("");
+
+  const files = attachmentNames.length
+    ? `<ul style="margin:0;padding:0 18px 0 0;">${attachmentNames.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`
+    : `<p style="margin:0;color:#6b7280;">ללא קבצים</p>`;
+
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:760px;margin:24px auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="background:linear-gradient(135deg,#1f4b46,#2f6b63);padding:22px 24px;color:#fff;">
+      <div style="font-size:13px;opacity:.9;">TravelSure · אופיר ושות׳</div>
+      <h1 style="margin:8px 0 0;font-size:22px;">בקשה חדשה — ביטוח עובדים זרים</h1>
+    </div>
+    <div style="padding:20px 22px;">
+      <h3 style="color:#1f4b46;margin:0 0 8px;">פרטי העובד</h3>
+      <table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;margin:0 0 16px;">${workerRows}</table>
+      <h3 style="color:#1f4b46;margin:0 0 8px;">מעסיק וסוכן</h3>
+      <table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;margin:0 0 16px;">${employerRows}</table>
+      ${healthRows ? `<h3 style="color:#1f4b46;margin:0 0 8px;">הצהרת בריאות — כללי</h3><table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;margin:0 0 16px;">${healthRows}</table>` : ""}
+      ${conditionRows ? `<h3 style="color:#1f4b46;margin:0 0 8px;">הצהרת בריאות — מערכות</h3><table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;margin:0 0 16px;">${conditionRows}</table>` : ""}
+      <h3 style="color:#1f4b46;margin:0 0 8px;">הצהרות</h3>
+      <table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;margin:0 0 16px;">${declRows}</table>
+      <h3 style="color:#1f4b46;margin:0 0 8px;">תשלום</h3>
+      <table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;margin:0 0 16px;">${payRows}</table>
+      <h3 style="color:#1f4b46;margin:0 0 8px;">קבצים</h3>
+      <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;">${files}</div>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 function isSequentialClaimNumber(value: string): boolean {
@@ -342,6 +466,60 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
+    }
+
+    if (isForeignersMode(body)) {
+      const summary = (body.foreignersPayload || {}) as Record<string, unknown>;
+      const fullName = String(body.fullName || `${summary.firstName || ""} ${summary.lastName || ""}`).trim();
+      const employerName = String(body.employerName || summary.employerName || "").trim();
+      const passportNo = String(body.passportNo || summary.passportNo || "").trim();
+      if (!fullName || !employerName || !passportNo) {
+        return new Response(JSON.stringify({ error: "Missing required foreigners fields" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      const emailAttachments = normalizeAttachments(body);
+      const staffHtml = buildForeignersStaffHtml(
+        summary,
+        emailAttachments.map((f) => f.filename),
+      );
+      const recipients = Array.isArray(body.notify) && body.notify.length
+        ? body.notify
+        : ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"];
+      const replyTo = email || String(summary.employerEmail || summary.email || "") || undefined;
+
+      const results = await Promise.allSettled(
+        recipients.map((to) =>
+          sendResendEmail({
+            from: RESEND_FROM,
+            to: [to],
+            reply_to: replyTo,
+            subject: `ביטוח עובדים זרים: ${fullName} · ${employerName}`,
+            html: staffHtml,
+            attachments: emailAttachments.length ? emailAttachments : undefined,
+          }).catch(async (err) => {
+            console.error(`Foreigners email with attachments failed for ${to}:`, err);
+            return sendResendEmail({
+              from: RESEND_FROM,
+              to: [to],
+              reply_to: replyTo,
+              subject: `ביטוח עובדים זרים: ${fullName} · ${employerName}`,
+              html: staffHtml,
+            });
+          }),
+        ),
+      );
+
+      if (!results.some((r) => r.status === "fulfilled")) {
+        throw new Error("Failed to send foreigners application email");
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, mode: "foreigners", staffSent: results.filter((r) => r.status === "fulfilled").length }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
     if (isClaimMode(body)) {

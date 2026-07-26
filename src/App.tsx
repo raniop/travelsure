@@ -12,6 +12,7 @@ import Purchase from "./pages/Purchase";
 import BuyInsNew from "./pages/BuyInsNew";
 import Tirosh from "./pages/Tirosh";
 import Claim from "./pages/Claim";
+import Foreigners from "./pages/Foreigners";
 import FAQ from "./pages/FAQ";
 import Services from "./pages/Services";
 import About from "./pages/About";
@@ -43,6 +44,8 @@ const AppContent = () => {
         <Route path="/buyinsnew" element={<BuyInsNew />} />
         <Route path="/tirosh" element={<Tirosh />} />
         <Route path="/claim" element={<Claim />} />
+        <Route path="/Foreigners" element={<Foreigners />} />
+        <Route path="/foreigners" element={<Foreigners />} />
         <Route path="/services" element={<Services />} />
         <Route path="/services/travel" element={<TravelInsurance />} />
         <Route path="/travel-policy" element={<TravelPolicy />} />
