@@ -2006,7 +2006,14 @@
             return hay.includes(q) || b.code.replace(/^0+/, "") === q.replace(/^0+/, "");
           });
         }
-        list = list.slice(0, 40);
+        list = list
+          .slice()
+          .sort((a, b) => {
+            const an = Number(String(a.code || "").replace(/\D/g, "")) || 0;
+            const bn = Number(String(b.code || "").replace(/\D/g, "")) || 0;
+            return an - bn || String(a.name || "").localeCompare(String(b.name || ""), "he");
+          })
+          .slice(0, 40);
         if (!list.length) {
           box.innerHTML = `<div style="padding:10px 12px;color:#64748b;font-size:13px">לא נמצאו סניפים תואמים</div>`;
           box.classList.remove("hidden");
@@ -2044,7 +2051,11 @@
         $("bankName").value = bank ? bank.name : "";
         currentBankBranches = (banksData.branches || [])
           .filter((b) => b.bankCode === code)
-          .sort((a, b) => a.name.localeCompare(b.name, "he"));
+          .sort((a, b) => {
+            const an = Number(String(a.code || "").replace(/\D/g, "")) || 0;
+            const bn = Number(String(b.code || "").replace(/\D/g, "")) || 0;
+            return an - bn || String(a.name || "").localeCompare(String(b.name || ""), "he");
+          });
         setBranch(null);
         $("branchSearch").disabled = !code;
         $("branchSearch").placeholder = code ? "הקלידו שם סניף, מספר או עיר" : "בחרו בנק קודם";
