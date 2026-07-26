@@ -1671,26 +1671,7 @@
         e.target.value = "";
       });
 
-      const dropZone = ($("files") && $("files").closest("label"));
-      ["dragenter", "dragover"].forEach((evt) => {
-        dropZone.addEventListener(evt, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          dropZone.classList.add("dragover");
-        });
-      });
-      ["dragleave", "drop"].forEach((evt) => {
-        dropZone.addEventListener(evt, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          dropZone.classList.remove("dragover");
-        });
-      });
-      dropZone.addEventListener("drop", (e) => {
-        addSelectedFiles(e.dataTransfer?.files);
-      });
-
-            $("docsList").addEventListener("change", (e) => {
+      $("docsList").addEventListener("change", (e) => {
         const input = e.target.closest("[data-doc-upload]");
         if (!input) return;
         addDocFiles(input.dataset.docUpload, input.files);
