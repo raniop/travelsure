@@ -593,8 +593,8 @@ const Claim = () => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) next.email = "אימייל לא תקין";
     if (!formData.policyNumber.trim()) next.policyNumber = "שדה חובה";
     if (claimType !== "trip_cancel" && !formData.incidentDate.trim()) next.incidentDate = "שדה חובה";
-    if (!formData.country.trim()) {
-      next.country = claimType === "trip_cancel" ? "שדה חובה — מדינת היעד" : "שדה חובה";
+    if (claimType !== "trip_cancel" && !formData.country.trim()) {
+      next.country = "שדה חובה";
     }
     if (!formData.details.trim()) next.details = "שדה חובה";
     if (!formData.bankName.trim()) next.bankName = "שדה חובה";
@@ -664,8 +664,9 @@ const Claim = () => {
         baggageSubtypeLabel:
           claimType === "baggage" && baggageSubtype ? baggageSubtypeMeta[baggageSubtype].title : undefined,
         fullName,
+        country: claimType === "trip_cancel" ? "" : formData.country,
         expenses:
-          claimType === "medical"
+          claimType === "medical" || claimType === "trip_cancel"
             ? expenses.map((row) => ({
                 ...row,
                 amount: row.amount.trim()
@@ -1379,27 +1380,22 @@ const Claim = () => {
                     <ClaimDateInput value={formData.tripEndDate} onChange={(v) => setField("tripEndDate", v)} />
                   </Field>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {claimType !== "trip_cancel" ? (
+                {claimType !== "trip_cancel" ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="תאריך האירוע" required error={errors.incidentDate}>
                       <ClaimDateInput value={formData.incidentDate} onChange={(v) => setField("incidentDate", v)} />
                     </Field>
-                  ) : null}
-                  <Field
-                    label={
-                      claimType === "trip_cancel"
-                        ? "מדינת היעד"
-                        : claimType === "trip_shorten"
-                          ? "הארץ בה אירע המקרה"
-                          : "הארץ בה אירע המקרה"
-                    }
-                    required
-                    error={errors.country}
-                    className={claimType === "trip_cancel" ? "sm:col-span-2" : ""}
-                  >
-                    <Input className="bg-slate-50" value={formData.country} onChange={(e) => setField("country", e.target.value)} />
-                  </Field>
-                </div>
+                    <Field
+                      label={
+                        claimType === "trip_shorten" ? "הארץ בה אירע המקרה" : "הארץ בה אירע המקרה"
+                      }
+                      required
+                      error={errors.country}
+                    >
+                      <Input className="bg-slate-50" value={formData.country} onChange={(e) => setField("country", e.target.value)} />
+                    </Field>
+                  </div>
+                ) : null}
                 <Field label="תיאור מדויק ומפורט של המקרה" required error={errors.details}>
                   <Textarea
                     className="min-h-[120px] bg-slate-50"
@@ -1407,7 +1403,7 @@ const Claim = () => {
                     onChange={(e) => setField("details", e.target.value)}
                   />
                 </Field>
-                {(claimType === "trip_cancel" || claimType === "trip_shorten") ? (
+                {claimType === "trip_shorten" ? (
                   <ClaimAmountCurrencyFields
                     amount={formData.claimAmount}
                     currency={formData.claimCurrency}
@@ -1420,9 +1416,11 @@ const Claim = () => {
                 ) : null}
               </section>
 
-              {claimType === "medical" ? (
+              {claimType === "medical" || claimType === "trip_cancel" ? (
                 <section className="space-y-4">
-                  <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ה. פירוט מרכיבי התביעה</h3>
+                  <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">
+                    {claimType === "medical" ? "ה. פירוט מרכיבי התביעה" : "ה. פירוט הוצאות"}
+                  </h3>
                   <ClaimAmountCurrencyFields
                     amount={formData.claimAmount}
                     currency={formData.claimCurrency}
@@ -1442,8 +1440,8 @@ const Claim = () => {
                             next[idx] = { ...row, date: v };
                             setExpenses(next);
                           }}
-                          aria-label="תאריך טיפול"
-                          placeholder="תאריך טיפול"
+                          aria-label={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
+                          placeholder={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
                         />
                         <Input
                           className="bg-slate-50 sm:col-span-1"
@@ -1501,19 +1499,23 @@ const Claim = () => {
                     <Plus className="h-4 w-4" />
                     הוסף הוצאה
                   </Button>
-                  <YesNoField
-                    label="האם סבלת מהמחלה לפני היציאה מהארץ?"
-                    value={formData.preexisting}
-                    onChange={(v) => setField("preexisting", v)}
-                  />
-                  {formData.preexisting === "yes" ? (
-                    <Field label="פירוט">
-                      <Input
-                        className="bg-slate-50"
-                        value={formData.preexistingDetails}
-                        onChange={(e) => setField("preexistingDetails", e.target.value)}
+                  {claimType === "medical" ? (
+                    <>
+                      <YesNoField
+                        label="האם סבלת מהמחלה לפני היציאה מהארץ?"
+                        value={formData.preexisting}
+                        onChange={(v) => setField("preexisting", v)}
                       />
-                    </Field>
+                      {formData.preexisting === "yes" ? (
+                        <Field label="פירוט">
+                          <Input
+                            className="bg-slate-50"
+                            value={formData.preexistingDetails}
+                            onChange={(e) => setField("preexistingDetails", e.target.value)}
+                          />
+                        </Field>
+                      ) : null}
+                    </>
                   ) : null}
                 </section>
               ) : null}

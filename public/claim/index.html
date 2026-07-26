@@ -524,7 +524,7 @@
           </div>
 
           <div id="expenseWrap" class="hidden">
-            <h3>פירוט הוצאות רפואיות</h3>
+            <h3 id="expenseTitle">פירוט הוצאות</h3>
             <div id="expenseItems"></div>
             <button type="button" class="btn btn-outline" id="addExpense">+ הוסף הוצאה</button>
           </div>
@@ -1506,7 +1506,11 @@
         $("identityTypeLabel").textContent = meta.short;
         $("identityTypeTitle").textContent = meta.title;
         $("filesTypeLabel").textContent = meta.short;
-        $("expenseWrap").classList.toggle("hidden", claimType !== "medical");
+        $("expenseWrap").classList.toggle("hidden", claimType !== "medical" && claimType !== "trip_cancel");
+        if ($("expenseTitle")) {
+          $("expenseTitle").textContent =
+            claimType === "medical" ? "פירוט הוצאות רפואיות" : "פירוט הוצאות";
+        }
         $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
         const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
         $("baggageItems").classList.toggle("hidden", isBaggageDelay);
@@ -1547,12 +1551,18 @@
             (claimType === "baggage" && !isBaggageDelay)
           )
         );
+        // For trip cancel: no incident date and no destination country.
         $("incidentLabel").textContent = "תאריך האירוע";
         if ($("incidentWrap")) $("incidentWrap").classList.toggle("hidden", claimType === "trip_cancel");
         if (form.incidentDate) form.incidentDate.required = claimType !== "trip_cancel";
-        $("countryLabel").textContent = claimType === "trip_cancel" ? "מדינת היעד" : "הארץ בה אירע המקרה";
+        $("countryLabel").textContent = "הארץ בה אירע המקרה";
         if ($("countryWrap")) {
-          $("countryWrap").style.gridColumn = claimType === "trip_cancel" ? "1 / -1" : "";
+          $("countryWrap").classList.toggle("hidden", claimType === "trip_cancel");
+          $("countryWrap").style.gridColumn = "";
+          if (form.country) form.country.required = claimType !== "trip_cancel";
+        }
+        if ($("incidentCountryWrap")) {
+          $("incidentCountryWrap").classList.toggle("hidden", claimType === "trip_cancel");
         }
         $("reasonWrap").innerHTML =
           (claimType === "trip_cancel" ? "סיבת הביטול" : "סיבת הקיצור") +
@@ -2072,7 +2082,10 @@
             return;
           }
         }
-        if (!get("country")) { $("detailsError").textContent = "יש למלא את המדינה / מיקום האירוע"; return; }
+        if (claimType !== "trip_cancel" && !get("country")) {
+          $("detailsError").textContent = "יש למלא את המדינה / מיקום האירוע";
+          return;
+        }
         if (!get("details")) { $("detailsError").textContent = "יש למלא תיאור מדויק של המקרה"; return; }
         if (!get("bankName") || !get("branchNumber") || !get("accountNumber")) {
           $("detailsError").textContent = "יש לבחור בנק וסניף ולמלא מספר חשבון"; return;
@@ -2141,7 +2154,9 @@
           hmoName: "", hmoBranch: "", hmoAddress: "",
           policyNumber: get("policyNumber"), purchasedWhere: "",
           claimReason: get("claimReason"), tripStartDate: get("tripStartDate"), tripEndDate: get("tripEndDate"),
-          incidentDate: get("incidentDate"), country: get("country"), details: get("details"),
+          incidentDate: get("incidentDate"),
+          country: claimType === "trip_cancel" ? "" : get("country"),
+          details: get("details"),
           claimAmount:
             claimType === "baggage" && baggageSubtype === "delay" ? "155" : get("claimAmount"),
           claimCurrency:
@@ -2162,7 +2177,7 @@
           declaration: form.declaration.checked,
           marketingConsent: !!(form.marketingConsent && form.marketingConsent.checked),
           expenses:
-            claimType === "medical"
+            claimType === "medical" || claimType === "trip_cancel"
               ? collectRows($("expenseItems")).map((row) => {
                   const amount = String(row.amount || "").trim();
                   const currency = currentClaimCurrency();
