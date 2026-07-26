@@ -115,7 +115,7 @@ if ($condHtml !== '') {
 }
 $html .= '<p style="color:#999;font-size:12px;">נשלח מ־/Foreigners באתר TravelSure (api-foreigners.php)</p></div>';
 
-$to = ['rani@ophirins.co.il', 'eli@ophirins.co.il', 'ophir@ophirins.co.il'];
+$to = ['rani@ophirins.co.il'];
 $subject = 'ביטוח עובדים זרים: ' . $fullName . ' · ' . $employerName;
 
 $headers = [];

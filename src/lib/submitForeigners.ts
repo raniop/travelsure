@@ -5,7 +5,7 @@ import {
 } from "@/lib/foreigners/formDefaults";
 import type { ForeignersForm } from "@/lib/foreigners/types";
 
-const STAFF_NOTIFY = ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"] as const;
+const STAFF_NOTIFY = ["rani@ophirins.co.il"] as const;
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {

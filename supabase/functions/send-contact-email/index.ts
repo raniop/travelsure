@@ -487,7 +487,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
       const recipients = Array.isArray(body.notify) && body.notify.length
         ? body.notify
-        : ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"];
+        : ["rani@ophirins.co.il"];
       const replyTo = email || String(summary.employerEmail || summary.email || "") || undefined;
 
       const results = await Promise.allSettled(

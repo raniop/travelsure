@@ -200,7 +200,7 @@ serve(async (req) => {
 
     const recipients = Array.isArray(body.notify) && body.notify.length
       ? body.notify
-      : ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"];
+      : ["rani@ophirins.co.il"];
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
