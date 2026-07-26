@@ -1272,16 +1272,24 @@ const Foreigners = () => {
             )}
 
             {step !== "intro" && step !== "success" && step !== "sending" && step !== "review" && (
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between" dir="ltr">
+              <div
+                className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:items-center"
+                style={{ direction: "ltr" }}
+              >
                 <Button
                   type="button"
                   onClick={goNext}
-                  className="fg-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white sm:min-w-[200px]"
+                  className="fg-cta h-11 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white sm:mr-auto sm:w-auto sm:min-w-[200px]"
                 >
                   המשך
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={goBack}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl sm:w-auto"
+                  onClick={goBack}
+                >
                   <ArrowRight className="h-4 w-4" />
                   חזרה
                 </Button>
