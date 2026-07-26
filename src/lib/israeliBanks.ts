@@ -26,11 +26,22 @@ export async function loadIsraeliBanksData(): Promise<IsraeliBanksData> {
   return loading;
 }
 
+function branchCodeSortValue(code: string): number {
+  const n = Number(String(code || "").replace(/\D/g, ""));
+  return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+}
+
+function compareBranchesByCode(a: IsraeliBranch, b: IsraeliBranch): number {
+  const byCode = branchCodeSortValue(a.code) - branchCodeSortValue(b.code);
+  if (byCode !== 0) return byCode;
+  return a.name.localeCompare(b.name, "he");
+}
+
 export function branchesForBank(data: IsraeliBanksData, bankCode: string): IsraeliBranch[] {
   if (!bankCode) return [];
   return data.branches
     .filter((b) => b.bankCode === bankCode)
-    .sort((a, b) => a.name.localeCompare(b.name, "he"));
+    .sort(compareBranchesByCode);
 }
 
 export function filterBranches(branches: IsraeliBranch[], query: string): IsraeliBranch[] {
@@ -41,6 +52,7 @@ export function filterBranches(branches: IsraeliBranch[], query: string): Israel
       const hay = `${b.code} ${b.name} ${b.city}`.toLowerCase();
       return hay.includes(q) || b.code.replace(/^0+/, "") === q.replace(/^0+/, "");
     })
+    .sort(compareBranchesByCode)
     .slice(0, 40);
 }
 
