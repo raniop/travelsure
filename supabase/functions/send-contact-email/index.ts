@@ -25,7 +25,7 @@ interface ContactEmailRequest {
 }
 
 const CLAIM_FIELD_LABELS: Record<string, string> = {
-  claimNumber: "מספר תביעה",
+  claimNumber: "מספר תביעה באופיר",
   claimTypeLabel: "סוג תביעה",
   baggageSubtypeLabel: "סוג תביעת מטען",
   fullName: "שם מלא",
@@ -201,7 +201,8 @@ function buildClaimStaffHtml(
     <div style="background:linear-gradient(135deg,#0f766e,#0d9488);padding:22px 24px;color:#fff;">
       <div style="font-size:13px;opacity:.9;">TravelSure · אופיר ושות׳ סוכנות לביטוח</div>
       <h1 style="margin:8px 0 0;font-size:24px;">תביעת ביטוח נסיעות חדשה</h1>
-      <p style="margin:8px 0 0;font-size:18px;letter-spacing:0.5px;">מספר תביעה: <strong>${esc(claimNumber)}</strong></p>
+      <p style="margin:8px 0 0;font-size:18px;letter-spacing:0.5px;">מספר תביעה באופיר: <strong>${esc(claimNumber)}</strong></p>
+      <p style="margin:6px 0 0;font-size:12px;opacity:.9;">מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר תביעה בהראל</p>
     </div>
     <div style="padding:22px 24px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;margin:0 0 18px;">
@@ -229,8 +230,8 @@ function buildClaimCustomerHtml(claimNumber: string, firstName: string): string 
     <div style="padding:22px 24px;color:#111827;line-height:1.7;">
       <p style="margin:0 0 12px;">שלום ${esc(firstName || "לקוח/ה")},</p>
       <p style="margin:0 0 12px;">תביעת ביטוח הנסיעות שלך התקבלה במערכת TravelSure.</p>
-      <p style="margin:0 0 12px;font-size:20px;letter-spacing:0.5px;">מספר התביעה שלך: <strong>${esc(claimNumber)}</strong></p>
-      <p style="margin:0 0 12px;">שמור/י מספר זה למעקב מול הסוכנות.</p>
+      <p style="margin:0 0 8px;font-size:20px;letter-spacing:0.5px;">מספר תביעה באופיר: <strong>${esc(claimNumber)}</strong></p>
+      <p style="margin:0 0 12px;color:#374151;font-size:14px;">זה מספר מעקב פנימי אצל <strong>אופיר ושות׳ סוכנות לביטוח</strong> — לא מספר תביעה בהראל או בחברת הביטוח. לשמירה ולמעקב מולנו בלבד.</p>
       <p style="margin:0;color:#6b7280;font-size:13px;">TravelSure · אופיר ושות׳ סוכנות לביטוח<br>טלפון: 03-6244444 · אימייל: ophir@ophirins.co.il</p>
     </div>
   </div>
@@ -478,7 +479,7 @@ const handler = async (req: Request): Promise<Response> => {
           await sendResendEmail({
             from: RESEND_FROM,
             to: [customerEmail],
-            subject: `אישור קבלת תביעה · ${claimNumber}`,
+            subject: `אישור קבלת תביעה באופיר · ${claimNumber}`,
             html: buildClaimCustomerHtml(
               claimNumber,
               String(claim.firstName || name || ""),
@@ -492,7 +493,7 @@ const handler = async (req: Request): Promise<Response> => {
             await sendResendEmail({
               from: RESEND_FROM,
               to: [customerEmail],
-              subject: `אישור קבלת תביעה · ${claimNumber}`,
+              subject: `אישור קבלת תביעה באופיר · ${claimNumber}`,
               html: buildClaimCustomerHtml(
                 claimNumber,
                 String(claim.firstName || name || ""),

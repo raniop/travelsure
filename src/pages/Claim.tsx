@@ -25,6 +25,7 @@ import {
   getClaimDocumentRequirements,
   missingRequiredClaimDocs,
 } from "@/lib/claimDocuments";
+import { formatClaimFileSize, prepareClaimFiles } from "@/lib/claimFilePrepare";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -233,6 +234,8 @@ const Claim = () => {
   const [blockedReason, setBlockedReason] = useState<"not_found" | "no_match">("not_found");
   const [selectedPolicyUid, setSelectedPolicyUid] = useState("");
   const [docFiles, setDocFiles] = useState<Record<string, File[]>>({});
+  const [isPreparingFiles, setIsPreparingFiles] = useState(false);
+  const [filePrepareNote, setFilePrepareNote] = useState("");
   const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([emptyExpense()]);
@@ -504,20 +507,56 @@ const Claim = () => {
     });
   };
 
-  const addDocFiles = (docId: string, incoming: FileList | File[] | null | undefined) => {
-    const next = Array.from(incoming || []);
-    if (!next.length) return;
-    setDocFiles((prev) => {
-      const merged = [...(prev[docId] || [])];
-      next.forEach((file) => {
-        const exists = merged.some(
-          (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
-        );
-        if (!exists) merged.push(file);
-      });
-      return { ...prev, [docId]: merged };
+  const mergePreparedFiles = (existing: File[], incoming: File[]) => {
+    const merged = [...existing];
+    incoming.forEach((file) => {
+      const exists = merged.some(
+        (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+      );
+      if (!exists) merged.push(file);
     });
-    clearFilesError();
+    return merged;
+  };
+
+  const prepareAndAcceptFiles = async (incoming: FileList | File[] | null | undefined) => {
+    const next = Array.from(incoming || []);
+    if (!next.length) return [] as File[];
+    setIsPreparingFiles(true);
+    setFilePrepareNote("בודק ומכווץ קבצים גדולים...");
+    try {
+      const { accepted, compressedCount, errors } = await prepareClaimFiles(next);
+      if (errors.length) {
+        setErrors((prev) => ({ ...prev, files: errors[0] }));
+        toast({
+          title: "קובץ לא צורף",
+          description: errors[0],
+          variant: "destructive",
+        });
+      } else {
+        clearFilesError();
+      }
+      if (compressedCount > 0) {
+        setFilePrepareNote(
+          compressedCount === 1
+            ? "קובץ אחד כווץ אוטומטית כדי שיעבור בשליחה"
+            : `${compressedCount} קבצים כווצו אוטומטית כדי שיעברו בשליחה`
+        );
+      } else if (accepted.length) {
+        setFilePrepareNote("");
+      }
+      return accepted;
+    } finally {
+      setIsPreparingFiles(false);
+    }
+  };
+
+  const addDocFiles = async (docId: string, incoming: FileList | File[] | null | undefined) => {
+    const accepted = await prepareAndAcceptFiles(incoming);
+    if (!accepted.length) return;
+    setDocFiles((prev) => ({
+      ...prev,
+      [docId]: mergePreparedFiles(prev[docId] || [], accepted),
+    }));
   };
 
   const removeDocFile = (docId: string, index: number) => {
@@ -530,29 +569,14 @@ const Claim = () => {
     });
   };
 
-  const addExtraFiles = (incoming: FileList | File[] | null | undefined) => {
-    const next = Array.from(incoming || []);
-    if (!next.length) return;
-    setExtraFiles((prev) => {
-      const merged = [...prev];
-      next.forEach((file) => {
-        const exists = merged.some(
-          (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
-        );
-        if (!exists) merged.push(file);
-      });
-      return merged;
-    });
+  const addExtraFiles = async (incoming: FileList | File[] | null | undefined) => {
+    const accepted = await prepareAndAcceptFiles(incoming);
+    if (!accepted.length) return;
+    setExtraFiles((prev) => mergePreparedFiles(prev, accepted));
   };
 
   const removeExtraFileAt = (index: number) => {
     setExtraFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const validateDetails = () => {
@@ -1816,6 +1840,9 @@ const Claim = () => {
                                   <span className="min-w-0 flex-1 truncate" title={file.name}>
                                     {file.name}
                                   </span>
+                                  <span className="shrink-0 text-[11px] text-slate-400">
+                                    {formatClaimFileSize(file.size)}
+                                  </span>
                                   <button
                                     type="button"
                                     className="shrink-0 text-slate-400 hover:text-rose-500"
@@ -1828,16 +1855,21 @@ const Claim = () => {
                             </ul>
                           ) : null}
 
-                          <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#2f6b63] transition hover:text-[#1f4b46]">
+                          <label
+                            className={`mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#2f6b63] transition hover:text-[#1f4b46] ${
+                              isPreparingFiles ? "pointer-events-none opacity-50" : "cursor-pointer"
+                            }`}
+                          >
                             <FileUp className="h-3.5 w-3.5" />
-                            {done ? "הוספת קובץ" : "בחירת קובץ"}
+                            {isPreparingFiles ? "מכין קובץ..." : done ? "הוספת קובץ" : "בחירת קובץ"}
                             <input
                               type="file"
                               multiple
                               className="hidden"
+                              disabled={isPreparingFiles}
                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"
                               onChange={(e) => {
-                                addDocFiles(doc.id, e.target.files);
+                                void addDocFiles(doc.id, e.target.files);
                                 e.target.value = "";
                               }}
                             />
@@ -1868,7 +1900,8 @@ const Claim = () => {
               <div className="mt-5">
                 <button
                   type="button"
-                  className="text-xs font-medium text-slate-400 transition hover:text-[#2f6b63]"
+                  className="text-xs font-medium text-slate-400 transition hover:text-[#2f6b63] disabled:opacity-50"
+                  disabled={isPreparingFiles}
                   onClick={() => {
                     const input = document.getElementById("claim-extra-files-input") as HTMLInputElement | null;
                     input?.click();
@@ -1881,9 +1914,10 @@ const Claim = () => {
                   type="file"
                   multiple
                   className="hidden"
+                  disabled={isPreparingFiles}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"
                   onChange={(e) => {
-                    addExtraFiles(e.target.files);
+                    void addExtraFiles(e.target.files);
                     e.target.value = "";
                   }}
                 />
@@ -1895,6 +1929,9 @@ const Claim = () => {
                         className="flex items-center gap-2 text-xs text-slate-600"
                       >
                         <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                        <span className="shrink-0 text-[11px] text-slate-400">
+                          {formatClaimFileSize(file.size)}
+                        </span>
                         <button
                           type="button"
                           className="text-slate-400 hover:text-rose-500"
@@ -1908,6 +1945,11 @@ const Claim = () => {
                 ) : null}
               </div>
 
+              {isPreparingFiles || filePrepareNote ? (
+                <p className="mt-3 text-xs text-[#2f6b63]">
+                  {isPreparingFiles ? "בודק ומכווץ קבצים גדולים..." : filePrepareNote}
+                </p>
+              ) : null}
               {errors.files ? <p className="mt-3 text-sm text-rose-600">{errors.files}</p> : null}
 
               <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -1917,8 +1959,8 @@ const Claim = () => {
                 <Button
                   type="button"
                   size="lg"
+                  disabled={isSubmitting || isPreparingFiles}
                   className="claim-cta h-11 rounded-xl bg-[#2f6b63] text-sm font-semibold text-white hover:bg-[#265a53] sm:min-w-[200px] disabled:opacity-50"
-                  disabled={isSubmitting}
                   onClick={handleSubmit}
                 >
                   {isSubmitting ? (
@@ -1973,12 +2015,15 @@ const Claim = () => {
               </div>
               <h2 className="text-2xl font-extrabold text-[#143834]">התביעה נשלחה בהצלחה</h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-                הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה למעקב.
+                הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה באופיר למעקב מולנו.
               </p>
               <div className="mx-auto mt-6 max-w-md rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-5 text-right">
-                <p className="text-xs font-bold text-[#2f6b63]">מספר תביעה</p>
+                <p className="text-xs font-bold text-[#2f6b63]">מספר תביעה באופיר</p>
                 <p className="mt-1 font-mono text-2xl font-extrabold tracking-wide text-[#143834]" dir="ltr">
                   {submittedClaimNumber}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  זה מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר תביעה בהראל או בחברת הביטוח.
                 </p>
                 {submittedSummary ? (
                   <ul className="mt-4 space-y-1.5 text-sm text-slate-600">

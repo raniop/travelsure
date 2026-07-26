@@ -43,7 +43,7 @@ const fileToBase64 = (file: File): Promise<string> =>
 
 const buildClaimMessage = (payload: Record<string, unknown>, files: File[], claimNumber: string) => {
   const rows: Array<[string, string]> = [
-    ["מספר תביעה", claimNumber],
+    ["מספר תביעה באופיר", claimNumber],
     ["סוג תביעה", String(payload.claimTypeLabel || "")],
     ["שם", String(payload.fullName || "")],
     ["ת.ז.", String(payload.idNumber || "")],

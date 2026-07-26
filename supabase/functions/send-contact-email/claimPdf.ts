@@ -166,7 +166,7 @@ export function buildClaimPdfRows(
   attachmentNames: string[],
 ): PdfRow[] {
   const rows: PdfRow[] = [];
-  push(rows, "מספר תביעה", claimNumber);
+  push(rows, "מספר תביעה באופיר", claimNumber);
   push(rows, "סוג תביעה", claim.claimTypeLabel);
   push(rows, "סוג מטען", claim.baggageSubtypeLabel);
   push(rows, "שם מלא", claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`.trim());

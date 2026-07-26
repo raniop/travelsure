@@ -599,10 +599,11 @@
         <div id="step-success" class="hidden" style="text-align:center;padding:18px 8px 8px">
           <div style="width:64px;height:64px;border-radius:999px;background:#e8f4f1;color:var(--brand);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px">✓</div>
           <h2 style="margin-bottom:6px">התביעה נשלחה בהצלחה</h2>
-          <p class="muted" style="margin:0 auto;max-width:420px">הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה למעקב.</p>
+          <p class="muted" style="margin:0 auto;max-width:420px">הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה באופיר למעקב מולנו.</p>
           <div style="margin:18px auto 0;max-width:420px;text-align:right;border:1px solid rgba(47,107,99,.15);border-radius:18px;padding:16px;background:linear-gradient(90deg,#e8f4f1,#fff)">
-            <div style="font-size:12px;font-weight:800;color:var(--brand)">מספר תביעה</div>
+            <div style="font-size:12px;font-weight:800;color:var(--brand)">מספר תביעה באופיר</div>
             <div id="successClaimNumber" dir="ltr" style="margin-top:4px;font-family:ui-monospace,monospace;font-size:24px;font-weight:900;color:var(--brand-dark);letter-spacing:.04em"></div>
+            <p class="tiny" style="margin:8px 0 0;color:#64748b;line-height:1.5">זה מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר תביעה בהראל או בחברת הביטוח.</p>
             <ul id="successSummary" style="margin:14px 0 0;padding:0 18px 0 0;color:#475569;font-size:14px;line-height:1.7"></ul>
           </div>
           <p class="tiny" style="margin-top:12px">העתק נשלח לצוות הטיפול בתביעות (רני / אלי).</p>
@@ -1594,6 +1595,163 @@
       $("addBaggage").onclick = () => addBaggageRow();
       $("addExpense").onclick = () => addExpenseRow();
 
+      const CLAIM_FILE_TARGET_BYTES = 1200000;
+      const CLAIM_FILE_MAX_BYTES = 8000000;
+      const CLAIM_MAX_IMAGE_EDGE = 2000;
+      let isPreparingFiles = false;
+
+      function setFilesStatus(message, isError) {
+        const el = $("status");
+        if (!el) return;
+        if (!message) {
+          el.classList.add("hidden");
+          el.textContent = "";
+          el.classList.remove("err");
+          return;
+        }
+        el.classList.remove("hidden");
+        el.textContent = message;
+        el.classList.toggle("err", Boolean(isError));
+      }
+
+      function isImageFile(file) {
+        if (file.type && file.type.indexOf("image/") === 0) return true;
+        return /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(file.name || "");
+      }
+
+      function isPdfFile(file) {
+        return file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+      }
+
+      function renameKeepBase(name, newExt) {
+        const base = String(name || "file").replace(/\.[^.]+$/, "") || "file";
+        return base + newExt;
+      }
+
+      function loadImageElement(file) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("image_load_failed"));
+          };
+          img.src = url;
+        });
+      }
+
+      async function compressImageFile(file) {
+        const originalSize = file.size;
+        if (originalSize <= CLAIM_FILE_TARGET_BYTES) {
+          return { file: file, compressed: false, error: "" };
+        }
+        try {
+          const img = await loadImageElement(file);
+          let width = img.naturalWidth || img.width;
+          let height = img.naturalHeight || img.height;
+          if (!width || !height) {
+            if (originalSize > CLAIM_FILE_MAX_BYTES) {
+              return {
+                file: file,
+                compressed: false,
+                error: '"' + file.name + '" גדול מדי (' + formatFileSize(originalSize) + "). נסו לצלם מחדש באיכות נמוכה יותר.",
+              };
+            }
+            return { file: file, compressed: false, error: "" };
+          }
+          const scale = Math.min(1, CLAIM_MAX_IMAGE_EDGE / Math.max(width, height));
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return { file: file, compressed: false, error: "" };
+          ctx.drawImage(img, 0, 0, width, height);
+          let quality = 0.82;
+          let blob = null;
+          while (quality >= 0.45) {
+            blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+            if (blob && blob.size <= CLAIM_FILE_TARGET_BYTES) break;
+            quality -= 0.12;
+          }
+          if (!blob || blob.size >= originalSize) {
+            if (originalSize > CLAIM_FILE_MAX_BYTES) {
+              return {
+                file: file,
+                compressed: false,
+                error: '"' + file.name + '" גדול מדי (' + formatFileSize(originalSize) + ").",
+              };
+            }
+            return { file: file, compressed: false, error: "" };
+          }
+          if (blob.size > CLAIM_FILE_MAX_BYTES) {
+            return {
+              file: file,
+              compressed: false,
+              error: '"' + file.name + '" עדיין גדול מדי אחרי כיווץ (' + formatFileSize(blob.size) + ").",
+            };
+          }
+          const compressedFile = new File([blob], renameKeepBase(file.name, ".jpg"), {
+            type: "image/jpeg",
+            lastModified: Date.now(),
+          });
+          return { file: compressedFile, compressed: true, error: "" };
+        } catch (_) {
+          if (originalSize > CLAIM_FILE_MAX_BYTES) {
+            return {
+              file: file,
+              compressed: false,
+              error: '"' + file.name + '" גדול מדי ולא ניתן לכווץ בדפדפן זה.',
+            };
+          }
+          return { file: file, compressed: false, error: "" };
+        }
+      }
+
+      function prepareNonImageFile(file) {
+        if (file.size <= CLAIM_FILE_MAX_BYTES) {
+          return { file: file, compressed: false, error: "" };
+        }
+        const kind = isPdfFile(file) ? "PDF" : "קובץ";
+        return {
+          file: file,
+          compressed: false,
+          error:
+            "ה" +
+            kind +
+            ' "' +
+            file.name +
+            '" גדול מדי (' +
+            formatFileSize(file.size) +
+            "). מומלץ עד " +
+            formatFileSize(CLAIM_FILE_MAX_BYTES) +
+            " — סרקו מחדש באיכות נמוכה יותר או פצלו למספר קבצים.",
+        };
+      }
+
+      async function prepareClaimFiles(files) {
+        const accepted = [];
+        const errors = [];
+        let compressedCount = 0;
+        for (const file of files) {
+          const result = isImageFile(file)
+            ? await compressImageFile(file)
+            : prepareNonImageFile(file);
+          if (result.error) {
+            errors.push(result.error);
+            continue;
+          }
+          if (result.compressed) compressedCount += 1;
+          accepted.push(result.file);
+        }
+        return { accepted: accepted, compressedCount: compressedCount, errors: errors };
+      }
+
       function formatFileSize(bytes) {
         if (!bytes && bytes !== 0) return "";
         if (bytes < 1024) return `${bytes} B`;
@@ -1704,11 +1862,37 @@
         renderDocsChecklist();
       }
 
-      function addDocFiles(docId, fileList) {
+      async function prepareAndAcceptFiles(fileList) {
         const incoming = Array.from(fileList || []);
-        if (!incoming.length) return;
+        if (!incoming.length) return [];
+        if (isPreparingFiles) return [];
+        isPreparingFiles = true;
+        setFilesStatus("בודק ומכווץ קבצים גדולים...", false);
+        try {
+          const result = await prepareClaimFiles(incoming);
+          if (result.errors.length) {
+            setFilesStatus(result.errors[0], true);
+          } else if (result.compressedCount > 0) {
+            setFilesStatus(
+              result.compressedCount === 1
+                ? "קובץ אחד כווץ אוטומטית כדי שיעבור בשליחה"
+                : result.compressedCount + " קבצים כווצו אוטומטית כדי שיעברו בשליחה",
+              false
+            );
+          } else {
+            setFilesStatus("", false);
+          }
+          return result.accepted;
+        } finally {
+          isPreparingFiles = false;
+        }
+      }
+
+      async function addDocFiles(docId, fileList) {
+        const accepted = await prepareAndAcceptFiles(fileList);
+        if (!accepted.length) return;
         const current = docFilesMap[docId] || [];
-        incoming.forEach((file) => {
+        accepted.forEach((file) => {
           const exists = current.some(
             (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
           );
@@ -1718,10 +1902,10 @@
         renderDocsChecklist();
       }
 
-      function addSelectedFiles(fileList) {
-        const incoming = Array.from(fileList || []);
-        if (!incoming.length) return;
-        incoming.forEach((file) => {
+      async function addSelectedFiles(fileList) {
+        const accepted = await prepareAndAcceptFiles(fileList);
+        if (!accepted.length) return;
+        accepted.forEach((file) => {
           const exists = extraFilesList.some(
             (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
           );
@@ -1734,14 +1918,14 @@
         $("extraFilesBtn").addEventListener("click", () => $("files").click());
       }
       $("files").addEventListener("change", (e) => {
-        addSelectedFiles(e.target.files);
+        void addSelectedFiles(e.target.files);
         e.target.value = "";
       });
 
       $("docsList").addEventListener("change", (e) => {
         const input = e.target.closest("[data-doc-upload]");
         if (!input) return;
-        addDocFiles(input.dataset.docUpload, input.files);
+        void addDocFiles(input.dataset.docUpload, input.files);
         input.value = "";
       });
       $("docsList").addEventListener("click", (e) => {
@@ -2078,7 +2262,7 @@
           const staff = ["rani@ophirins.co.il", "eli@ophirins.co.il"];
           const fanout = claimMessage.replace(
             "=== תביעה חדשה מטופס TravelSure ===",
-            "=== תביעה חדשה מטופס TravelSure ===\nמספר תביעה: " + resolvedNumber
+            "=== תביעה חדשה מטופס TravelSure ===\nמספר תביעה באופיר: " + resolvedNumber
           );
 
           // Old function only emails ophir@ — also notify Rani + Eli with the claim text.
