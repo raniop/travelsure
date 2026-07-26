@@ -1716,7 +1716,7 @@ const Claim = () => {
                       className={`rounded-xl border px-3.5 py-3 transition ${
                         done
                           ? "border-emerald-200/80 bg-emerald-50/50"
-                          : "border-slate-150 border-slate-100 bg-white"
+                          : "border-slate-100 bg-white"
                       }`}
                     >
                       <div className="flex items-start gap-3">
