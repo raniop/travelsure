@@ -318,7 +318,7 @@ export async function buildClaimPdfBase64(
       color: rgb(0.06, 0.46, 0.43),
     });
 
-    drawRight("תביעת ביטוח נסיעות · TravelSure", 16, pageHeight - 36, font, rgb(1, 1, 1));
+    drawRight("תביעת ביטוח נסיעות", 16, pageHeight - 36, font, rgb(1, 1, 1));
     page.drawText(`# ${claimNumber}`, {
       x: margin,
       y: pageHeight - 36,
