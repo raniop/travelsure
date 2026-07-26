@@ -120,22 +120,47 @@ export async function submitClaimRequest(
     }
   };
 
-  const primary = await tryInvoke({
-    mode: "claim",
-    type: "claim",
+  // Email-first: notify staff + customer before uploading heavy scans.
+  // Large base64 PDFs often exceed Edge Function / Resend limits and used to block all mail.
+  const attachmentNames = attachments.map((f) => f.filename);
+  const claimPayloadWithFiles = {
+    ...fullPayload,
+    attachedFileNames: attachmentNames,
+  };
+
+  const baseClaimBody = {
+    mode: "claim" as const,
+    type: "claim" as const,
     ...(pendingNumber ? { claimNumber: pendingNumber } : {}),
     name: String(fullPayload.fullName || "תביעה"),
     email: String(fullPayload.email || ""),
     phone: String(fullPayload.mobile || fullPayload.phone || ""),
     message,
-    claimPayload: fullPayload,
-    files: attachments,
-    attachments: attachments.map((f) => ({
-      filename: f.filename,
-      content: f.content,
-      type: f.type,
-    })),
-  });
+    claimPayload: claimPayloadWithFiles,
+  };
+
+  // 1) Always send the claim email (PDF + details) without raw file bytes first.
+  let primary = await tryInvoke(baseClaimBody);
+
+  // 2) Best-effort: attach document bytes in a follow-up staff mail (same claim number).
+  if (primary.ok && attachments.length > 0) {
+    const claimNumberForFiles = String(primary.claimNumber || pendingNumber || "");
+    await tryInvoke({
+      ...baseClaimBody,
+      ...(claimNumberForFiles ? { claimNumber: claimNumberForFiles } : {}),
+      claimPayload: {
+        ...claimPayloadWithFiles,
+        ...(claimNumberForFiles ? { claimNumber: claimNumberForFiles } : {}),
+        documentsFollowUp: true,
+      },
+      // Single copy only — do not also send under `files` (that doubled payload size).
+      attachments: attachments.map((f) => ({
+        filename: f.filename,
+        content: f.content,
+        type: f.type,
+      })),
+    });
+  }
 
   let resolvedNumber = primary.claimNumber || pendingNumber;
   if (!resolvedNumber) {

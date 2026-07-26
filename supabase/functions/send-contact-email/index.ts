@@ -238,6 +238,9 @@ function buildClaimCustomerHtml(claimNumber: string, firstName: string): string 
 </html>`;
 }
 
+/** Soft cap so Resend + Edge Function stay under practical size limits (~4.5MB base64). */
+const MAX_ATTACHMENT_BASE64_CHARS = 4_500_000;
+
 function normalizeAttachments(body: ContactEmailRequest): Array<{ filename: string; content: string; type?: string }> {
   const fromAttachments = (body.attachments || [])
     .filter((file) => file?.filename && file?.content)
@@ -247,22 +250,38 @@ function normalizeAttachments(body: ContactEmailRequest): Array<{ filename: stri
       ...(file.type ? { type: file.type } : {}),
     }));
 
-  if (fromAttachments.length) return fromAttachments;
+  const raw = fromAttachments.length
+    ? fromAttachments
+    : (body.files || [])
+        .map((file) => {
+          const filename = String(file.filename || file.name || "").trim();
+          const content = String(file.content || file.contentBase64 || "")
+            .replace(/^data:[^;]+;base64,/, "")
+            .trim();
+          if (!filename || !content) return null;
+          return {
+            filename,
+            content,
+            ...(file.type || file.contentType ? { type: file.type || file.contentType } : {}),
+          };
+        })
+        .filter((file): file is { filename: string; content: string; type?: string } => Boolean(file));
 
-  return (body.files || [])
-    .map((file) => {
-      const filename = String(file.filename || file.name || "").trim();
-      const content = String(file.content || file.contentBase64 || "")
-        .replace(/^data:[^;]+;base64,/, "")
-        .trim();
-      if (!filename || !content) return null;
-      return {
-        filename,
-        content,
-        ...(file.type || file.contentType ? { type: file.type || file.contentType } : {}),
-      };
-    })
-    .filter((file): file is { filename: string; content: string; type?: string } => Boolean(file));
+  // Prefer delivering the claim email over attaching every scan. Keep as many files as fit.
+  const kept: Array<{ filename: string; content: string; type?: string }> = [];
+  let used = 0;
+  for (const file of raw) {
+    const next = used + file.content.length;
+    if (next > MAX_ATTACHMENT_BASE64_CHARS) {
+      console.warn(
+        `Skipping attachment ${file.filename} to stay under email size limit (${raw.length} received, ${kept.length} kept)`,
+      );
+      continue;
+    }
+    kept.push(file);
+    used = next;
+  }
+  return kept;
 }
 
 async function sendResendEmail(payload: Record<string, unknown>) {
@@ -297,21 +316,97 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (isClaimMode(body)) {
       const claim = (body.claimPayload || {}) as Record<string, unknown>;
+      const isDocumentsFollowUp = claim.documentsFollowUp === true || claim.documentsFollowUp === "true";
       const claimNumber = await allocateClaimNumber(
         String(body.claimNumber || claim.claimNumber || ""),
       );
 
       const emailAttachments = normalizeAttachments(body);
+      const namedFromPayload = Array.isArray(claim.attachedFileNames)
+        ? (claim.attachedFileNames as unknown[]).map((n) => String(n || "").trim()).filter(Boolean)
+        : [];
+      const attachmentNamesForPdf = [
+        ...new Set([
+          ...emailAttachments.map((file) => file.filename),
+          ...namedFromPayload,
+        ]),
+      ];
       const staffHtml = buildClaimStaffHtml(
         claim,
         claimNumber,
-        emailAttachments.map((file) => file.filename),
+        attachmentNamesForPdf,
       );
+
+      // Follow-up after the main claim mail: only forward document bytes to staff (no customer re-mail).
+      if (isDocumentsFollowUp) {
+        if (!emailAttachments.length) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              mode: "claim",
+              claimNumber,
+              staffSent: 0,
+              customerSent: false,
+              attachmentsSent: 0,
+              followUp: true,
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
+          );
+        }
+
+        const staffRecipients = [
+          "rani@ophirins.co.il",
+          "eli@ophirins.co.il",
+          "ophir@ophirins.co.il",
+        ];
+        const replyTo = email || String(claim.email || "") || undefined;
+        const staffSubject = `מסמכי תביעה · ${claimNumber}`;
+        const staffResults = await Promise.allSettled(
+          staffRecipients.map((to) =>
+            sendResendEmail({
+              from: RESEND_FROM,
+              to: [to],
+              reply_to: replyTo,
+              subject: staffSubject,
+              html: staffHtml,
+              attachments: emailAttachments,
+            }).catch(async (err) => {
+              console.error(`Document follow-up failed for ${to}, retrying without attachments:`, err);
+              return sendResendEmail({
+                from: RESEND_FROM,
+                to: [to],
+                reply_to: replyTo,
+                subject: staffSubject,
+                html: staffHtml,
+              });
+            }),
+          ),
+        );
+        const staffSentCount = staffResults.filter((r) => r.status === "fulfilled").length;
+        return new Response(
+          JSON.stringify({
+            success: staffSentCount > 0,
+            mode: "claim",
+            claimNumber,
+            staffSent: staffSentCount,
+            customerSent: false,
+            attachmentsSent: emailAttachments.length,
+            followUp: true,
+          }),
+          {
+            status: staffSentCount > 0 ? 200 : 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
 
       const claimPdf = await buildClaimPdfBase64(
         claim,
         claimNumber,
-        emailAttachments.map((file) => file.filename),
+        attachmentNamesForPdf,
       );
       const staffMailAttachments = [
         ...(claimPdf ? [claimPdf] : []),
@@ -377,6 +472,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const customerEmail = email || String(claim.email || "");
+      let customerSent = false;
       if (customerEmail) {
         try {
           await sendResendEmail({
@@ -388,15 +484,42 @@ const handler = async (req: Request): Promise<Response> => {
               String(claim.firstName || name || ""),
             ),
           });
+          customerSent = true;
         } catch (customerErr) {
           console.error("Customer claim confirmation failed:", customerErr);
+          // One retry without extras — confirmation must not be lost silently.
+          try {
+            await sendResendEmail({
+              from: RESEND_FROM,
+              to: [customerEmail],
+              subject: `אישור קבלת תביעה · ${claimNumber}`,
+              html: buildClaimCustomerHtml(
+                claimNumber,
+                String(claim.firstName || name || ""),
+              ),
+            });
+            customerSent = true;
+          } catch (retryErr) {
+            console.error("Customer claim confirmation retry failed:", retryErr);
+          }
         }
       }
 
-      return new Response(JSON.stringify({ success: true, mode: "claim", claimNumber }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      const staffSentCount = staffResults.filter((r) => r.status === "fulfilled").length;
+      return new Response(
+        JSON.stringify({
+          success: true,
+          mode: "claim",
+          claimNumber,
+          staffSent: staffSentCount,
+          customerSent,
+          attachmentsSent: emailAttachments.length,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     const emailResponse = await sendResendEmail({
