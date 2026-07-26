@@ -23,7 +23,7 @@ const fileToBase64 = (file: File): Promise<string> =>
 const yn = (v: string) => (v === "yes" ? "כן" : v === "no" ? "לא" : "");
 
 const buildReadablePayload = (form: ForeignersForm) => {
-  const workerName = [form.firstName, form.middleName, form.lastName].filter(Boolean).join(" ");
+  const workerName = [form.firstName, form.lastName].filter(Boolean).join(" ");
 
   const generalHealth = [
     ["גובה (ס״מ)", form.heightCm],
@@ -69,7 +69,6 @@ const buildReadablePayload = (form: ForeignersForm) => {
     workerName,
     summary: {
       firstName: form.firstName,
-      middleName: form.middleName,
       lastName: form.lastName,
       passportNo: form.passportNo,
       passportCountry: form.passportCountry,
@@ -87,7 +86,6 @@ const buildReadablePayload = (form: ForeignersForm) => {
       phone: form.phone,
       mobile: form.mobile,
       email: form.email,
-      preferPostMail: yn(form.preferPostMail),
       workPurpose: WORK_PURPOSE_LABELS[form.workPurpose] || form.workPurpose,
       provider: PROVIDER_LABELS[form.provider] || form.provider,
       hadPreviousInsurance: yn(form.hadPreviousInsurance),

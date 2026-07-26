@@ -15,7 +15,6 @@ const todayDdMmYyyy = () => {
 
 export const createInitialForeignersForm = (): ForeignersForm => ({
   firstName: "",
-  middleName: "",
   lastName: "",
   passportNo: "",
   passportCountry: "",
@@ -35,7 +34,6 @@ export const createInitialForeignersForm = (): ForeignersForm => ({
   phone: "",
   mobile: "",
   email: "",
-  preferPostMail: "no",
 
   workPurpose: "",
   provider: "",

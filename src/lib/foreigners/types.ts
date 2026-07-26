@@ -31,7 +31,6 @@ export type HealthConditionGroup = {
 export type ForeignersForm = {
   // A – worker
   firstName: string;
-  middleName: string;
   lastName: string;
   passportNo: string;
   passportCountry: string;
@@ -51,7 +50,6 @@ export type ForeignersForm = {
   phone: string;
   mobile: string;
   email: string;
-  preferPostMail: YesNo;
 
   // B – purpose
   workPurpose: WorkPurpose;

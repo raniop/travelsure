@@ -182,6 +182,8 @@ const Foreigners = () => {
     if (!form.insuranceTo.trim() || !isValidDateDdMmYyyy(form.insuranceTo)) next.insuranceTo = "תאריך בפורמט DD/MM/YYYY";
     if (!form.mobile.trim()) next.mobile = "שדה חובה";
     if (!form.email.trim() || !isValidEmail(form.email)) next.email = "אימייל לא תקין";
+    if (!form.street.trim()) next.street = "שדה חובה";
+    if (!form.houseNo.trim()) next.houseNo = "שדה חובה";
     if (!form.city.trim()) next.city = "שדה חובה";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -488,9 +490,6 @@ const Foreigners = () => {
                   <Field label="שם פרטי / First name" required error={errors.firstName}>
                     <Input {...textProps("firstName", { placeholder: "First name" })} />
                   </Field>
-                  <Field label="שם אמצעי / Middle name">
-                    <Input {...textProps("middleName")} />
-                  </Field>
                   <Field label="שם משפחה / Last name" required error={errors.lastName}>
                     <Input {...textProps("lastName", { placeholder: "Last name" })} />
                   </Field>
@@ -549,10 +548,10 @@ const Foreigners = () => {
                   <Input {...textProps("workDescription", { placeholder: "לדוגמה: טיפול סיעודי / בניין" })} />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="רחוב">
+                  <Field label="רחוב" required error={errors.street}>
                     <Input {...textProps("street")} />
                   </Field>
-                  <Field label="מס׳ בית">
+                  <Field label="מס׳ בית" required error={errors.houseNo}>
                     <Input {...textProps("houseNo")} />
                   </Field>
                   <Field label="מס׳ דירה">
@@ -574,13 +573,6 @@ const Foreigners = () => {
                     <Input {...textProps("email", { type: "email" })} />
                   </Field>
                 </div>
-                <Field label="לקבל מסמכי פוליסה בדואר ישראל?">
-                  <YesNoToggle
-                    name="preferPostMail"
-                    value={form.preferPostMail}
-                    onChange={(v) => setField("preferPostMail", v)}
-                  />
-                </Field>
               </div>
             )}
 
@@ -1226,11 +1218,7 @@ const Foreigners = () => {
             )}
 
             {step !== "intro" && step !== "success" && step !== "sending" && step !== "review" && (
-              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={goBack}>
-                  <ArrowRight className="h-4 w-4" />
-                  חזרה
-                </Button>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between" dir="ltr">
                 <Button
                   type="button"
                   onClick={goNext}
@@ -1238,6 +1226,10 @@ const Foreigners = () => {
                 >
                   המשך
                   <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={goBack}>
+                  <ArrowRight className="h-4 w-4" />
+                  חזרה
                 </Button>
               </div>
             )}

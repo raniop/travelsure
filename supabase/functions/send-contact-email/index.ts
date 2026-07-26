@@ -139,7 +139,6 @@ function buildForeignersStaffHtml(summary: Record<string, unknown>, attachmentNa
 
   const workerRows = [
     row("שם פרטי", summary.firstName),
-    row("שם אמצעי", summary.middleName),
     row("שם משפחה", summary.lastName),
     row("מספר דרכון", summary.passportNo),
     row("ארץ הנפקת דרכון", summary.passportCountry),
