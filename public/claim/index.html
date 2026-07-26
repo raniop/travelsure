@@ -1343,12 +1343,12 @@
         if (prog) {
           prog.style.color = progress.complete ? "#047857" : "#b45309";
           prog.textContent = progress.complete
-            ? `✓ ${progress.doneCount}/${progress.requiredCount} מסמכי חובה — אפשר לשלוח`
-            : `${progress.doneCount}/${progress.requiredCount} מסמכי חובה · חסרים עוד ${progress.missing.length}`;
+            ? `✓ ${progress.doneCount}/${progress.requiredCount} מסמכי חובה — הכל מצורף`
+            : `${progress.doneCount}/${progress.requiredCount} מסמכי חובה · חסרים עוד ${progress.missing.length} · ניתן לשלוח עם אישור`;
         }
         const submitBtn = $("submitBtn");
         if (submitBtn && submitBtn.textContent !== "שולח...") {
-          submitBtn.disabled = !progress.complete;
+          submitBtn.disabled = false;
         }
 
         list.innerHTML = reqs
@@ -1599,14 +1599,20 @@
         const progress = docsProgressState();
         flattenAttachedFiles();
         if (!progress.complete) {
-          const names = progress.missing.map((d) => d.label).slice(0, 2).join(" · ");
-          status.textContent = names
-            ? "יש לצרף את כל מסמכי החובה לפני השליחה (חסר: " + names + ")"
-            : "יש לצרף את כל מסמכי החובה לפני השליחה";
-          status.classList.add("err");
-          return;
+          const missingList = progress.missing.map((d) => "• " + d.label).join("\n");
+          const confirmed = window.confirm(
+            "לא צורפו כל המסמכים הנדרשים:\n\n" +
+              missingList +
+              "\n\nהאם לשלוח את התביעה בכל זאת?"
+          );
+          if (!confirmed) {
+            status.textContent = "השליחה בוטלה — אפשר להשלים מסמכים או לאשר שליחה בכל זאת";
+            status.classList.add("err");
+            return;
+          }
         }
-        if (!selectedFiles.length) { status.textContent = "יש לצרף לפחות מסמך אחד"; status.classList.add("err"); return; }
+        status.classList.add("hidden");
+        status.textContent = "";
 
         const fd = new FormData(form);
         const dateKeys = new Set(["birthDate", "tripStartDate", "tripEndDate", "incidentDate"]);

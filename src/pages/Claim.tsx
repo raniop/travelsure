@@ -586,17 +586,16 @@ const Claim = () => {
 
   const validateFiles = () => {
     if (!docsComplete) {
-      const names = missingDocs.map((d) => d.label).slice(0, 3).join(" · ");
-      setErrors({
-        files: names
-          ? `יש לצרף את כל מסמכי החובה לפני השליחה (חסר: ${names}${missingDocs.length > 3 ? "…" : ""})`
-          : "יש לצרף את כל מסמכי החובה לפני השליחה",
-      });
-      return false;
-    }
-    if (allAttachedFiles.length === 0) {
-      setErrors({ files: "יש לצרף לפחות מסמך אחד" });
-      return false;
+      const missingList = missingDocs.map((d) => `• ${d.label}`).join("\n");
+      const confirmed = window.confirm(
+        `לא צורפו כל המסמכים הנדרשים:\n\n${missingList}\n\nהאם לשלוח את התביעה בכל זאת?`
+      );
+      if (!confirmed) {
+        setErrors({
+          files: "חסרים מסמכי חובה — אפשר להשלים אותם כאן, או לאשר שליחה בכל זאת",
+        });
+        return false;
+      }
     }
     setErrors({});
     return true;
@@ -1699,7 +1698,7 @@ const Claim = () => {
                 <p className="text-xs font-bold tracking-wide text-[#2f6b63]">{activeMeta.short}</p>
                 <h2 className="text-xl font-extrabold text-[#143834]">צירוף מסמכים</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  יש לצרף קובץ ליד כל סעיף חובה. אחרי הצירוף יופיע וי ירוק — רק אז אפשר לשלוח.
+                  מומלץ לצרף קובץ ליד כל סעיף חובה. אחרי הצירוף יופיע וי ירוק. אפשר לשלוח גם בלי הכל — תופיע הודעת אישור.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold">
                   <span
@@ -1712,10 +1711,10 @@ const Claim = () => {
                   {docsComplete ? (
                     <span className="inline-flex items-center gap-1 text-emerald-700">
                       <Check className="h-3.5 w-3.5" />
-                      אפשר לשלוח את התביעה
+                      כל מסמכי החובה צורפו
                     </span>
                   ) : (
-                    <span className="text-slate-500">חסרים עוד {missingDocs.length} מסמכי חובה</span>
+                    <span className="text-amber-700">חסרים עוד {missingDocs.length} · ניתן לשלוח עם אישור</span>
                   )}
                 </div>
               </div>
@@ -1859,7 +1858,7 @@ const Claim = () => {
                   type="button"
                   size="lg"
                   className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px] disabled:opacity-50"
-                  disabled={isSubmitting || !docsComplete}
+                  disabled={isSubmitting}
                   onClick={handleSubmit}
                 >
                   {isSubmitting ? (
