@@ -1867,6 +1867,8 @@
         if (!incoming.length) return [];
         if (isPreparingFiles) return [];
         isPreparingFiles = true;
+        const submitBtn = $("submitBtn");
+        if (submitBtn) submitBtn.disabled = true;
         setFilesStatus("בודק ומכווץ קבצים גדולים...", false);
         try {
           const result = await prepareClaimFiles(incoming);
@@ -1885,6 +1887,7 @@
           return result.accepted;
         } finally {
           isPreparingFiles = false;
+          if (submitBtn && submitBtn.textContent !== "שולח...") submitBtn.disabled = false;
         }
       }
 

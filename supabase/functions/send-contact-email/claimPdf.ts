@@ -318,21 +318,23 @@ export async function buildClaimPdfBase64(
       color: rgb(0.06, 0.46, 0.43),
     });
 
-    drawRight("תביעת ביטוח נסיעות", 16, pageHeight - 36, font, rgb(1, 1, 1));
+    drawRight("תביעת ביטוח נסיעות · אופיר", 15, pageHeight - 32, font, rgb(1, 1, 1));
     page.drawText(`# ${claimNumber}`, {
       x: margin,
-      y: pageHeight - 36,
+      y: pageHeight - 34,
       size: 14,
       font: latinBold,
       color: rgb(1, 1, 1),
     });
-    y = pageHeight - 92;
+    y = pageHeight - 88;
 
     const fullName = String(claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`).trim();
     drawRight(`שם המבוטח: ${fullName}`, 12, y);
     y -= 18;
     drawRight(`סוג תביעה: ${String(claim.claimTypeLabel || "")}`, 11, y);
-    y -= 22;
+    y -= 16;
+    drawRight("מספר תביעה באופיר (לא מספר תביעה בהראל)", 9, y, font, rgb(0.35, 0.4, 0.45));
+    y -= 20;
 
     for (const row of rows) {
       if (y < 80) {
