@@ -568,7 +568,7 @@ const Claim = () => {
     if (!formData.email.trim()) next.email = "שדה חובה";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) next.email = "אימייל לא תקין";
     if (!formData.policyNumber.trim()) next.policyNumber = "שדה חובה";
-    if (!formData.incidentDate.trim()) next.incidentDate = "שדה חובה";
+    if (claimType !== "trip_cancel" && !formData.incidentDate.trim()) next.incidentDate = "שדה חובה";
     if (!formData.country.trim()) {
       next.country = claimType === "trip_cancel" ? "שדה חובה — מדינת היעד" : "שדה חובה";
     }
@@ -1333,13 +1333,11 @@ const Claim = () => {
                   <Field label="תאריך חזרה לארץ">
                     <ClaimDateInput value={formData.tripEndDate} onChange={(v) => setField("tripEndDate", v)} />
                   </Field>
-                  <Field
-                    label={claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע"}
-                    required
-                    error={errors.incidentDate}
-                  >
-                    <ClaimDateInput value={formData.incidentDate} onChange={(v) => setField("incidentDate", v)} />
-                  </Field>
+                  {claimType !== "trip_cancel" ? (
+                    <Field label="תאריך האירוע" required error={errors.incidentDate}>
+                      <ClaimDateInput value={formData.incidentDate} onChange={(v) => setField("incidentDate", v)} />
+                    </Field>
+                  ) : null}
                   <Field
                     label={
                       claimType === "trip_cancel"

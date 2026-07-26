@@ -495,7 +495,7 @@
             <label class="field" id="reasonWrap">סיבה <span class="req">*</span><input name="claimReason" /></label>
             <label class="field">תאריך יציאה מהארץ<input name="tripStartDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
             <label class="field">תאריך חזרה לארץ<input name="tripEndDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
-            <label class="field"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" required /></label>
+            <label class="field" id="incidentWrap"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
             <label class="field"><span id="countryLabel">הארץ בה אירע המקרה</span> <span class="req">*</span><input name="country" required /></label>
             <label class="field" style="grid-column:1/-1">תיאור מדויק ומפורט של המקרה <span class="req">*</span><textarea name="details" required></textarea></label>
             <div id="totalWrap" class="grid grid-2" style="grid-column:1/-1">
@@ -1498,7 +1498,9 @@
             (claimType === "baggage" && !isBaggageDelay)
           )
         );
-        $("incidentLabel").textContent = claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע";
+        $("incidentLabel").textContent = "תאריך האירוע";
+        if ($("incidentWrap")) $("incidentWrap").classList.toggle("hidden", claimType === "trip_cancel");
+        if (form.incidentDate) form.incidentDate.required = claimType !== "trip_cancel";
         $("countryLabel").textContent = claimType === "trip_cancel" ? "מדינת היעד" : "הארץ בה אירע המקרה";
         $("reasonWrap").innerHTML =
           (claimType === "trip_cancel" ? "סיבת הביטול" : "סיבת הקיצור") +
@@ -1815,19 +1817,21 @@
         if (!isValidIsraeliId(get("idNumber"))) { $("detailsError").textContent = "תעודת זהות לא תקינה"; return; }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email"))) { $("detailsError").textContent = "אימייל לא תקין"; return; }
         if (!get("policyNumber")) { $("detailsError").textContent = "חסר מספר פוליסה"; return; }
-        if (!getRaw("incidentDate")) {
-          $("detailsError").textContent = "יש למלא את תאריך האירוע";
-          const el = form.incidentDate;
-          if (el) {
-            el.focus();
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-            el.style.borderColor = "#dc2626";
+        if (claimType !== "trip_cancel") {
+          if (!getRaw("incidentDate")) {
+            $("detailsError").textContent = "יש למלא את תאריך האירוע";
+            const el = form.incidentDate;
+            if (el) {
+              el.focus();
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              el.style.borderColor = "#dc2626";
+            }
+            return;
           }
-          return;
-        }
-        if (!parseDateToIso(getRaw("incidentDate"))) {
-          $("detailsError").textContent = "תאריך האירוע לא תקין — יש להזין בפורמט יום/חודש/שנה (לדוגמה 29/07/2026)";
-          return;
+          if (!parseDateToIso(getRaw("incidentDate"))) {
+            $("detailsError").textContent = "תאריך האירוע לא תקין — יש להזין בפורמט יום/חודש/שנה (לדוגמה 29/07/2026)";
+            return;
+          }
         }
         if (!get("country")) { $("detailsError").textContent = "יש למלא את המדינה / מיקום האירוע"; return; }
         if (!get("details")) { $("detailsError").textContent = "יש למלא תיאור מדויק של המקרה"; return; }
