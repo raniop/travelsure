@@ -567,7 +567,7 @@ const Claim = () => {
     if (!formData.accountNumber.trim()) next.accountNumber = "שדה חובה";
     if (!formData.declaration) next.declaration = "יש לאשר את ההצהרה";
 
-    if (claimType === "medical") {
+    if (claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten") {
       if (!formData.claimAmount.trim()) next.claimAmount = "שדה חובה";
       if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
     }
@@ -1311,6 +1311,17 @@ const Claim = () => {
                     onChange={(e) => setField("details", e.target.value)}
                   />
                 </Field>
+                {(claimType === "trip_cancel" || claimType === "trip_shorten") ? (
+                  <ClaimAmountCurrencyFields
+                    amount={formData.claimAmount}
+                    currency={formData.claimCurrency}
+                    destination={formData.country}
+                    amountError={errors.claimAmount}
+                    currencyError={errors.claimCurrency}
+                    onAmountChange={(v) => setField("claimAmount", v)}
+                    onCurrencyChange={(v) => setField("claimCurrency", v)}
+                  />
+                ) : null}
               </section>
 
               {claimType === "medical" ? (

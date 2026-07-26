@@ -1388,7 +1388,12 @@
         $("reasonWrap").classList.toggle("hidden", claimType !== "trip_cancel" && claimType !== "trip_shorten");
         $("totalWrap").classList.toggle(
           "hidden",
-          claimType !== "medical" && (claimType !== "baggage" || isBaggageDelay)
+          !(
+            claimType === "medical" ||
+            claimType === "trip_cancel" ||
+            claimType === "trip_shorten" ||
+            (claimType === "baggage" && !isBaggageDelay)
+          )
         );
         $("incidentLabel").textContent = claimType === "trip_cancel" ? "תאריך הביטול" : "תאריך האירוע";
         $("countryLabel").textContent = claimType === "trip_cancel" ? "מדינת היעד" : "הארץ בה אירע המקרה";
@@ -1738,10 +1743,15 @@
         if ((claimType === "trip_cancel" || claimType === "trip_shorten") && !get("claimReason")) {
           $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור"; return;
         }
-        if ((claimType === "medical" || (claimType === "baggage" && baggageSubtype !== "delay")) && !get("claimAmount")) {
+        const needsClaimAmount =
+          claimType === "medical" ||
+          claimType === "trip_cancel" ||
+          claimType === "trip_shorten" ||
+          (claimType === "baggage" && baggageSubtype !== "delay");
+        if (needsClaimAmount && !get("claimAmount")) {
           $("detailsError").textContent = "יש למלא סכום נתבע"; return;
         }
-        if ((claimType === "medical" || (claimType === "baggage" && baggageSubtype !== "delay")) && !get("claimCurrency")) {
+        if (needsClaimAmount && !get("claimCurrency")) {
           $("detailsError").textContent = "יש לבחור מטבע"; return;
         }
         if (claimType === "baggage" && baggageSubtype !== "delay") {
