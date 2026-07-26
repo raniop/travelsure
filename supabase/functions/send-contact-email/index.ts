@@ -153,11 +153,12 @@ function buildPayloadRows(payload: Record<string, unknown>): string {
     if (!(key in payload)) continue;
     let value: unknown = payload[key];
     if (typeof value === "boolean") value = yesNo(value);
-    if (CLAIM_DATE_FIELDS.has(key)) value = formatClaimDateDisplay(value);
+    const isDate = CLAIM_DATE_FIELDS.has(key);
+    if (isDate) value = formatClaimDateDisplay(value);
     if (value === undefined || value === null || String(value).trim() === "") continue;
     rows.push(`<tr>
       <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;width:38%;vertical-align:top;">${esc(label)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:600;vertical-align:top;white-space:pre-wrap;" dir="ltr">${esc(value)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:600;vertical-align:top;white-space:pre-wrap;"${isDate ? ' dir="ltr"' : ""}>${esc(value)}</td>
     </tr>`);
   }
 
