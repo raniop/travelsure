@@ -264,11 +264,7 @@ const Foreigners = () => {
 
   const validatePayment = () => {
     const next: Record<string, string> = {};
-    if (!form.healthAnswersTrue) next.healthAnswersTrue = "חובה לאשר";
-    if (!form.medicalConfidentialityWaiver) next.medicalConfidentialityWaiver = "חובה לאשר";
-    if (!form.receivedEssentialInfo) next.receivedEssentialInfo = "חובה לאשר";
-    if (!form.explainedInUnderstoodLanguage) next.explainedInUnderstoodLanguage = "חובה לאשר";
-    if (!form.authorizeAgent) next.authorizeAgent = "חובה לאשר";
+    if (!form.declarationsAccepted) next.declarationsAccepted = "חובה לאשר את ההצהרות";
     if (!form.marketingConsent) next.marketingConsent = "שדה חובה";
     if (!form.signatureName.trim()) next.signatureName = "שדה חובה";
     if (!form.signatureDate.trim() || !isValidDateDdMmYyyy(form.signatureDate)) {
@@ -1039,44 +1035,23 @@ const Foreigners = () => {
               <div className="space-y-4">
                 <h2 className="text-lg font-bold text-[#143834]">הצהרות ותשלום</h2>
 
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-                  {[
-                    {
-                      key: "authorizeAgent" as const,
-                      label: "אני מאשר/ת לסוכן הביטוח לטפל בכל עניין הקשור לפוליסה בשמי (ייפוי כוח לסוכן).",
-                    },
-                    {
-                      key: "healthAnswersTrue" as const,
-                      label: "אני מצהיר/ה שכל התשובות נכונות ומלאות ונמסרו מרצוני החופשי.",
-                    },
-                    {
-                      key: "medicalConfidentialityWaiver" as const,
-                      label: "אני נותן/ת ויתור על סודיות רפואית לטובת הראל לצורך בחינת הבקשה וניהול הפוליסה.",
-                    },
-                    {
-                      key: "receivedEssentialInfo" as const,
-                      label: "קיבלתי מידע מהותי על הביטוח: כיסויים עיקריים, פרמיה, תקופה, סכומים והגבלות עיקריות.",
-                    },
-                    {
-                      key: "explainedInUnderstoodLanguage" as const,
-                      label: "תוכן הטופס הוסבר לי בשפה המובנת לי.",
-                    },
-                  ].map((item) => (
-                    <label key={item.key} className="flex items-start gap-3 text-right">
-                      <Checkbox
-                        checked={form[item.key]}
-                        onCheckedChange={(v) => setField(item.key, Boolean(v))}
-                        className="mt-0.5"
-                      />
-                      <span className="text-slate-700">{item.label}</span>
-                    </label>
-                  ))}
-                  {(["authorizeAgent", "healthAnswersTrue", "medicalConfidentialityWaiver", "receivedEssentialInfo", "explainedInUnderstoodLanguage"] as const).map(
-                    (k) => (errors[k] ? <p key={k} className="text-xs text-rose-600">{errors[k]}</p> : null)
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+                  <label className="flex items-start gap-3 text-right">
+                    <Checkbox
+                      checked={form.declarationsAccepted}
+                      onCheckedChange={(v) => setField("declarationsAccepted", Boolean(v))}
+                      className="mt-0.5"
+                    />
+                    <span className="text-slate-700">
+                      אני מאשר/ת את כל ההצהרות הבאות: ייפוי כוח לסוכן לטפל בפוליסה בשמי; כל התשובות נכונות ומלאות ונמסרו מרצוני החופשי; ויתור על סודיות רפואית לטובת הראל; קיבלתי מידע מהותי על הביטוח; ותוכן הטופס הוסבר לי בשפה המובנת לי.
+                    </span>
+                  </label>
+                  {errors.declarationsAccepted && (
+                    <p className="mt-2 text-xs text-rose-600">{errors.declarationsAccepted}</p>
                   )}
                 </div>
 
-                <Field label="הסכמה לקבלת חומר פרסומי מהראל" required error={errors.marketingConsent}>
+                <Field label="הסכמה לקבלת חומר פרסומי מאופיר" required error={errors.marketingConsent}>
                   <YesNoToggle
                     name="marketing"
                     value={form.marketingConsent}

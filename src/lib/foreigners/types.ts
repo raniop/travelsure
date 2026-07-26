@@ -109,13 +109,8 @@ export type ForeignersForm = {
   dismissedDetails: string;
 
   // Declarations
-  authorizeAgent: boolean;
-  healthAnswersTrue: boolean;
-  medicalConfidentialityWaiver: boolean;
-  receivedEssentialInfo: boolean;
+  declarationsAccepted: boolean;
   marketingConsent: YesNo;
-  marketingExtraConsent: YesNo;
-  explainedInUnderstoodLanguage: boolean;
   signatureName: string;
   signatureDate: string;
 

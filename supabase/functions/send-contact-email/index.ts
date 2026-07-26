@@ -199,16 +199,13 @@ function buildForeignersStaffHtml(summary: Record<string, unknown>, attachmentNa
     row("הסכמת משלם", summary.paymentConsent),
   ].join("");
 
-  const declRows = [
-    row("הרשאת סוכן", summary.authorizeAgent),
-    row("הצהרת אמת", summary.healthAnswersTrue),
-    row("ויתור סודיות", summary.medicalConfidentialityWaiver),
-    row("מידע מהותי", summary.receivedEssentialInfo),
-    row("דיוור", summary.marketingConsent),
-    row("שם חותם", summary.signatureName),
-    row("תאריך", summary.signatureDate),
-    row("הערות", summary.notes),
-  ].join("");
+    const declRows = [
+      row("אישור כל ההצהרות", summary.declarationsAccepted),
+      row("הסכמה לדיוור מאופיר", summary.marketingConsent),
+      row("שם חותם", summary.signatureName),
+      row("תאריך", summary.signatureDate),
+      row("הערות", summary.notes),
+    ].join("");
 
   const files = attachmentNames.length
     ? `<ul style="margin:0;padding:0 18px 0 0;">${attachmentNames.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`

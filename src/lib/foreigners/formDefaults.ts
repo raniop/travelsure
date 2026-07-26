@@ -71,13 +71,8 @@ export const createInitialForeignersForm = (): ForeignersForm => ({
   dismissedBefore: "",
   dismissedDetails: "",
 
-  authorizeAgent: true,
-  healthAnswersTrue: false,
-  medicalConfidentialityWaiver: false,
-  receivedEssentialInfo: false,
+  declarationsAccepted: false,
   marketingConsent: "",
-  marketingExtraConsent: "no",
-  explainedInUnderstoodLanguage: false,
   signatureName: "",
   signatureDate: todayDdMmYyyy(),
 
