@@ -867,6 +867,10 @@ const Claim = () => {
             <p className="mx-auto mt-2 max-w-lg text-lg font-bold tracking-tight text-[#1f4b46] sm:text-xl">
               בפוליסת נסיעות לחו״ל של הראל
             </p>
+          ) : claimType === "baggage" && baggageSubtype ? (
+            <p className="mx-auto mt-2 max-w-lg text-lg font-bold tracking-tight text-[#1f4b46] sm:text-xl">
+              {baggageSubtypeMeta[baggageSubtype].title}
+            </p>
           ) : (
             <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
               תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח

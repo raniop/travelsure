@@ -978,16 +978,21 @@
         const afterType = Boolean(claimType && meta && step !== "type");
         el.textContent = afterType ? "הגשת תביעה - " + meta.title : "הגשת תביעה";
         if (sub) {
-          if (afterType) {
-            sub.textContent = "תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח";
-            sub.style.fontSize = "";
-            sub.style.fontWeight = "";
-            sub.style.color = "";
-          } else {
+          if (!afterType) {
             sub.textContent = "בפוליסת נסיעות לחו״ל של הראל";
             sub.style.fontSize = "18px";
             sub.style.fontWeight = "800";
             sub.style.color = "var(--brand-dark)";
+          } else if (claimType === "baggage" && baggageSubtype && baggageSubtypes[baggageSubtype]) {
+            sub.textContent = baggageSubtypes[baggageSubtype].title;
+            sub.style.fontSize = "18px";
+            sub.style.fontWeight = "800";
+            sub.style.color = "var(--brand-dark)";
+          } else {
+            sub.textContent = "תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח";
+            sub.style.fontSize = "";
+            sub.style.fontWeight = "";
+            sub.style.color = "";
           }
         }
       }
@@ -1587,6 +1592,7 @@
         extraFilesList = [];
         renderTypes();
         syncTypeUi();
+        updatePageTitle();
       });
 
       $("policyGrid").addEventListener("click", (e) => {
