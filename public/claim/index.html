@@ -491,14 +491,18 @@
           </div>
 
           <h3>ג. תיאור המקרה</h3>
-          <div class="grid grid-2">
+          <div class="grid" style="gap:14px">
             <label class="field" id="reasonWrap">סיבה <span class="req">*</span><input name="claimReason" /></label>
-            <label class="field">תאריך יציאה מהארץ<input name="tripStartDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
-            <label class="field">תאריך חזרה לארץ<input name="tripEndDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
-            <label class="field" id="incidentWrap"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
-            <label class="field"><span id="countryLabel">הארץ בה אירע המקרה</span> <span class="req">*</span><input name="country" required /></label>
-            <label class="field" style="grid-column:1/-1">תיאור מדויק ומפורט של המקרה <span class="req">*</span><textarea name="details" required></textarea></label>
-            <div id="totalWrap" class="grid grid-2" style="grid-column:1/-1">
+            <div class="grid grid-2" id="tripDatesWrap">
+              <label class="field">תאריך יציאה מהארץ<input name="tripStartDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
+              <label class="field">תאריך חזרה לארץ<input name="tripEndDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
+            </div>
+            <div class="grid grid-2" id="incidentCountryWrap">
+              <label class="field" id="incidentWrap"><span id="incidentLabel">תאריך האירוע</span> <span class="req">*</span><input name="incidentDate" class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" autocomplete="off" /></label>
+              <label class="field" id="countryWrap"><span id="countryLabel">הארץ בה אירע המקרה</span> <span class="req">*</span><input name="country" required /></label>
+            </div>
+            <label class="field">תיאור מדויק ומפורט של המקרה <span class="req">*</span><textarea name="details" required></textarea></label>
+            <div id="totalWrap" class="grid grid-2">
               <label class="field">סכום נתבע <span class="req">*</span><input name="claimAmount" inputmode="decimal" placeholder="לדוגמה 250" /></label>
               <div class="field currency-box">
                 <span>מטבע <span class="req">*</span></span>
@@ -1502,6 +1506,9 @@
         if ($("incidentWrap")) $("incidentWrap").classList.toggle("hidden", claimType === "trip_cancel");
         if (form.incidentDate) form.incidentDate.required = claimType !== "trip_cancel";
         $("countryLabel").textContent = claimType === "trip_cancel" ? "מדינת היעד" : "הארץ בה אירע המקרה";
+        if ($("countryWrap")) {
+          $("countryWrap").style.gridColumn = claimType === "trip_cancel" ? "1 / -1" : "";
+        }
         $("reasonWrap").innerHTML =
           (claimType === "trip_cancel" ? "סיבת הביטול" : "סיבת הקיצור") +
           ' <span class="req">*</span><input name="claimReason" />';

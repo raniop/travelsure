@@ -1333,6 +1333,8 @@ const Claim = () => {
                   <Field label="תאריך חזרה לארץ">
                     <ClaimDateInput value={formData.tripEndDate} onChange={(v) => setField("tripEndDate", v)} />
                   </Field>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {claimType !== "trip_cancel" ? (
                     <Field label="תאריך האירוע" required error={errors.incidentDate}>
                       <ClaimDateInput value={formData.incidentDate} onChange={(v) => setField("incidentDate", v)} />
@@ -1348,6 +1350,7 @@ const Claim = () => {
                     }
                     required
                     error={errors.country}
+                    className={claimType === "trip_cancel" ? "sm:col-span-2" : ""}
                   >
                     <Input className="bg-slate-50" value={formData.country} onChange={(e) => setField("country", e.target.value)} />
                   </Field>
