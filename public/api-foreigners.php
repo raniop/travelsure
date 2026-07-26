@@ -68,11 +68,11 @@ $fields = [
   'כתובת מעסיק' => $summary['employerAddress'] ?? '',
   'שם חותם' => $summary['signatureName'] ?? '',
   'תאריך חתימה' => $summary['signatureDate'] ?? '',
-  'דילוג תשלום' => $summary['skipPaymentNow'] ?? '',
   'משלם' => trim(($summary['payerFirstName'] ?? '') . ' ' . ($summary['payerLastName'] ?? '')),
   'ת.ז. משלם' => $summary['payerId'] ?? '',
   'כרטיס אשראי' => $summary['cardNumber'] ?? '',
   'תוקף' => $summary['cardExp'] ?? '',
+  'הסכמת משלם' => $summary['paymentConsent'] ?? '',
   'הערות' => $summary['notes'] ?? '',
 ];
 
