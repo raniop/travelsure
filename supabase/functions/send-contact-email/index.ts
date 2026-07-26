@@ -90,6 +90,30 @@ function yesNo(value: unknown): string {
   return "";
 }
 
+/** Display dates as DD/MM/YYYY (e.g. 11/08/1986). */
+function formatClaimDateDisplay(value: unknown): string {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const dmy = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (dmy) {
+    return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${dmy[3]}`;
+  }
+  const digits = s.replace(/\D/g, "");
+  if (digits.length === 8) {
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  }
+  return s;
+}
+
+const CLAIM_DATE_FIELDS = new Set([
+  "birthDate",
+  "tripStartDate",
+  "tripEndDate",
+  "incidentDate",
+]);
+
 function isClaimMode(body: ContactEmailRequest): boolean {
   return body.mode === "claim" || body.type === "claim" || Boolean(body.claimPayload);
 }
@@ -129,10 +153,11 @@ function buildPayloadRows(payload: Record<string, unknown>): string {
     if (!(key in payload)) continue;
     let value: unknown = payload[key];
     if (typeof value === "boolean") value = yesNo(value);
+    if (CLAIM_DATE_FIELDS.has(key)) value = formatClaimDateDisplay(value);
     if (value === undefined || value === null || String(value).trim() === "") continue;
     rows.push(`<tr>
       <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;width:38%;vertical-align:top;">${esc(label)}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:600;vertical-align:top;white-space:pre-wrap;">${esc(value)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:600;vertical-align:top;white-space:pre-wrap;" dir="ltr">${esc(value)}</td>
     </tr>`);
   }
 
@@ -142,7 +167,10 @@ function buildPayloadRows(payload: Record<string, unknown>): string {
       .map((item) => {
         if (!item || typeof item !== "object") return "";
         const row = item as Record<string, unknown>;
-        const line = [row.date, row.type, row.amount].map((v) => String(v ?? "").trim()).filter(Boolean).join(" | ");
+        const line = [formatClaimDateDisplay(row.date) || row.date, row.type, row.amount]
+          .map((v) => String(v ?? "").trim())
+          .filter(Boolean)
+          .join(" | ");
         return line ? `<li>${esc(line)}</li>` : "";
       })
       .filter(Boolean)

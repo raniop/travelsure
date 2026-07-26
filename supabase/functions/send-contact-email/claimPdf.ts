@@ -177,8 +177,33 @@ function yesNo(value: unknown): string {
   return String(value ?? "").trim();
 }
 
+/** Display dates as DD/MM/YYYY (e.g. 11/08/1986). Never locale-dependent. */
+export function formatClaimDateDisplay(value: unknown): string {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const dmy = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (dmy) {
+    const d = dmy[1].padStart(2, "0");
+    const m = dmy[2].padStart(2, "0");
+    return `${d}/${m}/${dmy[3]}`;
+  }
+  const digits = s.replace(/\D/g, "");
+  if (digits.length === 8) {
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  }
+  return s;
+}
+
 function push(rows: PdfRow[], label: string, value: unknown) {
   const text = String(value ?? "").trim();
+  if (!text) return;
+  rows.push({ label, value: text });
+}
+
+function pushDate(rows: PdfRow[], label: string, value: unknown) {
+  const text = formatClaimDateDisplay(value);
   if (!text) return;
   rows.push({ label, value: text });
 }
@@ -194,7 +219,7 @@ export function buildClaimPdfRows(
   push(rows, "סוג מטען", claim.baggageSubtypeLabel);
   push(rows, "שם מלא", claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`.trim());
   push(rows, "תעודת זהות", claim.idNumber);
-  push(rows, "תאריך לידה", claim.birthDate);
+  pushDate(rows, "תאריך לידה", claim.birthDate);
   push(rows, "אימייל", claim.email);
   push(rows, "טלפון נייד", claim.mobile || claim.phone);
   push(rows, "טלפון בבית", claim.homePhone);
@@ -206,9 +231,9 @@ export function buildClaimPdfRows(
   push(rows, "מספר פוליסה", claim.policyNumber);
   push(rows, "סוג פוליסה", claim.policyType);
   push(rows, "סיבת ביטול / קיצור", claim.claimReason);
-  push(rows, "תאריך יציאה", claim.tripStartDate);
-  push(rows, "תאריך חזרה", claim.tripEndDate);
-  push(rows, "תאריך האירוע", claim.incidentDate);
+  pushDate(rows, "תאריך יציאה", claim.tripStartDate);
+  pushDate(rows, "תאריך חזרה", claim.tripEndDate);
+  pushDate(rows, "תאריך האירוע", claim.incidentDate);
   push(rows, "מדינה / מיקום", claim.country);
   push(rows, "תיאור המקרה", claim.details);
   push(rows, "סכום נתבע", claim.totalClaimed || claim.amount);
@@ -223,7 +248,10 @@ export function buildClaimPdfRows(
     claim.expenses.forEach((item, idx) => {
       if (!item || typeof item !== "object") return;
       const row = item as Record<string, unknown>;
-      const line = [row.date, row.type, row.amount].map((v) => String(v ?? "").trim()).filter(Boolean).join(" | ");
+      const line = [formatClaimDateDisplay(row.date) || row.date, row.type, row.amount]
+        .map((v) => String(v ?? "").trim())
+        .filter(Boolean)
+        .join(" | ");
       if (line) push(rows, `הוצאה ${idx + 1}`, line);
     });
   }
