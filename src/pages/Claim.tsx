@@ -14,6 +14,7 @@ import {
   groupClaimPolicies,
   isValidIsraeliId,
   lookupClaimCustomerById,
+  policyTimeBucketForClaimType,
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
 import { ClaimAmountCurrencyFields } from "@/components/claim/ClaimAmountCurrencyFields";
@@ -272,7 +273,14 @@ const Claim = () => {
     () => claimPolicyFilterCopy(claimType, baggageSubtype),
     [claimType, baggageSubtype]
   );
-  const groupedPolicies = useMemo(() => groupClaimPolicies(relevantPolicies), [relevantPolicies]);
+  const policyTimeBucket = useMemo(
+    () => policyTimeBucketForClaimType(claimType, baggageSubtype),
+    [claimType, baggageSubtype]
+  );
+  const groupedPolicies = useMemo(
+    () => groupClaimPolicies(relevantPolicies, policyTimeBucket),
+    [relevantPolicies, policyTimeBucket]
+  );
   const bankBranches = useMemo(
     () => branchesForBank({ banks, branches: allBranches }, formData.bankCode),
     [banks, allBranches, formData.bankCode]

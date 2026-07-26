@@ -373,8 +373,11 @@ export const filterPoliciesForClaimType = (
   baggageSubtype?: BaggageSubtypeForPolicyFilter
 ): ClaimCrmPolicy[] => {
   const bucket = policyTimeBucketForClaimType(claimType, baggageSubtype);
-  if (bucket === "all") return policies;
   const today = startOfTodayMs();
+  if (bucket === "all") {
+    // Still drop policies with unusable dates only when both missing — keep all otherwise
+    return policies;
+  }
   return policies.filter((policy) => isPolicyInTimeBucket(policy, bucket, today));
 };
 
@@ -449,18 +452,40 @@ export const claimPolicyFilterCopy = (
   }
 };
 
-/** Upcoming/active = endDate today or later. Past = already ended. Both grouped by trip year. */
-export const groupClaimPolicies = (policies: ClaimCrmPolicy[]) => {
+/**
+ * Group policies for the claim picker.
+ * - upcoming = currently active (started, not ended), plus future only when bucket allows it
+ * - past = already ended
+ * For "started" / "active" buckets, future trips are never listed (defense in depth).
+ */
+export const groupClaimPolicies = (
+  policies: ClaimCrmPolicy[],
+  bucket: ClaimPolicyTimeBucket = "all"
+) => {
   const today = startOfTodayMs();
+  const allowFuture = bucket === "all" || bucket === "future";
   const upcoming: ClaimCrmPolicy[] = [];
   const past: ClaimCrmPolicy[] = [];
 
   for (const policy of policies) {
     const end = dateMs(policy.endDate);
     const start = dateMs(policy.startDate);
-    const isPast = Number.isFinite(end) ? end < today : Number.isFinite(start) ? start < today : false;
-    if (isPast) past.push(policy);
-    else upcoming.push(policy);
+    const isFuture = Number.isFinite(start) && start > today;
+    const isPast = Number.isFinite(end) ? end < today : false;
+
+    if (isFuture) {
+      if (allowFuture) upcoming.push(policy);
+      continue;
+    }
+    if (isPast) {
+      past.push(policy);
+      continue;
+    }
+    // Active now (started and not ended), or missing end but already started
+    if (bucket === "active" || bucket === "started" || bucket === "all" || bucket === "future") {
+      // "active" bucket input is already filtered; still safe to include here
+      upcoming.push(policy);
+    }
   }
 
   upcoming.sort((a, b) => (dateMs(a.startDate) || 0) - (dateMs(b.startDate) || 0));

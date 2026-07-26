@@ -1049,22 +1049,28 @@
         };
       }
 
-      function groupPolicies(policies) {
-        const todayMs = startOfTodayMs();
+      function groupPolicies(policies, bucket) {
+        const today = startOfTodayMs();
+        const allowFuture = !bucket || bucket === "all" || bucket === "future";
         const upcoming = [];
         const past = [];
         for (const policy of policies) {
           const end = dateMs(policy.endDate);
           const start = dateMs(policy.startDate);
-          const isPast = Number.isFinite(end) ? end < todayMs : Number.isFinite(start) ? start < todayMs : false;
-          if (isPast) past.push(policy);
-          else upcoming.push(policy);
+          const isFuture = Number.isFinite(start) && start > today;
+          const isPast = Number.isFinite(end) ? end < today : false;
+          if (isFuture) {
+            if (allowFuture) upcoming.push(policy);
+            continue;
+          }
+          if (isPast) {
+            past.push(policy);
+            continue;
+          }
+          upcoming.push(policy);
         }
         upcoming.sort((a, b) => (dateMs(a.startDate) || 0) - (dateMs(b.startDate) || 0));
-        past.sort(
-          (a, b) =>
-            (dateMs(b.endDate) || dateMs(b.startDate) || 0) - (dateMs(a.endDate) || dateMs(a.startDate) || 0)
-        );
+        past.sort((a, b) => (dateMs(b.endDate) || dateMs(b.startDate) || 0) - (dateMs(a.endDate) || dateMs(a.startDate) || 0));
         return {
           upcoming,
           past,
@@ -1126,7 +1132,8 @@
         $("policyHello").textContent = crmCustomer?.primaryName
           ? `שלום ${crmCustomer.primaryName} — ${copy.listHint}`
           : copy.listHint;
-        const { upcoming, past, upcomingByYear, pastByYear } = groupPolicies(relevant);
+        const bucket = policyTimeBucketForClaimType(claimType, baggageSubtype);
+        const { upcoming, past, upcomingByYear, pastByYear } = groupPolicies(relevant, bucket);
         let html = "";
         if (upcoming.length) {
           html += `<section class="policy-section">
