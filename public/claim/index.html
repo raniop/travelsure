@@ -271,51 +271,51 @@
       .banner .tag { font-size: 12px; font-weight: 800; color: var(--brand); letter-spacing: .04em; }
       .banner h3 { margin: 2px 0 0; border: 0; padding: 0; font-size: 18px; }
 
-      .docs-progress {
-        margin: 14px 0 18px; padding: 12px 14px; border-radius: 16px; background: #e8f4f1;
+      .docs-progress-note { margin: 0 0 14px; font-size: 13px; color: #64748b; }
+      .docs-section-title {
+        margin: 16px 0 8px; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .04em;
       }
-      .docs-progress-top { display:flex; justify-content:space-between; gap:10px; font-size:14px; font-weight:800; color:var(--brand-dark); }
-      .docs-progress-bar { margin-top:8px; height:8px; border-radius:999px; background:rgba(255,255,255,.85); overflow:hidden; }
-      .docs-progress-fill { height:100%; border-radius:999px; background:var(--brand); transition:width .35s ease; }
-      .docs-progress-fill.done { background:#059669; }
-      .docs-progress-note { margin:8px 0 0; font-size:12px; color:#64748b; }
-      .docs-section-title { margin:18px 0 10px; font-size:14px; font-weight:900; color:var(--brand-dark); }
-      .docs-section-sub { margin:-6px 0 10px; font-size:12px; color:#94a3b8; }
       .doc-card {
-        border:1px solid #e2e8f0; border-radius:18px; padding:14px; background:#fff; margin-bottom:10px;
+        border: 1px solid #f1f5f9; border-radius: 14px; padding: 12px 14px; background: #fff; margin-bottom: 8px;
       }
-      .doc-card.done { border-color:#6ee7b7; background:rgba(236,253,245,.85); }
-      .doc-card-row { display:flex; gap:12px; align-items:flex-start; }
+      .doc-card.done { border-color: rgba(167, 243, 208, .9); background: rgba(236, 253, 245, .45); }
+      .doc-card-row { display: flex; gap: 12px; align-items: flex-start; }
       .doc-num {
-        width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center;
-        font-weight:900; font-size:14px; background:#f1f5f9; color:#64748b; flex-shrink:0;
+        width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; margin-top: 1px; border: 1px solid #e2e8f0; background: transparent; color: transparent;
+        font-size: 14px; font-weight: 700;
       }
-      .doc-card.done .doc-num { background:#10b981; color:#fff; }
-      .doc-title { margin:0; font-size:16px; font-weight:900; color:var(--brand-dark); }
-      .doc-card.done .doc-title { color:#065f46; }
-      .doc-hint { margin:3px 0 0; font-size:12px; color:#64748b; }
-      .doc-files { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
+      .doc-card.done .doc-num {
+        border-color: #10b981; background: #10b981; color: #fff;
+        box-shadow: 0 4px 10px -4px rgba(16, 185, 129, .45);
+      }
+      .doc-title { margin: 0; font-size: 14px; font-weight: 700; color: #1e293b; display: inline; }
+      .doc-card.done .doc-title { color: #065f46; }
+      .doc-status { margin-inline-start: 8px; font-size: 11px; color: #94a3b8; font-weight: 600; }
+      .doc-card.done .doc-status { color: #059669; }
+      .doc-hint { margin: 3px 0 0; font-size: 12px; color: #94a3b8; line-height: 1.45; }
+      .doc-files { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
       .doc-files li {
-        display:flex; align-items:center; gap:8px; background:#fff; border-radius:12px; padding:10px 12px;
-        box-shadow:0 1px 0 rgba(15,23,42,.04); border:1px solid #d1fae5; font-size:13px;
+        display: flex; align-items: center; gap: 8px; font-size: 12px; color: #475569;
       }
-      .doc-files .file-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+      .doc-files .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .doc-files .remove-file {
-        border:0; background:transparent; color:#e11d48; font-weight:800; font-size:12px; cursor:pointer; font-family:inherit;
+        border: 0; background: transparent; color: #94a3b8; font-weight: 600; font-size: 12px;
+        cursor: pointer; font-family: inherit;
       }
+      .doc-files .remove-file:hover { color: #e11d48; }
       .doc-upload-btn {
-        margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px;
-        width:100%; border:0; border-radius:14px; padding:12px 14px; font-family:inherit;
-        font-size:14px; font-weight:800; cursor:pointer; background:var(--brand); color:#fff;
+        margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;
+        border: 0; background: transparent; padding: 0; font-family: inherit;
+        font-size: 12px; font-weight: 700; cursor: pointer; color: var(--brand);
       }
-      .doc-card.done .doc-upload-btn {
-        background:#fff; color:#047857; border:1px solid #a7f3d0;
-      }
-      .extra-link { margin-top:14px; }
+      .doc-upload-btn:hover { color: var(--brand-mid); }
+      .extra-link { margin-top: 14px; }
       .extra-link button {
-        border:0; background:transparent; color:var(--brand); font-weight:800; font-size:14px;
-        cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;
+        border: 0; background: transparent; color: #94a3b8; font-weight: 600; font-size: 12px;
+        cursor: pointer; font-family: inherit;
       }
+      .extra-link button:hover { color: var(--brand); }
 
       .drop {
         display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
@@ -533,16 +533,8 @@
         </form>
 
         <div id="step-files" class="hidden">
-          <h2 style="margin:0;font-size:24px;color:var(--brand-dark);font-weight:900">צרפו מסמכים</h2>
-          <p class="muted" style="margin:6px 0 0">לחצו על כל כפתור העלאה וצרפו קובץ. אפשר גם לשלוח בלי הכל.</p>
-          <div class="docs-progress" id="docsProgressBox">
-            <div class="docs-progress-top">
-              <span>מסמכי חובה</span>
-              <span id="docsProgressCount">0 מתוך 0</span>
-            </div>
-            <div class="docs-progress-bar"><div class="docs-progress-fill" id="docsProgressFill" style="width:0%"></div></div>
-            <p class="docs-progress-note" id="docsProgressNote">אפשר להמשיך גם בלי להשלים הכול</p>
-          </div>
+          <h2 style="margin:0;font-size:20px;color:var(--brand-dark);font-weight:800">צרפו מסמכים</h2>
+          <p class="docs-progress-note" id="docsProgressNote">0 מתוך 0 מסמכי חובה · אפשר גם לשלוח בלי הכל</p>
           <div id="filesTypeLabel" class="hidden"></div>
           <div id="docsList"></div>
           <div class="extra-link">
@@ -1556,24 +1548,16 @@
         if (!list) return;
         const reqs = getDocumentRequirements();
         const progress = docsProgressState();
-        const countEl = $("docsProgressCount");
-        const fillEl = $("docsProgressFill");
         const noteEl = $("docsProgressNote");
-        if (countEl) countEl.textContent = progress.doneCount + " מתוך " + progress.requiredCount;
-        if (fillEl) {
-          const pct = progress.requiredCount ? Math.round((progress.doneCount / progress.requiredCount) * 100) : 0;
-          fillEl.style.width = pct + "%";
-          fillEl.classList.toggle("done", !!progress.complete);
-        }
         if (noteEl) {
           noteEl.textContent = progress.complete
-            ? "מעולה — כל מסמכי החובה צורפו"
-            : "אפשר להמשיך גם בלי להשלים הכול";
+            ? "כל מסמכי החובה צורפו — אפשר לשלוח"
+            : (progress.doneCount + " מתוך " + progress.requiredCount + " מסמכי חובה · אפשר גם לשלוח בלי הכל");
         }
         const submitBtn = $("submitBtn");
         if (submitBtn && submitBtn.textContent !== "שולח...") submitBtn.disabled = false;
 
-        function cardHtml(doc, index) {
+        function cardHtml(doc) {
           const files = docFilesMap[doc.id] || [];
           const done = files.length > 0;
           const filesHtml = files
@@ -1585,15 +1569,19 @@
                 </li>`
             )
             .join("");
+          const status = done ? "צורף" : doc.required ? "חובה" : "לא חובה";
           return `<div class="doc-card ${done ? "done" : ""}" data-doc-id="${doc.id}">
             <div class="doc-card-row">
-              <div class="doc-num">${done ? "✓" : index + 1}</div>
+              <div class="doc-num">${done ? "✓" : ""}</div>
               <div style="flex:1;min-width:0">
-                <p class="doc-title">${doc.label}</p>
+                <div>
+                  <span class="doc-title">${doc.label}</span>
+                  <span class="doc-status">${status}</span>
+                </div>
                 ${doc.hint ? `<p class="doc-hint">${doc.hint}</p>` : ""}
                 ${filesHtml ? `<ul class="doc-files">${filesHtml}</ul>` : ""}
                 <label class="doc-upload-btn">
-                  ${done ? "הוספת קובץ נוסף" : doc.required ? "העלאת קובץ" : "העלאת קובץ (לא חובה)"}
+                  ${done ? "הוספת קובץ" : "בחירת קובץ"}
                   <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" data-doc-upload="${doc.id}" hidden />
                 </label>
               </div>
@@ -1606,12 +1594,11 @@
         let html = "";
         if (required.length) {
           html += `<div class="docs-section-title">מה צריך לצרף</div>`;
-          html += required.map((d, i) => cardHtml(d, i)).join("");
+          html += required.map((d) => cardHtml(d)).join("");
         }
         if (optional.length) {
           html += `<div class="docs-section-title">רק אם רלוונטי</div>`;
-          html += `<div class="docs-section-sub">אפשר לדלג על אלה</div>`;
-          html += optional.map((d, i) => cardHtml(d, i)).join("");
+          html += optional.map((d) => cardHtml(d)).join("");
         }
         list.innerHTML = html;
         flattenAttachedFiles();

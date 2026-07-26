@@ -1695,73 +1695,70 @@ const Claim = () => {
 
           {step === "files" && claimType && activeMeta ? (
             <div className="p-6 sm:p-9">
-              <div className="mb-5">
-                <h2 className="text-2xl font-extrabold text-[#143834]">צרפו מסמכים</h2>
-                <p className="mt-1 text-sm text-slate-500">לחצו על כל כפתור העלאה וצרפו קובץ. אפשר גם לשלוח בלי הכל.</p>
-              </div>
-
-              <div className="mb-6 rounded-2xl bg-[#e8f4f1] px-4 py-3">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-bold text-[#143834]">מסמכי חובה</span>
-                  <span className={`font-extrabold ${docsComplete ? "text-emerald-700" : "text-[#2f6b63]"}`}>
-                    {requiredDocsDone} מתוך {requiredDocsCount}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
-                  <div
-                    className={`h-full rounded-full transition-all ${docsComplete ? "bg-emerald-500" : "bg-[#2f6b63]"}`}
-                    style={{
-                      width: `${requiredDocsCount ? Math.round((requiredDocsDone / requiredDocsCount) * 100) : 0}%`,
-                    }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  {docsComplete ? "מעולה — כל מסמכי החובה צורפו" : "אפשר להמשיך גם בלי להשלים הכול"}
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-[#143834]">צרפו מסמכים</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {docsComplete
+                    ? "כל מסמכי החובה צורפו — אפשר לשלוח"
+                    : `${requiredDocsDone} מתוך ${requiredDocsCount} מסמכי חובה · אפשר גם לשלוח בלי הכל`}
                 </p>
               </div>
 
               {(() => {
                 const requiredList = documentRequirements.filter((d) => d.required);
                 const optionalList = documentRequirements.filter((d) => !d.required);
-                const renderDocCard = (doc: (typeof documentRequirements)[number], index: number, required: boolean) => {
+                const renderDocRow = (doc: (typeof documentRequirements)[number], required: boolean) => {
                   const attached = docFiles[doc.id] || [];
                   const done = attached.length > 0;
                   return (
                     <div
                       key={doc.id}
-                      className={`rounded-2xl border p-4 transition ${
-                        done ? "border-emerald-300 bg-emerald-50/80" : "border-slate-200 bg-white"
+                      className={`rounded-xl border px-3.5 py-3 transition ${
+                        done
+                          ? "border-emerald-200/80 bg-emerald-50/50"
+                          : "border-slate-150 border-slate-100 bg-white"
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${
-                            done ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"
+                          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                            done
+                              ? "bg-emerald-500 text-white shadow-sm shadow-emerald-200"
+                              : "border border-slate-200 bg-transparent text-slate-300"
                           }`}
                           aria-hidden
                         >
-                          {done ? <Check className="h-5 w-5" /> : index + 1}
+                          {done ? <Check className="h-4 w-4 stroke-[2.5]" /> : null}
                         </div>
+
                         <div className="min-w-0 flex-1">
-                          <p className={`text-base font-extrabold ${done ? "text-emerald-800" : "text-[#143834]"}`}>
-                            {doc.label}
-                          </p>
-                          {doc.hint ? <p className="mt-0.5 text-xs text-slate-500">{doc.hint}</p> : null}
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <p className={`text-sm font-semibold ${done ? "text-emerald-800" : "text-slate-800"}`}>
+                              {doc.label}
+                            </p>
+                            {done ? (
+                              <span className="text-[11px] font-semibold text-emerald-600">צורף</span>
+                            ) : required ? (
+                              <span className="text-[11px] text-slate-400">חובה</span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400">לא חובה</span>
+                            )}
+                          </div>
+                          {doc.hint ? <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{doc.hint}</p> : null}
 
                           {attached.length > 0 ? (
-                            <ul className="mt-3 space-y-2">
+                            <ul className="mt-2 space-y-1">
                               {attached.map((file, fileIndex) => (
                                 <li
                                   key={`${doc.id}-${file.name}-${file.lastModified}-${fileIndex}`}
-                                  className="flex items-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm shadow-sm ring-1 ring-emerald-100"
+                                  className="flex items-center gap-2 text-xs text-slate-600"
                                 >
-                                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-                                  <span className="min-w-0 flex-1 truncate font-medium" title={file.name}>
+                                  <span className="min-w-0 flex-1 truncate" title={file.name}>
                                     {file.name}
                                   </span>
                                   <button
                                     type="button"
-                                    className="shrink-0 text-xs font-bold text-rose-600"
+                                    className="shrink-0 text-slate-400 hover:text-rose-500"
                                     onClick={() => removeDocFile(doc.id, fileIndex)}
                                   >
                                     הסרה
@@ -1771,15 +1768,9 @@ const Claim = () => {
                             </ul>
                           ) : null}
 
-                          <label
-                            className={`mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                              done
-                                ? "border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-                                : "bg-[#2f6b63] text-white shadow-sm hover:bg-[#265a53]"
-                            }`}
-                          >
-                            <FileUp className="h-4 w-4" />
-                            {done ? "הוספת קובץ נוסף" : required ? "העלאת קובץ" : "העלאת קובץ (לא חובה)"}
+                          <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[#2f6b63] transition hover:text-[#1f4b46]">
+                            <FileUp className="h-3.5 w-3.5" />
+                            {done ? "הוספת קובץ" : "בחירת קובץ"}
                             <input
                               type="file"
                               multiple
@@ -1798,29 +1789,26 @@ const Claim = () => {
                 };
 
                 return (
-                  <div className="space-y-6">
-                    <section className="space-y-3">
-                      <h3 className="text-sm font-extrabold text-[#143834]">מה צריך לצרף</h3>
-                      {requiredList.map((doc, index) => renderDocCard(doc, index, true))}
+                  <div className="space-y-5">
+                    <section className="space-y-2">
+                      <h3 className="text-xs font-semibold tracking-wide text-slate-400">מה צריך לצרף</h3>
+                      <div className="space-y-2">{requiredList.map((doc) => renderDocRow(doc, true))}</div>
                     </section>
 
                     {optionalList.length ? (
-                      <section className="space-y-3">
-                        <div>
-                          <h3 className="text-sm font-extrabold text-slate-600">רק אם רלוונטי</h3>
-                          <p className="text-xs text-slate-400">אפשר לדלג על אלה</p>
-                        </div>
-                        {optionalList.map((doc, index) => renderDocCard(doc, index, false))}
+                      <section className="space-y-2">
+                        <h3 className="text-xs font-semibold tracking-wide text-slate-400">רק אם רלוונטי</h3>
+                        <div className="space-y-2">{optionalList.map((doc) => renderDocRow(doc, false))}</div>
                       </section>
                     ) : null}
                   </div>
                 );
               })()}
 
-              <div className="mt-6">
+              <div className="mt-5">
                 <button
                   type="button"
-                  className="text-sm font-bold text-[#2f6b63] underline-offset-2 hover:underline"
+                  className="text-xs font-medium text-slate-400 transition hover:text-[#2f6b63]"
                   onClick={() => {
                     const input = document.getElementById("claim-extra-files-input") as HTMLInputElement | null;
                     input?.click();
@@ -1840,16 +1828,16 @@ const Claim = () => {
                   }}
                 />
                 {extraFiles.length > 0 ? (
-                  <ul className="mt-3 space-y-2">
+                  <ul className="mt-2 space-y-1">
                     {extraFiles.map((file, index) => (
                       <li
                         key={`extra-${file.name}-${file.lastModified}-${index}`}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                        className="flex items-center gap-2 text-xs text-slate-600"
                       >
                         <span className="min-w-0 flex-1 truncate">{file.name}</span>
                         <button
                           type="button"
-                          className="text-xs font-bold text-rose-600"
+                          className="text-slate-400 hover:text-rose-500"
                           onClick={() => removeExtraFileAt(index)}
                         >
                           הסרה
@@ -1862,25 +1850,25 @@ const Claim = () => {
 
               {errors.files ? <p className="mt-3 text-sm text-rose-600">{errors.files}</p> : null}
 
-              <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                <Button type="button" variant="outline" className="h-12 rounded-2xl" onClick={() => setStep("details")} disabled={isSubmitting}>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => setStep("details")} disabled={isSubmitting}>
                   חזרה
                 </Button>
                 <Button
                   type="button"
                   size="lg"
-                  className="claim-cta h-12 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[240px] disabled:opacity-50"
+                  className="claim-cta h-11 rounded-xl bg-[#2f6b63] text-sm font-semibold text-white hover:bg-[#265a53] sm:min-w-[200px] disabled:opacity-50"
                   disabled={isSubmitting}
                   onClick={handleSubmit}
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       שולח...
                     </>
                   ) : (
                     <>
-                      <Send className="h-5 w-5" />
+                      <Send className="h-4 w-4" />
                       שליחת תביעה
                     </>
                   )}
