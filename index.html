@@ -32,6 +32,7 @@
       try {
         const pathname = window.location.pathname;
         const isBBQPage = pathname === '/bbq' || pathname === '/on-the-fire' || pathname.startsWith('/bbq/') || pathname.startsWith('/on-the-fire/');
+        const isForeignersPage = /^\/[Ff]oreigners\/?$/.test(pathname) || pathname.toLowerCase().startsWith('/foreigners/');
         
         // Helper function to update or create meta tag
         const updateMeta = (property, content, attribute = 'property') => {
@@ -43,6 +44,22 @@
           }
           meta.setAttribute('content', content);
         };
+
+        if (isForeignersPage) {
+          const foreignersTitle = 'ביטוח עובדים זרים | TravelSure';
+          const foreignersDescription = 'טופס דיגיטלי להצעת ביטוח בריאות לעובדים זרים ולהצהרת בריאות. ממלאים פעם אחת — ושולחים מסודר.';
+          const foreignersImage = 'https://storage.googleapis.com/gpt-engineer-file-uploads/q3iGkYfOr8SjXG6j6dVfK26pWLf1/social-images/social-1767182146432-לוגו אופיר חדש.png';
+          document.title = foreignersTitle;
+          updateMeta('og:title', foreignersTitle);
+          updateMeta('twitter:title', foreignersTitle, 'name');
+          updateMeta('og:description', foreignersDescription);
+          updateMeta('twitter:description', foreignersDescription, 'name');
+          updateMeta('description', foreignersDescription, 'name');
+          updateMeta('og:image', foreignersImage);
+          updateMeta('twitter:image', foreignersImage, 'name');
+          updateMeta('og:url', 'https://travelsure.co.il/Foreigners/');
+          return;
+        }
         
         if (isBBQPage) {
           // BBQ page - check for group in localStorage

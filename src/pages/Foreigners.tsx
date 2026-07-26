@@ -450,25 +450,22 @@ const Foreigners = () => {
           <div className="h-1.5 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
           <div className="p-5 sm:p-7">
             {step === "intro" && (
-              <div className="space-y-5 text-right">
+              <div className="mx-auto max-w-md space-y-5 text-center">
                 <h2 className="text-xl font-bold text-[#143834]">איך זה עובד?</h2>
-                <ol className="space-y-3 text-sm text-slate-600">
-                  <li className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">1</span>
-                    ממלאים את פרטי העובד והמעסיק
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">2</span>
-                    עונים על הצהרת הבריאות (אפשר לסמן הכל כ־לא בלחיצה)
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">3</span>
-                    מזינים פרטי תשלום (או משאירים לנו ליצור קשר)
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">4</span>
-                    שולחים — ואנחנו מקבלים הכל מסודר במייל
-                  </li>
+                <ol className="mx-auto max-w-sm space-y-3 text-sm text-slate-600">
+                  {[
+                    "ממלאים את פרטי העובד והמעסיק",
+                    "עונים על הצהרת הבריאות (אפשר לסמן הכל כ־לא בלחיצה)",
+                    "מזינים פרטי תשלום (או משאירים לנו ליצור קשר)",
+                    "שולחים — ואנחנו מקבלים הכל מסודר במייל",
+                  ].map((text, i) => (
+                    <li key={text} className="flex items-center justify-center gap-3 text-right">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">
+                        {i + 1}
+                      </span>
+                      <span className="flex-1">{text}</span>
+                    </li>
+                  ))}
                 </ol>
                 <div className="rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-4 text-sm text-slate-600">
                   הטופס מחליף את שני קבצי ה־PDF: הצעה לביטוח + הצהרת בריאות באנגלית. אין צורך להדפיס, לסרוק או לשלוח בוואטסאפ.
