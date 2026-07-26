@@ -58,6 +58,27 @@ type BidiRun = { text: string; ltr: boolean };
 const isRtlChar = (ch: string) => /[\u0590-\u05FF]/.test(ch);
 const isLtrStrong = (ch: string) => /[0-9A-Za-z]/.test(ch);
 
+/**
+ * Paired punctuation must be mirrored in RTL glyph-by-glyph drawing.
+ * Without this, "(שלא באשפוז)" renders as ")שלא באשפוז(".
+ */
+const RTL_MIRROR: Record<string, string> = {
+  "(": ")",
+  ")": "(",
+  "[": "]",
+  "]": "[",
+  "{": "}",
+  "}": "{",
+  "<": ">",
+  ">": "<",
+  "«": "»",
+  "»": "«",
+};
+
+export function mirrorRtlChar(ch: string): string {
+  return RTL_MIRROR[ch] || ch;
+}
+
 /** Split logical text into LTR / RTL runs for a right-to-left paragraph. */
 export function splitBidiRuns(input: unknown): BidiRun[] {
   const text = String(input ?? "");
@@ -134,11 +155,13 @@ export function drawAlignedRtl(
       x -= w;
       page.drawText(run.text, { x, y, size, font, color });
     } else {
-      // Draw Hebrew (and neutrals in RTL runs) one glyph at a time, logical order, right→left
+      // Draw Hebrew (and neutrals in RTL runs) one glyph at a time, logical order, right→left.
+      // Mirror paired punctuation so parentheses look correct in RTL.
       for (const ch of [...run.text]) {
-        const w = widthOf(ch, font, size);
+        const drawn = mirrorRtlChar(ch);
+        const w = widthOf(drawn, font, size);
         x -= w;
-        page.drawText(ch, { x, y, size, font, color });
+        page.drawText(drawn, { x, y, size, font, color });
       }
     }
   }
