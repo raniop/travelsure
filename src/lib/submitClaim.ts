@@ -70,14 +70,21 @@ const buildClaimMessage = (payload: Record<string, unknown>, files: File[], clai
 
 type InvokeResult = { ok: boolean; mode?: string; claimNumber?: string };
 
+export type ClaimSubmitProgress = "preparing" | "uploading" | "sending";
+
 /** Submit claim via live Supabase contact function (CORS-safe). Always notifies Rani + Eli. */
-export async function submitClaimRequest(payload: Record<string, unknown>, files: File[]) {
+export async function submitClaimRequest(
+  payload: Record<string, unknown>,
+  files: File[],
+  onProgress?: (phase: ClaimSubmitProgress) => void
+) {
   // Leave claimNumber empty so the edge function allocates 20260001, 20260002, ...
   const pendingNumber = String(payload.claimNumber || "").trim();
   const fullPayload = { ...payload };
   if (pendingNumber) fullPayload.claimNumber = pendingNumber;
   else delete fullPayload.claimNumber;
 
+  onProgress?.(files.length ? "preparing" : "sending");
   const attachments = await Promise.all(
     files.map(async (file) => {
       const content = await fileToBase64(file);
@@ -91,6 +98,8 @@ export async function submitClaimRequest(payload: Record<string, unknown>, files
       };
     })
   );
+  if (files.length) onProgress?.("uploading");
+  onProgress?.("sending");
 
   const messagePlaceholder = pendingNumber || "יוקצה בעת השליחה";
   const message = buildClaimMessage(fullPayload, files, messagePlaceholder);

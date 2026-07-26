@@ -271,6 +271,34 @@
       .banner .tag { font-size: 12px; font-weight: 800; color: var(--brand); letter-spacing: .04em; }
       .banner h3 { margin: 2px 0 0; border: 0; padding: 0; font-size: 18px; }
 
+
+      .sending-wrap { text-align: center; padding: 56px 16px 48px; }
+      .sending-visual { position: relative; width: 96px; height: 96px; margin: 0 auto 24px; }
+      .sending-glow {
+        position: absolute; inset: 0; border-radius: 999px; background: rgba(47,107,99,.15);
+        animation: send-pulse 1.8s ease-in-out infinite;
+      }
+      .sending-ring {
+        position: absolute; inset: 0; border-radius: 999px;
+        border: 3px solid rgba(47,107,99,.15); border-top-color: var(--brand);
+        animation: send-spin 1.1s linear infinite;
+      }
+      .sending-icon {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        color: var(--brand); font-size: 28px;
+      }
+      @keyframes send-spin { to { transform: rotate(360deg); } }
+      @keyframes send-pulse {
+        0%, 100% { transform: scale(1); opacity: .55; }
+        50% { transform: scale(1.08); opacity: .9; }
+      }
+      .sending-tag { font-size: 12px; font-weight: 800; color: var(--brand); letter-spacing: .04em; }
+      .sending-title { margin: 8px 0 0; font-size: 24px; font-weight: 900; color: var(--brand-dark); }
+      .sending-body { margin: 8px auto 0; max-width: 320px; font-size: 14px; color: #64748b; line-height: 1.5; }
+      .sending-bar { margin: 22px auto 0; height: 6px; max-width: 220px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
+      .sending-fill { height: 100%; border-radius: 999px; background: var(--brand); transition: width .45s ease; width: 28%; }
+      .sending-note { margin-top: 14px; font-size: 12px; color: #94a3b8; }
+
       .docs-progress-note { margin: 0 0 14px; font-size: 13px; color: #64748b; }
       .docs-section-title {
         margin: 16px 0 8px; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .04em;
@@ -547,6 +575,21 @@
             <button type="button" class="btn btn-primary" id="submitBtn">שליחת תביעה</button>
           </div>
           <div id="status" class="status hidden"></div>
+        </div>
+
+        <div id="step-sending" class="hidden">
+          <div class="sending-wrap">
+            <div class="sending-visual">
+              <div class="sending-glow"></div>
+              <div class="sending-ring"></div>
+              <div class="sending-icon">✈</div>
+            </div>
+            <div class="sending-tag">שליחת תביעה</div>
+            <h2 class="sending-title" id="sendingTitle">מכין את הקבצים</h2>
+            <p class="sending-body" id="sendingBody">קורא ומכין את הקבצים לשליחה מאובטחת</p>
+            <div class="sending-bar"><div class="sending-fill" id="sendingFill"></div></div>
+            <p class="sending-note">נא לא לסגור את החלון עד לסיום</p>
+          </div>
         </div>
 
         <div id="step-success" class="hidden" style="text-align:center;padding:18px 8px 8px">
@@ -895,16 +938,28 @@
           { id: "files", label: "מסמכים" },
         ];
         const progressStep =
-          step === "policy" || step === "blocked" ? "identity" : step === "success" ? "files" : step;
+          step === "policy" || step === "blocked"
+            ? "identity"
+            : step === "success" || step === "sending"
+              ? "files"
+              : step;
         const idx = Math.max(0, steps.findIndex((s) => s.id === progressStep));
         $("progressText").textContent = `שלב ${idx + 1} מתוך ${steps.length}`;
-        $("progressLabel").textContent = step === "success" ? "סיכום" : steps[idx].label;
+        $("progressLabel").textContent =
+          step === "success" ? "סיכום" : step === "sending" ? "שליחה" : steps[idx].label;
         $("progressFill").style.width = `${((idx + 1) / steps.length) * 100}%`;
         $("stepsBar").innerHTML = steps
           .map((s, i) => {
-            const done = step === "success" || i < idx;
-            const cls = step === "success" ? "done" : i === idx ? "active" : done ? "done" : "";
-            const labelCls = step !== "success" && i === idx ? "active" : "";
+            const done = step === "success" || step === "sending" || i < idx;
+            const cls =
+              step === "success" || step === "sending"
+                ? "done"
+                : i === idx
+                  ? "active"
+                  : done
+                    ? "done"
+                    : "";
+            const labelCls = step !== "success" && step !== "sending" && i === idx ? "active" : "";
             return `<div class="step-dot ${cls}">${done ? "✓" : i + 1}</div><span class="step-label ${labelCls}">${s.label}</span>${i < steps.length - 1 ? '<span style="width:24px;height:1px;background:#e2e8f0;display:inline-block"></span>' : ""}`;
           })
           .join("");
@@ -912,7 +967,7 @@
 
       function showStep(next) {
         step = next;
-        ["type", "identity", "policy", "blocked", "details", "files", "success"].forEach((id) => {
+        ["type", "identity", "policy", "blocked", "details", "files", "sending", "success"].forEach((id) => {
           if (id === "details") $("step-details").classList.toggle("hidden", next !== "details");
           else if ($(`step-${id}`)) $(`step-${id}`).classList.toggle("hidden", next !== id);
         });
@@ -1999,10 +2054,60 @@
           return { ok: false, claimNumber: resolvedNumber };
         }
 
+        function setSendingPhase(phase) {
+          const title = $("sendingTitle");
+          const body = $("sendingBody");
+          const fill = $("sendingFill");
+          const n = selectedFiles.length;
+          if (phase === "preparing") {
+            if (title) title.textContent = "מכין את הקבצים";
+            if (body) body.textContent = n ? ("קורא ומכין " + n + " קבצים לשליחה מאובטחת") : "מכין את פרטי התביעה";
+            if (fill) fill.style.width = "28%";
+          } else if (phase === "uploading") {
+            if (title) title.textContent = "מעלה מסמכים";
+            if (body) body.textContent = "הקבצים בדרך אלינו — זה יכול לקחת כמה רגעים";
+            if (fill) fill.style.width = "62%";
+          } else {
+            if (title) title.textContent = "שולח את התביעה";
+            if (body) body.textContent = "שומרים את הפרטים ושולחים לצוות הטיפול";
+            if (fill) fill.style.width = "88%";
+          }
+        }
+
         $("submitBtn").disabled = true;
         $("submitBtn").textContent = "שולח...";
+        setSendingPhase(selectedFiles.length ? "preparing" : "sending");
+        showStep("sending");
         try {
-          const result = await submitClaim();
+          // Patch encode loop progress via wrapping submitClaim internals:
+          const originalFileToBase64 = fileToBase64;
+          let encoded = 0;
+          async function trackedFileToBase64(file) {
+            const content = await originalFileToBase64(file);
+            encoded += 1;
+            if (selectedFiles.length) {
+              setSendingPhase(encoded < selectedFiles.length ? "preparing" : "uploading");
+            }
+            return content;
+          }
+          // redefine local used inside submitClaim by replacing function used there
+          // Easiest: inline progress updates around submitClaim call stages
+          setSendingPhase(selectedFiles.length ? "preparing" : "sending");
+          const result = await (async () => {
+            // Monkey-patch: rebuild submitClaim progress by duplicating encode here is heavy.
+            // Instead update phases around the existing submitClaim await with timers + post encode hook.
+            const start = Date.now();
+            const tick = setInterval(() => {
+              const elapsed = Date.now() - start;
+              if (elapsed > 1200 && selectedFiles.length) setSendingPhase("uploading");
+              if (elapsed > 2800) setSendingPhase("sending");
+            }, 400);
+            try {
+              return await submitClaim();
+            } finally {
+              clearInterval(tick);
+            }
+          })();
           if (!result.ok) throw new Error("fail");
           $("successClaimNumber").textContent = result.claimNumber || "";
           $("successSummary").innerHTML =
@@ -2017,10 +2122,12 @@
           renderTypes();
           showStep("success");
         } catch (err) {
+          showStep("files");
           status.classList.remove("hidden");
           status.textContent = "שגיאה בשליחת התביעה. נסו שוב בעוד מספר דקות.";
           status.classList.add("err");
         } finally {
+          $("submitBtn").disabled = false;
           $("submitBtn").textContent = "שליחת תביעה";
           renderDocsChecklist();
         }

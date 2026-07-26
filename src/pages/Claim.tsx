@@ -53,7 +53,8 @@ import {
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
 type BaggageSubtype = "loss_theft" | "delay";
-type Step = "type" | "identity" | "policy" | "details" | "files" | "blocked" | "success";
+type Step = "type" | "identity" | "policy" | "details" | "files" | "sending" | "blocked" | "success";
+type SubmitPhase = "preparing" | "uploading" | "sending";
 type YesNo = "" | "yes" | "no";
 
 type ExpenseRow = { date: string; type: string; amount: string; receiptAttached: boolean };
@@ -222,6 +223,8 @@ const Claim = () => {
   const [claimType, setClaimType] = useState<ClaimType | null>(null);
   const [baggageSubtype, setBaggageSubtype] = useState<BaggageSubtype | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("preparing");
+  const [submitFilesCount, setSubmitFilesCount] = useState(0);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupId, setLookupId] = useState("");
   const [lookupError, setLookupError] = useState("");
@@ -617,14 +620,22 @@ const Claim = () => {
   };
 
   const handleSubmit = async () => {
-    if (!claimType || !activeMeta || !validateFiles()) return;
+    if (!claimType || !activeMeta || isSubmitting || !validateFiles()) return;
+    const filesSnapshot = [...allAttachedFiles];
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+    const claimTypeLabel = activeMeta.title;
+    const emailSnapshot = formData.email;
+
     setIsSubmitting(true);
+    setSubmitFilesCount(filesSnapshot.length);
+    setSubmitPhase(filesSnapshot.length ? "preparing" : "sending");
+    setStep("sending");
+
     try {
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const payload = {
         ...formData,
         claimType,
-        claimTypeLabel: activeMeta.title,
+        claimTypeLabel,
         baggageSubtype: claimType === "baggage" ? baggageSubtype : undefined,
         baggageSubtypeLabel:
           claimType === "baggage" && baggageSubtype ? baggageSubtypeMeta[baggageSubtype].title : undefined,
@@ -647,15 +658,15 @@ const Claim = () => {
         submittedAt: new Date().toISOString(),
       };
 
-      const result = await submitClaimRequest(payload, allAttachedFiles);
+      const result = await submitClaimRequest(payload, filesSnapshot, setSubmitPhase);
       if (!result.ok) throw new Error(result.error || "claim_submit_failed");
 
       setSubmittedClaimNumber(result.claimNumber || "");
       setSubmittedSummary({
         fullName,
-        claimTypeLabel: activeMeta.title,
-        email: formData.email,
-        filesCount: allAttachedFiles.length,
+        claimTypeLabel,
+        email: emailSnapshot,
+        filesCount: filesSnapshot.length,
       });
 
       setFormData(initialForm);
@@ -674,6 +685,7 @@ const Claim = () => {
       setStep("success");
     } catch (error) {
       console.error("Claim submit failed:", error);
+      setStep("files");
       toast({
         title: "שגיאה בשליחת התביעה",
         description: "אנא נסה שוב בעוד מספר דקות.",
@@ -693,9 +705,26 @@ const Claim = () => {
   const progressStep: Step =
     step === "policy" || step === "blocked"
       ? "identity"
-      : step === "success"
+      : step === "success" || step === "sending"
         ? "files"
         : step;
+  const submitPhaseCopy: Record<SubmitPhase, { title: string; body: string }> = {
+    preparing: {
+      title: "מכין את הקבצים",
+      body:
+        submitFilesCount > 0
+          ? `קורא ומכין ${submitFilesCount} קבצים לשליחה מאובטחת`
+          : "מכין את פרטי התביעה",
+    },
+    uploading: {
+      title: "מעלה מסמכים",
+      body: "הקבצים בדרך אלינו — זה יכול לקחת כמה רגעים",
+    },
+    sending: {
+      title: "שולח את התביעה",
+      body: "שומרים את הפרטים ושולחים לצוות הטיפול",
+    },
+  };
   const stepIndex = Math.max(
     0,
     steps.findIndex((s) => s.id === progressStep)
@@ -770,6 +799,19 @@ const Claim = () => {
         }
         .claim-progress-fill {
           transition: width .45s cubic-bezier(.22,1,.36,1);
+        }
+        @keyframes claim-send-spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes claim-send-pulse {
+          0%, 100% { transform: scale(1); opacity: .55; }
+          50% { transform: scale(1.08); opacity: .9; }
+        }
+        .claim-send-ring {
+          animation: claim-send-spin 1.1s linear infinite;
+        }
+        .claim-send-glow {
+          animation: claim-send-pulse 1.8s ease-in-out infinite;
         }
       `}</style>
 
@@ -1874,6 +1916,35 @@ const Claim = () => {
                   )}
                 </Button>
               </div>
+            </div>
+          ) : null}
+
+          {step === "sending" ? (
+            <div className="px-6 py-14 text-center sm:px-10 sm:py-16">
+              <div className="relative mx-auto mb-7 h-24 w-24">
+                <div className="claim-send-glow absolute inset-0 rounded-full bg-[#2f6b63]/15" />
+                <div className="claim-send-ring absolute inset-0 rounded-full border-[3px] border-[#2f6b63]/15 border-t-[#2f6b63]" />
+                <div className="absolute inset-0 flex items-center justify-center text-[#2f6b63]">
+                  <Send className="h-8 w-8" />
+                </div>
+              </div>
+              <p className="text-xs font-bold tracking-wide text-[#2f6b63]">שליחת תביעה</p>
+              <h2 className="mt-2 text-2xl font-extrabold text-[#143834]">
+                {submitPhaseCopy[submitPhase].title}
+              </h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+                {submitPhaseCopy[submitPhase].body}
+              </p>
+              <div className="mx-auto mt-6 h-1.5 max-w-[220px] overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-[#2f6b63] transition-all duration-500"
+                  style={{
+                    width:
+                      submitPhase === "preparing" ? "28%" : submitPhase === "uploading" ? "62%" : "88%",
+                  }}
+                />
+              </div>
+              <p className="mt-4 text-xs text-slate-400">נא לא לסגור את החלון עד לסיום</p>
             </div>
           ) : null}
 
