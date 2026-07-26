@@ -1438,13 +1438,28 @@
         $("baggageItems").appendChild(row);
       }
 
+      function currentClaimCurrency() {
+        return String(($("claimCurrency") && $("claimCurrency").value) || "USD").toUpperCase();
+      }
+
+      function syncExpenseCurrencyLabels() {
+        const code = currentClaimCurrency();
+        document.querySelectorAll("[data-expense-currency]").forEach((el) => {
+          el.textContent = code;
+        });
+      }
+
       function addExpenseRow(data = {}) {
         const row = document.createElement("div");
         row.className = "item-row";
+        const currency = currentClaimCurrency();
         row.innerHTML = `
           <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" value="${formatDateDisplay(data.date || "")}" data-k="date" />
           <input placeholder="סוג הוצאה" value="${data.type || ""}" data-k="type" />
-          <input placeholder="סכום + מטבע" value="${data.amount || ""}" data-k="amount" />
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <input placeholder="סכום" inputmode="decimal" value="${data.amount || ""}" data-k="amount" style="margin-top:0" />
+            <span data-expense-currency style="font-size:12px;font-weight:800;color:var(--brand);white-space:nowrap">${currency}</span>
+          </div>
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("expenseItems").children.length > 1) row.remove();

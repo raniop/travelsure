@@ -640,7 +640,16 @@ const Claim = () => {
         baggageSubtypeLabel:
           claimType === "baggage" && baggageSubtype ? baggageSubtypeMeta[baggageSubtype].title : undefined,
         fullName,
-        expenses: claimType === "medical" ? expenses : undefined,
+        expenses:
+          claimType === "medical"
+            ? expenses.map((row) => ({
+                ...row,
+                amount: row.amount.trim()
+                  ? `${row.amount.trim()} ${formData.claimCurrency || "USD"}`.trim()
+                  : row.amount,
+                currency: formData.claimCurrency || "USD",
+              }))
+            : undefined,
         baggageItems:
           claimType === "baggage" && baggageSubtype !== "delay" ? baggageItems : undefined,
         totalClaimed:
@@ -1378,6 +1387,15 @@ const Claim = () => {
               {claimType === "medical" ? (
                 <section className="space-y-4">
                   <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">ה. פירוט מרכיבי התביעה</h3>
+                  <ClaimAmountCurrencyFields
+                    amount={formData.claimAmount}
+                    currency={formData.claimCurrency}
+                    destination={formData.country}
+                    amountError={errors.claimAmount}
+                    currencyError={errors.claimCurrency}
+                    onAmountChange={(v) => setField("claimAmount", v)}
+                    onCurrencyChange={(v) => setField("claimCurrency", v)}
+                  />
                   <div className="space-y-3">
                     {expenses.map((row, idx) => (
                       <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4">
@@ -1401,16 +1419,22 @@ const Claim = () => {
                           }}
                           placeholder="סוג הוצאה"
                         />
-                        <Input
-                          className="bg-slate-50"
-                          value={row.amount}
-                          onChange={(e) => {
-                            const next = [...expenses];
-                            next[idx] = { ...row, amount: e.target.value };
-                            setExpenses(next);
-                          }}
-                          placeholder="סכום + מטבע"
-                        />
+                        <div className="flex items-center gap-2">
+                          <Input
+                            className="bg-slate-50"
+                            inputMode="decimal"
+                            value={row.amount}
+                            onChange={(e) => {
+                              const next = [...expenses];
+                              next[idx] = { ...row, amount: e.target.value };
+                              setExpenses(next);
+                            }}
+                            placeholder="סכום"
+                          />
+                          <span className="shrink-0 text-xs font-bold text-[#2f6b63]">
+                            {formData.claimCurrency || "USD"}
+                          </span>
+                        </div>
                         <div className="flex items-center justify-between gap-2">
                           <label className="inline-flex items-center gap-2 text-xs text-slate-600">
                             <input
@@ -1441,15 +1465,6 @@ const Claim = () => {
                     <Plus className="h-4 w-4" />
                     הוסף הוצאה
                   </Button>
-                  <ClaimAmountCurrencyFields
-                    amount={formData.claimAmount}
-                    currency={formData.claimCurrency}
-                    destination={formData.country}
-                    amountError={errors.claimAmount}
-                    currencyError={errors.claimCurrency}
-                    onAmountChange={(v) => setField("claimAmount", v)}
-                    onCurrencyChange={(v) => setField("claimCurrency", v)}
-                  />
                   <YesNoField
                     label="האם סבלת מהמחלה לפני היציאה מהארץ?"
                     value={formData.preexisting}
