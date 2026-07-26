@@ -1319,6 +1319,7 @@
         if (label) label.textContent = meta ? (meta.code + " · " + meta.nameHe) : next;
         if (opts.manual) currencyManual = true;
         updateCurrencyHint();
+        syncExpenseCurrencyLabels();
       }
 
       function updateCurrencyHint() {
@@ -1944,7 +1945,18 @@
           authorizeAgent: form.declaration.checked,
           declaration: form.declaration.checked,
           marketingConsent: !!(form.marketingConsent && form.marketingConsent.checked),
-          expenses: claimType === "medical" ? collectRows($("expenseItems")) : undefined,
+          expenses:
+            claimType === "medical"
+              ? collectRows($("expenseItems")).map((row) => {
+                  const amount = String(row.amount || "").trim();
+                  const currency = currentClaimCurrency();
+                  return {
+                    ...row,
+                    amount: amount ? amount + " " + currency : amount,
+                    currency,
+                  };
+                })
+              : undefined,
           baggageItems:
             claimType === "baggage" && baggageSubtype !== "delay"
               ? collectRows($("baggageItems")).filter((r) => r.item)
