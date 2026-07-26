@@ -1802,7 +1802,9 @@ const Claim = () => {
                               <span className="text-[11px] text-slate-400">לא חובה</span>
                             )}
                           </div>
-                          {doc.hint ? <p className="mt-0.5 text-xs leading-relaxed text-slate-400">{doc.hint}</p> : null}
+                          {doc.hint ? (
+                            <p className="mt-1 text-[13px] leading-relaxed text-slate-500">{doc.hint}</p>
+                          ) : null}
 
                           {attached.length > 0 ? (
                             <ul className="mt-2 space-y-1">
