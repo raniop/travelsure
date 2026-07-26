@@ -393,7 +393,7 @@
       <div class="hero">
         <img class="logo" src="/claim/logo.avif" alt="TravelSure" />
         <h1 class="title" id="pageTitle">הגשת תביעה</h1>
-        <p class="subtitle">תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח — זיהוי לקוח מהמערכת</p>
+        <p class="subtitle" id="pageSubtitle" style="font-size:18px;font-weight:800;color:var(--brand-dark);max-width:34rem">בפוליסת נסיעות לחו״ל של הראל</p>
         <div class="chips">
           <span class="chip">מאובטח ומוצפן</span>
           <span class="chip">אופיר ושות׳ סוכנות לביטוח</span>
@@ -972,12 +972,24 @@
 
       function updatePageTitle() {
         const el = $("pageTitle");
+        const sub = $("pageSubtitle");
         if (!el) return;
         const meta = claimType ? types[claimType] : null;
-        el.textContent =
-          claimType && meta && step !== "type"
-            ? "הגשת תביעה - " + meta.title
-            : "הגשת תביעה";
+        const afterType = Boolean(claimType && meta && step !== "type");
+        el.textContent = afterType ? "הגשת תביעה - " + meta.title : "הגשת תביעה";
+        if (sub) {
+          if (afterType) {
+            sub.textContent = "תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח";
+            sub.style.fontSize = "";
+            sub.style.fontWeight = "";
+            sub.style.color = "";
+          } else {
+            sub.textContent = "בפוליסת נסיעות לחו״ל של הראל";
+            sub.style.fontSize = "18px";
+            sub.style.fontWeight = "800";
+            sub.style.color = "var(--brand-dark)";
+          }
+        }
       }
 
       function showStep(next) {

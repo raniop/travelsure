@@ -863,9 +863,15 @@ const Claim = () => {
               ? `הגשת תביעה - ${activeMeta.title}`
               : "הגשת תביעה"}
           </h1>
-          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
-            תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח
-          </p>
+          {step === "type" || !claimType ? (
+            <p className="mx-auto mt-2 max-w-lg text-lg font-bold tracking-tight text-[#1f4b46] sm:text-xl">
+              בפוליסת נסיעות לחו״ל של הראל
+            </p>
+          ) : (
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-600 sm:text-base">
+              תהליך דיגיטלי ברור ומאובטח מטעם אופיר ושות׳ סוכנות לביטוח
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5 backdrop-blur">
               <ShieldCheck className="h-3.5 w-3.5 text-[#2f6b63]" />
