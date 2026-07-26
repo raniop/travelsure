@@ -411,15 +411,18 @@ const Foreigners = () => {
       `}</style>
 
       <div className="relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-10">
-        <header className="fg-rise mb-7 text-center">
+        <header className="fg-rise mb-7 flex w-full flex-col items-center text-center">
           <img src={logo} alt="TravelSure" className="mx-auto h-[88px] w-auto drop-shadow-sm sm:h-28" />
-          <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#143834] sm:text-4xl">
+          <h1
+            className="mt-4 w-full text-center text-3xl font-extrabold tracking-normal text-[#143834] sm:text-4xl"
+            style={{ textAlign: "center", marginInline: "auto" }}
+          >
             ביטוח עובדים זרים
           </h1>
-          <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600 sm:text-base">
+          <p className="mx-auto mt-2 max-w-lg text-center text-sm text-slate-600 sm:text-base">
             הצעת ביטוח בריאות + הצהרת בריאות — תהליך דיגיטלי קצר במקום מילוי PDF וסריקה
           </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
+          <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-[#2f6b63]" />
               הראל · SAFE STAY
