@@ -970,12 +970,23 @@
           .join("");
       }
 
+      function updatePageTitle() {
+        const el = $("pageTitle");
+        if (!el) return;
+        const meta = claimType ? types[claimType] : null;
+        el.textContent =
+          claimType && meta && step !== "type"
+            ? "הגשת תביעה - " + meta.title
+            : "הגשת תביעה";
+      }
+
       function showStep(next) {
         step = next;
         ["type", "identity", "policy", "blocked", "details", "files", "sending", "success"].forEach((id) => {
           if (id === "details") $("step-details").classList.toggle("hidden", next !== "details");
           else if ($(`step-${id}`)) $(`step-${id}`).classList.toggle("hidden", next !== id);
         });
+        updatePageTitle();
         renderSteps();
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
