@@ -188,19 +188,13 @@ const Foreigners = () => {
     if (!form.houseNo.trim()) next.houseNo = "שדה חובה";
     if (!form.city.trim()) next.city = "שדה חובה";
 
+    // Passport identity fields must stay English; address/job may be Hebrew.
     const englishOnlyFields: Array<keyof ForeignersForm> = [
       "firstName",
       "lastName",
       "passportNo",
       "passportCountry",
       "countryOfOrigin",
-      "workDescription",
-      "street",
-      "houseNo",
-      "apartmentNo",
-      "city",
-      "zip",
-      "email",
     ];
     for (const key of englishOnlyFields) {
       const value = String(form[key] || "");
@@ -541,7 +535,7 @@ const Foreigners = () => {
                 <div>
                   <h2 className="text-lg font-bold text-[#143834]">פרטי המועמד לביטוח</h2>
                   <p className="mt-1 text-xs text-slate-500">
-                    זהו העובד הזר המבוטח · יש למלא את הפרטים <span className="font-semibold text-[#1f4b46]">באנגלית בלבד</span>
+                    זהו העובד הזר המבוטח · שם ופרטי דרכון באנגלית בלבד · כתובת ועיסוק אפשר גם בעברית
                   </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -604,41 +598,33 @@ const Foreigners = () => {
                     לפי תקופת הביטוח ניתן לפרוס ל־{installments} תשלומים
                   </p>
                 )}
-                <Field
-                  label="העיסוק למענו הגעת לישראל / Job description"
-                  error={errors.workDescription}
-                  hint="English only"
-                >
-                  <Input
-                    {...englishTextProps("workDescription", {
-                      placeholder: "e.g. Nursing care / Construction",
-                    })}
-                  />
+                <Field label="העיסוק למענו הגעת לישראל / תיאור עבודה" error={errors.workDescription}>
+                  <Input {...textProps("workDescription", { placeholder: "לדוגמה: טיפול סיעודי / בניין" })} />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="רחוב / Street" required error={errors.street} hint="English only">
-                    <Input {...englishTextProps("street", { placeholder: "Street name" })} />
+                  <Field label="רחוב" required error={errors.street}>
+                    <Input {...textProps("street", { placeholder: "שם הרחוב" })} />
                   </Field>
-                  <Field label="מס׳ בית / House No." required error={errors.houseNo}>
-                    <Input {...englishTextProps("houseNo", { placeholder: "12", autoCapitalize: "off" })} />
+                  <Field label="מס׳ בית" required error={errors.houseNo}>
+                    <Input {...textProps("houseNo", { placeholder: "12" })} />
                   </Field>
-                  <Field label="מס׳ דירה / Apt." error={errors.apartmentNo}>
-                    <Input {...englishTextProps("apartmentNo", { placeholder: "3", autoCapitalize: "off" })} />
+                  <Field label="מס׳ דירה" error={errors.apartmentNo}>
+                    <Input {...textProps("apartmentNo", { placeholder: "3" })} />
                   </Field>
-                  <Field label="עיר / City" required error={errors.city} hint="English only">
-                    <Input {...englishTextProps("city", { placeholder: "Tel Aviv" })} />
+                  <Field label="עיר" required error={errors.city}>
+                    <Input {...textProps("city", { placeholder: "תל אביב" })} />
                   </Field>
-                  <Field label="מיקוד / Zip" error={errors.zip}>
-                    <Input {...englishTextProps("zip", { placeholder: "6100000", autoCapitalize: "off" })} />
+                  <Field label="מיקוד" error={errors.zip}>
+                    <Input {...textProps("zip", { placeholder: "6100000" })} />
                   </Field>
-                  <Field label="טלפון / Phone">
+                  <Field label="טלפון">
                     <Input {...textProps("phone", { type: "tel" })} />
                   </Field>
-                  <Field label="נייד / Mobile" required error={errors.mobile}>
+                  <Field label="נייד" required error={errors.mobile}>
                     <Input {...textProps("mobile", { type: "tel" })} />
                   </Field>
-                  <Field label="דוא״ל / Email" required error={errors.email}>
-                    <Input {...englishTextProps("email", { type: "email", placeholder: "name@email.com", autoCapitalize: "off" })} />
+                  <Field label="דוא״ל" required error={errors.email}>
+                    <Input {...textProps("email", { type: "email", placeholder: "name@email.com" })} />
                   </Field>
                 </div>
               </div>
