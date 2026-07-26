@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,11 @@ import {
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
 import { submitClaimRequest } from "@/lib/submitClaim";
+import {
+  flattenClaimDocFiles,
+  getClaimDocumentRequirements,
+  missingRequiredClaimDocs,
+} from "@/lib/claimDocuments";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -64,59 +69,30 @@ const baggageSubtypeOrder: BaggageSubtype[] = ["loss_theft", "delay"];
 
 const claimTypeMeta: Record<
   ClaimType,
-  { title: string; short: string; subtitle: string; docs: string[]; icon: typeof BriefcaseMedical }
+  { title: string; short: string; subtitle: string; icon: typeof BriefcaseMedical }
 > = {
   medical: {
     title: "הוצאות רפואיות בחו״ל (שלא באשפוז)",
     short: "רפואי",
     subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
-    docs: [
-      "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
-      "חשבון מפורט",
-      "קבלות תשלום מקוריות",
-    ],
     icon: BriefcaseMedical,
   },
   trip_cancel: {
     title: "ביטול נסיעה טרם היציאה",
     short: "ביטול",
     subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
-    docs: [
-      "העתק תוכנית / מסלול הנסיעה",
-      "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
-      "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)",
-      "אישור רפואי על אי-כשירות לטוס",
-      "דוח רפואי / סיכום אשפוז",
-      "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
-    ],
     icon: CalendarX2,
   },
   trip_shorten: {
     title: "קיצור נסיעה מחו״ל",
     short: "קיצור",
     subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
-    docs: [
-      "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)",
-      "תוכנית נסיעה מקורית",
-      "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה",
-      "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)",
-      "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת",
-      "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת",
-      "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה",
-    ],
     icon: PlaneLanding,
   },
   baggage: {
     title: "מטען / כבודה",
     short: "מטען",
     subtitle: "אובדן, גניבה או איחור בהגעת כבודה",
-    docs: [
-      "דו״ח משטרה במקור ממקום ומזמן האירוע",
-      "קבלות רכישה על הרכוש שאבד/נגנב",
-      "בשחזור מסמכים: קבלות שחזור",
-      "באיחור כבודה: קבלות ציוד חיוני",
-      "אם אצל מוביל אווירי: תשובת חברת התעופה",
-    ],
     icon: Luggage,
   },
 };
@@ -250,9 +226,8 @@ const Claim = () => {
   const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
   const [blockedReason, setBlockedReason] = useState<"not_found" | "no_match">("not_found");
   const [selectedPolicyUid, setSelectedPolicyUid] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [docFiles, setDocFiles] = useState<Record<string, File[]>>({});
+  const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [formData, setFormData] = useState(initialForm);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([emptyExpense()]);
   const [baggageItems, setBaggageItems] = useState<BaggageRow[]>([emptyBaggage()]);
@@ -271,6 +246,22 @@ const Claim = () => {
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
   const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
+  const documentRequirements = useMemo(
+    () => getClaimDocumentRequirements(claimType, baggageSubtype),
+    [claimType, baggageSubtype]
+  );
+  const allAttachedFiles = useMemo(
+    () => [...flattenClaimDocFiles(docFiles), ...extraFiles],
+    [docFiles, extraFiles]
+  );
+  const missingDocs = useMemo(
+    () => missingRequiredClaimDocs(documentRequirements, docFiles),
+    [documentRequirements, docFiles]
+  );
+  const requiredDocsCount = documentRequirements.filter((d) => d.required).length;
+  const requiredDocsDone = requiredDocsCount - missingDocs.length;
+  const docsComplete = missingDocs.length === 0 && requiredDocsCount > 0;
+
   const relevantPolicies = useMemo(
     () => filterPoliciesForClaimType(crmPolicies, claimType, baggageSubtype),
     [crmPolicies, claimType, baggageSubtype]
@@ -311,6 +302,12 @@ const Claim = () => {
       setBaggageItems([emptyBaggage()]);
     }
   }, [claimType, baggageSubtype]);
+
+  useEffect(() => {
+    setDocFiles({});
+    setExtraFiles([]);
+  }, [claimType, baggageSubtype]);
+
 
   const selectBank = (code: string) => {
     const bank = banks.find((b) => b.code === code);
@@ -482,10 +479,45 @@ const Claim = () => {
     setStep("details");
   };
 
-  const addFiles = (incoming: FileList | File[] | null | undefined) => {
+  const clearFilesError = () => {
+    if (!errors.files) return;
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.files;
+      return copy;
+    });
+  };
+
+  const addDocFiles = (docId: string, incoming: FileList | File[] | null | undefined) => {
     const next = Array.from(incoming || []);
     if (!next.length) return;
-    setFiles((prev) => {
+    setDocFiles((prev) => {
+      const merged = [...(prev[docId] || [])];
+      next.forEach((file) => {
+        const exists = merged.some(
+          (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+        );
+        if (!exists) merged.push(file);
+      });
+      return { ...prev, [docId]: merged };
+    });
+    clearFilesError();
+  };
+
+  const removeDocFile = (docId: string, index: number) => {
+    setDocFiles((prev) => {
+      const list = [...(prev[docId] || [])].filter((_, i) => i !== index);
+      const copy = { ...prev };
+      if (list.length) copy[docId] = list;
+      else delete copy[docId];
+      return copy;
+    });
+  };
+
+  const addExtraFiles = (incoming: FileList | File[] | null | undefined) => {
+    const next = Array.from(incoming || []);
+    if (!next.length) return;
+    setExtraFiles((prev) => {
       const merged = [...prev];
       next.forEach((file) => {
         const exists = merged.some(
@@ -495,17 +527,10 @@ const Claim = () => {
       });
       return merged;
     });
-    if (errors.files) {
-      setErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.files;
-        return copy;
-      });
-    }
   };
 
-  const removeFileAt = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+  const removeExtraFileAt = (index: number) => {
+    setExtraFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const formatFileSize = (bytes: number) => {
@@ -560,7 +585,16 @@ const Claim = () => {
   };
 
   const validateFiles = () => {
-    if (files.length === 0) {
+    if (!docsComplete) {
+      const names = missingDocs.map((d) => d.label).slice(0, 3).join(" · ");
+      setErrors({
+        files: names
+          ? `יש לצרף את כל מסמכי החובה לפני השליחה (חסר: ${names}${missingDocs.length > 3 ? "…" : ""})`
+          : "יש לצרף את כל מסמכי החובה לפני השליחה",
+      });
+      return false;
+    }
+    if (allAttachedFiles.length === 0) {
       setErrors({ files: "יש לצרף לפחות מסמך אחד" });
       return false;
     }
@@ -595,7 +629,7 @@ const Claim = () => {
         submittedAt: new Date().toISOString(),
       };
 
-      const result = await submitClaimRequest(payload, files);
+      const result = await submitClaimRequest(payload, allAttachedFiles);
       if (!result.ok) throw new Error(result.error || "claim_submit_failed");
 
       setSubmittedClaimNumber(result.claimNumber || "");
@@ -603,13 +637,14 @@ const Claim = () => {
         fullName,
         claimTypeLabel: activeMeta.title,
         email: formData.email,
-        filesCount: files.length,
+        filesCount: allAttachedFiles.length,
       });
 
       setFormData(initialForm);
       setExpenses([emptyExpense()]);
       setBaggageItems([emptyBaggage()]);
-      setFiles([]);
+      setDocFiles({});
+      setExtraFiles([]);
       setErrors({});
       setClaimType(null);
       setBaggageSubtype(null);
@@ -1663,94 +1698,158 @@ const Claim = () => {
               <div className="mb-6 rounded-2xl border border-[#2f6b63]/10 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
                 <p className="text-xs font-bold tracking-wide text-[#2f6b63]">{activeMeta.short}</p>
                 <h2 className="text-xl font-extrabold text-[#143834]">צירוף מסמכים</h2>
-                <p className="mt-1 text-sm text-slate-500">צרפו את המסמכים הנדרשים — וסיימתם</p>
-              </div>
-
-              <div className="mb-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                <p className="mb-2 text-sm font-bold text-[#143834]">מסמכים נדרשים לפי סוג התביעה:</p>
-                <ul className="list-disc space-y-1.5 pr-5 text-sm text-slate-600">
-                  {activeMeta.docs.map((doc) => (
-                    <li key={doc}>{doc}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <label
-                className={`relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-12 text-center transition ${
-                  isDraggingFiles
-                    ? "border-[#2f6b63] bg-[#e8f4f1]/70 shadow-md"
-                    : "border-[#2f6b63]/30 bg-gradient-to-b from-[#f3faf7] to-white hover:border-[#2f6b63] hover:shadow-md"
-                }`}
-                onDragEnter={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsDraggingFiles(true);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsDraggingFiles(true);
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsDraggingFiles(false);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsDraggingFiles(false);
-                  addFiles(e.dataTransfer.files);
-                }}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"
-                  onChange={(e) => {
-                    addFiles(e.target.files);
-                    e.target.value = "";
-                  }}
-                />
-                <div className="pointer-events-none mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
-                  <FileUp className="h-6 w-6" />
+                <p className="mt-1 text-sm text-slate-500">
+                  יש לצרף קובץ ליד כל סעיף חובה. אחרי הצירוף יופיע וי ירוק — רק אז אפשר לשלוח.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold">
+                  <span
+                    className={`rounded-full px-2.5 py-1 ${
+                      docsComplete ? "bg-emerald-100 text-emerald-700" : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {requiredDocsDone}/{requiredDocsCount} מסמכי חובה
+                  </span>
+                  {docsComplete ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-700">
+                      <Check className="h-3.5 w-3.5" />
+                      אפשר לשלוח את התביעה
+                    </span>
+                  ) : (
+                    <span className="text-slate-500">חסרים עוד {missingDocs.length} מסמכי חובה</span>
+                  )}
                 </div>
-                <div className="pointer-events-none text-sm font-bold text-[#143834]">לחצו לבחירת קבצים או גררו לכאן</div>
-                <div className="pointer-events-none mt-1 text-xs text-slate-500">PDF / JPG / PNG / DOC — ניתן לצרף מספר קבצים</div>
-              </label>
+              </div>
 
-              {files.length > 0 ? (
-                <>
-                  <p className="mt-3 text-xs font-bold text-[#2f6b63]">
-                    {files.length === 1 ? "קובץ אחד נבחר" : `${files.length} קבצים נבחרו`}
-                  </p>
-                  <ul className="mt-2 space-y-2">
-                    {files.map((file, index) => (
+              <div className="space-y-3">
+                {documentRequirements.map((doc) => {
+                  const attached = docFiles[doc.id] || [];
+                  const done = attached.length > 0;
+                  return (
+                    <div
+                      key={doc.id}
+                      className={`rounded-2xl border p-3.5 transition ${
+                        done
+                          ? "border-emerald-300 bg-emerald-50/70 shadow-sm"
+                          : doc.required
+                            ? "border-slate-200 bg-white"
+                            : "border-dashed border-slate-200 bg-slate-50/70"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 ${
+                            done
+                              ? "border-emerald-500 bg-emerald-500 text-white"
+                              : "border-slate-300 bg-white text-transparent"
+                          }`}
+                          aria-hidden
+                        >
+                          <Check className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className={`text-sm font-bold ${done ? "text-emerald-800" : "text-[#143834]"}`}>
+                              {doc.label}
+                            </p>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                doc.required
+                                  ? "bg-rose-50 text-rose-600"
+                                  : "bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              {doc.required ? "חובה" : "אופציונלי"}
+                            </span>
+                          </div>
+
+                          {attached.length > 0 ? (
+                            <ul className="mt-2 space-y-1.5">
+                              {attached.map((file, index) => (
+                                <li
+                                  key={`${doc.id}-${file.name}-${file.lastModified}-${index}`}
+                                  className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-2.5 py-2 text-xs text-slate-700"
+                                >
+                                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                  <span className="min-w-0 flex-1 truncate" title={file.name}>
+                                    {file.name}
+                                  </span>
+                                  <span className="shrink-0 text-[10px] text-slate-400">
+                                    {formatFileSize(file.size)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100"
+                                    aria-label={`הסרת ${file.name}`}
+                                    onClick={() => removeDocFile(doc.id, index)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+
+                          <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#2f6b63]/20 bg-white px-3 py-2 text-xs font-bold text-[#2f6b63] transition hover:border-[#2f6b63] hover:bg-[#e8f4f1]">
+                            <FileUp className="h-3.5 w-3.5" />
+                            {done ? "הוספת קובץ נוסף" : "בחירת קובץ"}
+                            <input
+                              type="file"
+                              multiple
+                              className="hidden"
+                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"
+                              onChange={(e) => {
+                                addDocFiles(doc.id, e.target.files);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-4">
+                <p className="text-sm font-bold text-[#143834]">קבצים נוספים (אופציונלי)</p>
+                <p className="mt-1 text-xs text-slate-500">אפשר לצרף מסמכים נוספים מעבר לרשימת החובה</p>
+                <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center hover:border-[#2f6b63]">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*"
+                    onChange={(e) => {
+                      addExtraFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                  <FileUp className="mb-1 h-5 w-5 text-[#2f6b63]" />
+                  <span className="text-xs font-bold text-[#143834]">הוספת קבצים נוספים</span>
+                </label>
+                {extraFiles.length > 0 ? (
+                  <ul className="mt-3 space-y-1.5">
+                    {extraFiles.map((file, index) => (
                       <li
-                        key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
+                        key={`extra-${file.name}-${file.lastModified}-${index}`}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs"
                       >
-                        <Check className="h-4 w-4 shrink-0 text-[#2f6b63]" />
-                        <span className="min-w-0 flex-1 truncate" title={file.name}>
-                          {file.name}
-                        </span>
-                        <span className="shrink-0 text-xs text-slate-400">{formatFileSize(file.size)}</span>
+                        <span className="min-w-0 flex-1 truncate">{file.name}</span>
                         <button
                           type="button"
-                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100"
+                          className="text-rose-600"
+                          onClick={() => removeExtraFileAt(index)}
                           aria-label={`הסרת ${file.name}`}
-                          onClick={() => removeFileAt(index)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </li>
                     ))}
                   </ul>
-                </>
-              ) : null}
-              {errors.files ? <p className="mt-2 text-xs text-rose-600">{errors.files}</p> : null}
+                ) : null}
+              </div>
+
+              {errors.files ? <p className="mt-3 text-xs text-rose-600">{errors.files}</p> : null}
 
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
                 <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setStep("details")} disabled={isSubmitting}>
@@ -1759,8 +1858,8 @@ const Claim = () => {
                 <Button
                   type="button"
                   size="lg"
-                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px]"
-                  disabled={isSubmitting}
+                  className="claim-cta h-11 rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white shadow-lg shadow-[#2f6b63]/20 sm:min-w-[220px] disabled:opacity-50"
+                  disabled={isSubmitting || !docsComplete}
                   onClick={handleSubmit}
                 >
                   {isSubmitting ? (

@@ -463,25 +463,28 @@
           <div id="detailsError" class="error"></div>
         </form>
 
-        <div id="step-files" class="hidden">
+                <div id="step-files" class="hidden">
           <div class="banner">
             <div class="tag" id="filesTypeLabel"></div>
             <h3>צירוף מסמכים</h3>
-            <p class="tiny" style="margin:6px 0 0">צרפו את המסמכים הנדרשים — וסיימתם</p>
+            <p class="tiny" style="margin:6px 0 0">יש לצרף קובץ ליד כל סעיף חובה. אחרי הצירוף יופיע וי ירוק — רק אז אפשר לשלוח.</p>
+            <p id="docsProgress" class="tiny" style="margin:8px 0 0;font-weight:700;color:#b45309"></p>
           </div>
-          <ul class="docs" id="docsList"></ul>
-          <label class="drop" id="dropZone" for="files">
-            <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic,application/pdf,image/*" />
-            <strong>לחצו לבחירת קבצים או גררו לכאן</strong>
-            <span class="tiny" style="margin-top:6px">PDF / JPG / PNG / DOC — ניתן לצרף מספר קבצים</span>
-          </label>
-          <div id="filesHint"></div>
-          <ul class="file-list" id="fileList" aria-live="polite"></ul>
+          <div id="docsList" class="docs-checklist"></div>
+          <div class="extra-files-box">
+            <strong>קבצים נוספים (אופציונלי)</strong>
+            <label class="drop" id="dropZone" style="margin-top:10px;padding:18px">
+              <input type="file" id="files" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" hidden />
+              <strong>הוספת קבצים נוספים</strong>
+            </label>
+            <ul id="fileList" class="file-list"></ul>
+          </div>
           <div class="row-actions">
             <button type="button" class="btn btn-outline" id="backToDetails">חזרה</button>
-            <button type="button" class="btn btn-primary" id="submitBtn">שליחת תביעה</button>
+            <button type="button" class="btn btn-primary" id="submitBtn" disabled>שליחת תביעה</button>
           </div>
           <div id="status" class="status hidden"></div>
+        </div> class="status hidden"></div>
         </div>
 
         <div id="step-success" class="hidden" style="text-align:center;padding:18px 8px 8px">
@@ -515,27 +518,68 @@
           title: "הוצאות רפואיות בחו״ל (שלא באשפוז)",
           short: "רפואי",
           subtitle: "רופא, מרפאה, תרופות ובדיקות בחו״ל",
-          docs: ["דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "חשבון מפורט", "קבלות תשלום מקוריות"],
         },
         trip_cancel: {
           title: "ביטול נסיעה טרם היציאה",
           short: "ביטול",
           subtitle: "ביטול הנסיעה לפני היציאה לחו״ל",
-          docs: ["העתק תוכנית / מסלול הנסיעה", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)", "אישור רפואי על אי-כשירות לטוס", "דוח רפואי / סיכום אשפוז", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
         },
         trip_shorten: {
           title: "קיצור נסיעה מחו״ל",
           short: "קיצור",
           subtitle: "קיצור הנסיעה וחזרה מוקדמת לישראל",
-          docs: ["דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", "תוכנית נסיעה מקורית", "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)", "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת", "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת", "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה"],
         },
         baggage: {
           title: "מטען / כבודה",
           short: "מטען",
           subtitle: "אובדן, גניבה או איחור בהגעת כבודה",
-          docs: ["דו״ח משטרה במקור ממקום ומזמן האירוע", "קבלות רכישה על הרכוש שאבד/נגנב", "בשחזור מסמכים: קבלות שחזור", "באיחור כבודה: קבלות ציוד חיוני", "אם אצל מוביל אווירי: תשובת חברת התעופה"],
         },
       };
+
+      const claimDocRequirements = {
+        medical: [
+          { id: "medical_report", label: "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", required: true },
+          { id: "medical_invoice", label: "חשבון מפורט", required: true },
+          { id: "medical_receipts", label: "קבלות תשלום מקוריות", required: true },
+        ],
+        trip_cancel: [
+          { id: "cancel_plan", label: "העתק תוכנית / מסלול הנסיעה", required: true },
+          { id: "cancel_tickets", label: "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", required: true },
+          { id: "cancel_agent_fees", label: "אישור סוכן על דמי ביטול / החזר (פירוט קרקע מול טיסה)", required: true },
+          { id: "cancel_unfit", label: "אישור רפואי על אי-כשירות לטוס", required: true },
+          { id: "cancel_medical_summary", label: "דוח רפואי / סיכום אשפוז", required: true },
+          { id: "cancel_family", label: "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה", required: false },
+        ],
+        trip_shorten: [
+          { id: "shorten_medical_abroad", label: "דוח רפואי מרופא מטפל בחו״ל (סיבת פנייה, אנמנזה ואבחנה)", required: true },
+          { id: "shorten_plan", label: "תוכנית נסיעה מקורית", required: true },
+          { id: "shorten_tickets", label: "כרטיסי טיסה וקבלה מקוריים לחבילת הנסיעה", required: true },
+          { id: "shorten_agent_refund", label: "אישור סוכן על החזר עבור שירותים שלא נוצלו (פירוט קרקע מול טיסה)", required: true },
+          { id: "shorten_new_tickets", label: "קבלות מקוריות לכרטיסים חדשים / שינוי כרטיסים לחזרה מוקדמת", required: true },
+          { id: "shorten_medical_need", label: "אישור רפואי מחו״ל על הצורך בקיצור הנסיעה וחזרה מוקדמת", required: true },
+          { id: "shorten_family", label: "במקרה משפחתי: סיכום רפואי/תעודת פטירה + הוכחת קרבה", required: false },
+        ],
+        baggage_loss_theft: [
+          { id: "baggage_police", label: "דו״ח משטרה במקור ממקום ומזמן האירוע", required: true },
+          { id: "baggage_purchase", label: "קבלות רכישה על הרכוש שאבד/נגנב", required: true },
+          { id: "baggage_restore", label: "בשחזור מסמכים: קבלות שחזור", required: false },
+          { id: "baggage_airline_loss", label: "אם אצל מוביל אווירי: תשובת חברת התעופה", required: false },
+        ],
+        baggage_delay: [
+          { id: "baggage_delay_airline", label: "דיווח איחור לחברת התעופה / PIR / תשובת חברת התעופה", required: true },
+          { id: "baggage_delay_essentials", label: "קבלות לציוד חיוני שנרכש עקב האיחור", required: true },
+        ],
+      };
+
+      function getDocumentRequirements() {
+        if (claimType === "baggage") {
+          return claimDocRequirements[baggageSubtype === "delay" ? "baggage_delay" : "baggage_loss_theft"] || [];
+        }
+        return claimDocRequirements[claimType] || [];
+      }
+
+      let docFilesMap = {};
+      let extraFilesList = [];
 
       const baggageSubtypes = {
         loss_theft: { title: "אובדן / גניבה", subtitle: "הכבודה אבדה או נגנבה" },
@@ -546,7 +590,7 @@
       let claimType = null;
       let baggageSubtype = null;
       let step = "type";
-      let selectedFiles = [];
+      let selectedFiles = []; // flattened view of docFilesMap + extraFilesList
       let crmCustomer = null;
       let crmPolicies = [];
       let selectedPolicyId = "";
@@ -1195,7 +1239,7 @@
         $("reasonWrap").innerHTML =
           (claimType === "trip_cancel" ? "סיבת הביטול" : "סיבת הקיצור") +
           ' <span class="req">*</span><input name="claimReason" />';
-        $("docsList").innerHTML = meta.docs.map((d) => `<li>${d}</li>`).join("");
+        renderDocsChecklist();
         if (!$("baggageItems").children.length) addBaggageRow();
         if (!$("expenseItems").children.length) addExpenseRow();
       }
@@ -1217,6 +1261,8 @@
         if (!btn) return;
         claimType = btn.dataset.type;
         if (claimType !== "baggage") baggageSubtype = null;
+        docFilesMap = {};
+        extraFilesList = [];
         renderTypes();
       });
 
@@ -1224,6 +1270,8 @@
         const btn = e.target.closest("[data-baggage-subtype]");
         if (!btn) return;
         baggageSubtype = btn.dataset.baggageSubtype;
+        docFilesMap = {};
+        extraFilesList = [];
         renderTypes();
         syncTypeUi();
       });
@@ -1264,44 +1312,125 @@
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
       }
 
-      function renderSelectedFiles() {
-        const list = $("fileList");
-        const hint = $("filesHint");
-        if (!selectedFiles.length) {
-          list.innerHTML = "";
-          hint.textContent = "";
-          return;
+      function flattenAttachedFiles() {
+        const out = [];
+        Object.values(docFilesMap).forEach((arr) => {
+          (arr || []).forEach((f) => out.push(f));
+        });
+        extraFilesList.forEach((f) => out.push(f));
+        selectedFiles = out;
+        return out;
+      }
+
+      function docsProgressState() {
+        const reqs = getDocumentRequirements();
+        const required = reqs.filter((d) => d.required);
+        const missing = required.filter((d) => !(docFilesMap[d.id] && docFilesMap[d.id].length));
+        return {
+          requiredCount: required.length,
+          doneCount: required.length - missing.length,
+          missing,
+          complete: required.length > 0 && missing.length === 0,
+        };
+      }
+
+      function renderDocsChecklist() {
+        const list = $("docsList");
+        if (!list) return;
+        const reqs = getDocumentRequirements();
+        const progress = docsProgressState();
+        const prog = $("docsProgress");
+        if (prog) {
+          prog.style.color = progress.complete ? "#047857" : "#b45309";
+          prog.textContent = progress.complete
+            ? `✓ ${progress.doneCount}/${progress.requiredCount} מסמכי חובה — אפשר לשלוח`
+            : `${progress.doneCount}/${progress.requiredCount} מסמכי חובה · חסרים עוד ${progress.missing.length}`;
         }
-        hint.textContent = selectedFiles.length === 1
-          ? "קובץ אחד נבחר"
-          : `${selectedFiles.length} קבצים נבחרו`;
-        list.innerHTML = selectedFiles
+        const submitBtn = $("submitBtn");
+        if (submitBtn && submitBtn.textContent !== "שולח...") {
+          submitBtn.disabled = !progress.complete;
+        }
+
+        list.innerHTML = reqs
+          .map((doc) => {
+            const files = docFilesMap[doc.id] || [];
+            const done = files.length > 0;
+            const filesHtml = files
+              .map(
+                (f, i) => `
+                <li>
+                  <span class="file-name" title="${String(f.name).replace(/"/g, "&quot;")}">${f.name}</span>
+                  <span class="file-meta">${formatFileSize(f.size)}</span>
+                  <button type="button" class="remove-file" data-remove-doc="${doc.id}" data-remove-idx="${i}" aria-label="הסרת קובץ">×</button>
+                </li>`
+              )
+              .join("");
+            return `
+              <div class="doc-slot ${done ? "done" : ""} ${doc.required ? "" : "optional"}" data-doc-id="${doc.id}">
+                <div class="doc-slot-top">
+                  <span class="doc-check">✓</span>
+                  <div style="flex:1;min-width:0">
+                    <p class="doc-label">
+                      ${doc.label}
+                      <span class="doc-badge ${doc.required ? "req" : "opt"}">${doc.required ? "חובה" : "אופציונלי"}</span>
+                    </p>
+                    ${filesHtml ? `<ul class="doc-files">${filesHtml}</ul>` : ""}
+                    <label class="doc-upload">
+                      ${done ? "הוספת קובץ נוסף" : "בחירת קובץ"}
+                      <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.heic" data-doc-upload="${doc.id}" hidden />
+                    </label>
+                  </div>
+                </div>
+              </div>`;
+          })
+          .join("");
+        flattenAttachedFiles();
+        renderExtraFiles();
+      }
+
+      function renderExtraFiles() {
+        const list = $("fileList");
+        if (!list) return;
+        list.innerHTML = extraFilesList
           .map(
             (f, i) => `
             <li>
               <span class="file-name" title="${String(f.name).replace(/"/g, "&quot;")}">${f.name}</span>
               <span class="file-meta">${formatFileSize(f.size)}</span>
-              <button type="button" class="remove-file" data-remove-file="${i}" aria-label="הסרת קובץ">×</button>
+              <button type="button" class="remove-file" data-remove-extra="${i}" aria-label="הסרת קובץ">×</button>
             </li>`
           )
           .join("");
+      }
+
+      function renderSelectedFiles() {
+        renderDocsChecklist();
+      }
+
+      function addDocFiles(docId, fileList) {
+        const incoming = Array.from(fileList || []);
+        if (!incoming.length) return;
+        const current = docFilesMap[docId] || [];
+        incoming.forEach((file) => {
+          const exists = current.some(
+            (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+          );
+          if (!exists) current.push(file);
+        });
+        docFilesMap[docId] = current;
+        renderDocsChecklist();
       }
 
       function addSelectedFiles(fileList) {
         const incoming = Array.from(fileList || []);
         if (!incoming.length) return;
         incoming.forEach((file) => {
-          const exists = selectedFiles.some(
+          const exists = extraFilesList.some(
             (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
           );
-          if (!exists) selectedFiles.push(file);
+          if (!exists) extraFilesList.push(file);
         });
-        renderSelectedFiles();
-        const status = $("status");
-        if (status && !status.classList.contains("hidden") && status.classList.contains("err")) {
-          status.classList.add("hidden");
-          status.textContent = "";
-        }
+        renderDocsChecklist();
       }
 
       $("files").addEventListener("change", (e) => {
@@ -1328,13 +1457,31 @@
         addSelectedFiles(e.dataTransfer?.files);
       });
 
-      $("fileList").addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-remove-file]");
+            $("docsList").addEventListener("change", (e) => {
+        const input = e.target.closest("[data-doc-upload]");
+        if (!input) return;
+        addDocFiles(input.dataset.docUpload, input.files);
+        input.value = "";
+      });
+      $("docsList").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-remove-doc]");
         if (!btn) return;
-        const idx = Number(btn.dataset.removeFile);
+        const docId = btn.dataset.removeDoc;
+        const idx = Number(btn.dataset.removeIdx);
+        if (!docId || Number.isNaN(idx)) return;
+        const arr = docFilesMap[docId] || [];
+        arr.splice(idx, 1);
+        if (arr.length) docFilesMap[docId] = arr;
+        else delete docFilesMap[docId];
+        renderDocsChecklist();
+      });
+      $("fileList").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-remove-extra]");
+        if (!btn) return;
+        const idx = Number(btn.dataset.removeExtra);
         if (Number.isNaN(idx)) return;
-        selectedFiles.splice(idx, 1);
-        renderSelectedFiles();
+        extraFilesList.splice(idx, 1);
+        renderDocsChecklist();
       });
 
       $("lookupBtn").onclick = async () => {
@@ -1449,6 +1596,16 @@
         const status = $("status");
         status.className = "status";
         status.classList.remove("hidden");
+        const progress = docsProgressState();
+        flattenAttachedFiles();
+        if (!progress.complete) {
+          const names = progress.missing.map((d) => d.label).slice(0, 2).join(" · ");
+          status.textContent = names
+            ? "יש לצרף את כל מסמכי החובה לפני השליחה (חסר: " + names + ")"
+            : "יש לצרף את כל מסמכי החובה לפני השליחה";
+          status.classList.add("err");
+          return;
+        }
         if (!selectedFiles.length) { status.textContent = "יש לצרף לפחות מסמך אחד"; status.classList.add("err"); return; }
 
         const fd = new FormData(form);
@@ -1630,7 +1787,7 @@
             "<li><strong>סוג:</strong> " + (payload.claimTypeLabel || "") + "</li>" +
             "<li><strong>אימייל:</strong> " + (payload.email || "") + "</li>" +
             "<li><strong>קבצים:</strong> " + selectedFiles.length + "</li>";
-          form.reset(); $("files").value = ""; selectedFiles = []; renderSelectedFiles();
+          form.reset(); $("files").value = ""; selectedFiles = []; docFilesMap = {}; extraFilesList = []; renderDocsChecklist();
           claimType = null; baggageSubtype = null;
           crmCustomer = null; crmPolicies = []; selectedPolicyId = "";
           $("baggageItems").innerHTML = ""; $("expenseItems").innerHTML = "";
@@ -1641,8 +1798,8 @@
           status.textContent = "שגיאה בשליחת התביעה. נסו שוב בעוד מספר דקות.";
           status.classList.add("err");
         } finally {
-          $("submitBtn").disabled = false;
           $("submitBtn").textContent = "שליחת תביעה";
+          renderDocsChecklist();
         }
       };
 
