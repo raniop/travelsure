@@ -2224,8 +2224,8 @@
             "קבצים שנבחרו (" + selectedFiles.length + "): " + selectedFiles.map((f) => f.name).join(", "),
           ].join("\n").slice(0, 4800);
 
-          // Email-first: notify staff + customer before uploading heavy scans.
-          // Avoid duplicating base64 under both files + attachments (that doubled payload size).
+          // One email only: details + documents together.
+          // Single attachments array (avoid doubling base64 under files + attachments).
           payload.attachedFileNames = filesPayload.map((f) => f.filename);
           const baseClaimBody = {
             mode: "claim",
@@ -2237,23 +2237,18 @@
             claimPayload: payload,
           };
 
-          let primary = await postJson(baseClaimBody);
+          let primary = await postJson({
+            ...baseClaimBody,
+            attachments: filesPayload.map((f) => ({
+              filename: f.filename,
+              content: f.content,
+              type: f.type,
+            })),
+          });
 
-          if (primary.ok && filesPayload.length > 0) {
-            const claimNumberForFiles = primary.claimNumber || "";
-            await postJson({
-              ...baseClaimBody,
-              ...(claimNumberForFiles ? { claimNumber: claimNumberForFiles } : {}),
-              claimPayload: Object.assign({}, payload, {
-                claimNumber: claimNumberForFiles || payload.claimNumber,
-                documentsFollowUp: true,
-              }),
-              attachments: filesPayload.map((f) => ({
-                filename: f.filename,
-                content: f.content,
-                type: f.type,
-              })),
-            });
+          // If oversized scans block the request, retry once without file bytes (still one email).
+          if (!primary.ok && filesPayload.length > 0) {
+            primary = await postJson(baseClaimBody);
           }
 
           let resolvedNumber = primary.claimNumber || "";

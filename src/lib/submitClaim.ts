@@ -120,8 +120,8 @@ export async function submitClaimRequest(
     }
   };
 
-  // Email-first: notify staff + customer before uploading heavy scans.
-  // Large base64 PDFs often exceed Edge Function / Resend limits and used to block all mail.
+  // One email only: claim details + PDF + documents together.
+  // Keep a single attachments array (do not also send under `files` — that doubled payload size).
   const attachmentNames = attachments.map((f) => f.filename);
   const claimPayloadWithFiles = {
     ...fullPayload,
@@ -139,27 +139,18 @@ export async function submitClaimRequest(
     claimPayload: claimPayloadWithFiles,
   };
 
-  // 1) Always send the claim email (PDF + details) without raw file bytes first.
-  let primary = await tryInvoke(baseClaimBody);
+  let primary = await tryInvoke({
+    ...baseClaimBody,
+    attachments: attachments.map((f) => ({
+      filename: f.filename,
+      content: f.content,
+      type: f.type,
+    })),
+  });
 
-  // 2) Best-effort: attach document bytes in a follow-up staff mail (same claim number).
-  if (primary.ok && attachments.length > 0) {
-    const claimNumberForFiles = String(primary.claimNumber || pendingNumber || "");
-    await tryInvoke({
-      ...baseClaimBody,
-      ...(claimNumberForFiles ? { claimNumber: claimNumberForFiles } : {}),
-      claimPayload: {
-        ...claimPayloadWithFiles,
-        ...(claimNumberForFiles ? { claimNumber: claimNumberForFiles } : {}),
-        documentsFollowUp: true,
-      },
-      // Single copy only — do not also send under `files` (that doubled payload size).
-      attachments: attachments.map((f) => ({
-        filename: f.filename,
-        content: f.content,
-        type: f.type,
-      })),
-    });
+  // If oversized scans block the request, retry once without file bytes (still a single email).
+  if (!primary.ok && attachments.length > 0) {
+    primary = await tryInvoke(baseClaimBody);
   }
 
   let resolvedNumber = primary.claimNumber || pendingNumber;
