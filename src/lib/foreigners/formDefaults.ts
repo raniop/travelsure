@@ -114,6 +114,12 @@ export const isValidDateDdMmYyyy = (value: string) => {
 
 export const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
+/** Hebrew / other non-Latin letters that must not appear on the foreign worker form. */
+export const containsHebrew = (value: string) => /[\u0590-\u05FF]/.test(value);
+
+/** Keep Latin letters, digits, and common punctuation — strip Hebrew characters. */
+export const toEnglishOnly = (value: string) => value.replace(/[\u0590-\u05FF]+/g, "");
+
 export const suggestedInstallments = (from: string, to: string): number | null => {
   if (!isValidDateDdMmYyyy(from) || !isValidDateDdMmYyyy(to)) return null;
   const [fd, fm, fy] = from.split("/").map(Number);

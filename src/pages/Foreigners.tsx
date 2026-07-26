@@ -6,12 +6,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.avif";
 import {
+  containsHebrew,
   createInitialForeignersForm,
   formatDateInput,
   isValidDateDdMmYyyy,
   isValidEmail,
   PROVIDER_LABELS,
   suggestedInstallments,
+  toEnglishOnly,
   WORK_PURPOSE_LABELS,
 } from "@/lib/foreigners/formDefaults";
 import { HEALTH_CONDITION_GROUPS } from "@/lib/foreigners/healthQuestions";
@@ -185,6 +187,28 @@ const Foreigners = () => {
     if (!form.street.trim()) next.street = "שדה חובה";
     if (!form.houseNo.trim()) next.houseNo = "שדה חובה";
     if (!form.city.trim()) next.city = "שדה חובה";
+
+    const englishOnlyFields: Array<keyof ForeignersForm> = [
+      "firstName",
+      "lastName",
+      "passportNo",
+      "passportCountry",
+      "countryOfOrigin",
+      "workDescription",
+      "street",
+      "houseNo",
+      "apartmentNo",
+      "city",
+      "zip",
+      "email",
+    ];
+    for (const key of englishOnlyFields) {
+      const value = String(form[key] || "");
+      if (value && containsHebrew(value)) {
+        next[key as string] = "יש להזין באנגלית בלבד";
+      }
+    }
+
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -341,6 +365,32 @@ const Foreigners = () => {
     style: { direction: "rtl" as const, textAlign: "right" as const },
   });
 
+  const englishTextProps = (
+    name: keyof ForeignersForm,
+    opts?: { placeholder?: string; type?: string; autoCapitalize?: string }
+  ) => ({
+    value: String(form[name] || ""),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const cleaned = toEnglishOnly(e.target.value);
+      setField(name, cleaned as never);
+      if (cleaned !== e.target.value) {
+        setErrors((prev) => ({ ...prev, [name as string]: "יש להזין באנגלית בלבד" }));
+      }
+    },
+    onBlur: () => {
+      const value = String(form[name] || "");
+      if (value && containsHebrew(value)) {
+        setErrors((prev) => ({ ...prev, [name as string]: "יש להזין באנגלית בלבד" }));
+      }
+    },
+    placeholder: opts?.placeholder,
+    type: opts?.type || "text",
+    lang: "en",
+    autoCapitalize: opts?.autoCapitalize || "words",
+    className: `bg-slate-50 text-left ${errors[name as string] ? "border-destructive" : ""}`,
+    style: { direction: "ltr" as const, textAlign: "left" as const },
+  });
+
   const HealthDetailBlock = ({
     title,
     titleEn,
@@ -488,22 +538,27 @@ const Foreigners = () => {
 
             {step === "worker" && (
               <div className="space-y-4">
-                <h2 className="text-lg font-bold text-[#143834]">פרטי המועמד לביטוח</h2>
+                <div>
+                  <h2 className="text-lg font-bold text-[#143834]">פרטי המועמד לביטוח</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    זהו העובד הזר המבוטח · יש למלא את הפרטים <span className="font-semibold text-[#1f4b46]">באנגלית בלבד</span>
+                  </p>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="שם פרטי / First name" required error={errors.firstName}>
-                    <Input {...textProps("firstName", { placeholder: "First name" })} />
+                  <Field label="שם פרטי / First name" required error={errors.firstName} hint="English only">
+                    <Input {...englishTextProps("firstName", { placeholder: "First name" })} />
                   </Field>
-                  <Field label="שם משפחה / Last name" required error={errors.lastName}>
-                    <Input {...textProps("lastName", { placeholder: "Last name" })} />
+                  <Field label="שם משפחה / Last name" required error={errors.lastName} hint="English only">
+                    <Input {...englishTextProps("lastName", { placeholder: "Last name" })} />
                   </Field>
-                  <Field label="מספר דרכון / Passport No." required error={errors.passportNo}>
-                    <Input {...textProps("passportNo")} />
+                  <Field label="מספר דרכון / Passport No." required error={errors.passportNo} hint="English / numbers only">
+                    <Input {...englishTextProps("passportNo", { placeholder: "Passport number", autoCapitalize: "characters" })} />
                   </Field>
-                  <Field label="ארץ הנפקת דרכון" required error={errors.passportCountry}>
-                    <Input {...textProps("passportCountry")} />
+                  <Field label="ארץ הנפקת דרכון / Passport country" required error={errors.passportCountry} hint="English only">
+                    <Input {...englishTextProps("passportCountry", { placeholder: "e.g. Philippines" })} />
                   </Field>
-                  <Field label="ארץ מוצא" required error={errors.countryOfOrigin}>
-                    <Input {...textProps("countryOfOrigin")} />
+                  <Field label="ארץ מוצא / Country of origin" required error={errors.countryOfOrigin} hint="English only">
+                    <Input {...englishTextProps("countryOfOrigin", { placeholder: "e.g. Philippines" })} />
                   </Field>
                   <Field label="תאריך לידה" required error={errors.birthDate} hint="DD/MM/YYYY">
                     <Input {...dateProps("birthDate")} />
@@ -547,33 +602,41 @@ const Foreigners = () => {
                     לפי תקופת הביטוח ניתן לפרוס ל־{installments} תשלומים
                   </p>
                 )}
-                <Field label="העיסוק למענו הגעת לישראל / תיאור עבודה">
-                  <Input {...textProps("workDescription", { placeholder: "לדוגמה: טיפול סיעודי / בניין" })} />
+                <Field
+                  label="העיסוק למענו הגעת לישראל / Job description"
+                  error={errors.workDescription}
+                  hint="English only"
+                >
+                  <Input
+                    {...englishTextProps("workDescription", {
+                      placeholder: "e.g. Nursing care / Construction",
+                    })}
+                  />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="רחוב" required error={errors.street}>
-                    <Input {...textProps("street")} />
+                  <Field label="רחוב / Street" required error={errors.street} hint="English only">
+                    <Input {...englishTextProps("street", { placeholder: "Street name" })} />
                   </Field>
-                  <Field label="מס׳ בית" required error={errors.houseNo}>
-                    <Input {...textProps("houseNo")} />
+                  <Field label="מס׳ בית / House No." required error={errors.houseNo}>
+                    <Input {...englishTextProps("houseNo", { placeholder: "12", autoCapitalize: "off" })} />
                   </Field>
-                  <Field label="מס׳ דירה">
-                    <Input {...textProps("apartmentNo")} />
+                  <Field label="מס׳ דירה / Apt." error={errors.apartmentNo}>
+                    <Input {...englishTextProps("apartmentNo", { placeholder: "3", autoCapitalize: "off" })} />
                   </Field>
-                  <Field label="עיר" required error={errors.city}>
-                    <Input {...textProps("city")} />
+                  <Field label="עיר / City" required error={errors.city} hint="English only">
+                    <Input {...englishTextProps("city", { placeholder: "Tel Aviv" })} />
                   </Field>
-                  <Field label="מיקוד">
-                    <Input {...textProps("zip")} />
+                  <Field label="מיקוד / Zip" error={errors.zip}>
+                    <Input {...englishTextProps("zip", { placeholder: "6100000", autoCapitalize: "off" })} />
                   </Field>
-                  <Field label="טלפון">
+                  <Field label="טלפון / Phone">
                     <Input {...textProps("phone", { type: "tel" })} />
                   </Field>
-                  <Field label="נייד" required error={errors.mobile}>
+                  <Field label="נייד / Mobile" required error={errors.mobile}>
                     <Input {...textProps("mobile", { type: "tel" })} />
                   </Field>
-                  <Field label="דוא״ל" required error={errors.email}>
-                    <Input {...textProps("email", { type: "email" })} />
+                  <Field label="דוא״ל / Email" required error={errors.email}>
+                    <Input {...englishTextProps("email", { type: "email", placeholder: "name@email.com", autoCapitalize: "off" })} />
                   </Field>
                 </div>
               </div>
