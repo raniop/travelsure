@@ -1,21 +1,41 @@
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
-const HEBREW_FONT_URLS = [
-  "https://cdn.jsdelivr.net/gh/notofonts/hebrew@main/fonts/NotoSansHebrew/full/ttf/NotoSansHebrew-Regular.ttf",
-  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSansHebrew/NotoSansHebrew-Regular.ttf",
+/**
+ * Bundled Heebo Regular — includes Hebrew + Latin digits/punctuation.
+ * Avoid Noto Sans Hebrew alone (missing digits → □□□ in PDF).
+ */
+const LOCAL_FONT_URL = new URL("./fonts/Heebo-Regular.ttf", import.meta.url);
+
+const FALLBACK_FONT_URLS = [
+  "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/heebo/Heebo%5Bwght%5D.ttf",
+  "https://raw.githubusercontent.com/google/fonts/main/ofl/heebo/Heebo%5Bwght%5D.ttf",
 ];
 
 let cachedFontBytes: Uint8Array | null = null;
 
-async function loadHebrewFontBytes(): Promise<Uint8Array | null> {
+async function loadClaimFontBytes(): Promise<Uint8Array | null> {
   if (cachedFontBytes) return cachedFontBytes;
-  for (const url of HEBREW_FONT_URLS) {
+
+  try {
+    const local = await Deno.readFile(LOCAL_FONT_URL);
+    if (local.byteLength > 1000) {
+      cachedFontBytes = local;
+      return cachedFontBytes;
+    }
+  } catch (err) {
+    console.error("Local claim font read failed:", err);
+  }
+
+  for (const url of FALLBACK_FONT_URLS) {
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
-      cachedFontBytes = new Uint8Array(await res.arrayBuffer());
-      return cachedFontBytes;
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      if (bytes.byteLength > 1000) {
+        cachedFontBytes = bytes;
+        return cachedFontBytes;
+      }
     } catch {
       // try next
     }
@@ -23,17 +43,18 @@ async function loadHebrewFontBytes(): Promise<Uint8Array | null> {
   return null;
 }
 
-/** Visual RTL for pdf-lib (draws LTR). Keeps digit runs in order. */
+/**
+ * Convert logical Hebrew/mixed text to visual order for pdf-lib LTR drawing.
+ * Digits / Latin runs stay in natural reading order.
+ */
 export function visualRtl(input: unknown): string {
   const text = String(input ?? "");
   if (!text) return "";
   if (!/[\u0590-\u05FF]/.test(text)) return text;
 
-  const tokens = text.match(/[\u0590-\u05FF]+|[^\u0590-\u05FF]+/g) || [text];
-  return tokens
-    .reverse()
-    .map((token) => (/[\u0590-\u05FF]/.test(token) ? [...token].reverse().join("") : token))
-    .join("");
+  const reversed = [...text].reverse().join("");
+  // Un-reverse LTR runs (numbers, emails, latin words, dates)
+  return reversed.replace(/[0-9A-Za-z@._+/\-:]+/g, (run) => [...run].reverse().join(""));
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -110,9 +131,9 @@ export function buildClaimPdfRows(
       const row = item as Record<string, unknown>;
       if (!String(row.item ?? "").trim()) return;
       const line = [row.item, row.purchasePrice ? `ערך: ${row.purchasePrice}` : ""]
-          .map((v) => String(v ?? "").trim())
-          .filter(Boolean)
-          .join(" | ");
+        .map((v) => String(v ?? "").trim())
+        .filter(Boolean)
+        .join(" | ");
       if (line) push(rows, `פריט כבודה ${idx + 1}`, line);
     });
   }
@@ -122,6 +143,51 @@ export function buildClaimPdfRows(
   }
 
   return rows;
+}
+
+function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const value = String(text ?? "");
+  if (!value) return [""];
+  // Prefer wrapping on spaces; fall back to hard slices for long tokens (emails etc.)
+  const words = value.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+
+  const fits = (s: string) => font.widthOfTextAtSize(visualRtl(s), size) <= maxWidth;
+
+  const pushHard = (token: string) => {
+    let rest = token;
+    while (rest) {
+      let lo = 1;
+      let hi = rest.length;
+      let best = 1;
+      while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (fits(rest.slice(0, mid))) {
+          best = mid;
+          lo = mid + 1;
+        } else hi = mid - 1;
+      }
+      lines.push(rest.slice(0, best));
+      rest = rest.slice(best);
+    }
+  };
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (fits(next)) {
+      current = next;
+      continue;
+    }
+    if (current) lines.push(current);
+    if (fits(word)) current = word;
+    else {
+      pushHard(word);
+      current = "";
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [""];
 }
 
 export async function buildClaimPdfBase64(
@@ -134,32 +200,35 @@ export async function buildClaimPdfBase64(
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
 
-    const fontBytes = await loadHebrewFontBytes();
-    const hebrewFont = fontBytes ? await pdf.embedFont(fontBytes, { subset: true }) : null;
-    const latinFont = await pdf.embedFont(StandardFonts.Helvetica);
+    const fontBytes = await loadClaimFontBytes();
+    if (!fontBytes) {
+      console.error("buildClaimPdfBase64: no Hebrew-capable font available");
+      return null;
+    }
+
+    // subset:false avoids dropping digits/punctuation from the embedded face
+    const font = await pdf.embedFont(fontBytes, { subset: false });
     const latinBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-    const font = hebrewFont || latinFont;
 
     const pageWidth = 595.28; // A4
     const pageHeight = 841.89;
     const margin = 40;
     const contentWidth = pageWidth - margin * 2;
+    const right = pageWidth - margin;
 
-    let page = pdf.addPage([pageWidth, pageHeight]);
+    let page: PDFPage = pdf.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
 
-    const drawRtl = (text: string, size: number, xRight: number, yPos: number, useBold = false) => {
-      const drawn = hebrewFont ? visualRtl(text) : text;
-      const active = hebrewFont ? hebrewFont : useBold ? latinBold : latinFont;
-      const width = active.widthOfTextAtSize(drawn, size);
+    const drawRight = (text: string, size: number, yPos: number, activeFont: PDFFont = font, color = rgb(0.08, 0.12, 0.18)) => {
+      const drawn = visualRtl(text);
+      const width = activeFont.widthOfTextAtSize(drawn, size);
       page.drawText(drawn, {
-        x: xRight - width,
+        x: right - width,
         y: yPos,
         size,
-        font: active,
-        color: rgb(0.08, 0.12, 0.18),
+        font: activeFont,
+        color,
       });
-      return 16;
     };
 
     // Header bar
@@ -170,15 +239,9 @@ export async function buildClaimPdfBase64(
       height: 72,
       color: rgb(0.06, 0.46, 0.43),
     });
-    page.drawText(hebrewFont ? visualRtl("TravelSure · תביעת ביטוח נסיעות") : "TravelSure Claim", {
-      x: hebrewFont
-        ? pageWidth - margin - font.widthOfTextAtSize(visualRtl("TravelSure · תביעת ביטוח נסיעות"), 16)
-        : margin,
-      y: pageHeight - 36,
-      size: 16,
-      font,
-      color: rgb(1, 1, 1),
-    });
+
+    const headerTitle = "תביעת ביטוח נסיעות · TravelSure";
+    drawRight(headerTitle, 16, pageHeight - 36, font, rgb(1, 1, 1));
     page.drawText(`# ${claimNumber}`, {
       x: margin,
       y: pageHeight - 36,
@@ -189,17 +252,17 @@ export async function buildClaimPdfBase64(
     y = pageHeight - 92;
 
     const fullName = String(claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`).trim();
-    y -= drawRtl(`שם המבוטח: ${fullName}`, 12, pageWidth - margin, y);
-    y -= drawRtl(`סוג תביעה: ${String(claim.claimTypeLabel || "")}`, 11, pageWidth - margin, y);
-    y -= 10;
+    drawRight(`שם המבוטח: ${fullName}`, 12, y);
+    y -= 18;
+    drawRight(`סוג תביעה: ${String(claim.claimTypeLabel || "")}`, 11, y);
+    y -= 22;
 
     for (const row of rows) {
-      if (y < 70) {
+      if (y < 80) {
         page = pdf.addPage([pageWidth, pageHeight]);
         y = pageHeight - margin;
       }
 
-      // Label
       page.drawRectangle({
         x: margin,
         y: y - 4,
@@ -207,44 +270,31 @@ export async function buildClaimPdfBase64(
         height: 18,
         color: rgb(0.94, 0.97, 0.96),
       });
-      y -= drawRtl(row.label, 10, pageWidth - margin - 4, y);
-      y -= 2;
+      drawRight(row.label, 10, y);
+      y -= 20;
 
-      // Value with wrapping
-      const value = String(row.value);
-      const maxChars = 90;
-      const chunks: string[] = [];
-      if (value.length <= maxChars) chunks.push(value);
-      else {
-        let rest = value;
-        while (rest.length) {
-          chunks.push(rest.slice(0, maxChars));
-          rest = rest.slice(maxChars);
-        }
-      }
-      for (const chunk of chunks) {
+      const lines = wrapText(row.value, font, 11, contentWidth - 8);
+      for (const line of lines) {
         if (y < 50) {
           page = pdf.addPage([pageWidth, pageHeight]);
           y = pageHeight - margin;
         }
-        y -= drawRtl(chunk, 11, pageWidth - margin - 4, y);
+        drawRight(line, 11, y);
+        y -= 15;
       }
       y -= 8;
     }
 
-    // Footer
-    page.drawText(
-      hebrewFont
-        ? visualRtl("נוצר אוטומטית מטופס התביעה באתר TravelSure · אופיר ושות׳ סוכנות לביטוח")
-        : "Generated from TravelSure claim form",
-      {
-        x: margin,
-        y: 28,
-        size: 8,
-        font,
-        color: rgb(0.45, 0.5, 0.55),
-      },
-    );
+    const footer = "נוצר אוטומטית מטופס התביעה באתר TravelSure · אופיר ושות׳ סוכנות לביטוח";
+    const footerDrawn = visualRtl(footer);
+    const footerWidth = font.widthOfTextAtSize(footerDrawn, 8);
+    page.drawText(footerDrawn, {
+      x: right - footerWidth,
+      y: 28,
+      size: 8,
+      font,
+      color: rgb(0.45, 0.5, 0.55),
+    });
 
     const bytes = await pdf.save();
     return {
