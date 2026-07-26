@@ -43,20 +43,6 @@ async function loadClaimFontBytes(): Promise<Uint8Array | null> {
   return null;
 }
 
-/**
- * Convert logical Hebrew/mixed text to visual order for pdf-lib LTR drawing.
- * Digits / Latin runs stay in natural reading order.
- */
-export function visualRtl(input: unknown): string {
-  const text = String(input ?? "");
-  if (!text) return "";
-  if (!/[\u0590-\u05FF]/.test(text)) return text;
-
-  const reversed = [...text].reverse().join("");
-  // Un-reverse LTR runs (numbers, emails, latin words, dates)
-  return reversed.replace(/[0-9A-Za-z@._+/\-:]+/g, (run) => [...run].reverse().join(""));
-}
-
 function uint8ToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunk = 0x8000;
@@ -67,6 +53,100 @@ function uint8ToBase64(bytes: Uint8Array): string {
 }
 
 type PdfRow = { label: string; value: string };
+type BidiRun = { text: string; ltr: boolean };
+
+const isRtlChar = (ch: string) => /[\u0590-\u05FF]/.test(ch);
+const isLtrStrong = (ch: string) => /[0-9A-Za-z]/.test(ch);
+
+/** Split logical text into LTR / RTL runs for a right-to-left paragraph. */
+export function splitBidiRuns(input: unknown): BidiRun[] {
+  const text = String(input ?? "");
+  if (!text) return [];
+
+  const runs: BidiRun[] = [];
+  let buf = "";
+  let mode: "ltr" | "rtl" | "neutral" = "neutral";
+
+  const flush = (next?: "ltr" | "rtl") => {
+    if (!buf) {
+      if (next) mode = next;
+      return;
+    }
+    runs.push({ text: buf, ltr: mode === "ltr" });
+    buf = "";
+    mode = next || "neutral";
+  };
+
+  for (const ch of [...text]) {
+    if (isLtrStrong(ch)) {
+      if (mode === "rtl") flush("ltr");
+      else mode = "ltr";
+      buf += ch;
+    } else if (isRtlChar(ch)) {
+      if (mode === "ltr") flush("rtl");
+      else mode = "rtl";
+      buf += ch;
+    } else {
+      // spaces / punctuation stick to current run
+      buf += ch;
+    }
+  }
+  flush();
+  return runs;
+}
+
+function widthOf(text: string, font: PDFFont, size: number): number {
+  if (!text) return 0;
+  try {
+    return font.widthOfTextAtSize(text, size);
+  } catch {
+    // Missing glyph fallback width
+    return [...text].length * size * 0.5;
+  }
+}
+
+/**
+ * Draw a logical string as a right-aligned RTL paragraph.
+ * Glyphs are placed explicitly — no string reversing — so viewers won't double-flip Hebrew.
+ */
+export function drawAlignedRtl(
+  page: PDFPage,
+  text: string,
+  opts: {
+    font: PDFFont;
+    size: number;
+    right: number;
+    y: number;
+    color?: ReturnType<typeof rgb>;
+  },
+) {
+  const { font, size, right, y } = opts;
+  const color = opts.color ?? rgb(0.08, 0.12, 0.18);
+  const runs = splitBidiRuns(text);
+  if (!runs.length) return;
+
+  // RTL paragraph: place runs from right to left
+  let x = right;
+  for (let i = runs.length - 1; i >= 0; i--) {
+    const run = runs[i];
+    if (run.ltr) {
+      const w = widthOf(run.text, font, size);
+      x -= w;
+      page.drawText(run.text, { x, y, size, font, color });
+    } else {
+      // Draw Hebrew (and neutrals in RTL runs) one glyph at a time, logical order, right→left
+      for (const ch of [...run.text]) {
+        const w = widthOf(ch, font, size);
+        x -= w;
+        page.drawText(ch, { x, y, size, font, color });
+      }
+    }
+  }
+}
+
+function measureAlignedRtl(text: string, font: PDFFont, size: number): number {
+  return splitBidiRuns(text).reduce((sum, run) => sum + widthOf(run.text, font, size), 0);
+}
 
 function yesNo(value: unknown): string {
   if (value === true || value === "true" || value === "yes") return "כן";
@@ -148,28 +228,29 @@ export function buildClaimPdfRows(
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const value = String(text ?? "");
   if (!value) return [""];
-  // Prefer wrapping on spaces; fall back to hard slices for long tokens (emails etc.)
   const words = value.split(/\s+/);
   const lines: string[] = [];
   let current = "";
 
-  const fits = (s: string) => font.widthOfTextAtSize(visualRtl(s), size) <= maxWidth;
+  const fits = (s: string) => measureAlignedRtl(s, font, size) <= maxWidth;
 
   const pushHard = (token: string) => {
     let rest = token;
     while (rest) {
       let lo = 1;
-      let hi = rest.length;
+      let hi = [...rest].length;
       let best = 1;
+      const chars = [...rest];
       while (lo <= hi) {
         const mid = Math.floor((lo + hi) / 2);
-        if (fits(rest.slice(0, mid))) {
+        const slice = chars.slice(0, mid).join("");
+        if (fits(slice)) {
           best = mid;
           lo = mid + 1;
         } else hi = mid - 1;
       }
-      lines.push(rest.slice(0, best));
-      rest = rest.slice(best);
+      lines.push(chars.slice(0, best).join(""));
+      rest = chars.slice(best).join("");
     }
   };
 
@@ -206,7 +287,6 @@ export async function buildClaimPdfBase64(
       return null;
     }
 
-    // subset:false avoids dropping digits/punctuation from the embedded face
     const font = await pdf.embedFont(fontBytes, { subset: false });
     const latinBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
@@ -219,16 +299,14 @@ export async function buildClaimPdfBase64(
     let page: PDFPage = pdf.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
 
-    const drawRight = (text: string, size: number, yPos: number, activeFont: PDFFont = font, color = rgb(0.08, 0.12, 0.18)) => {
-      const drawn = visualRtl(text);
-      const width = activeFont.widthOfTextAtSize(drawn, size);
-      page.drawText(drawn, {
-        x: right - width,
-        y: yPos,
-        size,
-        font: activeFont,
-        color,
-      });
+    const drawRight = (
+      text: string,
+      size: number,
+      yPos: number,
+      activeFont: PDFFont = font,
+      color = rgb(0.08, 0.12, 0.18),
+    ) => {
+      drawAlignedRtl(page, text, { font: activeFont, size, right, y: yPos, color });
     };
 
     // Header bar
@@ -240,8 +318,7 @@ export async function buildClaimPdfBase64(
       color: rgb(0.06, 0.46, 0.43),
     });
 
-    const headerTitle = "תביעת ביטוח נסיעות · TravelSure";
-    drawRight(headerTitle, 16, pageHeight - 36, font, rgb(1, 1, 1));
+    drawRight("תביעת ביטוח נסיעות · TravelSure", 16, pageHeight - 36, font, rgb(1, 1, 1));
     page.drawText(`# ${claimNumber}`, {
       x: margin,
       y: pageHeight - 36,
@@ -285,16 +362,13 @@ export async function buildClaimPdfBase64(
       y -= 8;
     }
 
-    const footer = "נוצר אוטומטית מטופס התביעה באתר TravelSure · אופיר ושות׳ סוכנות לביטוח";
-    const footerDrawn = visualRtl(footer);
-    const footerWidth = font.widthOfTextAtSize(footerDrawn, 8);
-    page.drawText(footerDrawn, {
-      x: right - footerWidth,
-      y: 28,
-      size: 8,
+    drawRight(
+      "נוצר אוטומטית מטופס התביעה באתר TravelSure · אופיר ושות׳ סוכנות לביטוח",
+      8,
+      28,
       font,
-      color: rgb(0.45, 0.5, 0.55),
-    });
+      rgb(0.45, 0.5, 0.55),
+    );
 
     const bytes = await pdf.save();
     return {
