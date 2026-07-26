@@ -1404,7 +1404,7 @@ const Claim = () => {
                     <>
                       <div className="space-y-3">
                         {baggageItems.map((row, idx) => (
-                          <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4">
+                          <div key={idx} className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-3">
                             <Input
                               className="bg-slate-50"
                               value={row.item}
@@ -1415,25 +1415,15 @@ const Claim = () => {
                               }}
                               placeholder="פריט"
                             />
-                            <ClaimDateInput
-                              value={row.purchaseDate}
-                              onChange={(v) => {
-                                const next = [...baggageItems];
-                                next[idx] = { ...row, purchaseDate: v };
-                                setBaggageItems(next);
-                              }}
-                              aria-label="תאריך רכישה"
-                              placeholder="תאריך רכישה"
-                            />
                             <Input
                               className="bg-slate-50"
                               value={row.purchasePrice}
                               onChange={(e) => {
                                 const next = [...baggageItems];
-                                next[idx] = { ...row, purchasePrice: e.target.value };
+                                next[idx] = { ...row, purchasePrice: e.target.value, purchaseDate: "" };
                                 setBaggageItems(next);
                               }}
-                              placeholder="מחיר רכישה"
+                              placeholder="ערך הפריט"
                             />
                             <div className="flex items-center justify-between gap-2">
                               <label className="inline-flex items-center gap-2 text-xs text-slate-600">

@@ -109,7 +109,10 @@ export function buildClaimPdfRows(
       if (!item || typeof item !== "object") return;
       const row = item as Record<string, unknown>;
       if (!String(row.item ?? "").trim()) return;
-      const line = [row.item, row.purchaseDate, row.purchasePrice].map((v) => String(v ?? "").trim()).filter(Boolean).join(" | ");
+      const line = [row.item, row.purchasePrice ? `ערך: ${row.purchasePrice}` : ""]
+          .map((v) => String(v ?? "").trim())
+          .filter(Boolean)
+          .join(" | ");
       if (line) push(rows, `פריט כבודה ${idx + 1}`, line);
     });
   }

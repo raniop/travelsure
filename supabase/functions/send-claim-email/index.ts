@@ -140,8 +140,7 @@ const buildRowsHtml = (payload: ClaimPayload): string => {
         if (!String(row.item ?? "").trim()) return "";
         const line = [
           row.item,
-          row.purchaseDate,
-          row.purchasePrice,
+          row.purchasePrice ? `ערך: ${row.purchasePrice}` : "",
           row.receiptAttached ? "קבלה: כן" : "קבלה: לא",
         ]
           .map((v) => String(v ?? "").trim())

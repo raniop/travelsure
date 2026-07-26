@@ -1154,14 +1154,12 @@
         row.className = "item-row";
         row.innerHTML = `
           <input placeholder="פריט" value="${data.item || ""}" data-k="item" />
-          <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" value="${formatDateDisplay(data.purchaseDate || "")}" data-k="purchaseDate" />
-          <input placeholder="מחיר רכישה" value="${data.purchasePrice || ""}" data-k="purchasePrice" />
+          <input placeholder="ערך הפריט" value="${data.purchasePrice || ""}" data-k="purchasePrice" />
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("baggageItems").children.length > 1) row.remove();
         };
         $("baggageItems").appendChild(row);
-        wireAllDateInputs(row);
       }
 
       function addExpenseRow(data = {}) {
