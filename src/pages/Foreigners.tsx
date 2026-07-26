@@ -590,12 +590,14 @@ const Foreigners = () => {
                   <Field label="תאריך ראשון שבוטח (אם רלוונטי)">
                     <Input {...dateProps("firstInsuranceDate")} />
                   </Field>
-                  <Field label="תקופת ביטוח מ־" required error={errors.insuranceFrom}>
-                    <Input {...dateProps("insuranceFrom")} />
-                  </Field>
-                  <Field label="תקופת ביטוח עד" required error={errors.insuranceTo}>
-                    <Input {...dateProps("insuranceTo")} />
-                  </Field>
+                  <div className="col-span-full grid gap-4 sm:grid-cols-2">
+                    <Field label="תקופת ביטוח מ־" required error={errors.insuranceFrom}>
+                      <Input {...dateProps("insuranceFrom")} />
+                    </Field>
+                    <Field label="תקופת ביטוח עד" required error={errors.insuranceTo}>
+                      <Input {...dateProps("insuranceTo")} />
+                    </Field>
+                  </div>
                 </div>
                 {installments && (
                   <p className="rounded-xl bg-[#e8f4f1] px-3 py-2 text-xs font-semibold text-[#1f4b46]">
