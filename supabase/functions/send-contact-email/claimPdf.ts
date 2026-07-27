@@ -444,14 +444,39 @@ export async function buildClaimPdfBase64(
       }
     };
 
+    /** Label (RTL) on the right, value to its left — avoids reversed mixed bidi lines. */
+    const drawLabelValue = (
+      label: string,
+      value: string,
+      size: number,
+      yPos: number,
+      color = BLACK,
+    ) => {
+      const labelText = label.endsWith(":") ? label : `${label}:`;
+      const labelW = measureAlignedRtl(labelText, font, size);
+      drawAlignedRtl(page, labelText, { font, size, right, y: yPos, color });
+      if (value) {
+        // LTR values (numbers/dates) drawn left of the Hebrew label
+        const gap = 6;
+        const vw = widthOf(value, font, size);
+        page.drawText(value, {
+          x: right - labelW - gap - vw,
+          y: yPos,
+          size,
+          font,
+          color,
+        });
+      }
+    };
+
     // ---- Header (page 1) ----
     await drawOphirBrand();
     const subject = claimTypeSubject(claim);
     const today = formatClaimDateDisplay(claim.submittedAt) || formatClaimDateDisplay(new Date().toISOString().slice(0, 10));
     drawRight("אופיר ושות׳ סוכנות לביטוח", 11, pageHeight - margin - 2, BLACK);
     drawRight(subject, 11, pageHeight - margin - 18, BLACK);
-    drawRight(`מספר פניה: ${claimNumber}`, 11, pageHeight - margin - 34, BLACK);
-    drawRight(`תאריך: ${today}`, 11, pageHeight - margin - 50, BLACK);
+    drawLabelValue("מספר פניה", String(claimNumber), 11, pageHeight - margin - 34, BLACK);
+    drawLabelValue("תאריך", today, 11, pageHeight - margin - 50, BLACK);
     y = pageHeight - margin - 88;
 
     const sectionTitle = (title: string) => {
@@ -542,23 +567,14 @@ export async function buildClaimPdfBase64(
     }
     y -= 6;
 
-    // Who cancelled table — only for trip cancellation claims
+    // Who cancelled — only for trip cancellation claims (same kv style as other sections)
     if (String(claim.claimType || "") === "trip_cancel") {
       sectionTitle("מי ביטל את הנסיעה");
-      ensureSpace(40);
-      page.drawRectangle({
-        x: left,
-        y: y - 18,
-        width: contentWidth,
-        height: 20,
-        color: LIGHT_ROW,
-      });
-      drawRight("שם המבוטח", 10, y - 4, BLUE, right - 8);
-      drawRight('ת"ז', 10, y - 4, BLUE, left + contentWidth * 0.42);
-      y -= 28;
-      drawRight(fullName || "—", 10, y, BLACK, right - 8);
-      drawRight(String(claim.idNumber || "—"), 10, y, BLACK, left + contentWidth * 0.42);
-      y -= 24;
+      drawKvRows([
+        ...(kv("שם המבוטח", fullName) ? [kv("שם המבוטח", fullName)!] : []),
+        ...(kv('ת"ז', claim.idNumber) ? [kv('ת"ז', claim.idNumber)!] : []),
+      ]);
+      y -= 8;
     }
 
     // Expenses
