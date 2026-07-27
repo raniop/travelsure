@@ -615,6 +615,20 @@ const Claim = () => {
       if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
     }
 
+    if (claimType === "medical" || claimType === "trip_cancel") {
+      const filled = expenses.filter(
+        (r) => r.date.trim() || r.type.trim() || r.amount.trim(),
+      );
+      const complete = filled.filter(
+        (r) => r.date.trim() && r.type.trim() && r.amount.trim(),
+      );
+      if (!complete.length) {
+        next.expenses = "יש למלא לפחות הוצאה אחת (תאריך, סוג וסכום)";
+      } else if (filled.length !== complete.length) {
+        next.expenses = "יש להשלים תאריך, סוג הוצאה וסכום בכל שורה שהתחלתם";
+      }
+    }
+
     if (claimType === "trip_cancel" || claimType === "trip_shorten") {
       if (!formData.claimReason.trim()) next.claimReason = "שדה חובה";
     }
@@ -1429,6 +1443,7 @@ const Claim = () => {
                 <section className="space-y-4">
                   <h3 className="border-b border-slate-100 pb-2 text-sm font-bold text-[#1a4a45]">
                     {claimType === "medical" ? "ה. פירוט מרכיבי התביעה" : "ה. פירוט הוצאות"}
+                    <span className="mr-1 text-rose-500">*</span>
                   </h3>
                   <ClaimAmountCurrencyFields
                     amount={formData.claimAmount}
@@ -1443,7 +1458,9 @@ const Claim = () => {
                     {expenses.map((row, idx) => (
                       <div
                         key={idx}
-                        className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1.1fr_1fr_1fr_auto_auto]"
+                        className={`grid gap-3 rounded-xl border p-3 sm:grid-cols-[1.1fr_1fr_1fr_auto_auto] ${
+                          errors.expenses ? "border-rose-300" : "border-slate-200"
+                        }`}
                       >
                         <ClaimDateInput
                           value={row.date}
@@ -1451,9 +1468,16 @@ const Claim = () => {
                             const next = [...expenses];
                             next[idx] = { ...row, date: v };
                             setExpenses(next);
+                            if (errors.expenses) {
+                              setErrors((prev) => {
+                                const { expenses: _e, ...rest } = prev;
+                                return rest;
+                              });
+                            }
                           }}
                           aria-label={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
-                          placeholder={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
+                          placeholder={claimType === "medical" ? "תאריך טיפול *" : "תאריך הוצאה *"}
+                          required
                         />
                         <Input
                           className="bg-slate-50"
@@ -1462,8 +1486,15 @@ const Claim = () => {
                             const next = [...expenses];
                             next[idx] = { ...row, type: e.target.value };
                             setExpenses(next);
+                            if (errors.expenses) {
+                              setErrors((prev) => {
+                                const { expenses: _e, ...rest } = prev;
+                                return rest;
+                              });
+                            }
                           }}
-                          placeholder="סוג הוצאה"
+                          placeholder="סוג הוצאה *"
+                          required
                         />
                         <Input
                           className="bg-slate-50"
@@ -1473,8 +1504,15 @@ const Claim = () => {
                             const next = [...expenses];
                             next[idx] = { ...row, amount: e.target.value };
                             setExpenses(next);
+                            if (errors.expenses) {
+                              setErrors((prev) => {
+                                const { expenses: _e, ...rest } = prev;
+                                return rest;
+                              });
+                            }
                           }}
-                          placeholder="סכום"
+                          placeholder="סכום *"
+                          required
                         />
                         <ClaimCurrencyPicker
                           compact
@@ -1512,6 +1550,7 @@ const Claim = () => {
                       </div>
                     ))}
                   </div>
+                  {errors.expenses ? <p className="text-xs text-rose-600">{errors.expenses}</p> : null}
                   <Button
                     type="button"
                     variant="outline"

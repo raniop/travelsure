@@ -530,7 +530,7 @@
           </div>
 
           <div id="expenseWrap" class="hidden">
-            <h3 id="expenseTitle">פירוט הוצאות</h3>
+            <h3 id="expenseTitle">פירוט הוצאות <span class="req">*</span></h3>
             <div id="expenseItems"></div>
             <button type="button" class="btn btn-outline" id="addExpense">+ הוסף הוצאה</button>
           </div>
@@ -1505,10 +1505,10 @@
         row.className = "item-row expense-row";
         const currency = String(data.currency || currentClaimCurrency() || "USD").toUpperCase();
         row.innerHTML = `
-          <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" dir="ltr" value="${formatDateDisplay(data.date || "")}" data-k="date" />
-          <input placeholder="סוג הוצאה" value="${data.type || ""}" data-k="type" />
-          <input placeholder="סכום" inputmode="decimal" value="${data.amount || ""}" data-k="amount" />
-          <select data-k="currency" aria-label="מטבע להוצאה">${buildExpenseCurrencyOptions(currency)}</select>
+          <input class="date-il" type="text" inputmode="numeric" placeholder="DD/MM/YYYY *" dir="ltr" value="${formatDateDisplay(data.date || "")}" data-k="date" required />
+          <input placeholder="סוג הוצאה *" value="${data.type || ""}" data-k="type" required />
+          <input placeholder="סכום *" inputmode="decimal" value="${data.amount || ""}" data-k="amount" required />
+          <select data-k="currency" aria-label="מטבע להוצאה" required>${buildExpenseCurrencyOptions(currency)}</select>
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("expenseItems").children.length > 1) row.remove();
@@ -1527,8 +1527,9 @@
         $("filesTypeLabel").textContent = meta.short;
         $("expenseWrap").classList.toggle("hidden", claimType !== "medical" && claimType !== "trip_cancel");
         if ($("expenseTitle")) {
-          $("expenseTitle").textContent =
-            claimType === "medical" ? "פירוט הוצאות רפואיות" : "פירוט הוצאות";
+          $("expenseTitle").innerHTML =
+            (claimType === "medical" ? "פירוט הוצאות רפואיות" : "פירוט הוצאות") +
+            ' <span class="req">*</span>';
         }
         $("baggageWrap").classList.toggle("hidden", claimType !== "baggage");
         const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
@@ -2123,6 +2124,26 @@
         }
         if (needsClaimAmount && !get("claimCurrency")) {
           $("detailsError").textContent = "יש לבחור מטבע"; return;
+        }
+        if (claimType === "medical" || claimType === "trip_cancel") {
+          const expenseRows = collectRows($("expenseItems"));
+          const filled = expenseRows.filter((r) => r.date || r.type || r.amount);
+          const complete = filled.filter((r) => r.date && r.type && r.amount);
+          if (!complete.length) {
+            $("detailsError").textContent = "יש למלא לפחות הוצאה אחת (תאריך, סוג וסכום)";
+            $("expenseWrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+          }
+          if (filled.length !== complete.length) {
+            $("detailsError").textContent = "יש להשלים תאריך, סוג הוצאה וסכום בכל שורה שהתחלתם";
+            $("expenseWrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+          }
+          const badDate = complete.find((r) => r.date && !parseDateToIso(r.date) && !/^\d{4}-\d{2}-\d{2}$/.test(r.date));
+          if (badDate) {
+            $("detailsError").textContent = "תאריך הוצאה לא תקין — יש להזין בפורמט יום/חודש/שנה";
+            return;
+          }
         }
         if (claimType === "baggage" && baggageSubtype !== "delay") {
           const items = collectRows($("baggageItems")).filter((r) => r.item);
