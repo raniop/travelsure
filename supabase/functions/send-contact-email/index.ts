@@ -558,9 +558,11 @@ const handler = async (req: Request): Promise<Response> => {
         claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`,
       ).trim() || name || "";
       const policyNumber = String(claim.policyNumber || "").trim();
+      const claimTypeLabel = String(claim.claimTypeLabel || claim.claimType || "").trim();
       const staffSubjectParts = [
         "תביעת ביטוח נסיעות חדשה",
-        `מס׳ תביעה ${claimNumber}`,
+        claimTypeLabel ? `סוג: ${claimTypeLabel}` : "",
+        `מס׳ פניה באופיר ${claimNumber}`,
         claimantName ? `מגיש: ${claimantName}` : "",
         policyNumber ? `פוליסה ${policyNumber}` : "",
       ].filter(Boolean);
