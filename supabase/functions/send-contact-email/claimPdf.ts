@@ -1,9 +1,8 @@
-import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, PDFFont, PDFPage, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 /**
  * Bundled Heebo Regular — includes Hebrew + Latin digits/punctuation.
- * Avoid Noto Sans Hebrew alone (missing digits → □□□ in PDF).
  */
 const LOCAL_FONT_URL = new URL("./fonts/Heebo-Regular.ttf", import.meta.url);
 
@@ -52,16 +51,17 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-type PdfRow = { label: string; value: string };
 type BidiRun = { text: string; ltr: boolean };
+type Kv = { label: string; value: string };
+
+const BLUE = rgb(0.05, 0.35, 0.72);
+const BLACK = rgb(0.08, 0.1, 0.14);
+const GRAY = rgb(0.35, 0.38, 0.42);
+const LIGHT_ROW = rgb(0.94, 0.95, 0.96);
 
 const isRtlChar = (ch: string) => /[\u0590-\u05FF]/.test(ch);
 const isLtrStrong = (ch: string) => /[0-9A-Za-z]/.test(ch);
 
-/**
- * Paired punctuation must be mirrored in RTL glyph-by-glyph drawing.
- * Without this, "(שלא באשפוז)" renders as ")שלא באשפוז(".
- */
 const RTL_MIRROR: Record<string, string> = {
   "(": ")",
   ")": "(",
@@ -79,7 +79,6 @@ export function mirrorRtlChar(ch: string): string {
   return RTL_MIRROR[ch] || ch;
 }
 
-/** Split logical text into LTR / RTL runs for a right-to-left paragraph. */
 export function splitBidiRuns(input: unknown): BidiRun[] {
   const text = String(input ?? "");
   if (!text) return [];
@@ -108,7 +107,6 @@ export function splitBidiRuns(input: unknown): BidiRun[] {
       else mode = "rtl";
       buf += ch;
     } else {
-      // spaces / punctuation stick to current run
       buf += ch;
     }
   }
@@ -121,15 +119,10 @@ function widthOf(text: string, font: PDFFont, size: number): number {
   try {
     return font.widthOfTextAtSize(text, size);
   } catch {
-    // Missing glyph fallback width
     return [...text].length * size * 0.5;
   }
 }
 
-/**
- * Draw a logical string as a right-aligned RTL paragraph.
- * Glyphs are placed explicitly — no string reversing — so viewers won't double-flip Hebrew.
- */
 export function drawAlignedRtl(
   page: PDFPage,
   text: string,
@@ -139,14 +132,14 @@ export function drawAlignedRtl(
     right: number;
     y: number;
     color?: ReturnType<typeof rgb>;
+    maxWidth?: number;
   },
 ) {
   const { font, size, right, y } = opts;
-  const color = opts.color ?? rgb(0.08, 0.12, 0.18);
+  const color = opts.color ?? BLACK;
   const runs = splitBidiRuns(text);
   if (!runs.length) return;
 
-  // RTL paragraph: place runs from right to left
   let x = right;
   for (let i = runs.length - 1; i >= 0; i--) {
     const run = runs[i];
@@ -155,8 +148,6 @@ export function drawAlignedRtl(
       x -= w;
       page.drawText(run.text, { x, y, size, font, color });
     } else {
-      // Draw Hebrew (and neutrals in RTL runs) one glyph at a time, logical order, right→left.
-      // Mirror paired punctuation so parentheses look correct in RTL.
       for (const ch of [...run.text]) {
         const drawn = mirrorRtlChar(ch);
         const w = widthOf(drawn, font, size);
@@ -177,7 +168,7 @@ function yesNo(value: unknown): string {
   return String(value ?? "").trim();
 }
 
-/** Display dates as DD/MM/YYYY (e.g. 11/08/1986). Never locale-dependent. */
+/** Display dates as DD/MM/YYYY (e.g. 11/08/1986). */
 export function formatClaimDateDisplay(value: unknown): string {
   const s = String(value ?? "").trim();
   if (!s) return "";
@@ -185,9 +176,7 @@ export function formatClaimDateDisplay(value: unknown): string {
   if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
   const dmy = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
   if (dmy) {
-    const d = dmy[1].padStart(2, "0");
-    const m = dmy[2].padStart(2, "0");
-    return `${d}/${m}/${dmy[3]}`;
+    return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${dmy[3]}`;
   }
   const digits = s.replace(/\D/g, "");
   if (digits.length === 8) {
@@ -196,93 +185,12 @@ export function formatClaimDateDisplay(value: unknown): string {
   return s;
 }
 
-function push(rows: PdfRow[], label: string, value: unknown) {
-  const text = String(value ?? "").trim();
-  if (!text) return;
-  rows.push({ label, value: text });
-}
-
-function pushDate(rows: PdfRow[], label: string, value: unknown) {
-  const text = formatClaimDateDisplay(value);
-  if (!text) return;
-  rows.push({ label, value: text });
-}
-
-export function buildClaimPdfRows(
-  claim: Record<string, unknown>,
-  claimNumber: string,
-  attachmentNames: string[],
-): PdfRow[] {
-  const rows: PdfRow[] = [];
-  push(rows, "מספר תביעה באופיר", claimNumber);
-  push(rows, "סוג תביעה", claim.claimTypeLabel);
-  push(rows, "סוג מטען", claim.baggageSubtypeLabel);
-  push(rows, "שם מלא", claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`.trim());
-  push(rows, "תעודת זהות", claim.idNumber);
-  pushDate(rows, "תאריך לידה", claim.birthDate);
-  push(rows, "אימייל", claim.email);
-  push(rows, "טלפון נייד", claim.mobile || claim.phone);
-  push(rows, "טלפון בבית", claim.homePhone);
-  push(
-    rows,
-    "כתובת",
-    [claim.street, claim.houseNumber, claim.city, claim.zip].map((v) => String(v || "").trim()).filter(Boolean).join(", "),
-  );
-  push(rows, "מספר פוליסה", claim.policyNumber);
-  push(rows, "סוג פוליסה", claim.policyType);
-  push(rows, "סיבת ביטול / קיצור", claim.claimReason);
-  pushDate(rows, "תאריך יציאה", claim.tripStartDate);
-  pushDate(rows, "תאריך חזרה", claim.tripEndDate);
-  pushDate(rows, "תאריך האירוע", claim.incidentDate);
-  push(rows, "מדינה / מיקום", claim.country);
-  push(rows, "תיאור המקרה", claim.details);
-  push(rows, "סכום נתבע", claim.totalClaimed || claim.amount);
-  push(rows, "בנק", claim.bankName);
-  push(rows, "סניף", claim.branchNumber || claim.branchName);
-  push(rows, "מספר חשבון", claim.accountNumber);
-  push(rows, "הצהרה", yesNo(claim.declaration));
-  push(rows, "ויתור סודיות רפואית", yesNo(claim.medicalWaiver));
-  push(rows, "הרשאת סוכן", yesNo(claim.authorizeAgent));
-
-  if (Array.isArray(claim.expenses)) {
-    claim.expenses.forEach((item, idx) => {
-      if (!item || typeof item !== "object") return;
-      const row = item as Record<string, unknown>;
-      const line = [formatClaimDateDisplay(row.date) || row.date, row.type, row.amount]
-        .map((v) => String(v ?? "").trim())
-        .filter(Boolean)
-        .join(" | ");
-      if (line) push(rows, `הוצאה ${idx + 1}`, line);
-    });
-  }
-
-  if (Array.isArray(claim.baggageItems)) {
-    claim.baggageItems.forEach((item, idx) => {
-      if (!item || typeof item !== "object") return;
-      const row = item as Record<string, unknown>;
-      if (!String(row.item ?? "").trim()) return;
-      const line = [row.item, row.purchasePrice ? `ערך: ${row.purchasePrice}` : ""]
-        .map((v) => String(v ?? "").trim())
-        .filter(Boolean)
-        .join(" | ");
-      if (line) push(rows, `פריט כבודה ${idx + 1}`, line);
-    });
-  }
-
-  if (attachmentNames.length) {
-    push(rows, "קבצים מצורפים", attachmentNames.join(", "));
-  }
-
-  return rows;
-}
-
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const value = String(text ?? "");
-  if (!value) return [""];
+  const value = String(text ?? "").trim();
+  if (!value) return [];
   const words = value.split(/\s+/);
   const lines: string[] = [];
   let current = "";
-
   const fits = (s: string) => measureAlignedRtl(s, font, size) <= maxWidth;
 
   const pushHard = (token: string) => {
@@ -319,7 +227,137 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
     }
   }
   if (current) lines.push(current);
-  return lines.length ? lines : [""];
+  return lines;
+}
+
+function claimTypeSubject(claim: Record<string, unknown>): string {
+  const type = String(claim.claimType || "").trim();
+  const label = String(claim.claimTypeLabel || "").trim();
+  if (type === "trip_cancel") return 'תביעת חו״ל- ביטול נסיעה';
+  if (type === "trip_shorten") return 'תביעת חו״ל- קיצור נסיעה';
+  if (type === "medical") return 'תביעת חו״ל- הוצאות רפואיות';
+  if (type === "baggage") {
+    const sub = String(claim.baggageSubtypeLabel || "").trim();
+    return sub ? `תביעת חו״ל- מטען / כבודה · ${sub}` : 'תביעת חו״ל- מטען / כבודה';
+  }
+  return label ? `תביעת חו״ל- ${label}` : 'תביעת חו״ל';
+}
+
+function kv(label: string, value: unknown): Kv | null {
+  const v = String(value ?? "").trim();
+  if (!v) return null;
+  return { label, value: v };
+}
+
+function buildIncidentRows(claim: Record<string, unknown>): Kv[] {
+  const type = String(claim.claimType || "").trim();
+  const rows: Kv[] = [];
+  const add = (label: string, value: unknown) => {
+    const item = kv(label, value);
+    if (item) rows.push(item);
+  };
+
+  if (type === "trip_cancel") {
+    add("האם בוצעו שינויים בתוכנית הנסיעה?", "כן, היא בוטלה");
+    add("מה סיבת השינוי?", claim.claimReason);
+    add("מה קרה?", claim.claimReason);
+    add("מתי זה קרה?", formatClaimDateDisplay(claim.incidentDate || claim.tripStartDate));
+    add("איפה זה קרה?", claim.country);
+    add("פירוט המקרה", claim.details);
+  } else if (type === "trip_shorten") {
+    add("האם בוצעו שינויים בתוכנית הנסיעה?", "כן, היא קוצרה");
+    add("מה סיבת השינוי?", claim.claimReason);
+    add("מתי זה קרה?", formatClaimDateDisplay(claim.incidentDate));
+    add("איפה זה קרה?", claim.country);
+    add("תאריך יציאה", formatClaimDateDisplay(claim.tripStartDate));
+    add("תאריך חזרה", formatClaimDateDisplay(claim.tripEndDate));
+    add("פירוט המקרה", claim.details);
+  } else if (type === "medical") {
+    add("מה קרה?", claim.claimTypeLabel || "הוצאות רפואיות בחו״ל");
+    add("מתי זה קרה?", formatClaimDateDisplay(claim.incidentDate));
+    add("איפה זה קרה?", claim.country);
+    add("פירוט המקרה", claim.details);
+    add("סכום נתבע", claim.totalClaimed || claim.amount);
+  } else if (type === "baggage") {
+    add("סוג תביעת מטען", claim.baggageSubtypeLabel);
+    add("מתי זה קרה?", formatClaimDateDisplay(claim.incidentDate));
+    add("איפה זה קרה?", claim.country);
+    add("פירוט המקרה", claim.details);
+    add("סכום נתבע", claim.totalClaimed || claim.amount);
+  } else {
+    add("סוג תביעה", claim.claimTypeLabel);
+    add("מתי זה קרה?", formatClaimDateDisplay(claim.incidentDate));
+    add("איפה זה קרה?", claim.country);
+    add("פירוט המקרה", claim.details);
+  }
+  return rows;
+}
+
+function buildExpenseRows(claim: Record<string, unknown>): Kv[] {
+  const rows: Kv[] = [];
+  if (Array.isArray(claim.expenses)) {
+    for (const item of claim.expenses) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+      const label = String(row.type || "הוצאה").trim() || "הוצאה";
+      const amount = String(row.amount || "").trim();
+      const date = formatClaimDateDisplay(row.date);
+      const value = [amount, date ? `תאריך: ${date}` : ""].filter(Boolean).join(" · ");
+      if (value) rows.push({ label, value });
+    }
+  }
+  if (Array.isArray(claim.baggageItems)) {
+    for (const item of claim.baggageItems) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+      const label = String(row.item || "").trim();
+      if (!label) continue;
+      const value = String(row.purchasePrice || "").trim();
+      rows.push({ label, value: value || "—" });
+    }
+  }
+  if (!rows.length) {
+    const total = String(claim.totalClaimed || claim.amount || "").trim();
+    if (total) rows.push({ label: "סכום נתבע", value: total });
+  }
+  return rows;
+}
+
+function buildPaymentRows(claim: Record<string, unknown>): Kv[] {
+  const fullName = String(claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`).trim();
+  const branch = [claim.branchNumber, claim.branchName].map((v) => String(v || "").trim()).filter(Boolean).join(" - ");
+  const bank = [claim.bankCode, claim.bankName].map((v) => String(v || "").trim()).filter(Boolean).join(" - ");
+  return [
+    kv('ת"ז מוטב', claim.idNumber),
+    kv("שם מלא מוטב", fullName),
+    kv("מס' חשבון בנק", claim.accountNumber),
+    kv("שם +מס' סניף", branch),
+    kv("שם +מס' בנק", bank || claim.bankName),
+  ].filter(Boolean) as Kv[];
+}
+
+function buildDocumentRows(attachmentNames: string[]): Kv[] {
+  return attachmentNames
+    .map((name) => String(name || "").trim())
+    .filter(Boolean)
+    .map((name) => ({ label: "מסמך מצורף", value: name }));
+}
+
+function formatSubmittedAt(value: unknown): string {
+  const s = String(value || "").trim();
+  if (!s) {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = String(now.getFullYear());
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    return `${hh}:${mi} ${dd}/${mm}/${yyyy}`;
+  }
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/);
+  if (m) return `${m[4]}:${m[5]} ${m[3]}/${m[2]}/${m[1]}`;
+  const d = formatClaimDateDisplay(s);
+  return d || s;
 }
 
 export async function buildClaimPdfBase64(
@@ -328,7 +366,6 @@ export async function buildClaimPdfBase64(
   attachmentNames: string[],
 ): Promise<{ filename: string; content: string; type: string } | null> {
   try {
-    const rows = buildClaimPdfRows(claim, claimNumber, attachmentNames);
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
 
@@ -339,89 +376,290 @@ export async function buildClaimPdfBase64(
     }
 
     const font = await pdf.embedFont(fontBytes, { subset: false });
-    const latinBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-    const pageWidth = 595.28; // A4
+    const pageWidth = 595.28;
     const pageHeight = 841.89;
-    const margin = 40;
+    const margin = 48;
     const contentWidth = pageWidth - margin * 2;
     const right = pageWidth - margin;
+    const left = margin;
 
     let page: PDFPage = pdf.addPage([pageWidth, pageHeight]);
     let y = pageHeight - margin;
+
+    const ensureSpace = (needed: number) => {
+      if (y - needed >= 56) return;
+      page = pdf.addPage([pageWidth, pageHeight]);
+      y = pageHeight - margin;
+    };
 
     const drawRight = (
       text: string,
       size: number,
       yPos: number,
-      activeFont: PDFFont = font,
-      color = rgb(0.08, 0.12, 0.18),
+      color = BLACK,
+      atRight = right,
     ) => {
-      drawAlignedRtl(page, text, { font: activeFont, size, right, y: yPos, color });
+      drawAlignedRtl(page, text, { font, size, right: atRight, y: yPos, color });
     };
 
-    // Header bar
-    page.drawRectangle({
-      x: 0,
-      y: pageHeight - 72,
-      width: pageWidth,
-      height: 72,
-      color: rgb(0.06, 0.46, 0.43),
-    });
+    const drawHarelMark = () => {
+      // Simple multi-color mark approximating Harel logo (top-left).
+      const cx = left + 10;
+      const cy = pageHeight - margin - 4;
+      const colors = [
+        rgb(0.2, 0.65, 0.35),
+        rgb(0.15, 0.45, 0.85),
+        rgb(0.95, 0.55, 0.15),
+        rgb(0.9, 0.2, 0.25),
+      ];
+      colors.forEach((color, i) => {
+        page.drawCircle({
+          x: cx + (i % 2) * 7,
+          y: cy - Math.floor(i / 2) * 7,
+          size: 4.5,
+          color,
+        });
+      });
+      drawAlignedRtl(page, "הראל", {
+        font,
+        size: 13,
+        right: left + 78,
+        y: pageHeight - margin - 2,
+        color: BLACK,
+      });
+      drawAlignedRtl(page, "בשביל השקט הנפשי שלך | ביטוח ופיננסים", {
+        font,
+        size: 7.5,
+        right: left + 170,
+        y: pageHeight - margin - 18,
+        color: GRAY,
+      });
+    };
 
-    drawRight("תביעת ביטוח נסיעות · אופיר", 15, pageHeight - 32, font, rgb(1, 1, 1));
-    page.drawText(`# ${claimNumber}`, {
-      x: margin,
-      y: pageHeight - 34,
-      size: 14,
-      font: latinBold,
-      color: rgb(1, 1, 1),
-    });
-    y = pageHeight - 88;
+    // ---- Header (page 1) ----
+    drawHarelMark();
+    const subject = claimTypeSubject(claim);
+    const today = formatClaimDateDisplay(claim.submittedAt) || formatClaimDateDisplay(new Date().toISOString().slice(0, 10));
+    drawRight("לכבוד הראל חברה לביטוח,", 11, pageHeight - margin - 2, BLACK);
+    drawRight(subject, 11, pageHeight - margin - 18, BLACK);
+    drawRight(`מספר פניה: ${claimNumber}`, 11, pageHeight - margin - 34, BLACK);
+    drawRight(`תאריך: ${today}`, 11, pageHeight - margin - 50, BLACK);
+    y = pageHeight - margin - 78;
+
+    const sectionTitle = (title: string) => {
+      ensureSpace(36);
+      drawRight(title, 14, y, BLUE);
+      y -= 8;
+      page.drawLine({
+        start: { x: left, y },
+        end: { x: right, y },
+        thickness: 1.2,
+        color: BLUE,
+      });
+      y -= 16;
+    };
+
+    const drawKvRows = (rows: Kv[], opts?: { labelBlue?: boolean }) => {
+      for (const row of rows) {
+        const label = `${row.label}${row.label.endsWith("?") || row.label.endsWith(":") ? "" : ":"}`;
+        const labelWidth = Math.min(contentWidth * 0.55, measureAlignedRtl(label, font, 10) + 8);
+        const valueWidth = contentWidth - labelWidth - 10;
+        const valueLines = wrapText(row.value, font, 10, valueWidth);
+        const blockH = Math.max(14, valueLines.length * 13);
+        ensureSpace(blockH + 6);
+        drawRight(label, 10, y, opts?.labelBlue ? BLUE : BLACK);
+        let vy = y;
+        for (const line of valueLines) {
+          drawAlignedRtl(page, line, {
+            font,
+            size: 10,
+            right: right - labelWidth - 8,
+            y: vy,
+            color: BLACK,
+          });
+          vy -= 13;
+        }
+        y -= blockH + 4;
+      }
+    };
+
+    const drawParagraph = (text: string, size = 9.5, color = BLACK) => {
+      const lines = wrapText(text, font, size, contentWidth);
+      for (const line of lines) {
+        ensureSpace(14);
+        drawRight(line, size, y, color);
+        y -= 13;
+      }
+    };
+
+    const drawBullets = (items: string[]) => {
+      for (const item of items) {
+        const lines = wrapText(item, font, 9, contentWidth - 14);
+        ensureSpace(lines.length * 12 + 4);
+        // bullet near the right edge
+        page.drawCircle({ x: right - 3, y: y + 3, size: 1.4, color: BLACK });
+        let ly = y;
+        for (const line of lines) {
+          drawAlignedRtl(page, line, { font, size: 9, right: right - 12, y: ly, color: BLACK });
+          ly -= 12;
+        }
+        y = ly - 4;
+      }
+    };
 
     const fullName = String(claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`).trim();
-    drawRight(`שם המבוטח: ${fullName}`, 12, y);
-    y -= 18;
-    drawRight(`סוג תביעה: ${String(claim.claimTypeLabel || "")}`, 11, y);
-    y -= 16;
-    drawRight("מספר תביעה באופיר (לא מספר תביעה בהראל)", 9, y, font, rgb(0.35, 0.4, 0.45));
-    y -= 20;
 
-    for (const row of rows) {
-      if (y < 80) {
-        page = pdf.addPage([pageWidth, pageHeight]);
-        y = pageHeight - margin;
-      }
+    // ---- Sections ----
+    sectionTitle("פרטי המבוטח");
+    drawKvRows([
+      ...(kv("שם מלא", fullName) ? [kv("שם מלא", fullName)!] : []),
+      ...(kv("תעודת זהות", claim.idNumber) ? [kv("תעודת זהות", claim.idNumber)!] : []),
+      ...(kv("מספר פוליסה", claim.policyNumber) ? [kv("מספר פוליסה", claim.policyNumber)!] : []),
+    ]);
+    y -= 8;
 
+    sectionTitle("פרטי התקשרות");
+    drawKvRows([
+      ...(kv("מספר טלפון", claim.mobile || claim.phone) ? [kv("מספר טלפון", claim.mobile || claim.phone)!] : []),
+      ...(kv("דואר אלקטרוני", claim.email) ? [kv("דואר אלקטרוני", claim.email)!] : []),
+    ]);
+    y -= 8;
+
+    sectionTitle("פרטי המקרה");
+    drawKvRows(buildIncidentRows(claim), { labelBlue: true });
+    if (String(claim.claimType || "") === "trip_cancel") {
+      ensureSpace(18);
+      drawRight("הנסיעה בוטלה", 10, y, BLACK);
+      y -= 16;
+    }
+    y -= 6;
+
+    // Who cancelled table — only for trip cancellation claims
+    if (String(claim.claimType || "") === "trip_cancel") {
+      sectionTitle("מי ביטל את הנסיעה");
+      ensureSpace(40);
       page.drawRectangle({
-        x: margin,
-        y: y - 4,
+        x: left,
+        y: y - 18,
         width: contentWidth,
-        height: 18,
-        color: rgb(0.94, 0.97, 0.96),
+        height: 20,
+        color: LIGHT_ROW,
       });
-      drawRight(row.label, 10, y);
-      y -= 20;
+      drawRight("שם המבוטח", 10, y - 4, BLUE, right - 8);
+      drawRight('ת"ז', 10, y - 4, BLUE, left + contentWidth * 0.42);
+      y -= 28;
+      drawRight(fullName || "—", 10, y, BLACK, right - 8);
+      drawRight(String(claim.idNumber || "—"), 10, y, BLACK, left + contentWidth * 0.42);
+      y -= 24;
+    }
 
-      const lines = wrapText(row.value, font, 11, contentWidth - 8);
-      for (const line of lines) {
-        if (y < 50) {
-          page = pdf.addPage([pageWidth, pageHeight]);
-          y = pageHeight - margin;
-        }
-        drawRight(line, 11, y);
-        y -= 15;
+    // Expenses
+    const expenseRows = buildExpenseRows(claim);
+    if (expenseRows.length) {
+      sectionTitle("פירוט ההוצאות");
+      drawKvRows(expenseRows);
+      if (String(claim.country || "").trim() && String(claim.claimType || "") !== "trip_cancel") {
+        drawKvRows([kv("ארץ יעד / מיקום", claim.country)!].filter(Boolean) as Kv[]);
       }
       y -= 8;
     }
 
-    drawRight(
-      "נוצר אוטומטית מטופס התביעה באתר TravelSure · אופיר ושות׳ סוכנות לביטוח",
-      8,
-      28,
-      font,
-      rgb(0.45, 0.5, 0.55),
+    // Payment
+    const paymentRows = buildPaymentRows(claim);
+    if (paymentRows.length) {
+      sectionTitle("אמצעי תשלום להעברת סכום החזר עבור התביעה");
+      drawKvRows(paymentRows);
+      y -= 8;
+    }
+
+    // Documents
+    const docRows = buildDocumentRows(attachmentNames);
+    if (docRows.length) {
+      sectionTitle('מסמכים שהועלו ע"י המשתמש');
+      drawKvRows(docRows);
+      y -= 8;
+    }
+
+    // Declarations
+    sectionTitle("הצהרות");
+    drawBullets([
+      "פרטיי האישיים המוזכרים לעיל הינם הפרטים הנכונים והמעודכנים ובאים במקום כל עדכון קודם. ידוע לי כי הפרטים ישמשו לצורך בירור וטיפול בתביעה.",
+      "ידוע לי כי מסירת מידע כוזב או חלקי עלולה לפגוע בזכויותיי על פי הפוליסה ועל פי דין.",
+      "אני מאשר/ת להראל חברה לביטוח בע״מ ולמי מטעמה לקבל ולעבד את המידע שמסרתי לצורך טיפול בתביעה, לרבות מידע רפואי ככל שנדרש ואושר על ידי.",
+      "אני מאשר/ת לסוכן הביטוח (אופיר ושות׳ סוכנות לביטוח) לטפל בתביעה זו בשמי מול הראל.",
+      "אני מסכים/ה לקבל עדכונים בנוגע לתביעה באמצעות מסרון ו/או טלפון ו/או דואר אלקטרוני.",
+    ]);
+    if (yesNo(claim.declaration) === "כן") {
+      ensureSpace(16);
+      drawRight("ההצהרה אושרה בטופס הדיגיטלי: כן", 9, y, GRAY);
+      y -= 14;
+    }
+    y -= 8;
+
+    // Company notes
+    ensureSpace(70);
+    drawRight("הבהרות החברה", 12, y, BLACK);
+    y -= 6;
+    page.drawLine({
+      start: { x: left, y },
+      end: { x: right, y },
+      thickness: 1,
+      color: BLACK,
+    });
+    y -= 14;
+    drawParagraph(
+      "ניתן לקבל מסמכים ומכתבים גם באמצעים אלקטרוניים (דואר אלקטרוני), בהתאם לפרטים שמסרת בטופס.",
+      9,
+      BLACK,
     );
+    y -= 6;
+    drawRight("פרטיות", 10, y, BLACK);
+    y -= 14;
+    drawParagraph(
+      "הראל וקבוצת הראל אוספות ומשתמשות במידע האישי שמסרת לצורך טיפול בתביעה, מתן שירות ומילוי חובות על פי דין. המידע יישמר ויעובד בהתאם לדין ולמדיניות הפרטיות של החברה.",
+      9,
+      BLACK,
+    );
+    y -= 10;
+
+    // Signatures table
+    sectionTitle("חתימות המבקש");
+    ensureSpace(56);
+    page.drawRectangle({
+      x: left,
+      y: y - 34,
+      width: contentWidth,
+      height: 38,
+      color: LIGHT_ROW,
+    });
+    const colW = contentWidth / 4;
+    const headers = ["תאריך ושעת הבקשה", "שם המוטב", "שם מבקש הטיפול", "חתימה"];
+    const values = [
+      formatSubmittedAt(claim.submittedAt),
+      fullName || "—",
+      fullName || "—",
+      "הטופס הועבר באמצעות אתר אינטרנט",
+    ];
+    headers.forEach((h, i) => {
+      const colRight = right - i * colW - 4;
+      drawAlignedRtl(page, h, { font, size: 8, right: colRight, y, color: BLUE });
+    });
+    y -= 16;
+    values.forEach((v, i) => {
+      const colRight = right - i * colW - 4;
+      drawAlignedRtl(page, v, { font, size: 8, right: colRight, y, color: BLACK });
+    });
+    y -= 36;
+
+    // Footer on last page
+    drawAlignedRtl(page, "הופק באמצעות מערכת הגשת תביעות TravelSure · אופיר ושות׳ סוכנות לביטוח · עבור הראל", {
+      font,
+      size: 8,
+      right: pageWidth / 2 + 160,
+      y: 36,
+      color: GRAY,
+    });
 
     const bytes = await pdf.save();
     return {
