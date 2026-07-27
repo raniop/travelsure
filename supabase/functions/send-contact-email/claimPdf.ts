@@ -294,19 +294,24 @@ function buildIncidentRows(claim: Record<string, unknown>): Kv[] {
   return rows;
 }
 
-function buildExpenseRows(claim: Record<string, unknown>): Kv[] {
-  const rows: Kv[] = [];
+function parseExpenses(claim: Record<string, unknown>): Array<{ type: string; amount: string; date: string }> {
+  const out: Array<{ type: string; amount: string; date: string }> = [];
   if (Array.isArray(claim.expenses)) {
     for (const item of claim.expenses) {
       if (!item || typeof item !== "object") continue;
       const row = item as Record<string, unknown>;
-      const label = String(row.type || "הוצאה").trim() || "הוצאה";
+      const type = String(row.type || "הוצאה").trim() || "הוצאה";
       const amount = String(row.amount || "").trim();
       const date = formatClaimDateDisplay(row.date);
-      const value = [amount, date ? `תאריך: ${date}` : ""].filter(Boolean).join(" · ");
-      if (value) rows.push({ label, value });
+      if (type || amount || date) out.push({ type, amount, date });
     }
   }
+  return out;
+}
+
+function buildExpenseRows(claim: Record<string, unknown>): Kv[] {
+  const rows: Kv[] = [];
+  // Baggage item lines (purchase price) — expenses are drawn separately.
   if (Array.isArray(claim.baggageItems)) {
     for (const item of claim.baggageItems) {
       if (!item || typeof item !== "object") continue;
@@ -317,7 +322,7 @@ function buildExpenseRows(claim: Record<string, unknown>): Kv[] {
       rows.push({ label, value: value || "—" });
     }
   }
-  if (!rows.length) {
+  if (!rows.length && !parseExpenses(claim).length) {
     const total = String(claim.totalClaimed || claim.amount || "").trim();
     if (total) rows.push({ label: "סכום נתבע", value: total });
   }
@@ -577,11 +582,28 @@ export async function buildClaimPdfBase64(
       y -= 8;
     }
 
-    // Expenses
+    // Expenses — draw type / date / amount as separate RTL-safe lines
+    const expenses = parseExpenses(claim);
     const expenseRows = buildExpenseRows(claim);
-    if (expenseRows.length) {
+    if (expenses.length || expenseRows.length) {
       sectionTitle("פירוט ההוצאות");
-      drawKvRows(expenseRows);
+      for (const exp of expenses) {
+        ensureSpace(48);
+        drawRight(exp.type, 10, y, BLACK);
+        y -= 14;
+        if (exp.date) {
+          drawLabelValue("תאריך", exp.date, 10, y, BLACK);
+          y -= 14;
+        }
+        if (exp.amount) {
+          drawLabelValue("סכום", exp.amount, 10, y, BLACK);
+          y -= 14;
+        }
+        y -= 6;
+      }
+      if (expenseRows.length) {
+        drawKvRows(expenseRows);
+      }
       if (String(claim.country || "").trim() && String(claim.claimType || "") !== "trip_cancel") {
         drawKvRows([kv("ארץ יעד / מיקום", claim.country)!].filter(Boolean) as Kv[]);
       }
