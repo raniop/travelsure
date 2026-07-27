@@ -585,7 +585,12 @@ export async function buildClaimPdfBase64(
     // Expenses — draw type / date / amount as separate RTL-safe lines
     const expenses = parseExpenses(claim);
     const expenseRows = buildExpenseRows(claim);
-    if (expenses.length || expenseRows.length) {
+    const claimedTotal = String(
+      claim.totalClaimed ||
+        claim.amount ||
+        [claim.claimAmount, claim.claimCurrency].map((v) => String(v || "").trim()).filter(Boolean).join(" "),
+    ).trim();
+    if (expenses.length || expenseRows.length || claimedTotal) {
       sectionTitle("פירוט ההוצאות");
       for (const exp of expenses) {
         ensureSpace(48);
@@ -603,6 +608,11 @@ export async function buildClaimPdfBase64(
       }
       if (expenseRows.length) {
         drawKvRows(expenseRows);
+      }
+      if (claimedTotal) {
+        ensureSpace(20);
+        drawLabelValue('סה״כ סכום נתבע', claimedTotal, 11, y, BLACK);
+        y -= 18;
       }
       if (String(claim.country || "").trim() && String(claim.claimType || "") !== "trip_cancel") {
         drawKvRows([kv("ארץ יעד / מיקום", claim.country)!].filter(Boolean) as Kv[]);
