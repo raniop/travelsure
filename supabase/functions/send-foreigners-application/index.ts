@@ -8,6 +8,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const pad2 = (n: string): string => String(n || "").padStart(2, "0");
+
+/** Format date values as DD/MM/YYYY (never locale-dependent). */
+const formatDateDisplay = (value: unknown): string => {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+
+  // ISO: 1986-08-11
+  const iso = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+
+  // DMY: 11/08/1986 or 11-08-1986
+  const dmy = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (dmy) return `${pad2(dmy[1])}/${pad2(dmy[2])}/${dmy[3]}`;
+
+  // Digits: 11081986
+  const digits = s.replace(/\D/g, "");
+  if (digits.length === 8) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+
+  return s;
+};
+
 const escapeHtml = (str: unknown): string =>
   String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -16,12 +38,12 @@ const escapeHtml = (str: unknown): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 
-const row = (label: string, value: unknown, alt = false) => {
+const row = (label: string, value: unknown, alt = false, ltr = false) => {
   const v = String(value ?? "").trim();
   if (!v) return "";
   return `<tr style="background:${alt ? "#fff" : "#f8fafc"};">
     <td style="padding:8px 10px;color:#475569;width:38%;vertical-align:top;"><strong>${escapeHtml(label)}</strong></td>
-    <td style="padding:8px 10px;white-space:pre-wrap;">${escapeHtml(v)}</td>
+    <td style="padding:8px 10px;white-space:pre-wrap;${ltr ? "direction:ltr;unicode-bidi:embed;" : ""}">${escapeHtml(v)}</td>
   </tr>`;
 };
 
@@ -63,18 +85,29 @@ serve(async (req) => {
     const generalHealth = Array.isArray(summary.generalHealth) ? summary.generalHealth : [];
     const conditions = Array.isArray(summary.conditions) ? summary.conditions : [];
 
+    // Normalize date fields so the PDF/email always shows DD/MM/YYYY.
+    // Note: we keep non-date values untouched.
+    const dBirthDate = formatDateDisplay(summary.birthDate);
+    const dFirstInsuranceDate = formatDateDisplay(summary.firstInsuranceDate);
+    const dEntryDate = formatDateDisplay(summary.entryDate);
+    const dInsuranceFrom = formatDateDisplay(summary.insuranceFrom);
+    const dInsuranceTo = formatDateDisplay(summary.insuranceTo);
+    const dPreviousFrom = formatDateDisplay(summary.previousFrom);
+    const dPreviousTo = formatDateDisplay(summary.previousTo);
+    const dSignatureDate = formatDateDisplay(summary.signatureDate);
+
     const workerRows = [
       row("שם פרטי", summary.firstName, false),
       row("שם משפחה", summary.lastName, true),
       row("מספר דרכון", summary.passportNo, false),
       row("ארץ הנפקת דרכון", summary.passportCountry, true),
       row("ארץ מוצא", summary.countryOfOrigin, false),
-      row("תאריך לידה", summary.birthDate, true),
+      row("תאריך לידה", dBirthDate, true, true),
       row("מין", summary.gender, false),
-      row("תאריך ראשון שבוטח", summary.firstInsuranceDate, true),
-      row("תאריך כניסה לישראל", summary.entryDate, false),
-      row("תקופת ביטוח מ־", summary.insuranceFrom, true),
-      row("תקופת ביטוח עד", summary.insuranceTo, false),
+      row("תאריך ראשון שבוטח", dFirstInsuranceDate, true, true),
+      row("תאריך כניסה לישראל", dEntryDate, false, true),
+      row("תקופת ביטוח מ־", dInsuranceFrom, true, true),
+      row("תקופת ביטוח עד", dInsuranceTo, false, true),
       row("עיסוק / תיאור עבודה", summary.workDescription, true),
       row("כתובת", summary.address, false),
       row("טלפון", summary.phone, true),
@@ -100,8 +133,8 @@ serve(async (req) => {
       row("חברה קודמת", summary.previousCompany, true),
       row("מספר פוליסה", summary.previousPolicyNo, false),
       row("מספר חבר", summary.previousMembershipNo, true),
-      row("מתאריך", summary.previousFrom, false),
-      row("עד תאריך", summary.previousTo, true),
+      row("מתאריך", dPreviousFrom, false, true),
+      row("עד תאריך", dPreviousTo, true, true),
     ].join("");
 
     let healthRows = "";
@@ -129,11 +162,16 @@ serve(async (req) => {
     const declRows = [
       row("נדחתה בקשה בעבר", summary.dismissedBefore, false),
       row("פירוט דחייה", summary.dismissedDetails, true),
-      row("אישור כל ההצהרות", summary.declarationsAccepted, false),
-      row("הסכמה לדיוור מאופיר", summary.marketingConsent, true),
-      row("שם החותם", summary.signatureName, false),
-      row("תאריך חתימה", summary.signatureDate, true),
-      row("הערות", summary.notes, false),
+      row("הרשאת סוכן", summary.authorizeAgent, false),
+      row("הצהרת אמת", summary.healthAnswersTrue, true),
+      row("ויתור סודיות רפואית", summary.medicalConfidentialityWaiver, false),
+      row("קיבל מידע מהותי", summary.receivedEssentialInfo, true),
+      row("הסכמה לדיוור", summary.marketingConsent, false),
+      row("דיוור נוסף מקבוצת הראל", summary.marketingExtraConsent, true),
+      row("הוסבר בשפה מובנת", summary.explainedInUnderstoodLanguage, false),
+      row("שם החותם", summary.signatureName, true),
+      row("תאריך חתימה", dSignatureDate, false, true),
+      row("הערות", summary.notes, true),
     ].join("");
 
     const payRows = [
