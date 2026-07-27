@@ -480,7 +480,7 @@ export async function buildClaimPdfBase64(
     const today = formatClaimDateDisplay(claim.submittedAt) || formatClaimDateDisplay(new Date().toISOString().slice(0, 10));
     drawRight("אופיר ושות׳ סוכנות לביטוח", 11, pageHeight - margin - 2, BLACK);
     drawRight(subject, 11, pageHeight - margin - 18, BLACK);
-    drawLabelValue("מספר פניה", String(claimNumber), 11, pageHeight - margin - 34, BLACK);
+    drawLabelValue("מספר פניה באופיר", String(claimNumber), 11, pageHeight - margin - 34, BLACK);
     drawLabelValue("תאריך", today, 11, pageHeight - margin - 50, BLACK);
     y = pageHeight - margin - 88;
 
