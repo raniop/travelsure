@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const pad2 = (n: string): string => String(n || "").padStart(2, "0");
 
-/** Format date values as DD/MM/YYYY (never locale-dependent). */
+/** Format date values as DD/MM/YYYY (never locale-dependent). Matches the PDF reference style. */
 const formatDateDisplay = (value: unknown): string => {
   const s = String(value ?? "").trim();
   if (!s) return "";
