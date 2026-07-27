@@ -5,6 +5,7 @@ import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
  * Bundled Heebo Regular — includes Hebrew + Latin digits/punctuation.
  */
 const LOCAL_FONT_URL = new URL("./fonts/Heebo-Regular.ttf", import.meta.url);
+const LOCAL_LOGO_URL = new URL("./assets/ophir-logo.png", import.meta.url);
 
 const FALLBACK_FONT_URLS = [
   "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/heebo/Heebo%5Bwght%5D.ttf",
@@ -403,49 +404,55 @@ export async function buildClaimPdfBase64(
       drawAlignedRtl(page, text, { font, size, right: atRight, y: yPos, color });
     };
 
-    const drawHarelMark = () => {
-      // Simple multi-color mark approximating Harel logo (top-left).
-      const cx = left + 10;
-      const cy = pageHeight - margin - 4;
-      const colors = [
-        rgb(0.2, 0.65, 0.35),
-        rgb(0.15, 0.45, 0.85),
-        rgb(0.95, 0.55, 0.15),
-        rgb(0.9, 0.2, 0.25),
-      ];
-      colors.forEach((color, i) => {
-        page.drawCircle({
-          x: cx + (i % 2) * 7,
-          y: cy - Math.floor(i / 2) * 7,
-          size: 4.5,
-          color,
+    const drawOphirBrand = async () => {
+      // Top-left: Ophir agency logo
+      let logoDrawn = false;
+      try {
+        const logoBytes = await Deno.readFile(LOCAL_LOGO_URL);
+        if (logoBytes.byteLength > 500) {
+          const logo = await pdf.embedPng(logoBytes);
+          const maxH = 56;
+          const scale = maxH / logo.height;
+          const w = logo.width * scale;
+          const h = logo.height * scale;
+          page.drawImage(logo, {
+            x: left,
+            y: pageHeight - margin - h + 8,
+            width: w,
+            height: h,
+          });
+          logoDrawn = true;
+        }
+      } catch (err) {
+        console.error("Ophir logo embed failed:", err);
+      }
+      if (!logoDrawn) {
+        drawAlignedRtl(page, "אופיר ושות׳", {
+          font,
+          size: 14,
+          right: left + 110,
+          y: pageHeight - margin - 2,
+          color: BLACK,
         });
-      });
-      drawAlignedRtl(page, "הראל", {
-        font,
-        size: 13,
-        right: left + 78,
-        y: pageHeight - margin - 2,
-        color: BLACK,
-      });
-      drawAlignedRtl(page, "בשביל השקט הנפשי שלך | ביטוח ופיננסים", {
-        font,
-        size: 7.5,
-        right: left + 170,
-        y: pageHeight - margin - 18,
-        color: GRAY,
-      });
+        drawAlignedRtl(page, "סוכנות לביטוח", {
+          font,
+          size: 9,
+          right: left + 110,
+          y: pageHeight - margin - 18,
+          color: GRAY,
+        });
+      }
     };
 
     // ---- Header (page 1) ----
-    drawHarelMark();
+    await drawOphirBrand();
     const subject = claimTypeSubject(claim);
     const today = formatClaimDateDisplay(claim.submittedAt) || formatClaimDateDisplay(new Date().toISOString().slice(0, 10));
-    drawRight("לכבוד הראל חברה לביטוח,", 11, pageHeight - margin - 2, BLACK);
+    drawRight("אופיר ושות׳ סוכנות לביטוח", 11, pageHeight - margin - 2, BLACK);
     drawRight(subject, 11, pageHeight - margin - 18, BLACK);
     drawRight(`מספר פניה: ${claimNumber}`, 11, pageHeight - margin - 34, BLACK);
     drawRight(`תאריך: ${today}`, 11, pageHeight - margin - 50, BLACK);
-    y = pageHeight - margin - 78;
+    y = pageHeight - margin - 88;
 
     const sectionTitle = (title: string) => {
       ensureSpace(36);
@@ -586,8 +593,8 @@ export async function buildClaimPdfBase64(
     drawBullets([
       "פרטיי האישיים המוזכרים לעיל הינם הפרטים הנכונים והמעודכנים ובאים במקום כל עדכון קודם. ידוע לי כי הפרטים ישמשו לצורך בירור וטיפול בתביעה.",
       "ידוע לי כי מסירת מידע כוזב או חלקי עלולה לפגוע בזכויותיי על פי הפוליסה ועל פי דין.",
-      "אני מאשר/ת להראל חברה לביטוח בע״מ ולמי מטעמה לקבל ולעבד את המידע שמסרתי לצורך טיפול בתביעה, לרבות מידע רפואי ככל שנדרש ואושר על ידי.",
-      "אני מאשר/ת לסוכן הביטוח (אופיר ושות׳ סוכנות לביטוח) לטפל בתביעה זו בשמי מול הראל.",
+      "אני מאשר/ת לאופיר ושות׳ סוכנות לביטוח ולמי מטעמה לקבל ולעבד את המידע שמסרתי לצורך טיפול בתביעה, לרבות מידע רפואי ככל שנדרש ואושר על ידי.",
+      "אני מאשר/ת לסוכן הביטוח (אופיר ושות׳ סוכנות לביטוח) לטפל בתביעה זו בשמי מול חברת הביטוח.",
       "אני מסכים/ה לקבל עדכונים בנוגע לתביעה באמצעות מסרון ו/או טלפון ו/או דואר אלקטרוני.",
     ]);
     if (yesNo(claim.declaration) === "כן") {
@@ -617,7 +624,7 @@ export async function buildClaimPdfBase64(
     drawRight("פרטיות", 10, y, BLACK);
     y -= 14;
     drawParagraph(
-      "הראל וקבוצת הראל אוספות ומשתמשות במידע האישי שמסרת לצורך טיפול בתביעה, מתן שירות ומילוי חובות על פי דין. המידע יישמר ויעובד בהתאם לדין ולמדיניות הפרטיות של החברה.",
+      "אופיר ושות׳ סוכנות לביטוח אוספת ומשתמשת במידע האישי שמסרת לצורך טיפול בתביעה, מתן שירות ומילוי חובות על פי דין. המידע יישמר ויעובד בהתאם לדין.",
       9,
       BLACK,
     );
@@ -653,10 +660,10 @@ export async function buildClaimPdfBase64(
     y -= 36;
 
     // Footer on last page
-    drawAlignedRtl(page, "הופק באמצעות מערכת הגשת תביעות TravelSure · אופיר ושות׳ סוכנות לביטוח · עבור הראל", {
+    drawAlignedRtl(page, "הופק באמצעות מערכת הגשת תביעות TravelSure · אופיר ושות׳ סוכנות לביטוח", {
       font,
       size: 8,
-      right: pageWidth / 2 + 160,
+      right: pageWidth / 2 + 140,
       y: 36,
       color: GRAY,
     });
