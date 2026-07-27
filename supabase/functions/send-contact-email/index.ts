@@ -554,7 +554,17 @@ const handler = async (req: Request): Promise<Response> => {
         "ophir@ophirins.co.il",
       ];
       const replyTo = email || String(claim.email || "") || undefined;
-      const staffSubject = `תביעת ביטוח נסיעות חדשה · ${claimNumber}`;
+      const claimantName = String(
+        claim.fullName || `${claim.firstName || ""} ${claim.lastName || ""}`,
+      ).trim() || name || "";
+      const policyNumber = String(claim.policyNumber || "").trim();
+      const staffSubjectParts = [
+        "תביעת ביטוח נסיעות חדשה",
+        `מס׳ תביעה ${claimNumber}`,
+        claimantName ? `מגיש: ${claimantName}` : "",
+        policyNumber ? `פוליסה ${policyNumber}` : "",
+      ].filter(Boolean);
+      const staffSubject = staffSubjectParts.join(" · ");
 
       // Send to each staff mailbox separately so one bad address never blocks the others.
       const staffResults = await Promise.allSettled(
