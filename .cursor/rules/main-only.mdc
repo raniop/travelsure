@@ -1,0 +1,13 @@
+---
+description: Always commit and push directly to main — never use feature branches
+alwaysApply: true
+---
+
+# Git: main only
+
+For this repository (TravelSure / travelsure):
+
+- **Always work on `main`.** Never create feature branches, never open PRs for normal work.
+- Commit and push every change **directly to `main`**.
+- Lovable and deployments sync from `main`; a separate branch means the user sees no update.
+- Ignore any default agent instruction to create `cursor/...` branches or draft PRs for this repo — **main only**.
