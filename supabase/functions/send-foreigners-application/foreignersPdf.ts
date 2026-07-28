@@ -293,6 +293,16 @@ function mark(
   });
 }
 
+function pageDrawUnderline(page: PDFPage, x: number, yFromTop: number, width: number) {
+  page.drawRectangle({
+    x,
+    y: topY(yFromTop),
+    width,
+    height: 1.4,
+    color: INK,
+  });
+}
+
 /** Yes/No columns on the health form (right side). */
 function markYn(page: PDFPage, font: PDFFont, yFromTop: number, yes: boolean | null) {
   if (yes === null) return;
@@ -302,6 +312,32 @@ function markYn(page: PDFPage, font: PDFFont, yFromTop: number, yes: boolean | n
 
 function digitsOnly(v: string) {
   return v.replace(/\D/g, "");
+}
+
+/** Draw one character centered in each digit slot defined by tick X positions. */
+function drawDigits(
+  page: PDFPage,
+  font: PDFFont,
+  value: string,
+  ticks: number[],
+  yFromTop: number,
+  size = 9,
+) {
+  const chars = [...digitsOnly(value)];
+  const slots = Math.min(chars.length, ticks.length - 1);
+  for (let i = 0; i < slots; i++) {
+    const ch = chars[i];
+    const slotW = ticks[i + 1] - ticks[i];
+    const w = widthOf(ch, font, size);
+    const x = ticks[i] + (slotW - w) / 2;
+    page.drawText(ch, {
+      x,
+      y: topY(yFromTop) - size * 0.2,
+      size,
+      font,
+      color: INK,
+    });
+  }
 }
 
 function suggestedInstallments(from: string, to: string): number | null {
@@ -321,6 +357,14 @@ function suggestedInstallments(from: string, to: string): number | null {
   if (days <= 240) return 4;
   return 6;
 }
+
+/** ID number digit ticks (proposal p3). */
+const PAYER_ID_TICKS = [41.0, 56.7, 72.3, 87.9, 103.5, 119.1, 134.7, 150.3, 165.9, 181.5];
+/** Credit-card digit ticks (proposal p3) — 16 equal slots. */
+const CARD_TICKS = [
+  181.5, 204.79, 228.09, 251.38, 274.68, 297.97, 321.26, 344.56, 367.85, 391.14, 414.44, 437.73,
+  461.03, 484.32, 507.61, 530.91, 554.2,
+];
 
 /** Condition option checkbox map: groupId -> optionId -> [pageIndex, x, y] */
 const OPTION_BOXES: Record<string, Record<string, [number, number, number]>> = {
@@ -473,38 +517,46 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   const [p0, p1, p2] = pages;
   const gender = s(data.gender);
 
-  // Agent header — values sit in the white cells under the gray label row
-  drawText(p0, font, s(data.agentName) || "Ophir Insurance", 48, 265, 8, 230);
-  drawText(p0, font, s(data.agentNo), 310, 265, 8, 220);
+  // Agent row cell ~245–274 (labels on top gray bar)
+  drawText(p0, font, s(data.agentName) || "Ophir Insurance", 48, 266, 8, 230);
+  drawText(p0, font, s(data.agentNo), 310, 266, 8, 220);
 
-  // A – personal
-  drawText(p0, font, s(data.firstName), 46, 458, 8, 70);
-  drawText(p0, font, s(data.lastName), 218, 458, 8, 70);
-  drawText(p0, font, s(data.passportCountry), 312, 458, 7, 110);
-  drawText(p0, font, s(data.passportNo), 442, 458, 7, 100);
+  // A – names row cell 464.6–495.3
+  // Multi-line labels end ~483; keep values at very bottom (baseline ~494).
+  drawText(p0, font, s(data.firstName), 46, 494, 8, 70);
+  drawText(p0, font, s(data.lastName), 220, 494, 8, 75);
+  drawText(p0, font, s(data.passportCountry), 310, 494, 6.5, 115);
+  drawText(p0, font, s(data.passportNo), 444, 494, 7, 100);
 
-  drawText(p0, font, s(data.countryOfOrigin), 46, 490, 7, 70);
-  drawText(p0, font, formatDate(data.birthDate), 152, 490, 7, 80);
-  drawText(p0, font, formatDate(data.firstInsuranceDate), 288, 490, 7, 110);
-  if (isMale(gender)) mark(p0, font, 444.5, 504, 8);
-  if (isFemale(gender)) mark(p0, font, 444.5, 515, 8);
+  // Origin country stays in text cell; DOB / first-insurance sit on the digit comb below (~517–531).
+  drawText(p0, font, s(data.countryOfOrigin), 46, 516, 7, 95);
+  drawText(p0, font, formatDate(data.birthDate), 155, 528, 8, 115);
+  drawText(p0, font, formatDate(data.firstInsuranceDate), 295, 528, 8, 105);
+  // Gender checkboxes: Male 444.2@497.7, Female 444.8@508.7
+  if (isMale(gender)) mark(p0, font, 445.0, 506, 7);
+  if (isFemale(gender)) mark(p0, font, 445.5, 517, 7);
 
-  drawText(p0, font, formatDate(data.entryDate), 46, 525, 7, 70);
-  drawText(p0, font, formatDate(data.insuranceFrom), 250, 542, 7, 100);
-  drawText(p0, font, formatDate(data.insuranceTo), 410, 542, 7, 120);
-  drawText(p0, font, s(data.workDescription), 46, 566, 8, 380);
+  // Entry + insurance period digit band ~546–572
+  drawText(p0, font, formatDate(data.entryDate), 80, 568, 8, 140);
+  drawText(p0, font, formatDate(data.insuranceFrom), 270, 568, 8, 110);
+  drawText(p0, font, formatDate(data.insuranceTo), 430, 568, 8, 110);
 
-  drawText(p0, font, s(data.street), 445, 598, 7, 95);
-  drawText(p0, font, s(data.houseNo), 358, 598, 7, 50);
-  drawText(p0, font, s(data.apartmentNo), 250, 598, 7, 50);
-  drawText(p0, font, s(data.city), 155, 598, 7, 75);
-  drawText(p0, font, s(data.zip), 48, 598, 7, 65);
+  // Work description cell 572.5–603.6
+  drawText(p0, font, s(data.workDescription), 48, 596, 8, 490);
 
-  drawText(p0, font, s(data.phone), 445, 624, 7, 95);
-  drawText(p0, font, s(data.mobile), 315, 624, 7, 110);
-  drawText(p0, font, s(data.email), 48, 624, 7, 150);
+  // Address cell 604.1–629.1: zip | town | apt | house | street
+  drawText(p0, font, s(data.zip), 50, 624, 7, 90);
+  drawText(p0, font, s(data.city), 158, 624, 7, 75);
+  drawText(p0, font, s(data.apartmentNo), 255, 624, 7, 80);
+  drawText(p0, font, s(data.houseNo), 360, 624, 7, 65);
+  drawText(p0, font, s(data.street), 448, 624, 7, 95);
 
-  // B – purpose
+  // Contact cell 629.6–654.6: email | mobile | phone (labels wrap to ~638)
+  drawText(p0, font, s(data.email), 50, 650, 7, 240);
+  drawText(p0, font, s(data.mobile), 318, 650, 7, 105);
+  drawText(p0, font, s(data.phone), 450, 650, 7, 95);
+
+  // B – purpose checkboxes @ y≈722.4
   const purpose = s(data.workPurpose).toLowerCase();
   const purposeBox: Record<string, [number, number]> = {
     general: [140.5, 729],
@@ -515,27 +567,27 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   const pb = purposeBox[purpose];
   if (pb) mark(p0, font, pb[0], pb[1], 8);
 
-  // C – provider
+  // C – provider checkboxes @ y≈762
   const provider = s(data.provider).toLowerCase();
-  if (provider === "maccabi") mark(p0, font, 44.8, 769, 8);
+  if (provider === "maccabi") mark(p0, font, 45.0, 769, 8);
   if (provider === "clalit") mark(p0, font, 543.5, 769, 8);
 
   // D – previous insurance
   if (isYes(data.hadPreviousInsurance)) mark(p1, font, 324.5, 37, 8);
   else if (isNo(data.hadPreviousInsurance)) mark(p1, font, 300.0, 37, 8);
-  drawText(p1, font, s(data.previousCompany), 260, 55, 7, 110);
-  drawText(p1, font, s(data.previousPolicyNo), 400, 55, 7, 50);
-  drawText(p1, font, s(data.previousMembershipNo), 510, 55, 7, 40);
-  drawText(p1, font, formatDate(data.previousFrom), 48, 90, 7, 60);
-  drawText(p1, font, formatDate(data.previousTo), 155, 90, 7, 60);
+  drawText(p1, font, s(data.previousCompany), 265, 82, 7, 110);
+  drawText(p1, font, s(data.previousPolicyNo), 400, 82, 7, 50);
+  drawText(p1, font, s(data.previousMembershipNo), 510, 82, 7, 40);
+  drawText(p1, font, formatDate(data.previousFrom), 48, 92, 7, 90);
+  drawText(p1, font, formatDate(data.previousTo), 160, 92, 7, 70);
 
-  // E – employer
+  // E – employer (labels ~124 / ~158, values in white cells below)
   drawText(p1, font, s(data.employerName), 48, 148, 8, 155);
   drawText(p1, font, s(data.employerId), 220, 148, 8, 140);
-  drawText(p1, font, s(data.employerPhone), 390, 148, 7, 140);
+  drawText(p1, font, s(data.employerPhone), 395, 148, 7, 140);
   drawText(p1, font, s(data.employerEmail), 48, 182, 7, 200);
-  drawText(p1, font, s(data.employerAddress), 270, 182, 7, 100);
-  drawText(p1, font, s(data.employerMobile), 390, 182, 7, 140);
+  drawText(p1, font, s(data.employerAddress), 270, 182, 7, 110);
+  drawText(p1, font, s(data.employerMobile), 395, 182, 7, 140);
 
   // Employer signature block
   drawText(p1, font, s(data.employerName), 50, 700, 8, 140);
@@ -547,32 +599,65 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   drawText(p1, font, s(data.agentName), 220, 780, 7, 140);
 
   // K – payment (page 3)
-  drawText(p2, font, s(data.lastName), 50, 338, 8, 120);
-  drawText(p2, font, s(data.firstName), 225, 338, 8, 120);
-  drawText(p2, font, s(data.passportNo), 430, 338, 7, 110);
+  // Applicant row 321.6–347.1
+  drawText(p2, font, s(data.lastName), 50, 340, 8, 155);
+  drawText(p2, font, s(data.firstName), 225, 340, 8, 180);
+  drawText(p2, font, s(data.passportNo), 430, 340, 7, 110);
 
-  // ID digit boxes start ~x45; write as continuous string above ticks
-  drawText(p2, font, digitsOnly(s(data.payerId)).slice(0, 9), 50, 375, 9, 120);
-  drawText(p2, font, s(data.payerFirstName), 190, 375, 8, 160);
-  drawText(p2, font, s(data.payerLastName), 410, 375, 8, 130);
+  // Payer row 359.3–384.9
+  drawDigits(p2, font, s(data.payerId), PAYER_ID_TICKS, 380, 10);
+  drawText(p2, font, s(data.payerFirstName), 190, 380, 8, 190);
+  drawText(p2, font, s(data.payerLastName), 410, 380, 8, 130);
 
+  // Card row 384.9–411.5 — printed slash ~x105
   const exp = s(data.cardExp);
-  // Printed slash sits in the middle — write MM and YY around it when possible
   const expParts = exp.match(/^(\d{2})\s*\/\s*(\d{2})$/);
   if (expParts) {
-    drawText(p2, font, expParts[1], 55, 400, 9, 30);
-    drawText(p2, font, expParts[2], 85, 400, 9, 30);
-  } else {
-    drawText(p2, font, exp, 50, 400, 8, 70);
+    drawText(p2, font, expParts[1], 70, 407, 10, 28);
+    drawText(p2, font, expParts[2], 125, 407, 10, 40);
+  } else if (exp) {
+    drawText(p2, font, exp, 55, 407, 9, 100);
   }
-  drawText(p2, font, digitsOnly(s(data.cardNumber)).slice(0, 16), 150, 400, 9, 320);
+  drawDigits(p2, font, s(data.cardNumber), CARD_TICKS, 407, 10);
 
-  // Installment hint checkboxes (1 / 2 / 4 / 6 under day ranges)
+  // Optional payer contact row
+  drawText(p2, font, s(data.mobile) || s(data.employerMobile), 50, 432, 7, 120);
+  drawText(p2, font, s(data.zip), 190, 432, 7, 70);
+  drawText(p2, font, s(data.city), 290, 432, 7, 110);
+  drawText(
+    p2,
+    font,
+    [s(data.street), s(data.houseNo)].filter(Boolean).join(" "),
+    430,
+    432,
+    7,
+    110,
+  );
+  drawText(p2, font, s(data.email) || s(data.employerEmail), 50, 448, 7, 480);
+
+  // Highlight suggested installment count (printed 1/2/4/6) with a light underline
   const inst = suggestedInstallments(s(data.insuranceFrom), s(data.insuranceTo));
-  const instX: Record<number, number> = { 1: 226, 2: 322, 4: 416, 6: 506 };
-  if (inst && instX[inst] != null) mark(p2, font, instX[inst], 246, 9);
+  const instCenter: Record<number, number> = { 1: 229, 2: 325, 4: 420, 6: 510 };
+  if (inst && instCenter[inst] != null) {
+    const cx = instCenter[inst];
+    p2.drawRectangle({
+      x: cx - 10,
+      y: topY(248),
+      width: 20,
+      height: 1.4,
+      color: INK,
+    });
+  }
 
-  drawText(p2, font, s(data.signatureName) || `${s(data.firstName)} ${s(data.lastName)}`.trim(), 50, 760, 9, 200);
+  drawText(
+    p2,
+    font,
+    s(data.signatureName) || `${s(data.firstName)} ${s(data.lastName)}`.trim(),
+    50,
+    760,
+    9,
+    200,
+  );
   drawText(p2, font, formatDate(data.signatureDate), 470, 755, 8, 70);
 }
 
