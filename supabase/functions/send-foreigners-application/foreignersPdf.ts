@@ -600,40 +600,40 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
 
   // K – payment (page 3)
   // Applicant row 321.6–347.1
-  drawText(p2, font, s(data.lastName), 50, 340, 8, 155);
-  drawText(p2, font, s(data.firstName), 225, 340, 8, 180);
-  drawText(p2, font, s(data.passportNo), 430, 340, 7, 110);
+  drawText(p2, font, s(data.lastName), 50, 338, 8, 155);
+  drawText(p2, font, s(data.firstName), 225, 338, 8, 180);
+  drawText(p2, font, s(data.passportNo), 435, 338, 7, 105);
 
-  // Payer row 359.3–384.9
-  drawDigits(p2, font, s(data.payerId), PAYER_ID_TICKS, 380, 10);
-  drawText(p2, font, s(data.payerFirstName), 190, 380, 8, 190);
-  drawText(p2, font, s(data.payerLastName), 410, 380, 8, 130);
+  // Payer row 359.3–384.9 — digits sit in the lower half of the comb
+  drawDigits(p2, font, s(data.payerId), PAYER_ID_TICKS, 382, 9);
+  drawText(p2, font, s(data.payerFirstName), 190, 378, 8, 190);
+  drawText(p2, font, s(data.payerLastName), 410, 378, 8, 130);
 
   // Card row 384.9–411.5 — printed slash ~x105
   const exp = s(data.cardExp);
   const expParts = exp.match(/^(\d{2})\s*\/\s*(\d{2})$/);
   if (expParts) {
-    drawText(p2, font, expParts[1], 70, 407, 10, 28);
-    drawText(p2, font, expParts[2], 125, 407, 10, 40);
+    drawText(p2, font, expParts[1], 70, 404, 10, 28);
+    drawText(p2, font, expParts[2], 125, 404, 10, 40);
   } else if (exp) {
-    drawText(p2, font, exp, 55, 407, 9, 100);
+    drawText(p2, font, exp, 55, 404, 9, 100);
   }
-  drawDigits(p2, font, s(data.cardNumber), CARD_TICKS, 407, 10);
+  drawDigits(p2, font, s(data.cardNumber), CARD_TICKS, 404, 9);
 
-  // Optional payer contact row
-  drawText(p2, font, s(data.mobile) || s(data.employerMobile), 50, 432, 7, 120);
-  drawText(p2, font, s(data.zip), 190, 432, 7, 70);
-  drawText(p2, font, s(data.city), 290, 432, 7, 110);
+  // Optional payer contact row (keep above bottom border)
+  drawText(p2, font, s(data.mobile) || s(data.employerMobile), 50, 428, 7, 120);
+  drawText(p2, font, s(data.zip), 190, 428, 7, 70);
+  drawText(p2, font, s(data.city), 290, 428, 7, 110);
   drawText(
     p2,
     font,
     [s(data.street), s(data.houseNo)].filter(Boolean).join(" "),
     430,
-    432,
+    428,
     7,
     110,
   );
-  drawText(p2, font, s(data.email) || s(data.employerEmail), 50, 448, 7, 480);
+  drawText(p2, font, s(data.email) || s(data.employerEmail), 50, 445, 7, 480);
 
   // Highlight suggested installment count (printed 1/2/4/6) with a light underline
   const inst = suggestedInstallments(s(data.insuranceFrom), s(data.insuranceTo));
