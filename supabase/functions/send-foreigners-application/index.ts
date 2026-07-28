@@ -231,40 +231,73 @@ serve(async (req) => {
 
     const emailAttachments = files
       .map((f: Record<string, unknown>) => {
-        const content = String(f.contentBase64 || f.content || "");
+        const raw = String(f.contentBase64 || f.content || "");
+        const content = raw.replace(/^data:[^;]+;base64,/, "").trim();
         const filename = String(f.filename || f.name || "file");
         if (!content) return null;
-        return { filename, content };
+        return {
+          filename,
+          content,
+          type: String(f.type || f.contentType || "application/octet-stream"),
+        };
       })
-      .filter(Boolean) as Array<{ filename: string; content: string }>;
+      .filter(Boolean) as Array<{ filename: string; content: string; type?: string }>;
 
     // Official filled Harel forms (proposal + health declaration) as one PDF.
-    const filledPdf = await buildForeignersFilledPdfBase64(pdfInput);
-    if (filledPdf) {
-      emailAttachments.unshift(filledPdf);
-    } else {
-      console.error("Filled foreigners PDF was not generated; sending email without official form PDF");
+    let pdfAttached = false;
+    let pdfError: string | null = null;
+    try {
+      const filledPdf = await buildForeignersFilledPdfBase64(pdfInput);
+      if (filledPdf?.content) {
+        emailAttachments.unshift(filledPdf);
+        pdfAttached = true;
+      } else {
+        pdfError = "pdf_builder_returned_null";
+        console.error("Filled foreigners PDF was not generated; sending email without official form PDF");
+      }
+    } catch (pdfErr) {
+      pdfError = String(pdfErr);
+      console.error("Filled foreigners PDF threw:", pdfErr);
     }
 
     const recipients = Array.isArray(body.notify) && body.notify.length
       ? body.notify
       : ["rani@ophirins.co.il"];
 
-    const response = await fetch("https://api.resend.com/emails", {
+    const emailBody = {
+      from: RESEND_FROM,
+      to: recipients,
+      reply_to: String(body.email || summary.employerEmail || summary.email || "").trim() || undefined,
+      subject: `ביטוח עובדים זרים: ${fullName}${employerName ? ` · ${employerName}` : ""}`,
+      html,
+      attachments: emailAttachments.length ? emailAttachments : undefined,
+    };
+
+    let response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: recipients,
-        reply_to: String(body.email || summary.employerEmail || summary.email || "").trim() || undefined,
-        subject: `ביטוח עובדים זרים: ${fullName}${employerName ? ` · ${employerName}` : ""}`,
-        html,
-        attachments: emailAttachments.length ? emailAttachments : undefined,
-      }),
+      body: JSON.stringify(emailBody),
     });
+
+    // If Resend rejects the full payload (often attachment-related), retry PDF-only then bare email.
+    if (!response.ok && emailAttachments.length) {
+      const errText = await response.text();
+      console.error("Resend error with attachments:", errText);
+      const pdfOnly = emailAttachments.filter((a) => a.type === "application/pdf" || a.filename.toLowerCase().endsWith(".pdf"));
+      if (pdfOnly.length) {
+        response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...emailBody, attachments: pdfOnly }),
+        });
+      }
+    }
 
     if (!response.ok) {
       const errText = await response.text();
@@ -272,7 +305,7 @@ serve(async (req) => {
       throw new Error("Email service error");
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, pdfAttached, pdfError }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

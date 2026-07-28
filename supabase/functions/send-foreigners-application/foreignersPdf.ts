@@ -5,8 +5,14 @@
  * Templates are flat (no AcroForm) — values are overlaid at calibrated positions.
  * Do not import or modify claim PDF code from this module.
  */
-import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, PDFFont, PDFPage, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import {
+  decodeBase64,
+  HEEBO_FONT_BASE64,
+  HEALTH_PDF_BASE64,
+  PROPOSAL_PDF_BASE64,
+} from "./embeddedAssets.ts";
 
 const PROPOSAL_URL = new URL("./templates/insurance-proposal.pdf", import.meta.url);
 const HEALTH_URL = new URL("./templates/health-declaration.pdf", import.meta.url);
@@ -249,8 +255,26 @@ function drawText(
 
 const topY = (yFromTop: number) => PAGE_H - yFromTop;
 
-async function loadBytes(url: URL): Promise<Uint8Array> {
-  return await Deno.readFile(url);
+async function loadBytesFromUrl(url: URL): Promise<Uint8Array | null> {
+  try {
+    const data = await Deno.readFile(url);
+    if (data.byteLength > 1000) return data;
+  } catch (err) {
+    console.error("Local asset read failed:", url.pathname, err);
+  }
+  return null;
+}
+
+async function loadProposalBytes(): Promise<Uint8Array> {
+  return (await loadBytesFromUrl(PROPOSAL_URL)) || decodeBase64(PROPOSAL_PDF_BASE64);
+}
+
+async function loadHealthBytes(): Promise<Uint8Array> {
+  return (await loadBytesFromUrl(HEALTH_URL)) || decodeBase64(HEALTH_PDF_BASE64);
+}
+
+async function loadFontBytes(): Promise<Uint8Array> {
+  return (await loadBytesFromUrl(FONT_URL)) || decodeBase64(HEEBO_FONT_BASE64);
 }
 
 function mark(
@@ -681,22 +705,32 @@ function uint8ToBase64(bytes: Uint8Array): string {
  */
 export async function buildForeignersFilledPdfBase64(
   input: ForeignersPdfInput,
-): Promise<{ filename: string; content: string } | null> {
+): Promise<{ filename: string; content: string; type: string } | null> {
   try {
     const [proposalBytes, healthBytes, fontBytes] = await Promise.all([
-      loadBytes(PROPOSAL_URL),
-      loadBytes(HEALTH_URL),
-      loadBytes(FONT_URL),
+      loadProposalBytes(),
+      loadHealthBytes(),
+      loadFontBytes(),
     ]);
+
+    if (!proposalBytes?.byteLength || !healthBytes?.byteLength || !fontBytes?.byteLength) {
+      throw new Error(
+        `Missing assets: proposal=${proposalBytes?.byteLength || 0} health=${healthBytes?.byteLength || 0} font=${fontBytes?.byteLength || 0}`,
+      );
+    }
 
     const proposalDoc = await PDFDocument.load(proposalBytes);
     const healthDoc = await PDFDocument.load(healthBytes);
     const out = await PDFDocument.create();
     out.registerFontkit(fontkit);
 
-    const font = await out.embedFont(fontBytes, { subset: true });
-    // Keep a standard font fallback path unused but available if needed
-    await out.embedFont(StandardFonts.Helvetica);
+    let font: PDFFont;
+    try {
+      font = await out.embedFont(fontBytes, { subset: true });
+    } catch (subsetErr) {
+      console.error("Font subset failed, embedding full font:", subsetErr);
+      font = await out.embedFont(fontBytes);
+    }
 
     const propPages = await out.copyPages(proposalDoc, proposalDoc.getPageIndices());
     propPages.forEach((p) => out.addPage(p));
@@ -704,6 +738,9 @@ export async function buildForeignersFilledPdfBase64(
     healthPages.forEach((p) => out.addPage(p));
 
     const all = out.getPages();
+    if (all.length < 6) {
+      throw new Error(`Expected 6 pages after merge, got ${all.length}`);
+    }
     fillProposal(all.slice(0, 3), font, input);
     fillHealth(all.slice(3, 6), font, input);
 
@@ -713,6 +750,7 @@ export async function buildForeignersFilledPdfBase64(
     return {
       filename: `Harel_SAFE_STAY_filled_${safe}.pdf`,
       content: uint8ToBase64(bytes),
+      type: "application/pdf",
     };
   } catch (err) {
     console.error("buildForeignersFilledPdfBase64 failed:", err);
