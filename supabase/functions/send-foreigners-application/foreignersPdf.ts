@@ -632,8 +632,8 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   if (provider === "clalit") mark(p0, font, 543.5, 769, 10);
 
   // D – previous insurance: EN boxes No 289.7–298.2, Yes 313.7–322.2 (y≈30–38)
-  if (isYes(data.hadPreviousInsurance)) markInBox(p1, font, 313.7, 322.2, 36, 9);
-  else if (isNo(data.hadPreviousInsurance)) markInBox(p1, font, 289.7, 298.2, 36, 9);
+  if (isYes(data.hadPreviousInsurance)) markInBox(p1, font, 313.7, 322.2, 37.5, 9);
+  else if (isNo(data.hadPreviousInsurance)) markInBox(p1, font, 289.7, 298.2, 37.5, 9);
   drawText(p1, font, s(data.previousCompany), 265, 82, 9, 110);
   drawText(p1, font, s(data.previousPolicyNo), 400, 82, 9, 50);
   drawText(p1, font, s(data.previousMembershipNo), 510, 82, 9, 40);
@@ -641,14 +641,14 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   drawText(p1, font, formatDate(data.previousTo), 160, 92, 9, 70);
 
   // E – employer / policyholder
-  // Row1 verts ~41 | 212 | 383 | 554 — Name | ID | Telephone (bottom ~141.7)
-  // Row2 — Email | Address | Cellphone (bottom ~170; cellphone from ~432)
+  // Row1 114–141.7: Name | ID | Telephone
+  // Row2 144.3–170: Email | Address | Cellphone — keep values inside this band, right of EN labels
   drawText(p1, font, s(data.employerName), 48, 140, 10, 155);
   drawText(p1, font, s(data.employerId), 220, 140, 10, 150);
   drawText(p1, font, s(data.employerPhone), 395, 140, 10, 145);
-  drawText(p1, font, s(data.employerEmail), 48, 168, 8, 155);
-  drawText(p1, font, s(data.employerAddress), 220, 168, 9, 200);
-  drawText(p1, font, s(data.employerMobile), 440, 168, 10, 100);
+  drawText(p1, font, s(data.employerEmail), 95, 164, 8, 110);
+  drawText(p1, font, s(data.employerAddress), 240, 164, 9, 175);
+  drawText(p1, font, s(data.employerMobile), 465, 164, 9, 80);
 
   // Employer signature value row 684–718; dotted line ~700. Cols: 41–212 | 212–383 | 383–554
   drawText(p1, font, s(data.employerName), 50, 697, 11, 150);
@@ -682,44 +682,47 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   }
   drawDigits(p2, font, s(data.cardNumber), CARD_TICKS, 404, 12);
 
-  drawText(p2, font, s(data.mobile) || s(data.employerMobile), 50, 428, 9, 120);
-  drawText(p2, font, s(data.zip), 190, 428, 9, 70);
-  drawText(p2, font, s(data.city), 290, 428, 9, 110);
+  drawText(p2, font, s(data.mobile) || s(data.employerMobile), 55, 427, 9, 115);
+  drawText(p2, font, s(data.zip), 190, 427, 9, 70);
+  drawText(p2, font, s(data.city), 290, 427, 9, 110);
   drawText(
     p2,
     font,
     [s(data.street), s(data.houseNo)].filter(Boolean).join(" "),
     430,
-    428,
+    427,
     9,
     110,
   );
-  drawText(p2, font, s(data.email) || s(data.employerEmail), 50, 445, 9, 480);
+  // Email row 430–457: label "Email" ends ~64 — keep value clear to the right, near bottom
+  drawText(p2, font, s(data.email) || s(data.employerEmail), 105, 453, 9, 400);
 
   const inst = suggestedInstallments(s(data.insuranceFrom), s(data.insuranceTo));
-  const instCenter: Record<number, number> = { 1: 229, 2: 325, 4: 420, 6: 510 };
+  // Printed payment counts centered at these X; circle the suggested option
+  const instCenter: Record<number, number> = { 1: 229.15, 2: 325.45, 4: 419.65, 6: 509.75 };
   if (inst && instCenter[inst] != null) {
     const cx = instCenter[inst];
-    p2.drawRectangle({
-      x: cx - 10,
-      y: topY(248),
-      width: 20,
-      height: 1.4,
-      color: INK,
+    const cy = topY(245.7);
+    p2.drawCircle({
+      x: cx,
+      y: cy,
+      size: 16,
+      borderWidth: 1.6,
+      borderColor: INK,
     });
   }
 
-  // Credit-card holder signature / date — dotted writing line ~745
+  // Credit-card holder signature / date — on dotted line; start past the pencil icon
   drawText(
     p2,
     font,
     s(data.signatureName) || `${s(data.firstName)} ${s(data.lastName)}`.trim(),
-    55,
-    744,
+    70,
+    738,
     11,
-    180,
+    165,
   );
-  drawText(p2, font, formatDate(data.signatureDate), 455, 744, 11, 70);
+  drawText(p2, font, formatDate(data.signatureDate), 460, 738, 11, 65);
 }
 
 function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
