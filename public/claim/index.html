@@ -1101,6 +1101,27 @@
         return "all";
       }
 
+      const CLAIM_POLICY_MAX_AGE_YEARS = 3;
+
+      function claimLookbackCutoffMs(years, todayMs) {
+        const d = new Date(todayMs);
+        d.setFullYear(d.getFullYear() - (years || CLAIM_POLICY_MAX_AGE_YEARS));
+        return d.getTime();
+      }
+
+      function isPolicyWithinClaimLookback(policy, years, todayMs) {
+        const today = todayMs != null ? todayMs : startOfTodayMs();
+        const cutoff = claimLookbackCutoffMs(years || CLAIM_POLICY_MAX_AGE_YEARS, today);
+        const start = dateMs(policy.startDate);
+        const end = dateMs(policy.endDate);
+        if (Number.isFinite(start) && start > today) return true;
+        if (Number.isFinite(end) && end >= today) return true;
+        if (Number.isFinite(start) && start <= today && !Number.isFinite(end)) return true;
+        if (Number.isFinite(end)) return end >= cutoff;
+        if (Number.isFinite(start)) return start >= cutoff;
+        return false;
+      }
+
       function isPolicyInTimeBucket(policy, bucket, todayMs) {
         const start = dateMs(policy.startDate);
         const end = dateMs(policy.endDate);
@@ -1114,15 +1135,16 @@
 
       function filterPoliciesForClaimType(policies, type, baggageSub) {
         const bucket = policyTimeBucketForClaimType(type, baggageSub);
-        if (bucket === "all") return policies;
         const today = startOfTodayMs();
-        return policies.filter((p) => isPolicyInTimeBucket(p, bucket, today));
+        const inLookback = policies.filter((p) => isPolicyWithinClaimLookback(p, CLAIM_POLICY_MAX_AGE_YEARS, today));
+        if (bucket === "all") return inLookback;
+        return inLookback.filter((p) => isPolicyInTimeBucket(p, bucket, today));
       }
 
       function claimPolicyFilterCopy(type, baggageSub) {
         if (type === "baggage" && baggageSub === "delay") {
           return {
-            listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה",
+            listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה (עד 3 שנים אחורה)",
             emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
             emptyBody:
               "לאיחור בכבודה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
@@ -1132,10 +1154,10 @@
         }
         if (type === "baggage" && (baggageSub === "loss" || baggageSub === "theft" || baggageSub === "loss_theft")) {
           return {
-            listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
+            listHint: "מוצגות נסיעות שהתחילו ב־3 השנים האחרונות — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
             emptyTitle: "לא מצאנו נסיעה מתאימה",
             emptyBody:
-              "לאובדן או גניבה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+              "לאובדן או גניבה נדרשת פוליסה שנסיעתה כבר התחילה (עד 3 שנים אחורה). נסיעות עתידיות בלבד לא מוצגות כאן.",
             upcomingTitle: "נסיעות פעילות כעת",
             pastTitle: "נסיעות שעברו",
           };
@@ -1163,10 +1185,10 @@
         }
         if (bucket === "started") {
           return {
-            listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו",
+            listHint: "מוצגות נסיעות מה־3 השנים האחרונות שהתחילו — פעילות כעת או שכבר הסתיימו",
             emptyTitle: "לא מצאנו נסיעה מתאימה",
             emptyBody:
-              "לסוג תביעה זה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+              "לסוג תביעה זה נדרשת פוליסה שנסיעתה כבר התחילה (עד 3 שנים אחורה). נסיעות עתידיות בלבד לא מוצגות כאן.",
             upcomingTitle: "נסיעות פעילות כעת",
             pastTitle: "נסיעות שעברו",
           };
@@ -1174,11 +1196,11 @@
         return {
           listHint:
             type === "trip_cancel"
-              ? "מוצגות כל הפוליסות — כולל נסיעות עתידיות וגם כאלה שכבר פגו"
-              : "בחרו את הנסיעה הרלוונטית לתביעה",
+              ? "מוצגות פוליסות עד 3 שנים אחורה — כולל נסיעות עתידיות וגם כאלה שכבר פגו"
+              : "בחרו את הנסיעה הרלוונטית לתביעה (עד 3 שנים אחורה)",
           emptyTitle: "לא מצאנו פוליסה במערכת",
           emptyBody:
-            "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.",
+            "הגשת תביעה אפשרית לפוליסות נסיעות עד 3 שנים אחורה. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור.",
           upcomingTitle: "נסיעות עתידיות / פעילות",
           pastTitle: "נסיעות שעברו",
         };

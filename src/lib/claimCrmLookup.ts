@@ -295,6 +295,42 @@ const startOfTodayMs = () => {
   return d.getTime();
 };
 
+/** Abroad travel claims: only show policies from the last N years. */
+export const CLAIM_POLICY_MAX_AGE_YEARS = 3;
+
+const claimLookbackCutoffMs = (
+  years: number = CLAIM_POLICY_MAX_AGE_YEARS,
+  todayMs: number = startOfTodayMs()
+): number => {
+  const d = new Date(todayMs);
+  d.setFullYear(d.getFullYear() - years);
+  return d.getTime();
+};
+
+/**
+ * Keep policies that are still upcoming/active, or ended within the lookback window.
+ * Older than CLAIM_POLICY_MAX_AGE_YEARS are hidden from the claim picker.
+ */
+export const isPolicyWithinClaimLookback = (
+  policy: ClaimCrmPolicy,
+  years: number = CLAIM_POLICY_MAX_AGE_YEARS,
+  todayMs: number = startOfTodayMs()
+): boolean => {
+  const cutoff = claimLookbackCutoffMs(years, todayMs);
+  const start = dateMs(policy.startDate);
+  const end = dateMs(policy.endDate);
+
+  // Future or currently active — always keep
+  if (Number.isFinite(start) && start > todayMs) return true;
+  if (Number.isFinite(end) && end >= todayMs) return true;
+  if (Number.isFinite(start) && start <= todayMs && !Number.isFinite(end)) return true;
+
+  // Ended: keep only if end (or start fallback) is within lookback
+  if (Number.isFinite(end)) return end >= cutoff;
+  if (Number.isFinite(start)) return start >= cutoff;
+  return false;
+};
+
 export type ClaimPolicyTimeBucket = "future" | "active" | "started" | "all";
 
 export type ClaimTypeForPolicyFilter = "medical" | "trip_cancel" | "trip_shorten" | "baggage" | string;
@@ -374,11 +410,9 @@ export const filterPoliciesForClaimType = (
 ): ClaimCrmPolicy[] => {
   const bucket = policyTimeBucketForClaimType(claimType, baggageSubtype);
   const today = startOfTodayMs();
-  if (bucket === "all") {
-    // Still drop policies with unusable dates only when both missing — keep all otherwise
-    return policies;
-  }
-  return policies.filter((policy) => isPolicyInTimeBucket(policy, bucket, today));
+  const inLookback = policies.filter((policy) => isPolicyWithinClaimLookback(policy, CLAIM_POLICY_MAX_AGE_YEARS, today));
+  if (bucket === "all") return inLookback;
+  return inLookback.filter((policy) => isPolicyInTimeBucket(policy, bucket, today));
 };
 
 export const claimPolicyFilterCopy = (
@@ -389,7 +423,7 @@ export const claimPolicyFilterCopy = (
 
   if (claimType === "baggage" && baggageSubtype === "delay") {
     return {
-      listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה",
+      listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה (עד 3 שנים אחורה)",
       emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
       emptyBody:
         "לאיחור בכבודה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
@@ -400,10 +434,10 @@ export const claimPolicyFilterCopy = (
 
   if (claimType === "baggage" && (baggageSubtype === "loss" || baggageSubtype === "theft" || baggageSubtype === "loss_theft")) {
     return {
-      listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
+      listHint: "מוצגות נסיעות שהתחילו ב־3 השנים האחרונות — פעילות כעת או שכבר הסתיימו (אובדן / גניבה)",
       emptyTitle: "לא מצאנו נסיעה מתאימה",
       emptyBody:
-        "לאובדן או גניבה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+        "לאובדן או גניבה נדרשת פוליסה שנסיעתה כבר התחילה (עד 3 שנים אחורה). נסיעות עתידיות בלבד לא מוצגות כאן.",
       upcomingTitle: "נסיעות פעילות כעת",
       pastTitle: "נסיעות שעברו",
     };
@@ -430,10 +464,10 @@ export const claimPolicyFilterCopy = (
       };
     case "started":
       return {
-        listHint: "מוצגות נסיעות שהתחילו — פעילות כעת או שכבר הסתיימו",
+        listHint: "מוצגות נסיעות מה־3 השנים האחרונות שהתחילו — פעילות כעת או שכבר הסתיימו",
         emptyTitle: "לא מצאנו נסיעה מתאימה",
         emptyBody:
-          "לסוג תביעה זה נדרשת פוליסה שנסיעתה כבר התחילה. נסיעות עתידיות בלבד לא מוצגות כאן.",
+          "לסוג תביעה זה נדרשת פוליסה שנסיעתה כבר התחילה (עד 3 שנים אחורה). נסיעות עתידיות בלבד לא מוצגות כאן.",
         upcomingTitle: "נסיעות פעילות כעת",
         pastTitle: "נסיעות שעברו",
       };
@@ -441,11 +475,11 @@ export const claimPolicyFilterCopy = (
       return {
         listHint:
           claimType === "trip_cancel"
-            ? "מוצגות כל הפוליסות — כולל נסיעות עתידיות וגם כאלה שכבר פגו"
-            : "בחרו את הנסיעה הרלוונטית לתביעה",
+            ? "מוצגות פוליסות עד 3 שנים אחורה — כולל נסיעות עתידיות וגם כאלה שכבר פגו"
+            : "בחרו את הנסיעה הרלוונטית לתביעה (עד 3 שנים אחורה)",
         emptyTitle: "לא מצאנו פוליסה במערכת",
         emptyBody:
-          "הגשת תביעה אפשרית רק ללקוחות עם פוליסת נסיעות אצלנו. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור בטלפון או במייל.",
+          "הגשת תביעה אפשרית לפוליסות נסיעות עד 3 שנים אחורה. אם רכשתם אצלנו או שאתם חושבים שיש טעות — נשמח לעזור בטלפון או במייל.",
         upcomingTitle: "נסיעות עתידיות / פעילות",
         pastTitle: "נסיעות שעברו",
       };
