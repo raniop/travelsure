@@ -300,6 +300,19 @@ function mark(
   });
 }
 
+/** Center an X inside a known checkbox [x0, x1] band. */
+function markInBox(
+  page: PDFPage,
+  font: PDFFont,
+  x0: number,
+  x1: number,
+  yFromTop: number,
+  size = 9,
+) {
+  const w = widthOf("X", font, size);
+  mark(page, font, x0 + (x1 - x0 - w) / 2, yFromTop, size);
+}
+
 function pageDrawUnderline(page: PDFPage, x: number, yFromTop: number, width: number) {
   page.drawRectangle({
     x,
@@ -310,12 +323,39 @@ function pageDrawUnderline(page: PDFPage, x: number, yFromTop: number, width: nu
   });
 }
 
-/** Yes/No columns on the health form (right side). */
+/** Yes/No columns on the health form (right side). verts: 523 | 545.2 | 567.4 */
 function markYn(page: PDFPage, font: PDFFont, yFromTop: number, yes: boolean | null) {
   if (yes === null) return;
-  if (yes) mark(page, font, 528.5, yFromTop + 7, 9);
-  else mark(page, font, 550.5, yFromTop + 7, 9);
+  // yFromTop is the question-row anchor; +7 sits the X in the Yes/No cell band
+  const y = yFromTop + 7;
+  if (yes) markInBox(page, font, 523.0, 545.2, y, 10);
+  else markInBox(page, font, 545.2, 567.4, y, 10);
 }
+
+/** Draw LTR text centered between xLeft and xRight. */
+function drawTextCentered(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  xLeft: number,
+  xRight: number,
+  yFromTop: number,
+  size = 10,
+) {
+  const value = s(text);
+  if (!value) return;
+  let used = size;
+  let draw = value;
+  const maxW = Math.max(8, xRight - xLeft - 4);
+  while (used > 6 && widthOf(draw, font, used) > maxW) used -= 0.5;
+  while (draw.length > 1 && widthOf(draw, font, used) > maxW) draw = draw.slice(0, -1);
+  const w = widthOf(draw, font, used);
+  const x = xLeft + (xRight - xLeft - w) / 2;
+  page.drawText(draw, { x, y: topY(yFromTop) - used * 0.2, size: used, font, color: INK });
+}
+
+/** Fixed Harel agent number for Ophir. */
+const AGENT_NO_FIXED = "59795";
 
 function digitsOnly(v: string) {
   return v.replace(/\D/g, "");
@@ -538,21 +578,22 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
 
   // Agent row cell ~245–274 (labels on top gray bar)
   drawText(p0, font, s(data.agentName) || "Ophir Insurance", 48, 268, 10, 230);
-  drawText(p0, font, s(data.agentNo), 310, 268, 10, 220);
+  drawText(p0, font, AGENT_NO_FIXED, 310, 268, 11, 220);
 
-  // A – names row cell 464.6–495.3
+  // A – names row: First | Middle | Last | Country of passport | Passport No.
+  // Verticals ~41 | 120.7 | 212.7 | 304 | 436.3 | 554
   drawText(p0, font, s(data.firstName), 46, 492, 12, 70);
   drawText(p0, font, s(data.lastName), 220, 492, 12, 75);
-  drawText(p0, font, s(data.passportCountry), 310, 492, 10, 115);
+  drawTextCentered(p0, font, s(data.passportCountry), 304, 436, 492, 11);
   drawText(p0, font, s(data.passportNo), 444, 492, 11, 100);
 
   // Origin country text; DOB / first-insurance digit combs (DDMMYY, no slash)
   drawText(p0, font, s(data.countryOfOrigin), 46, 528, 11, 95);
   drawDigits(p0, font, dateDigits6(data.birthDate), DOB_TICKS, DATE_COMB_Y1, 13);
   drawDigits(p0, font, dateDigits6(data.firstInsuranceDate), FIRST_INS_TICKS, DATE_COMB_Y1, 13);
-  // Gender checkboxes: Male 444.2@497.7, Female 444.8@508.7
-  if (isMale(gender)) mark(p0, font, 445.0, 506, 9);
-  if (isFemale(gender)) mark(p0, font, 445.5, 517, 9);
+  // Gender checkboxes stacked: Male ~444@498–505, Female ~445@508–516
+  if (isMale(gender)) mark(p0, font, 445.5, 503, 9);
+  if (isFemale(gender)) mark(p0, font, 445.5, 513, 9);
 
   // Entry + insurance period digit combs (DDMMYY)
   drawDigits(p0, font, dateDigits6(data.entryDate), ENTRY_TICKS, DATE_COMB_Y2, 13);
@@ -590,31 +631,34 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   if (provider === "maccabi") mark(p0, font, 45.0, 769, 10);
   if (provider === "clalit") mark(p0, font, 543.5, 769, 10);
 
-  // D – previous insurance
-  if (isYes(data.hadPreviousInsurance)) mark(p1, font, 324.5, 37, 9);
-  else if (isNo(data.hadPreviousInsurance)) mark(p1, font, 300.0, 37, 9);
+  // D – previous insurance: EN boxes No 289.7–298.2, Yes 313.7–322.2 (y≈30–38)
+  if (isYes(data.hadPreviousInsurance)) markInBox(p1, font, 313.7, 322.2, 36, 9);
+  else if (isNo(data.hadPreviousInsurance)) markInBox(p1, font, 289.7, 298.2, 36, 9);
   drawText(p1, font, s(data.previousCompany), 265, 82, 9, 110);
   drawText(p1, font, s(data.previousPolicyNo), 400, 82, 9, 50);
   drawText(p1, font, s(data.previousMembershipNo), 510, 82, 9, 40);
   drawText(p1, font, formatDate(data.previousFrom), 48, 92, 9, 90);
   drawText(p1, font, formatDate(data.previousTo), 160, 92, 9, 70);
 
-  // E – employer
-  drawText(p1, font, s(data.employerName), 48, 148, 10, 155);
-  drawText(p1, font, s(data.employerId), 220, 148, 10, 140);
-  drawText(p1, font, s(data.employerPhone), 395, 148, 9, 140);
-  drawText(p1, font, s(data.employerEmail), 48, 182, 9, 200);
-  drawText(p1, font, s(data.employerAddress), 270, 182, 9, 110);
-  drawText(p1, font, s(data.employerMobile), 395, 182, 9, 140);
+  // E – employer / policyholder
+  // Row1 verts ~41 | 212 | 383 | 554 — Name | ID | Telephone (bottom ~141.7)
+  // Row2 — Email | Address | Cellphone (bottom ~170; cellphone from ~432)
+  drawText(p1, font, s(data.employerName), 48, 140, 10, 155);
+  drawText(p1, font, s(data.employerId), 220, 140, 10, 150);
+  drawText(p1, font, s(data.employerPhone), 395, 140, 10, 145);
+  drawText(p1, font, s(data.employerEmail), 48, 168, 8, 155);
+  drawText(p1, font, s(data.employerAddress), 220, 168, 9, 200);
+  drawText(p1, font, s(data.employerMobile), 440, 168, 10, 100);
 
-  // Employer signature block
-  drawText(p1, font, s(data.employerName), 50, 700, 10, 140);
-  drawText(p1, font, s(data.employerName), 310, 700, 10, 150);
-  drawText(p1, font, formatDate(data.signatureDate), 490, 700, 9, 55);
+  // Employer signature value row 684–718; dotted line ~700. Cols: 41–212 | 212–383 | 383–554
+  drawText(p1, font, s(data.employerName), 50, 697, 11, 150);
+  drawText(p1, font, s(data.employerName), 220, 697, 11, 150);
+  drawText(p1, font, formatDate(data.signatureDate), 400, 697, 11, 130);
 
   // Agent block bottom of p2
   drawText(p1, font, formatDate(data.signatureDate), 50, 780, 9, 100);
   drawText(p1, font, s(data.agentName), 220, 780, 9, 140);
+  drawText(p1, font, AGENT_NO_FIXED, 400, 780, 9, 80);
 
   // K – payment (page 3)
   drawText(p2, font, s(data.lastName), 50, 338, 10, 155);
@@ -665,16 +709,17 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
     });
   }
 
+  // Credit-card holder signature / date — dotted writing line ~745
   drawText(
     p2,
     font,
     s(data.signatureName) || `${s(data.firstName)} ${s(data.lastName)}`.trim(),
-    50,
-    760,
+    55,
+    744,
     11,
-    200,
+    180,
   );
-  drawText(p2, font, formatDate(data.signatureDate), 470, 755, 10, 70);
+  drawText(p2, font, formatDate(data.signatureDate), 455, 744, 11, 70);
 }
 
 function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
@@ -712,22 +757,24 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
   for (const g of general) {
     const ans = answerOf(data[g.key]);
     if (isYes(ans)) markYn(h0, font, g.y, true);
-    else if (isNo(ans)) markYn(h0, font, g.y, false);
+    else markYn(h0, font, g.y, false); // unanswered → No
     const det = detailsOf(data[g.key]);
     if (det) drawText(h0, font, det, 120, g.y + 18, 6.5, 360);
   }
 
-  // Conditions Yes/No + option boxes
+  // Conditions Yes/No + option boxes — mark No when unanswered so the form is complete
   const conditions = data.conditionAnswers || {};
+  const skipMen = isFemale(gender);
+  const skipWomen = isMale(gender);
   for (const [groupId, ynPos] of Object.entries(CONDITION_YN)) {
+    if (groupId === "women" && skipWomen) continue;
+    if (groupId === "men" && skipMen) continue;
     const ans = conditions[groupId];
     const page = pages[ynPos[0]];
     if (!page) continue;
-    if (ans) {
-      if (isYes(ans.answer)) markYn(page, font, ynPos[1], true);
-      else if (isNo(ans.answer)) markYn(page, font, ynPos[1], false);
-      if (ans.details) drawText(page, font, ans.details, 300, ynPos[1] + 22, 6.5, 200);
-    }
+    if (ans && isYes(ans.answer)) markYn(page, font, ynPos[1], true);
+    else markYn(page, font, ynPos[1], false);
+    if (ans?.details) drawText(page, font, ans.details, 300, ynPos[1] + 22, 6.5, 200);
   }
 
   for (const [groupId, opts] of Object.entries(OPTION_BOXES)) {

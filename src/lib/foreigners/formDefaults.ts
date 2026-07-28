@@ -53,7 +53,7 @@ export const createInitialForeignersForm = (): ForeignersForm => ({
   employerAddress: "",
 
   agentName: "אופיר ושות׳ סוכנות לביטוח",
-  agentNo: "",
+  agentNo: "59795",
 
   heightCm: "",
   weightKg: "",
