@@ -51,6 +51,8 @@ import {
   Trash2,
   Mail,
   History,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 type ClaimType = "medical" | "trip_cancel" | "trip_shorten" | "baggage";
@@ -241,6 +243,7 @@ const Claim = () => {
   const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
   const [blockedReason, setBlockedReason] = useState<"not_found" | "no_match">("not_found");
   const [selectedPolicyUid, setSelectedPolicyUid] = useState("");
+  const [showPastYearsPolicies, setShowPastYearsPolicies] = useState(false);
   const [docFiles, setDocFiles] = useState<Record<string, File[]>>({});
   const [isPreparingFiles, setIsPreparingFiles] = useState(false);
   const [filePrepareNote, setFilePrepareNote] = useState("");
@@ -485,6 +488,7 @@ const Claim = () => {
       } else {
         setSelectedPolicyUid("");
         setStep("policy");
+        setShowPastYearsPolicies(false);
       }
     } finally {
       setIsLookingUp(false);
@@ -1147,26 +1151,46 @@ const Claim = () => {
 
                 {groupedPolicies.pastByYear.length ? (
                   <section className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-                        <History className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <h3 className="text-sm font-extrabold text-[#143834]">{policyFilterCopy.pastTitle}</h3>
-                        <p className="text-xs text-slate-500">{groupedPolicies.past.length} פוליסות · לפי שנים</p>
-                      </div>
-                    </div>
-                    {groupedPolicies.pastByYear.map(({ year, policies }) => (
-                      <div key={`past-${year}`}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
-                            {year || "ללא שנה"}
-                          </span>
-                          <span className="text-xs text-slate-400">{policies.length}</span>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-right transition hover:border-slate-300 hover:bg-slate-50"
+                      onClick={() => setShowPastYearsPolicies((v) => !v)}
+                      aria-expanded={showPastYearsPolicies}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                          <History className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <h3 className="text-sm font-extrabold text-[#143834]">
+                            {showPastYearsPolicies ? "הסתר פוליסות של שנים קודמות" : "הצג פוליסות של שנים קודמות"}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            {groupedPolicies.past.length} פוליסות · {groupedPolicies.pastByYear.length} שנים
+                          </p>
                         </div>
-                        <div className="grid gap-2.5 sm:grid-cols-2">{policies.map(renderPolicyCard)}</div>
                       </div>
-                    ))}
+                      {showPastYearsPolicies ? (
+                        <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
+                      )}
+                    </button>
+                    {showPastYearsPolicies ? (
+                      <div className="space-y-4">
+                        {groupedPolicies.pastByYear.map(({ year, policies }) => (
+                          <div key={`past-${year}`}>
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                                {year || "ללא שנה"}
+                              </span>
+                              <span className="text-xs text-slate-400">{policies.length}</span>
+                            </div>
+                            <div className="grid gap-2.5 sm:grid-cols-2">{policies.map(renderPolicyCard)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </section>
                 ) : null}
               </div>
