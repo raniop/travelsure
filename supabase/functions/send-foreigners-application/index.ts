@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { buildForeignersFilledPdfBase64, type ForeignersPdfInput } from "./foreignersPdf.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM = Deno.env.get("RESEND_FROM") || "TravelSure <noreply@travelsure.co.il>";
@@ -71,6 +72,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const summary = (body.foreignersPayload || body.summary || {}) as Record<string, unknown>;
+    const formData = (body.formData || body.form || {}) as ForeignersPdfInput;
     const fullName = String(body.fullName || `${summary.firstName || ""} ${summary.lastName || ""}`).trim();
     const employerName = String(body.employerName || summary.employerName || "").trim();
     const passportNo = String(body.passportNo || summary.passportNo || "").trim();
@@ -81,6 +83,18 @@ serve(async (req) => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // Prefer structured formData for official PDF fill; fall back to summary fields.
+    const pdfInput: ForeignersPdfInput = {
+      ...summary,
+      ...formData,
+      firstName: String(formData.firstName || summary.firstName || ""),
+      lastName: String(formData.lastName || summary.lastName || ""),
+      passportNo: String(formData.passportNo || summary.passportNo || passportNo),
+      employerName: String(formData.employerName || summary.employerName || employerName),
+      signatureName: String(formData.signatureName || summary.signatureName || fullName),
+      signatureDate: String(formData.signatureDate || summary.signatureDate || ""),
+    };
 
     const generalHealth = Array.isArray(summary.generalHealth) ? summary.generalHealth : [];
     const conditions = Array.isArray(summary.conditions) ? summary.conditions : [];
@@ -198,6 +212,7 @@ serve(async (req) => {
         <div style="background:#fff;padding:20px 18px 28px;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 12px 12px;">
           <p style="margin:0 0 12px;font-size:14px;color:#334155;">
             התקבלה בקשה דיגיטלית להצעת ביטוח בריאות לעובד זר + הצהרת בריאות.
+            מצורף PDF רשמי ממולא (טופס הצעה + הצהרת בריאות באנגלית בקובץ אחד).
           </p>
           ${section("פרטי העובד / המועמד לביטוח", workerRows)}
           ${section("פרטי מעסיק וסוכן", employerRows)}
@@ -221,7 +236,15 @@ serve(async (req) => {
         if (!content) return null;
         return { filename, content };
       })
-      .filter(Boolean);
+      .filter(Boolean) as Array<{ filename: string; content: string }>;
+
+    // Official filled Harel forms (proposal + health declaration) as one PDF.
+    const filledPdf = await buildForeignersFilledPdfBase64(pdfInput);
+    if (filledPdf) {
+      emailAttachments.unshift(filledPdf);
+    } else {
+      console.error("Filled foreigners PDF was not generated; sending email without official form PDF");
+    }
 
     const recipients = Array.isArray(body.notify) && body.notify.length
       ? body.notify

@@ -151,6 +151,8 @@ export async function submitForeignersApplication(form: ForeignersForm, files: F
     passportNo: form.passportNo,
     notify: [...STAFF_NOTIFY],
     foreignersPayload: summary,
+    // Raw structured form for official Harel PDF fill (edge function).
+    formData: form,
     attachments,
   };
 
