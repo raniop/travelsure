@@ -643,14 +643,13 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
 
   // E – employer / policyholder
   // Row1 114–141.7 — Name | ID | Telephone (values near bottom ~140)
-  // Row2 labels fill most of 144–170; write BELOW that band (~178) so values sit in the
-  // bottom cells under Email / Address / Cellphone (cols 41|212|432.5|554).
+  // Row2 labels occupy ~144–170 (+ Hebrew wrap); keep contact values clearly BELOW labels.
   drawText(p1, font, s(data.employerName), 48, 140, 10, 155);
   drawText(p1, font, s(data.employerId), 220, 140, 10, 150);
   drawText(p1, font, s(data.employerPhone), 395, 140, 10, 145);
-  drawText(p1, font, s(data.employerEmail), 48, 178, 8, 155);
-  drawText(p1, font, s(data.employerAddress), 220, 178, 9, 200);
-  drawText(p1, font, s(data.employerMobile), 440, 178, 9, 100);
+  drawText(p1, font, s(data.employerEmail), 48, 188, 8, 155);
+  drawText(p1, font, s(data.employerAddress), 220, 188, 9, 200);
+  drawText(p1, font, s(data.employerMobile), 440, 188, 9, 100);
 
   // Employer signature value row 684–718; dotted line ~700. Cols: 41–212 | 212–383 | 383–554
   drawText(p1, font, s(data.employerName), 50, 697, 11, 150);
