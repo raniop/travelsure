@@ -648,9 +648,9 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   drawText(p1, font, s(data.employerName), 48, 140, 10, 155);
   drawText(p1, font, s(data.employerId), 220, 140, 10, 150);
   drawText(p1, font, s(data.employerPhone), 395, 140, 10, 145);
-  drawText(p1, font, s(data.employerEmail), 50, 151, 7.5, 150);
+  drawText(p1, font, s(data.employerEmail), 58, 151, 7.5, 145);
   drawText(p1, font, s(data.employerAddress), 300, 151, 8, 120);
-  drawText(p1, font, s(data.employerMobile), 450, 151, 8, 90);
+  drawText(p1, font, s(data.employerMobile), 445, 151, 8, 95);
 
   // Employer signature value row 684–718; dotted line ~700. Cols: 41–212 | 212–383 | 383–554
   drawText(p1, font, s(data.employerName), 50, 697, 11, 150);
