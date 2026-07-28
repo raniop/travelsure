@@ -631,9 +631,10 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   if (provider === "maccabi") mark(p0, font, 45.0, 769, 10);
   if (provider === "clalit") mark(p0, font, 543.5, 769, 10);
 
-  // D – previous insurance: EN boxes No 289.7–298.2, Yes 313.7–322.2 (y≈30–38)
-  if (isYes(data.hadPreviousInsurance)) markInBox(p1, font, 313.7, 322.2, 37.5, 9);
-  else if (isNo(data.hadPreviousInsurance)) markInBox(p1, font, 289.7, 298.2, 37.5, 9);
+  // D – previous insurance: EN boxes No 289.7–298.2, Yes 313.7–322.2 (band y≈30–38)
+  // Baseline ~35.5 keeps the X inside the square (Heebo extends below baseline).
+  if (isYes(data.hadPreviousInsurance)) mark(p1, font, 316.0, 35.2, 7);
+  else if (isNo(data.hadPreviousInsurance)) mark(p1, font, 293.0, 35.2, 7);
   drawText(p1, font, s(data.previousCompany), 265, 82, 9, 110);
   drawText(p1, font, s(data.previousPolicyNo), 400, 82, 9, 50);
   drawText(p1, font, s(data.previousMembershipNo), 510, 82, 9, 40);
@@ -641,14 +642,15 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   drawText(p1, font, formatDate(data.previousTo), 160, 92, 9, 70);
 
   // E – employer / policyholder
-  // Row1 114–141.7: Name | ID | Telephone
-  // Row2 144.3–170: Email | Address | Cellphone — keep values inside this band, right of EN labels
+  // Row1 114–141.7 verts 41|212|383|554 — Name | ID | Telephone (labels top, values bottom)
+  // Row2 144.3–170 verts 41|212|432.5|554 — Email | Address | Cellphone
+  // Row2 labels occupy ~156–169; handwriting band is the white strip ABOVE (~145–155).
   drawText(p1, font, s(data.employerName), 48, 140, 10, 155);
   drawText(p1, font, s(data.employerId), 220, 140, 10, 150);
   drawText(p1, font, s(data.employerPhone), 395, 140, 10, 145);
-  drawText(p1, font, s(data.employerEmail), 95, 164, 8, 110);
-  drawText(p1, font, s(data.employerAddress), 240, 164, 9, 175);
-  drawText(p1, font, s(data.employerMobile), 465, 164, 9, 80);
+  drawText(p1, font, s(data.employerEmail), 50, 151, 7.5, 150);
+  drawText(p1, font, s(data.employerAddress), 300, 151, 8, 120);
+  drawText(p1, font, s(data.employerMobile), 450, 151, 8, 90);
 
   // Employer signature value row 684–718; dotted line ~700. Cols: 41–212 | 212–383 | 383–554
   drawText(p1, font, s(data.employerName), 50, 697, 11, 150);
