@@ -298,6 +298,19 @@ const Claim = () => {
     () => groupClaimPolicies(relevantPolicies, policyTimeBucket),
     [relevantPolicies, policyTimeBucket]
   );
+  const currentPolicyYear = useMemo(() => new Date().getFullYear(), []);
+  const pastPoliciesThisYear = useMemo(
+    () => groupedPolicies.pastByYear.filter(({ year }) => year === currentPolicyYear),
+    [groupedPolicies.pastByYear, currentPolicyYear]
+  );
+  const pastPoliciesOlderYears = useMemo(
+    () => groupedPolicies.pastByYear.filter(({ year }) => year !== currentPolicyYear),
+    [groupedPolicies.pastByYear, currentPolicyYear]
+  );
+  const pastOlderCount = useMemo(
+    () => pastPoliciesOlderYears.reduce((sum, g) => sum + g.policies.length, 0),
+    [pastPoliciesOlderYears]
+  );
   const bankBranches = useMemo(
     () => branchesForBank({ banks, branches: allBranches }, formData.bankCode),
     [banks, allBranches, formData.bankCode]
@@ -1149,7 +1162,34 @@ const Claim = () => {
                   </section>
                 ) : null}
 
-                {groupedPolicies.pastByYear.length ? (
+                {pastPoliciesThisYear.length ? (
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                        <History className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-[#143834]">{policyFilterCopy.pastTitle}</h3>
+                        <p className="text-xs text-slate-500">
+                          {pastPoliciesThisYear.reduce((s, g) => s + g.policies.length, 0)} פוליסות · {currentPolicyYear}
+                        </p>
+                      </div>
+                    </div>
+                    {pastPoliciesThisYear.map(({ year, policies }) => (
+                      <div key={`past-now-${year}`}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                            {year || "ללא שנה"}
+                          </span>
+                          <span className="text-xs text-slate-400">{policies.length}</span>
+                        </div>
+                        <div className="grid gap-2.5 sm:grid-cols-2">{policies.map(renderPolicyCard)}</div>
+                      </div>
+                    ))}
+                  </section>
+                ) : null}
+
+                {pastPoliciesOlderYears.length ? (
                   <section className="space-y-4">
                     <button
                       type="button"
@@ -1166,7 +1206,7 @@ const Claim = () => {
                             {showPastYearsPolicies ? "הסתר פוליסות של שנים קודמות" : "הצג פוליסות של שנים קודמות"}
                           </h3>
                           <p className="text-xs text-slate-500">
-                            {groupedPolicies.past.length} פוליסות · {groupedPolicies.pastByYear.length} שנים
+                            {pastOlderCount} פוליסות · {pastPoliciesOlderYears.length} שנים
                           </p>
                         </div>
                       </div>
@@ -1178,8 +1218,8 @@ const Claim = () => {
                     </button>
                     {showPastYearsPolicies ? (
                       <div className="space-y-4">
-                        {groupedPolicies.pastByYear.map(({ year, policies }) => (
-                          <div key={`past-${year}`}>
+                        {pastPoliciesOlderYears.map(({ year, policies }) => (
+                          <div key={`past-old-${year}`}>
                             <div className="mb-2 flex items-center gap-2">
                               <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
                                 {year || "ללא שנה"}
