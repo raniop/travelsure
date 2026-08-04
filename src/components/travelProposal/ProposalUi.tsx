@@ -64,18 +64,24 @@ const maskDate = (raw: string) => {
 };
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  // Harel 1:1 — large silhouettes; idle blue / selected green
+  // Harel 1:1 — large geographic silhouettes; idle blue / selected green
   const stroke = active ? "#2f9e3a" : "#4a90c8";
   const fill = active ? "#b7df9e" : "#c8dff0";
   return (
-    <svg viewBox="0 0 48 48" className="h-[68px] w-[76px] sm:h-[76px] sm:w-[86px]" aria-hidden>
+    <svg
+      viewBox="0 0 100 100"
+      className="h-[78px] w-[78px] sm:h-[88px] sm:w-[88px]"
+      aria-hidden
+      preserveAspectRatio="xMidYMid meet"
+    >
       <path
         d={DESTINATION_MAP_PATHS[id]}
         fill={fill}
         stroke={stroke}
-        strokeWidth={1.35}
+        strokeWidth={1.6}
         strokeLinejoin="round"
         strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
       />
     </svg>
   );
@@ -97,8 +103,7 @@ export function DestinationPicker({
           בחרו יעד נסיעה
         </h3>
       </div>
-      {/* Pale blue panel matching Harel destination screen */}
-      <div className="mx-auto max-w-[800px] rounded-2xl bg-[#e8f1f8] px-2 py-5 sm:px-5 sm:py-7">
+      <div className="mx-auto max-w-[820px] rounded-2xl bg-[#e8f1f8] px-2 py-5 sm:px-5 sm:py-7">
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:gap-x-5 sm:gap-y-6">
           {DESTINATION_OPTIONS.map((d) => {
             const active = selected.includes(d.id);
@@ -110,10 +115,9 @@ export function DestinationPicker({
                 aria-pressed={active}
                 className="mx-auto flex flex-col items-center justify-center focus-visible:outline-none"
               >
-                {/* White circle · soft shadow · large map · green ring when selected */}
                 <span
                   className={cn(
-                    "flex h-[128px] w-[128px] flex-col items-center justify-center rounded-full bg-white px-1.5 pt-1 transition sm:h-[140px] sm:w-[140px]",
+                    "flex h-[136px] w-[136px] flex-col items-center justify-center rounded-full bg-white px-1 transition sm:h-[148px] sm:w-[148px]",
                     active
                       ? "shadow-[0_4px_14px_rgba(47,158,58,0.22)] outline outline-[3px] outline-[#2f9e3a] outline-offset-0"
                       : "shadow-[0_3px_12px_rgba(40,80,130,0.14)]",
@@ -122,7 +126,7 @@ export function DestinationPicker({
                   <DestMapIcon id={d.id} active={active} />
                   <span
                     className={cn(
-                      "mt-0.5 max-w-[110px] text-center text-[11px] font-semibold leading-snug sm:max-w-[120px] sm:text-[12.5px]",
+                      "-mt-0.5 max-w-[118px] text-center text-[11px] font-semibold leading-snug sm:max-w-[128px] sm:text-[12.5px]",
                       active ? "text-[#1f6b2a]" : "text-[#4a90c8]",
                     )}
                     style={{ textAlign: "center" }}
