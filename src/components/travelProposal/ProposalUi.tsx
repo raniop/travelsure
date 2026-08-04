@@ -53,20 +53,16 @@ const maskDate = (raw: string) => {
 };
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  const gradId = `dest-grad-${id}`;
+  // Harel 1:1 — idle: light-blue fill + medium-blue outline; selected: light-green fill + green outline
+  const stroke = active ? "#2f9e3a" : "#4a90c8";
+  const fill = active ? "#b7df9e" : "#c8dff0";
   return (
-    <svg viewBox="0 0 48 48" className="h-14 w-14 sm:h-[62px] sm:w-[62px]" aria-hidden>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={active ? "#a8d5cb" : "#d5ebe5"} />
-          <stop offset="100%" stopColor={active ? "#5fa898" : "#9ecfc2"} />
-        </linearGradient>
-      </defs>
+    <svg viewBox="0 0 48 48" className="h-[46px] w-[52px] sm:h-[52px] sm:w-[58px]" aria-hidden>
       <path
         d={DESTINATION_MAP_PATHS[id]}
-        fill={`url(#${gradId})`}
-        stroke={active ? "#143834" : "#2f6b63"}
-        strokeWidth={1.25}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={1.5}
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -84,63 +80,50 @@ export function DestinationPicker({
   error?: string;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="tp-center" style={{ textAlign: "center" }}>
         <h3 className="text-xl font-extrabold text-[#143834]" style={{ textAlign: "center" }}>
           בחרו יעד נסיעה
         </h3>
-        <p className="mt-1 text-sm text-slate-500" style={{ textAlign: "center" }}>
-          לחצו על כל יעד שרלוונטי — אפשר יותר מאחד
-        </p>
       </div>
-      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4">
-        {DESTINATION_OPTIONS.map((d) => {
-          const active = selected.includes(d.id);
-          return (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => onToggle(d.id)}
-              aria-pressed={active}
-              className="group flex flex-col items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6b63]/40"
-            >
-              <span
-                className={cn(
-                  "relative flex h-[108px] w-[108px] flex-col items-center justify-center gap-0.5 rounded-full bg-white px-2 transition duration-200 sm:h-[118px] sm:w-[118px]",
-                  active
-                    ? "shadow-[0_14px_30px_-14px_rgba(20,56,52,.55)] ring-[3px] ring-[#143834]"
-                    : "shadow-[0_10px_24px_-14px_rgba(20,56,52,.4)] ring-1 ring-slate-200/90 group-hover:ring-[#2f6b63]/40",
-                )}
+      {/* Pale blue panel matching Harel destination screen */}
+      <div className="mx-auto max-w-[760px] rounded-2xl bg-[#e8f1f8] px-2 py-5 sm:px-5 sm:py-7">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:gap-x-5 sm:gap-y-6">
+          {DESTINATION_OPTIONS.map((d) => {
+            const active = selected.includes(d.id);
+            return (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => onToggle(d.id)}
+                aria-pressed={active}
+                className="mx-auto flex flex-col items-center justify-center focus-visible:outline-none"
               >
-                <DestMapIcon id={d.id} active={active} />
-                {active && (
-                  <span className="absolute -left-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#2f6b63] text-white shadow-md">
-                    <Check className="h-4 w-4" strokeWidth={3} />
+                {/* White circle · soft shadow · label inside · thick black ring when selected */}
+                <span
+                  className={cn(
+                    "flex h-[120px] w-[120px] flex-col items-center justify-center rounded-full bg-white px-2 transition sm:h-[132px] sm:w-[132px]",
+                    active
+                      ? "shadow-[0_4px_14px_rgba(0,0,0,0.14)] outline outline-[3.5px] outline-black outline-offset-0"
+                      : "shadow-[0_3px_12px_rgba(40,80,130,0.14)]",
+                  )}
+                >
+                  <DestMapIcon id={d.id} active={active} />
+                  <span
+                    className={cn(
+                      "mt-1 max-w-[96px] text-center text-[11.5px] font-semibold leading-snug sm:max-w-[108px] sm:text-[13px]",
+                      active ? "text-[#1a2f4a]" : "text-[#4a90c8]",
+                    )}
+                    style={{ textAlign: "center" }}
+                  >
+                    {d.labelHe}
                   </span>
-                )}
-              </span>
-              <span
-                className={cn(
-                  "max-w-[120px] text-center text-sm font-extrabold leading-snug",
-                  active ? "text-[#143834]" : "text-slate-600",
-                )}
-                style={{ textAlign: "center" }}
-              >
-                {d.labelHe}
-              </span>
-            </button>
-          );
-        })}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      {selected.length > 0 && (
-        <p className="text-center text-xs font-semibold text-[#2f6b63]" style={{ textAlign: "center" }}>
-          נבחרו:{" "}
-          {selected
-            .map((id) => DESTINATION_OPTIONS.find((o) => o.id === id)?.labelHe)
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      )}
       {error && (
         <p className="text-center text-xs text-rose-600" style={{ textAlign: "center" }}>
           {error}
