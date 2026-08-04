@@ -1489,8 +1489,12 @@ const InsuranceProposal = () => {
                     "שולחים — והטופס הרשמי של הראל מגיע לסוכנות",
                   ].map((text, i) => (
                     <li key={text} className="flex w-full items-center gap-3 text-right">
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#e8f4f1] text-[13px] font-bold leading-none text-[#1f4b46]">
-                        <span className="inline-block translate-x-[0.5px] translate-y-[1px]">
+                      <span
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-[#1f4b46]"
+                        aria-hidden
+                      >
+                        {/* Hebrew glyphs sit high/left in the em-box — nudge for optical center */}
+                        <span className="block text-[13px] font-bold leading-none translate-x-[0.08em] translate-y-[0.12em]">
                           {["א", "ב", "ג", "ד"][i]}
                         </span>
                       </span>
