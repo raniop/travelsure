@@ -1488,11 +1488,13 @@ const InsuranceProposal = () => {
                     "בוחרים כיסויים ומזינים תשלום",
                     "שולחים — והטופס הרשמי של הראל מגיע לסוכנות",
                   ].map((text, i) => (
-                    <li key={text} className="flex w-full items-start gap-3 text-right">
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">
-                        {["א", "ב", "ג", "ד"][i]}
+                    <li key={text} className="flex w-full items-center gap-3 text-right">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#e8f4f1] text-[13px] font-bold leading-none text-[#1f4b46]">
+                        <span className="inline-block translate-x-[0.5px] translate-y-[1px]">
+                          {["א", "ב", "ג", "ד"][i]}
+                        </span>
                       </span>
-                      <span className="min-w-0 flex-1 text-right leading-relaxed">{text}</span>
+                      <span className="min-w-0 flex-1 text-right leading-snug">{text}</span>
                     </li>
                   ))}
                 </ol>
