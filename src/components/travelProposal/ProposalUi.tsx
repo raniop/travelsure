@@ -306,7 +306,8 @@ export function HealthQuestionCard({
 }) {
   return (
     <div className="rounded-[24px] border border-[#d7e8e3] bg-white p-4 shadow-[0_8px_24px_-20px_rgba(20,56,52,.35)] sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      {/* Avoid justify-between — global RTL CSS reverses it and puts כן/לא on the right */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
         <div className="flex min-w-0 flex-1 gap-3 text-right">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2f6b63] text-sm font-bold text-white shadow-sm">
             {number}
@@ -317,7 +318,7 @@ export function HealthQuestionCard({
             {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
           </div>
         </div>
-        <div className="shrink-0 self-end sm:self-start">
+        <div className="shrink-0 self-end sm:ms-auto sm:self-start">
           <PillYesNo value={value} onChange={onChange} name={`q-${number}`} />
         </div>
       </div>
