@@ -651,13 +651,15 @@ const InsuranceProposal = () => {
           {h.q3 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q3_IF_NO}</p>}
           {h.q3 === "yes" && (
             <div className="mt-3 space-y-2 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs font-extrabold text-[#143834]">{Q31_TITLE}</p>
-                <PillYesNo
-                  value={h.q31}
-                  onChange={(v) => patchPersonHealth(key, { q31: v })}
-                  name="q31"
-                />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <p className="min-w-0 flex-1 text-xs font-extrabold text-[#143834]">{Q31_TITLE}</p>
+                <div className="shrink-0 self-end sm:ms-auto sm:self-center">
+                  <PillYesNo
+                    value={h.q31}
+                    onChange={(v) => patchPersonHealth(key, { q31: v })}
+                    name="q31"
+                  />
+                </div>
               </div>
               {errors[`${key}.q31`] && (
                 <p className="text-xs text-rose-600">{errors[`${key}.q31`]}</p>
