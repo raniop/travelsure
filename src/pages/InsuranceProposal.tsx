@@ -22,7 +22,6 @@ import {
 import {
   DESTINATION_OPTIONS,
   PERSON_LABELS_HE,
-  Q21_CONDITIONS,
   VALUABLE_OPTIONS,
   type InsuredPerson,
   type PersonKey,
@@ -31,6 +30,42 @@ import {
   type TravelProposalForm,
   type YesNo,
 } from "@/lib/travelProposal/types";
+import {
+  HEALTH_DISCLAIMER,
+  HEALTH_INTRO,
+  PREGNANCY_AGE_NOTE,
+  PREGNANCY_EXT_NOTE,
+  PREGNANCY_SECTION_TITLE,
+  Q1_NOTE,
+  Q1_REJECT,
+  Q1_TITLE,
+  Q2_EXCEPTIONS,
+  Q2_IF_NO,
+  Q2_IF_YES,
+  Q2_POSITIVE_DOC,
+  Q2_TITLE,
+  Q21_NEGATIVE_EXT,
+  Q21_OPTIONS,
+  Q21_TITLE,
+  Q22_BODY,
+  Q22_TITLE,
+  Q3_IF_NO,
+  Q3_IF_YES,
+  Q3_NOTE,
+  Q3_TITLE,
+  Q3_TOPICS,
+  Q31_IF_NO,
+  Q31_IF_YES,
+  Q31_TITLE,
+  Q4_DETAILS_HINT,
+  Q4_DETAILS_LABEL,
+  Q4_IF_YES,
+  Q4_TITLE,
+  Q5_TITLE,
+  Q51_TITLE,
+  Q52_REJECT,
+  Q52_TITLE,
+} from "@/lib/travelProposal/healthQuestions";
 import { submitTravelProposal } from "@/lib/submitTravelProposal";
 import {
   formatClaimDateDisplay,
@@ -304,7 +339,18 @@ const InsuranceProposal = () => {
         if (!person.health.q3) nextErrors[`${key}.q3`] = "חובה";
         if (!person.health.q4) nextErrors[`${key}.q4`] = "חובה";
         if (person.health.q1 === "yes") nextErrors[`${key}.q1`] = "תשובה חיובית — לא ניתן לקבל לביטוח";
-        if (person.gender === "female" && !person.health.q5Pregnant) nextErrors[`${key}.q5`] = "חובה";
+        if (person.health.q2 === "yes" && !person.health.q22) nextErrors[`${key}.q22`] = "חובה";
+        if (person.health.q3 === "yes" && !person.health.q31) nextErrors[`${key}.q31`] = "חובה";
+        if (person.gender === "female") {
+          if (!person.health.q5Pregnant) nextErrors[`${key}.q5`] = "חובה";
+          if (person.health.q5Pregnant === "yes") {
+            if (!person.health.q51Week) nextErrors[`${key}.q51`] = "חובה";
+            if (!person.health.q52HighRisk) nextErrors[`${key}.q52`] = "חובה";
+            if (person.health.q52HighRisk === "yes") {
+              nextErrors[`${key}.q52`] = "היריון בסיכון — לא ניתן לקבל לביטוח";
+            }
+          }
+        }
       }
     }
 
@@ -491,12 +537,18 @@ const InsuranceProposal = () => {
   const renderHealthFor = (key: PersonKey) => {
     const person = form[key];
     const h = person.health;
+    const q21Yes = h.q21Conditions.length > 0;
+    const q2FollowUpPositive = q21Yes || h.q22 === "yes";
+
     return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-extrabold text-[#143834]">
-            הצהרת בריאות — {PERSON_LABELS_HE[key]}
-          </h3>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-extrabold text-[#143834]">
+              ד · הצהרת בריאות — {PERSON_LABELS_HE[key]}
+            </h3>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{HEALTH_INTRO}</p>
+          </div>
           <Button
             type="button"
             variant="outline"
@@ -508,83 +560,132 @@ const InsuranceProposal = () => {
           </Button>
         </div>
 
-        <Field
-          label="1. האם אחת ממטרות הנסיעה היא קבלת ייעוץ, אבחון או טיפול רפואי?"
-          required
-          error={errors[`${key}.q1`]}
-        >
-          <YesNoToggle value={h.q1} onChange={(v) => patchPersonHealth(key, { q1: v })} name="q1" />
-        </Field>
-        <Field
-          label="2. האם בחצי השנה האחרונה מקבל/ת תרופות קבועות או טיפול רפואי?"
-          required
-          error={errors[`${key}.q2`]}
-        >
-          <YesNoToggle value={h.q2} onChange={(v) => patchPersonHealth(key, { q2: v })} name="q2" />
-        </Field>
-        {h.q2 === "yes" && (
-          <div className="space-y-3 rounded-2xl border border-amber-200/80 bg-amber-50/50 p-4">
-            <p className="text-xs font-semibold text-amber-900">2.1 האם הטיפול הוא לאחד מהמצבים הבאים?</p>
-            <div className="grid gap-2">
-              {Q21_CONDITIONS.map((c) => (
-                <label key={c.id} className="flex items-start gap-2 text-xs text-slate-700">
-                  <Checkbox
-                    checked={h.q21Conditions.includes(c.id)}
-                    onCheckedChange={(checked) => {
-                      const next = checked
-                        ? [...h.q21Conditions, c.id]
-                        : h.q21Conditions.filter((x) => x !== c.id);
-                      patchPersonHealth(key, { q21Conditions: next });
-                    }}
+        {/* שאלה 1 */}
+        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
+          <Field label={Q1_TITLE} required error={errors[`${key}.q1`]}>
+            <YesNoToggle value={h.q1} onChange={(v) => patchPersonHealth(key, { q1: v })} name="q1" />
+          </Field>
+          <p className="text-[11px] leading-relaxed text-slate-500">{Q1_NOTE}</p>
+          {h.q1 === "yes" && (
+            <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+              {Q1_REJECT}
+            </p>
+          )}
+        </div>
+
+        {/* שאלה 2 */}
+        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
+          <Field label={Q2_TITLE} required error={errors[`${key}.q2`]}>
+            <YesNoToggle value={h.q2} onChange={(v) => patchPersonHealth(key, { q2: v })} name="q2" />
+          </Field>
+          <p className="text-[11px] leading-relaxed text-slate-500">{Q2_EXCEPTIONS}</p>
+          {h.q2 === "yes" && <p className="text-[11px] font-semibold text-[#1f4b46]">{Q2_IF_YES}</p>}
+          {h.q2 === "no" && <p className="text-[11px] text-slate-500">{Q2_IF_NO}</p>}
+
+          {h.q2 === "yes" && (
+            <div className="mt-3 space-y-4 rounded-2xl border border-amber-200/70 bg-amber-50/40 p-4">
+              <div className="space-y-2">
+                <p className="text-xs font-extrabold text-[#143834]">{Q21_TITLE}</p>
+                <div className="grid gap-2.5">
+                  {Q21_OPTIONS.map((c) => (
+                    <label
+                      key={c.id}
+                      className="flex items-start gap-2.5 rounded-xl border border-white/80 bg-white/80 px-3 py-2.5 text-xs leading-relaxed text-slate-700"
+                    >
+                      <Checkbox
+                        checked={h.q21Conditions.includes(c.id)}
+                        onCheckedChange={(checked) => {
+                          const next = checked
+                            ? [...h.q21Conditions, c.id]
+                            : h.q21Conditions.filter((x) => x !== c.id);
+                          patchPersonHealth(key, { q21Conditions: next });
+                        }}
+                        className="mt-0.5"
+                      />
+                      <span>{c.labelHe}</span>
+                    </label>
+                  ))}
+                </div>
+                {!q21Yes && h.q2 === "yes" && (
+                  <p className="text-[11px] font-semibold text-amber-800">{Q21_NEGATIVE_EXT}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-extrabold text-[#143834]">{Q22_TITLE}</p>
+                <p className="text-[11px] leading-relaxed text-slate-600">{Q22_BODY}</p>
+                <Field label="" error={errors[`${key}.q22`]}>
+                  <YesNoToggle
+                    value={h.q22}
+                    onChange={(v) => patchPersonHealth(key, { q22: v })}
+                    name="q22"
                   />
-                  <span>{c.labelHe}</span>
-                </label>
-              ))}
+                </Field>
+              </div>
+
+              {q2FollowUpPositive && (
+                <p className="rounded-xl bg-white/80 px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+                  {Q2_POSITIVE_DOC}
+                </p>
+              )}
             </div>
-            <Field label="2.2 האם הטיפול עקב אי ספיקת לב עם בצקות / קוצר נשימה?">
-              <YesNoToggle
-                value={h.q22}
-                onChange={(v) => patchPersonHealth(key, { q22: v })}
-                name="q22"
-              />
-            </Field>
-          </div>
-        )}
-        <Field
-          label="3. ניתוח / אשפוז מעל 3 ימים / המלצה — בחצי השנה האחרונה?"
-          required
-          error={errors[`${key}.q3`]}
-        >
-          <YesNoToggle value={h.q3} onChange={(v) => patchPersonHealth(key, { q3: v })} name="q3" />
-        </Field>
-        {h.q3 === "yes" && (
-          <Field label="3.1 האם הניתוח/אשפוז כבר בוצע וחלפו למעלה מ־3 חודשים?">
-            <YesNoToggle
-              value={h.q31}
-              onChange={(v) => patchPersonHealth(key, { q31: v })}
-              name="q31"
-            />
+          )}
+        </div>
+
+        {/* שאלה 3 */}
+        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
+          <Field label={Q3_TITLE} required error={errors[`${key}.q3`]}>
+            <YesNoToggle value={h.q3} onChange={(v) => patchPersonHealth(key, { q3: v })} name="q3" />
           </Field>
-        )}
-        <Field
-          label="4. האם הופנית לבדיקות שטרם בוצעו / תוצאות לא תקינות?"
-          required
-          error={errors[`${key}.q4`]}
-        >
-          <YesNoToggle value={h.q4} onChange={(v) => patchPersonHealth(key, { q4: v })} name="q4" />
-        </Field>
-        {h.q4 === "yes" && (
-          <Field label="פירוט הבדיקות">
-            <Textarea
-              className="min-h-[80px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
-              value={h.q4Details}
-              onChange={(e) => patchPersonHealth(key, { q4Details: e.target.value })}
-            />
+          <p className="text-xs leading-relaxed text-slate-700">{Q3_TOPICS}</p>
+          <p className="text-[11px] leading-relaxed text-slate-500">{Q3_NOTE}</p>
+          {h.q3 === "yes" && <p className="text-[11px] font-semibold text-[#1f4b46]">{Q3_IF_YES}</p>}
+          {h.q3 === "no" && <p className="text-[11px] text-slate-500">{Q3_IF_NO}</p>}
+
+          {h.q3 === "yes" && (
+            <div className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+              <Field label={Q31_TITLE} required error={errors[`${key}.q31`]}>
+                <YesNoToggle
+                  value={h.q31}
+                  onChange={(v) => patchPersonHealth(key, { q31: v })}
+                  name="q31"
+                />
+              </Field>
+              {h.q31 === "no" && (
+                <p className="text-[11px] leading-relaxed text-slate-600">{Q31_IF_NO}</p>
+              )}
+              {h.q31 === "yes" && (
+                <p className="text-[11px] font-semibold text-amber-800">{Q31_IF_YES}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* שאלה 4 */}
+        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
+          <Field label={Q4_TITLE} required error={errors[`${key}.q4`]}>
+            <YesNoToggle value={h.q4} onChange={(v) => patchPersonHealth(key, { q4: v })} name="q4" />
           </Field>
-        )}
+          {h.q4 === "yes" && (
+            <>
+              <Field label={Q4_DETAILS_LABEL} hint={Q4_DETAILS_HINT}>
+                <Textarea
+                  className="min-h-[80px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
+                  value={h.q4Details}
+                  onChange={(e) => patchPersonHealth(key, { q4Details: e.target.value })}
+                  placeholder={Q4_DETAILS_HINT}
+                />
+              </Field>
+              <p className="text-[11px] leading-relaxed text-slate-600">{Q4_IF_YES}</p>
+            </>
+          )}
+        </div>
+
+        {/* הריון */}
         {person.gender === "female" && (
-          <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50/40 p-4">
-            <Field label="5. האם הנך בהיריון?" required error={errors[`${key}.q5`]}>
+          <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50/30 p-4">
+            <p className="text-xs font-extrabold text-[#143834]">{PREGNANCY_SECTION_TITLE}</p>
+            <Field label={Q5_TITLE} required error={errors[`${key}.q5`]}>
               <YesNoToggle
                 value={h.q5Pregnant}
                 onChange={(v) => patchPersonHealth(key, { q5Pregnant: v })}
@@ -593,23 +694,34 @@ const InsuranceProposal = () => {
             </Field>
             {h.q5Pregnant === "yes" && (
               <>
-                <Field label="5.1 שבוע היריון נוכחי">
+                <Field label={Q51_TITLE} required error={errors[`${key}.q51`]}>
                   <Input
                     className={inputClass}
                     inputMode="numeric"
                     value={h.q51Week}
                     onChange={(e) =>
-                      patchPersonHealth(key, { q51Week: e.target.value.replace(/\D/g, "").slice(0, 2) })
+                      patchPersonHealth(key, {
+                        q51Week: e.target.value.replace(/\D/g, "").slice(0, 2),
+                      })
                     }
                   />
                 </Field>
-                <Field label="5.2 האם היריון בסיכון / מרובה עוברים / הומלץ לא לנסוע?">
+                <Field label={Q52_TITLE} required error={errors[`${key}.q52`]}>
                   <YesNoToggle
                     value={h.q52HighRisk}
                     onChange={(v) => patchPersonHealth(key, { q52HighRisk: v })}
                     name="q52"
                   />
                 </Field>
+                {h.q52HighRisk === "yes" && (
+                  <p className="rounded-xl bg-rose-100/80 px-3 py-2 text-xs font-semibold text-rose-700">
+                    {Q52_REJECT}
+                  </p>
+                )}
+                {h.q52HighRisk === "no" && (
+                  <p className="text-[11px] font-semibold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
+                )}
+                <p className="text-[11px] leading-relaxed text-slate-500">{PREGNANCY_AGE_NOTE}</p>
               </>
             )}
           </div>
@@ -1212,10 +1324,8 @@ const InsuranceProposal = () => {
             {step === "health" && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">הצהרת בריאות</h2>
-                  <p className="mt-1 text-xs text-slate-500">
-                    הפוליסה אינה מכסה הוצאות רפואיות ממצב רפואי קודם אלא אם נרכשה הרחבה להחמרה
-                  </p>
+                  <h2 className="text-lg font-extrabold text-[#143834]">ד · הצהרת בריאות</h2>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">{HEALTH_DISCLAIMER}</p>
                 </div>
                 {people.length > 1 && (
                   <div className="flex flex-wrap gap-2">
