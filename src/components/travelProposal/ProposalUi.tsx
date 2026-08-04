@@ -7,7 +7,6 @@ import {
   type Step,
   type YesNo,
 } from "@/lib/travelProposal/types";
-import { DESTINATION_MAP_PATHS } from "@/components/travelProposal/destinationMaps";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
@@ -39,6 +38,33 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import europeBlue from "@/assets/destinations/europe-blue.png";
+import europeGreen from "@/assets/destinations/europe-green.png";
+import africaBlue from "@/assets/destinations/africa-blue.png";
+import africaGreen from "@/assets/destinations/africa-green.png";
+import canadaBlue from "@/assets/destinations/canada-blue.png";
+import canadaGreen from "@/assets/destinations/canada-green.png";
+import usaBlue from "@/assets/destinations/usa-blue.png";
+import usaGreen from "@/assets/destinations/usa-green.png";
+import antarcticaBlue from "@/assets/destinations/antarctica-blue.png";
+import antarcticaGreen from "@/assets/destinations/antarctica-green.png";
+import australiaBlue from "@/assets/destinations/australia-blue.png";
+import australiaGreen from "@/assets/destinations/australia-green.png";
+import latamBlue from "@/assets/destinations/latam-blue.png";
+import latamGreen from "@/assets/destinations/latam-green.png";
+import asiaBlue from "@/assets/destinations/asia-blue.png";
+import asiaGreen from "@/assets/destinations/asia-green.png";
+
+const DEST_ICON_SRC: Record<DestinationId, { blue: string; green: string }> = {
+  europe: { blue: europeBlue, green: europeGreen },
+  africa: { blue: africaBlue, green: africaGreen },
+  canada: { blue: canadaBlue, green: canadaGreen },
+  usa: { blue: usaBlue, green: usaGreen },
+  antarctica: { blue: antarcticaBlue, green: antarcticaGreen },
+  australia: { blue: australiaBlue, green: australiaGreen },
+  latam: { blue: latamBlue, green: latamGreen },
+  asia: { blue: asiaBlue, green: asiaGreen },
+};
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -64,26 +90,14 @@ const maskDate = (raw: string) => {
 };
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  // Harel 1:1 — large geographic silhouettes; idle blue / selected green
-  const stroke = active ? "#2f9e3a" : "#4a90c8";
-  const fill = active ? "#b7df9e" : "#c8dff0";
+  const src = DEST_ICON_SRC[id][active ? "green" : "blue"];
   return (
-    <svg
-      viewBox="0 0 100 100"
-      className="h-[78px] w-[78px] sm:h-[88px] sm:w-[88px]"
-      aria-hidden
-      preserveAspectRatio="xMidYMid meet"
-    >
-      <path
-        d={DESTINATION_MAP_PATHS[id]}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth={1.6}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
+    <img
+      src={src}
+      alt=""
+      draggable={false}
+      className="pointer-events-none h-[88px] w-[88px] object-contain sm:h-[98px] sm:w-[98px]"
+    />
   );
 };
 
@@ -99,12 +113,12 @@ export function DestinationPicker({
   return (
     <div className="space-y-4">
       <div className="tp-center" style={{ textAlign: "center" }}>
-        <h3 className="text-xl font-extrabold text-[#143834]" style={{ textAlign: "center" }}>
+        <h3 className="text-xl font-extrabold text-[#0d3b6e]" style={{ textAlign: "center" }}>
           בחרו יעד נסיעה
         </h3>
       </div>
-      <div className="mx-auto max-w-[820px] rounded-2xl bg-[#e8f1f8] px-2 py-5 sm:px-5 sm:py-7">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:gap-x-5 sm:gap-y-6">
+      <div className="mx-auto max-w-[860px] rounded-[28px] bg-[#e4eef7] px-3 py-6 sm:px-6 sm:py-8">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 sm:gap-x-6 sm:gap-y-7">
           {DESTINATION_OPTIONS.map((d) => {
             const active = selected.includes(d.id);
             return (
@@ -117,18 +131,15 @@ export function DestinationPicker({
               >
                 <span
                   className={cn(
-                    "flex h-[136px] w-[136px] flex-col items-center justify-center rounded-full bg-white px-1 transition sm:h-[148px] sm:w-[148px]",
+                    "flex h-[142px] w-[142px] flex-col items-center justify-center rounded-full bg-white transition sm:h-[156px] sm:w-[156px]",
                     active
-                      ? "shadow-[0_4px_14px_rgba(47,158,58,0.22)] outline outline-[3px] outline-[#2f9e3a] outline-offset-0"
-                      : "shadow-[0_3px_12px_rgba(40,80,130,0.14)]",
+                      ? "shadow-[0_6px_18px_rgba(47,158,58,0.28)] outline outline-[3.5px] outline-[#2f9e3a] outline-offset-0"
+                      : "shadow-[0_6px_18px_rgba(45,110,170,0.18)]",
                   )}
                 >
                   <DestMapIcon id={d.id} active={active} />
                   <span
-                    className={cn(
-                      "-mt-0.5 max-w-[118px] text-center text-[11px] font-semibold leading-snug sm:max-w-[128px] sm:text-[12.5px]",
-                      active ? "text-[#1f6b2a]" : "text-[#4a90c8]",
-                    )}
+                    className="mt-[-2px] max-w-[120px] text-center text-[12px] font-semibold leading-snug text-[#3d8bc4] sm:max-w-[132px] sm:text-[13px]"
                     style={{ textAlign: "center" }}
                   >
                     {d.labelHe}
