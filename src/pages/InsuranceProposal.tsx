@@ -1450,16 +1450,16 @@ const InsuranceProposal = () => {
             {step === "plan" && (
               <div className="space-y-4">
                 {people.length > 1 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
                     {people.map(({ key }) => (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setActivePlanPerson(key)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        className={`rounded-full px-4 py-2 text-xs font-bold transition ${
                           activePlanPerson === key
-                            ? "bg-[#2f6b63] text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            ? "bg-[#143834] text-white shadow-sm"
+                            : "border border-[#2f6b63]/20 bg-white text-[#2f6b63] hover:bg-[#e8f4f1]"
                         }`}
                       >
                         {PERSON_LABELS_HE[key]}
