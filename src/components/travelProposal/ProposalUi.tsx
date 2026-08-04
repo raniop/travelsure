@@ -13,7 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Baby,
   Bike,
-  BriefcaseMedical,
   CalendarDays,
   Camera,
   Car,
@@ -24,7 +23,6 @@ import {
   Laptop,
   Luggage,
   Medal,
-  MountainSnow,
   Phone,
   Plane,
   Send,
