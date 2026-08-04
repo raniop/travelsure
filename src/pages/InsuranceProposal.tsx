@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -159,6 +159,10 @@ const InsuranceProposal = () => {
   const [crmName, setCrmName] = useState("");
   const [activeHealthPerson, setActiveHealthPerson] = useState<PersonKey>("primary");
   const [activePlanPerson, setActivePlanPerson] = useState<PersonKey>("primary");
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [step]);
 
   const progressSteps = STEPS;
   const progressIndex = Math.max(
