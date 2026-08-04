@@ -752,6 +752,28 @@ const InsuranceProposal = () => {
     );
   };
 
+  const applyPopularPackage = (targetKey?: PersonKey) => {
+    const patch: Partial<PersonPlan> = {
+      optOutSearchRescue: false,
+      optOutThirdParty: false,
+      baggage: true,
+      cancellation: true,
+      personalAccident: true,
+    };
+    const keys = targetKey ? [targetKey] : people.map((p) => p.key);
+    setForm((prev) => {
+      const next = { ...prev };
+      for (const k of keys) {
+        next[k] = { ...next[k], plan: { ...next[k].plan, ...patch } };
+      }
+      return next;
+    });
+    toast({
+      title: keys.length > 1 ? "החבילה עודכנה לכל הנוסעים" : "החבילה עודכנה",
+      description: "ביטול/קיצור · חילוץ · כבודה · צד ג׳ · תאונות אישיות",
+    });
+  };
+
   const PlanCheck = ({
     label,
     description,
@@ -779,6 +801,12 @@ const InsuranceProposal = () => {
       onChange={onChange}
       icon={icon}
       variant={variant}
+      onInfo={() =>
+        toast({
+          title: label,
+          description: description || "פרטי הכיסוי יופיעו בהצעה לאחר חיתום בהראל.",
+        })
+      }
     >
       {children}
     </CoverageCard>
@@ -788,32 +816,67 @@ const InsuranceProposal = () => {
     const plan = form[key].plan;
     return (
       <div className="space-y-5">
-        <div className="text-center sm:text-right">
-          <span className="inline-flex rounded-full bg-[#143834] px-3 py-1 text-[11px] font-bold text-white">
-            {PERSON_LABELS_HE[key]}
-          </span>
-          <h3 className="mt-2 text-lg font-extrabold text-[#143834]">
-            ה · תכנית הביטוח — פירסט קלאס
+        <div className="tp-center space-y-3 text-center" style={{ textAlign: "center" }}>
+          {people.length > 1 && (
+            <span className="inline-flex rounded-full bg-[#0d3b6e] px-3 py-1 text-[11px] font-bold text-white">
+              {PERSON_LABELS_HE[key]}
+            </span>
+          )}
+          <h3 className="text-2xl font-extrabold text-[#0d3b6e]" style={{ textAlign: "center" }}>
+            פירוט הכיסויים
           </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            סמנו את הכיסויים הרלוונטיים להצעה. זהו טופס לבדיקה בהראל — ללא תמחור.
+          <div className="mx-auto flex max-w-xl items-center justify-center gap-2 rounded-full bg-[#d6ebf8] px-4 py-2 text-sm font-semibold text-[#0d3b6e]">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1a6bb5] text-[11px] font-bold text-white">
+              i
+            </span>
+            הביטוח כבר כולל את הכיסוי הבסיסי
+          </div>
+          <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#3a5f86]" style={{ textAlign: "center" }}>
+            באפשרותך לסמן את חבילת הכיסויים הנפוצים שלנו או להרכיב חבילת כיסויים, לפי בחירתך
+          </p>
+          <p className="text-xs text-slate-500" style={{ textAlign: "center" }}>
+            הצעה לחיתום בהראל — ללא תמחור עלות כיסוי
           </p>
         </div>
 
-        <p className="text-base font-extrabold text-[#143834]">כיסויים נפוצים</p>
+        {/* Popular package — Harel style */}
+        <div className="overflow-hidden rounded-2xl border border-[#1a6bb5]/35 bg-white shadow-[0_4px_18px_rgba(20,60,110,0.08)]">
+          <div className="bg-[#eaf4fb] px-4 py-3 text-center">
+            <p className="text-sm font-extrabold text-[#0d3b6e]" style={{ textAlign: "center" }}>
+              מתלבטים מאיפה להתחיל? תתחילו עם הבחירה הנפוצה
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-5">
+            {[
+              { icon: COVERAGE_ICONS.cancel, label: "ביטול/קיצור נסיעה" },
+              { icon: COVERAGE_ICONS.rescue, label: "חיפוש, איתור וחילוץ" },
+              { icon: COVERAGE_ICONS.baggage, label: "כבודה" },
+              { icon: COVERAGE_ICONS.thirdParty, label: "חבות כלפי צד ג׳" },
+              { icon: COVERAGE_ICONS.accident, label: "תאונות אישיות", sub: "(ניתן לרכוש עד גיל 75)" },
+            ].map((item) => (
+              <div key={item.label} className="flex flex-col items-center gap-1.5 text-center text-[#1a6bb5]">
+                <div className="text-[#1a6bb5]">{item.icon}</div>
+                <p className="text-[11px] font-bold leading-tight text-[#0d3b6e]">{item.label}</p>
+                {item.sub && <p className="text-[9px] text-[#7a93ad]">{item.sub}</p>}
+              </div>
+            ))}
+          </div>
+          <div className="px-4 pb-4">
+            <Button
+              type="button"
+              className="h-12 w-full rounded-xl bg-[#1a6bb5] text-base font-bold text-white hover:bg-[#155a9a]"
+              onClick={() => applyPopularPackage(people.length > 1 ? undefined : key)}
+            >
+              {people.length > 1 ? "עדכון החבילה לכלל הנוסעים" : "עדכון החבילה"}
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-base font-extrabold text-[#0d3b6e]">כיסויים נפוצים</p>
         <div className="space-y-3">
           <PlanCheck
-            label="חיפוש, איתור וחילוץ"
-            description="כיסוי לחיפוש, איתור וחילוץ בחו״ל — כלול ברובד הבסיס"
-            checked={!plan.optOutSearchRescue}
-            onChange={(v) => patchPersonPlan(key, { optOutSearchRescue: !v })}
-            icon={COVERAGE_ICONS.rescue}
-            variant="included"
-            footnote="ניתן להסיר כיסוי זה"
-          />
-          <PlanCheck
             label="חבות כלפי צד ג׳"
-            description="כיסוי לחבות כלפי צד שלישי — כלול ברובד הבסיס"
+            description="כיסוי של עד $150,000 לנזק שגרמת לגוף או לרכוש של צד ג׳ בחו״ל."
             checked={!plan.optOutThirdParty}
             onChange={(v) => patchPersonPlan(key, { optOutThirdParty: !v })}
             icon={COVERAGE_ICONS.thirdParty}
@@ -821,14 +884,22 @@ const InsuranceProposal = () => {
             footnote="ניתן להסיר כיסוי זה"
           />
           <PlanCheck
-            label="כבודה — אובדן או גניבה"
-            description="כיסוי בסיסי למטען אישי נלווה לכל תקופת הביטוח"
+            label="חיפוש איתור וחילוץ"
+            description="במקרה של ניתוק קשר איתך או במקרה של צורך בחילוץ."
+            checked={!plan.optOutSearchRescue}
+            onChange={(v) => patchPersonPlan(key, { optOutSearchRescue: !v })}
+            icon={COVERAGE_ICONS.rescue}
+            variant="included"
+            footnote="ניתן להסיר כיסוי זה"
+          />
+          <PlanCheck
+            label="כבודה (מטען אישי כמו מזוודה)"
+            description="כיסוי של עד $2,250 במקרה של אובדן / גניבה, כולל החזר בגין איחור בהגעת המזוודה."
             checked={plan.baggage}
             onChange={(v) => {
               if (v) {
                 patchPersonPlan(key, { baggage: true });
               } else {
-                // Removing basic also clears the extended valuables tier
                 patchPersonPlan(key, { baggage: false, baggageValuables: false, valuableItems: [] });
               }
             }}
@@ -836,7 +907,7 @@ const InsuranceProposal = () => {
           />
           <PlanCheck
             label="כבודה מורחבת — פריט יקר ערך"
-            description="כיסוי לפריט יקר ערך עד $2,000. דורש בחירה של כבודה בסיסית."
+            description="כיסוי לפריט יקר ערך עד $2,000 (מצלמה, רחפן, כלי נגינה ועוד). דורש בחירה של כבודה בסיסית."
             checked={plan.baggageValuables}
             onChange={(v) => {
               if (v) {
@@ -849,7 +920,7 @@ const InsuranceProposal = () => {
             footnote={plan.baggageValuables ? "סמנו איזה פריט לכלול" : undefined}
           >
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-slate-600">בחרו פריט יקר ערך עד $2,000</p>
+              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו פריט יקר ערך עד $2,000</p>
               <div className="grid gap-2">
                 {VALUABLE_OPTIONS.map((v) => {
                   const on = plan.valuableItems.includes(v.id);
@@ -865,15 +936,15 @@ const InsuranceProposal = () => {
                       }}
                       className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-right text-xs transition ${
                         on
-                          ? "border-[#2f6b63]/35 bg-white text-[#143834]"
-                          : "border-transparent bg-white/70 text-slate-700 hover:border-[#2f6b63]/20"
+                          ? "border-[#1a6bb5]/40 bg-white text-[#0d3b6e]"
+                          : "border-transparent bg-white/70 text-slate-700 hover:border-[#1a6bb5]/25"
                       }`}
                     >
                       <span className="min-w-0 flex-1 font-semibold">{v.labelHe}</span>
                       <span
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
                           on
-                            ? "border-[#2f6b63] bg-[#2f6b63] text-white"
+                            ? "border-[#2f9e3a] bg-[#2f9e3a] text-white"
                             : "border-slate-300 bg-white text-transparent"
                         }`}
                       >
@@ -887,43 +958,41 @@ const InsuranceProposal = () => {
           </PlanCheck>
           <PlanCheck
             label="ביטול / קיצור נסיעה"
-            description="החזר לביטול או קיצור נסיעה בעקבות אירוע רפואי או צו"
+            description="החזר הוצאות במקרה של ביטול או קיצור נסיעה מסיבות רפואיות או בעקבות צווי חירום, בהתאם לתנאי הפוליסה."
             checked={plan.cancellation}
             onChange={(v) => patchPersonPlan(key, { cancellation: v })}
             icon={COVERAGE_ICONS.cancel}
           />
           <PlanCheck
             label="ביטול וקיצור נסיעה מורחב"
-            description="החזרים מקסימליים גבוהים יותר מהכיסוי הבסיסי"
+            description="החזרים מקסימליים גבוהים יותר מהכיסוי הבסיסי לביטול או קיצור נסיעה."
             checked={plan.cancellationExpanded}
             onChange={(v) => patchPersonPlan(key, { cancellationExpanded: v })}
             icon={COVERAGE_ICONS.cancel}
           />
         </div>
 
-        <p className="pt-1 text-base font-extrabold text-[#143834]">כיסויים בשביל הבריאות שלך</p>
+        <div>
+          <p className="text-base font-extrabold text-[#0d3b6e]">כיסויים בשביל הבריאות שלך</p>
+        </div>
         <div className="space-y-3">
           <PlanCheck
             label="החמרה של מצב רפואי קודם"
-            description="כיסוי להחמרה למצב רפואי קודם, בהתאם לתנאי הפוליסה"
+            description="כיסוי להחמרה של מצב רפואי קודם בחו״ל, בהתאם לתנאי הפוליסה ולחיתום הרפואי."
             checked={plan.priorCondition}
             onChange={(v) => patchPersonPlan(key, { priorCondition: v })}
             icon={COVERAGE_ICONS.health}
           />
           <PlanCheck
             label="הרחבה להיריון"
-            description="למבוטחת שגילה עד 42, היריון עד שבוע 32 (כולל)"
+            description="למבוטחת שגילה עד 42, היריון עד שבוע 32 (כולל), בהתאם לתנאי הפוליסה."
             checked={plan.pregnancy}
             onChange={(v) => patchPersonPlan(key, { pregnancy: v })}
             icon={COVERAGE_ICONS.pregnancy}
           />
-        </div>
-
-        <p className="pt-1 text-base font-extrabold text-[#143834]">ספורט והרחבות נוספות</p>
-        <div className="space-y-3">
           <PlanCheck
-            label="ספורט אתגרי חובבני"
-            description="לא ניתן לרכישה יחד עם כיסוי להיריון"
+            label="ספורט אתגרי"
+            description="לדוגמה, במקרה של פציעה במהלך פעילות ספורט אתגרי. לא ניתן לרכישה יחד עם כיסוי להיריון."
             checked={plan.adventureSports}
             onChange={(v) => patchPersonPlan(key, { adventureSports: v })}
             icon={COVERAGE_ICONS.adventure}
@@ -953,7 +1022,7 @@ const InsuranceProposal = () => {
           </PlanCheck>
           <PlanCheck
             label="ספורט חורף"
-            description="לא ניתן לרכישה יחד עם כיסוי להיריון"
+            description="לדוגמה, במקרה של פציעה במהלך סקי או סנובורד. לא ניתן לרכישה יחד עם כיסוי להיריון."
             checked={plan.winterSports}
             onChange={(v) => patchPersonPlan(key, { winterSports: v })}
             icon={COVERAGE_ICONS.winter}
@@ -983,6 +1052,7 @@ const InsuranceProposal = () => {
           </PlanCheck>
           <PlanCheck
             label="ספורט מקצועני"
+            description="לפעילות ספורט מקצועני הכוללת שכר או פרסים."
             checked={plan.proSports}
             onChange={(v) => patchPersonPlan(key, { proSports: v })}
             icon={COVERAGE_ICONS.pro}
@@ -1006,35 +1076,33 @@ const InsuranceProposal = () => {
               </Field>
             </div>
           </PlanCheck>
+        </div>
+
+        <div>
+          <p className="text-base font-extrabold text-[#0d3b6e]">כיסויים להחזר כספי</p>
+          <p className="mt-0.5 text-xs text-[#7a93ad]">
+            (במקרה של מצבים רפואיים, תאונות, אובדן נייד ועוד)
+          </p>
+        </div>
+        <div className="space-y-3">
           <PlanCheck
             label="תאונות אישיות"
-            description="פיצוי בגין מוות/נכות/כוויות/שברים/אשפוז כתוצאה מתאונה בחו״ל"
+            description="בנוסף לכיסוי הבריאות הבסיסי שכלול בפוליסה, הכיסוי הזה מקנה פיצוי בגין מוות / נכות / כוויות / שברים / אשפוז כתוצאה מהתאונה בחו״ל."
             checked={plan.personalAccident}
             onChange={(v) => patchPersonPlan(key, { personalAccident: v })}
             icon={COVERAGE_ICONS.accident}
+            footnote="ניתן לרכוש עד גיל 75"
           />
           <PlanCheck
             label="תאונות אישיות בספורט אתגרי"
+            description="הרחבת תאונות אישיות לפעילויות ספורט אתגרי, בהתאם לתנאי הפוליסה."
             checked={plan.personalAccidentAdventure}
             onChange={(v) => patchPersonPlan(key, { personalAccidentAdventure: v })}
             icon={COVERAGE_ICONS.accident}
           />
           <PlanCheck
-            label="מחשב נישא / טאבלט עד $2,000"
-            checked={plan.laptop}
-            onChange={(v) => patchPersonPlan(key, { laptop: v })}
-            icon={COVERAGE_ICONS.laptop}
-          >
-            <Field label="דגם">
-              <Input
-                className={inputClass}
-                value={plan.laptopModel}
-                onChange={(e) => patchPersonPlan(key, { laptopModel: e.target.value })}
-              />
-            </Field>
-          </PlanCheck>
-          <PlanCheck
-            label="טלפון נייד עד $750"
+            label="טלפון נייד"
+            description="החזר של עד $750 במקרה של אובדן או גניבה בחו״ל."
             checked={plan.phone}
             onChange={(v) => patchPersonPlan(key, { phone: v })}
             icon={COVERAGE_ICONS.phone}
@@ -1048,12 +1116,78 @@ const InsuranceProposal = () => {
             </Field>
           </PlanCheck>
           <PlanCheck
-            label="אופניים דו־גלגליים"
+            label="מחשב נייד / טאבלט"
+            description="החזר של עד $2,000 במקרה של אובדן או גניבה בחו״ל."
+            checked={plan.laptop}
+            onChange={(v) => patchPersonPlan(key, { laptop: v })}
+            icon={COVERAGE_ICONS.laptop}
+          >
+            <Field label="דגם">
+              <Input
+                className={inputClass}
+                value={plan.laptopModel}
+                onChange={(e) => patchPersonPlan(key, { laptopModel: e.target.value })}
+              />
+            </Field>
+          </PlanCheck>
+          <PlanCheck
+            label="ביטול השתתפות עצמית לרכב שכור"
+            description="לדוגמה, במקרה של תאונה עם הרכב ששכרת, נכסה השתתפות עצמית עד $1,500 (או עד $6,000 בתוספת תשלום). לנהגים בגילאי 24–75."
+            checked={plan.rentalCar}
+            onChange={(v) => patchPersonPlan(key, { rentalCar: v })}
+            icon={COVERAGE_ICONS.car}
+          >
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי (לא מחיר)</p>
+              <div className="flex gap-2">
+                {(["1500", "6000"] as const).map((lim) => (
+                  <button
+                    key={lim}
+                    type="button"
+                    onClick={() => patchPersonPlan(key, { rentalCarLimit: lim })}
+                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                      plan.rentalCarLimit === lim
+                        ? "border-[#1a6bb5] bg-[#1a6bb5] text-white"
+                        : "border-slate-200 bg-white text-[#0d3b6e]"
+                    }`}
+                  >
+                    עד ${lim}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="מ-">
+                  <Input
+                    className={inputClass}
+                    dir="ltr"
+                    value={plan.rentalFrom}
+                    onChange={(e) =>
+                      patchPersonPlan(key, { rentalFrom: formatDateInput(e.target.value) })
+                    }
+                  />
+                </Field>
+                <Field label="עד-">
+                  <Input
+                    className={inputClass}
+                    dir="ltr"
+                    value={plan.rentalTo}
+                    onChange={(e) =>
+                      patchPersonPlan(key, { rentalTo: formatDateInput(e.target.value) })
+                    }
+                  />
+                </Field>
+              </div>
+            </div>
+          </PlanCheck>
+          <PlanCheck
+            label="אופניים"
+            description="החזר במקרה של אובדן או גניבה בחו״ל (בנזק של מעל 50% לאופניים)."
             checked={plan.bicycle}
             onChange={(v) => patchPersonPlan(key, { bicycle: v })}
             icon={COVERAGE_ICONS.bike}
           >
             <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי (לא מחיר)</p>
               <div className="flex flex-wrap gap-2">
                 {(["2500", "4500", "6000"] as const).map((lim) => (
                   <button
@@ -1062,11 +1196,11 @@ const InsuranceProposal = () => {
                     onClick={() => patchPersonPlan(key, { bicycleLimit: lim })}
                     className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
                       plan.bicycleLimit === lim
-                        ? "border-[#2f6b63] bg-[#2f6b63] text-white"
-                        : "border-slate-200 bg-white"
+                        ? "border-[#1a6bb5] bg-[#1a6bb5] text-white"
+                        : "border-slate-200 bg-white text-[#0d3b6e]"
                     }`}
                   >
-                    ${lim}
+                    עד ${lim}
                   </button>
                 ))}
               </div>
@@ -1097,54 +1231,6 @@ const InsuranceProposal = () => {
                   }
                 />
               </Field>
-            </div>
-          </PlanCheck>
-          <PlanCheck
-            label="ביטול השתתפות עצמית לרכב שכור"
-            description="לנהגים בגילאי 24–75"
-            checked={plan.rentalCar}
-            onChange={(v) => patchPersonPlan(key, { rentalCar: v })}
-            icon={COVERAGE_ICONS.car}
-          >
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                {(["1500", "6000"] as const).map((lim) => (
-                  <button
-                    key={lim}
-                    type="button"
-                    onClick={() => patchPersonPlan(key, { rentalCarLimit: lim })}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
-                      plan.rentalCarLimit === lim
-                        ? "border-[#2f6b63] bg-[#2f6b63] text-white"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    ${lim}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="מ-">
-                  <Input
-                    className={inputClass}
-                    dir="ltr"
-                    value={plan.rentalFrom}
-                    onChange={(e) =>
-                      patchPersonPlan(key, { rentalFrom: formatDateInput(e.target.value) })
-                    }
-                  />
-                </Field>
-                <Field label="עד-">
-                  <Input
-                    className={inputClass}
-                    dir="ltr"
-                    value={plan.rentalTo}
-                    onChange={(e) =>
-                      patchPersonPlan(key, { rentalTo: formatDateInput(e.target.value) })
-                    }
-                  />
-                </Field>
-              </div>
             </div>
           </PlanCheck>
         </div>

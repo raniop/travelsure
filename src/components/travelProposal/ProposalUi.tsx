@@ -20,8 +20,10 @@ import {
   Check,
   CreditCard,
   HeartPulse,
+  Info,
   Laptop,
   Luggage,
+  Medal,
   MountainSnow,
   Phone,
   Plane,
@@ -350,8 +352,10 @@ export type CoverageCardProps = {
   icon?: ReactNode;
   variant?: "included" | "optional" | "optout";
   children?: ReactNode;
+  onInfo?: () => void;
 };
 
+/** Harel 1:1 coverage row — no premium/price amounts, coverage-limit copy only */
 export function CoverageCard({
   title,
   description,
@@ -361,50 +365,90 @@ export function CoverageCard({
   icon,
   variant = "optional",
   children,
+  onInfo,
 }: CoverageCardProps) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border bg-white transition duration-200",
-        checked
-          ? "border-[#2f6b63]/40 shadow-[0_14px_32px_-22px_rgba(47,107,99,.75)]"
-          : "border-[#cfe0db] hover:border-[#2f6b63]/30",
+        "overflow-hidden rounded-2xl bg-white shadow-[0_4px_18px_rgba(20,60,110,0.08)] transition duration-200",
+        checked ? "ring-[1.5px] ring-[#1a6bb5]" : "ring-1 ring-[#d5e4f0]",
       )}
     >
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className="flex w-full items-stretch gap-0 text-right"
-        aria-pressed={checked}
+      <div
+        className={cn(
+          "flex w-full items-stretch",
+          checked ? "bg-[#eaf4fb]" : "bg-white",
+        )}
       >
-        <div className="flex w-[58px] shrink-0 flex-col items-center justify-center gap-1 border-l border-[#e5efec] bg-[#f0f7f5] px-2 py-3 text-[#2f6b63]">
-          {icon || <Umbrella className="h-6 w-6" strokeWidth={1.6} />}
-        </div>
-        <div className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3.5">
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-extrabold text-[#143834]">{title}</p>
-            {description && (
-              <p className="mt-1.5 text-[12px] leading-relaxed text-slate-600">{description}</p>
-            )}
-            {footnote && <p className="mt-1.5 text-[11px] text-slate-400">{footnote}</p>}
-            {variant === "included" && checked && (
-              <p className="mt-1.5 text-xs font-bold text-[#2f6b63]">כלול ברובד הבסיס</p>
-            )}
-          </div>
+        {/* RTL: first = right — selection circle */}
+        <button
+          type="button"
+          onClick={() => onChange(!checked)}
+          aria-pressed={checked}
+          aria-label={checked ? `הסרת ${title}` : `בחירת ${title}`}
+          className="flex shrink-0 items-center pe-2 ps-3"
+        >
           <span
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[2.5px] transition",
+              "flex h-8 w-8 items-center justify-center rounded-full border-[2.5px] transition",
               checked
-                ? "border-[#2f6b63] bg-[#2f6b63] text-white"
-                : "border-slate-300 bg-white text-transparent",
+                ? "border-[#2f9e3a] bg-[#2f9e3a] text-white"
+                : "border-[#9bb8d4] bg-white text-transparent",
             )}
           >
             <Check className="h-4 w-4" strokeWidth={3} />
           </span>
-        </div>
-      </button>
+        </button>
+
+        {/* Icon */}
+        <button
+          type="button"
+          onClick={() => onChange(!checked)}
+          className="flex shrink-0 items-center px-1 text-[#1a6bb5]"
+          tabIndex={-1}
+          aria-hidden
+        >
+          {icon || <Umbrella className="h-7 w-7" strokeWidth={1.5} />}
+        </button>
+
+        {/* Title + coverage detail (limits OK, no premium price) */}
+        <button
+          type="button"
+          onClick={() => onChange(!checked)}
+          className="min-w-0 flex-1 px-2 py-3.5 text-right"
+        >
+          <p className="text-[15px] font-bold leading-snug text-[#0d3b6e]">{title}</p>
+          {description && (
+            <p className="mt-1 text-[12px] leading-relaxed text-[#3a5f86]">{description}</p>
+          )}
+          {footnote && <p className="mt-1.5 text-[11px] text-[#7a93ad]">{footnote}</p>}
+          {variant === "included" && checked && (
+            <p className="mt-1 text-[11px] font-semibold text-[#1a6bb5]">כלול ברובד הבסיס</p>
+          )}
+        </button>
+
+        {/* Far left in RTL: מידע נוסף strip — no price column */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onInfo?.();
+          }}
+          className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-1 border-e border-[#d5e4f0] bg-[#eef5fb] px-1.5 py-3 text-[#1a6bb5] transition hover:bg-[#e0eef8]"
+          aria-label={`מידע נוסף על ${title}`}
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-[#1a6bb5] text-[11px] font-bold">
+            <Info className="h-3.5 w-3.5" strokeWidth={2.4} />
+          </span>
+          <span className="text-center text-[9px] font-semibold leading-tight">
+            מידע
+            <br />
+            נוסף
+          </span>
+        </button>
+      </div>
       {checked && children && (
-        <div className="border-t border-[#e5efec] bg-[#f7fbfa] px-4 py-3">{children}</div>
+        <div className="border-t border-[#d5e4f0] bg-[#f5f9fc] px-4 py-3">{children}</div>
       )}
     </div>
   );
@@ -485,19 +529,19 @@ export function ProposalIconStepper({
 }
 
 export const COVERAGE_ICONS = {
-  rescue: <ShieldAlert className="h-6 w-6" strokeWidth={1.6} />,
-  thirdParty: <Users className="h-6 w-6" strokeWidth={1.6} />,
-  baggage: <Luggage className="h-6 w-6" strokeWidth={1.6} />,
-  cancel: <Plane className="h-6 w-6" strokeWidth={1.6} />,
-  health: <HeartPulse className="h-6 w-6" strokeWidth={1.6} />,
-  pregnancy: <Baby className="h-6 w-6" strokeWidth={1.6} />,
-  adventure: <MountainSnow className="h-6 w-6" strokeWidth={1.6} />,
-  winter: <Snowflake className="h-6 w-6" strokeWidth={1.6} />,
-  pro: <BriefcaseMedical className="h-6 w-6" strokeWidth={1.6} />,
-  accident: <ShieldAlert className="h-6 w-6" strokeWidth={1.6} />,
-  laptop: <Laptop className="h-6 w-6" strokeWidth={1.6} />,
-  phone: <Phone className="h-6 w-6" strokeWidth={1.6} />,
-  bike: <Bike className="h-6 w-6" strokeWidth={1.6} />,
-  car: <Car className="h-6 w-6" strokeWidth={1.6} />,
-  camera: <Camera className="h-6 w-6" strokeWidth={1.6} />,
+  rescue: <ShieldAlert className="h-7 w-7" strokeWidth={1.5} />,
+  thirdParty: <Users className="h-7 w-7" strokeWidth={1.5} />,
+  baggage: <Luggage className="h-7 w-7" strokeWidth={1.5} />,
+  cancel: <Plane className="h-7 w-7" strokeWidth={1.5} />,
+  health: <HeartPulse className="h-7 w-7" strokeWidth={1.5} />,
+  pregnancy: <Baby className="h-7 w-7" strokeWidth={1.5} />,
+  adventure: <Bike className="h-7 w-7" strokeWidth={1.5} />,
+  winter: <Snowflake className="h-7 w-7" strokeWidth={1.5} />,
+  pro: <Medal className="h-7 w-7" strokeWidth={1.5} />,
+  accident: <Users className="h-7 w-7" strokeWidth={1.5} />,
+  laptop: <Laptop className="h-7 w-7" strokeWidth={1.5} />,
+  phone: <Phone className="h-7 w-7" strokeWidth={1.5} />,
+  bike: <Bike className="h-7 w-7" strokeWidth={1.5} />,
+  car: <Car className="h-7 w-7" strokeWidth={1.5} />,
+  camera: <Camera className="h-7 w-7" strokeWidth={1.5} />,
 };
