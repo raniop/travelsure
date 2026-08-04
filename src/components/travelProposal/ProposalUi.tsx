@@ -57,16 +57,16 @@ const maskDate = (raw: string) => {
 };
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  // Harel 1:1 — idle: light-blue fill + medium-blue outline; selected: light-green fill + green outline
+  // Harel 1:1 — large silhouettes; idle blue / selected green
   const stroke = active ? "#2f9e3a" : "#4a90c8";
   const fill = active ? "#b7df9e" : "#c8dff0";
   return (
-    <svg viewBox="0 0 48 48" className="h-[46px] w-[52px] sm:h-[52px] sm:w-[58px]" aria-hidden>
+    <svg viewBox="0 0 48 48" className="h-[68px] w-[76px] sm:h-[76px] sm:w-[86px]" aria-hidden>
       <path
         d={DESTINATION_MAP_PATHS[id]}
         fill={fill}
         stroke={stroke}
-        strokeWidth={1.5}
+        strokeWidth={1.35}
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -91,7 +91,7 @@ export function DestinationPicker({
         </h3>
       </div>
       {/* Pale blue panel matching Harel destination screen */}
-      <div className="mx-auto max-w-[760px] rounded-2xl bg-[#e8f1f8] px-2 py-5 sm:px-5 sm:py-7">
+      <div className="mx-auto max-w-[800px] rounded-2xl bg-[#e8f1f8] px-2 py-5 sm:px-5 sm:py-7">
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:gap-x-5 sm:gap-y-6">
           {DESTINATION_OPTIONS.map((d) => {
             const active = selected.includes(d.id);
@@ -103,20 +103,20 @@ export function DestinationPicker({
                 aria-pressed={active}
                 className="mx-auto flex flex-col items-center justify-center focus-visible:outline-none"
               >
-                {/* White circle · soft shadow · label inside · thick black ring when selected */}
+                {/* White circle · soft shadow · large map · green ring when selected */}
                 <span
                   className={cn(
-                    "flex h-[120px] w-[120px] flex-col items-center justify-center rounded-full bg-white px-2 transition sm:h-[132px] sm:w-[132px]",
+                    "flex h-[128px] w-[128px] flex-col items-center justify-center rounded-full bg-white px-1.5 pt-1 transition sm:h-[140px] sm:w-[140px]",
                     active
-                      ? "shadow-[0_4px_14px_rgba(0,0,0,0.14)] outline outline-[3.5px] outline-black outline-offset-0"
+                      ? "shadow-[0_4px_14px_rgba(47,158,58,0.22)] outline outline-[3px] outline-[#2f9e3a] outline-offset-0"
                       : "shadow-[0_3px_12px_rgba(40,80,130,0.14)]",
                   )}
                 >
                   <DestMapIcon id={d.id} active={active} />
                   <span
                     className={cn(
-                      "mt-1 max-w-[96px] text-center text-[11.5px] font-semibold leading-snug sm:max-w-[108px] sm:text-[13px]",
-                      active ? "text-[#1a2f4a]" : "text-[#4a90c8]",
+                      "mt-0.5 max-w-[110px] text-center text-[11px] font-semibold leading-snug sm:max-w-[120px] sm:text-[12.5px]",
+                      active ? "text-[#1f6b2a]" : "text-[#4a90c8]",
                     )}
                     style={{ textAlign: "center" }}
                   >
@@ -146,6 +146,7 @@ function TripDateField({
   onValueChange,
   error,
   disabledBefore,
+  compact,
 }: {
   label: string;
   hint: string;
@@ -154,17 +155,19 @@ function TripDateField({
   error?: string;
   /** Dates strictly before this day are disabled in the calendar */
   disabledBefore?: Date;
+  /** Simpler Harel-style field without outer card chrome */
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = parseDdMmYyyy(value);
   const minDay = disabledBefore ? startOfDay(disabledBefore) : undefined;
 
-  return (
-    <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">
-      <p className="text-sm font-extrabold text-[#143834]">{label}</p>
-      <p className="mt-1 text-[11px] text-slate-400">{hint}</p>
+  const field = (
+    <>
+      <p className={cn("font-extrabold text-[#143834]", compact ? "text-xs" : "text-sm")}>{label}</p>
+      {!compact && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
       <Popover open={open} onOpenChange={setOpen}>
-        <div className="relative mt-2">
+        <div className={cn("relative", compact ? "mt-1.5" : "mt-2")}>
           <input
             dir="ltr"
             inputMode="numeric"
@@ -174,7 +177,10 @@ function TripDateField({
             onChange={(e) => onValueChange(maskDate(e.target.value))}
             onClick={() => setOpen(true)}
             onFocus={() => setOpen(true)}
-            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
+            className={cn(
+              "h-12 w-full border border-slate-200 bg-white px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:ring-2 focus:ring-[#2f6b63]/20",
+              compact ? "rounded-full" : "rounded-xl bg-slate-50/80 focus:bg-white",
+            )}
           />
           <PopoverTrigger asChild>
             <button
@@ -208,6 +214,52 @@ function TripDateField({
         </PopoverContent>
       </Popover>
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+    </>
+  );
+
+  if (compact) return <div className="text-right">{field}</div>;
+
+  return (
+    <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">{field}</div>
+  );
+}
+
+export function UsaStayDateFields({
+  from,
+  to,
+  onChange,
+  fromError,
+  toError,
+}: {
+  from: string;
+  to: string;
+  onChange: (from: string, to: string) => void;
+  fromError?: string;
+  toError?: string;
+}) {
+  const fromDate = parseDdMmYyyy(from);
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-[#f4f7f9] p-4">
+      <p className="mb-3 text-sm font-bold text-[#143834]">תקופת שהייה בארה״ב (אם רלוונטי)</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <TripDateField
+          compact
+          label="ארה״ב מ-"
+          hint=""
+          value={from}
+          onValueChange={(next) => onChange(next, to)}
+          error={fromError}
+        />
+        <TripDateField
+          compact
+          label="ארה״ב עד-"
+          hint=""
+          value={to}
+          onValueChange={(next) => onChange(from, next)}
+          error={toError}
+          disabledBefore={fromDate ? startOfDay(fromDate) : undefined}
+        />
+      </div>
     </div>
   );
 }

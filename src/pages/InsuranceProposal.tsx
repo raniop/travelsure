@@ -80,6 +80,7 @@ import {
   PillYesNo,
   ProposalIconStepper,
   TripDateRangePicker,
+  UsaStayDateFields,
 } from "@/components/travelProposal/ProposalUi";
 import {
   ArrowLeft,
@@ -220,7 +221,15 @@ const InsuranceProposal = () => {
         .map((d) => DESTINATION_OPTIONS.find((o) => o.id === d)?.labelHe)
         .filter(Boolean)
         .join(", ");
-      return { ...prev, destinations, countriesDetail };
+      // USA stay period only when USA + at least one other destination
+      const needsUsaStay = destinations.includes("usa") && destinations.length > 1;
+      return {
+        ...prev,
+        destinations,
+        countriesDetail,
+        usaFrom: needsUsaStay ? prev.usaFrom : "",
+        usaTo: needsUsaStay ? prev.usaTo : "",
+      };
     });
     if (errors.destinations) {
       setErrors((prev) => {
@@ -318,7 +327,8 @@ const InsuranceProposal = () => {
       if (!isValidDateDdMmYyyy(form.tripFrom)) nextErrors.tripFrom = "תאריך התחלה לא תקין";
       if (!isValidDateDdMmYyyy(form.tripTo)) nextErrors.tripTo = "תאריך סיום לא תקין";
       if (!form.destinations.length) nextErrors.destinations = "יש לבחור לפחות יעד אחד";
-      if (form.destinations.includes("usa")) {
+      const needsUsaStay = form.destinations.includes("usa") && form.destinations.length > 1;
+      if (needsUsaStay) {
         if (form.usaFrom && !isValidDateDdMmYyyy(form.usaFrom)) nextErrors.usaFrom = "תאריך לא תקין";
         if (form.usaTo && !isValidDateDdMmYyyy(form.usaTo)) nextErrors.usaTo = "תאריך לא תקין";
       }
@@ -1428,26 +1438,17 @@ const InsuranceProposal = () => {
                   />
                 </div>
 
-                {form.destinations.includes("usa") && (
-                  <div className="grid gap-3 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4 sm:grid-cols-2">
-                    <p className="sm:col-span-2 text-xs font-bold text-[#143834]">תקופת שהייה בארה״ב (אם רלוונטי)</p>
-                    <Field label="ארה״ב מ-" error={errors.usaFrom}>
-                      <Input
-                        className={inputClass}
-                        dir="ltr"
-                        value={form.usaFrom}
-                        onChange={(e) => setField("usaFrom", formatDateInput(e.target.value))}
-                      />
-                    </Field>
-                    <Field label="ארה״ב עד-" error={errors.usaTo}>
-                      <Input
-                        className={inputClass}
-                        dir="ltr"
-                        value={form.usaTo}
-                        onChange={(e) => setField("usaTo", formatDateInput(e.target.value))}
-                      />
-                    </Field>
-                  </div>
+                {form.destinations.includes("usa") && form.destinations.length > 1 && (
+                  <UsaStayDateFields
+                    from={form.usaFrom}
+                    to={form.usaTo}
+                    onChange={(from, to) => {
+                      setField("usaFrom", from);
+                      setField("usaTo", to);
+                    }}
+                    fromError={errors.usaFrom}
+                    toError={errors.usaTo}
+                  />
                 )}
 
                 <div className="grid gap-3 sm:grid-cols-2">
