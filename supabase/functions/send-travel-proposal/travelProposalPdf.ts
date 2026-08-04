@@ -375,12 +375,12 @@ const USA_TO_SEGS: [number, number][] = [
 
 /** Insured rows: gender boxes + digit combs + name baselines (y from top). */
 const INSURED_ROWS = [
-  { genderY: 605.5, digitY: 613, nameHeY: 605, nameEnY: 628 }, // primary
-  { genderY: 639.5, digitY: 647, nameHeY: 639, nameEnY: 662 }, // spouse
-  { genderY: 673.5, digitY: 681, nameHeY: 673, nameEnY: 696 }, // child1
-  { genderY: 707.5, digitY: 715, nameHeY: 707, nameEnY: 730 }, // child2
-  { genderY: 741.5, digitY: 749, nameHeY: 741, nameEnY: 764 }, // child3
-  { genderY: 775.5, digitY: 783, nameHeY: 775, nameEnY: 798 }, // child4
+  { genderY: 605.5, digitY: 613, nameHeY: 599, nameEnY: 628 }, // primary
+  { genderY: 639.5, digitY: 647, nameHeY: 633, nameEnY: 662 }, // spouse
+  { genderY: 673.5, digitY: 681, nameHeY: 667, nameEnY: 696 }, // child1
+  { genderY: 707.5, digitY: 715, nameHeY: 701, nameEnY: 730 }, // child2
+  { genderY: 741.5, digitY: 749, nameHeY: 735, nameEnY: 764 }, // child3
+  { genderY: 775.5, digitY: 783, nameHeY: 769, nameEnY: 798 }, // child4
 ];
 const GENDER_MALE = { x0: 498.3, x1: 506.4 };
 const GENDER_FEMALE = { x0: 480.0, x1: 488.1 };
