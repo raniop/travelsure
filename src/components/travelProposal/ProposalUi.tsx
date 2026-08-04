@@ -9,6 +9,13 @@ import {
 } from "@/lib/travelProposal/types";
 import { DESTINATION_MAP_PATHS } from "@/components/travelProposal/destinationMaps";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Baby,
@@ -396,27 +403,31 @@ export function HealthQuestionCard({
 export type CoverageCardProps = {
   title: string;
   description?: string;
+  /** Longer copy for the «מידע נוסף» dialog; falls back to description */
+  infoDetail?: string;
   footnote?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   icon?: ReactNode;
   variant?: "included" | "optional" | "optout";
   children?: ReactNode;
-  onInfo?: () => void;
 };
 
 /** Harel 1:1 coverage row — no premium/price amounts, coverage-limit copy only */
 export function CoverageCard({
   title,
   description,
+  infoDetail,
   footnote,
   checked,
   onChange,
   icon,
   variant = "optional",
   children,
-  onInfo,
 }: CoverageCardProps) {
+  const [infoOpen, setInfoOpen] = useState(false);
+  const detailText = infoDetail || description;
+
   return (
     <div
       className={cn(
@@ -469,7 +480,9 @@ export function CoverageCard({
         >
           <p className="text-[15px] font-bold leading-snug text-[#0d3b6e]">{title}</p>
           {description && (
-            <p className="mt-1 text-[12px] leading-relaxed text-[#3a5f86]">{description}</p>
+            <p className="mt-1 whitespace-pre-line text-[12px] leading-relaxed text-[#3a5f86]">
+              {description}
+            </p>
           )}
           {footnote && <p className="mt-1.5 text-[11px] text-[#7a93ad]">{footnote}</p>}
           {variant === "included" && checked && (
@@ -477,12 +490,12 @@ export function CoverageCard({
           )}
         </button>
 
-        {/* Far left in RTL: מידע נוסף strip — no price column */}
+        {/* Far left in RTL: מידע נוסף — opens centered dialog (not toast) */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onInfo?.();
+            setInfoOpen(true);
           }}
           className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-1 border-e border-[#d5e4f0] bg-[#eef5fb] px-1.5 py-3 text-[#1a6bb5] transition hover:bg-[#e0eef8]"
           aria-label={`מידע נוסף על ${title}`}
@@ -500,6 +513,29 @@ export function CoverageCard({
       {checked && children && (
         <div className="border-t border-[#d5e4f0] bg-[#f5f9fc] px-4 py-3">{children}</div>
       )}
+
+      <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+        <DialogContent className="max-w-md rounded-2xl border-[#d5e4f0] p-0 sm:rounded-2xl" dir="rtl">
+          <DialogHeader className="space-y-3 border-b border-[#e8f1f8] bg-[#eaf4fb] px-5 py-4 text-right">
+            <div className="flex items-center gap-3">
+              <span className="text-[#1a6bb5]">{icon || <Umbrella className="h-7 w-7" strokeWidth={1.5} />}</span>
+              <DialogTitle className="text-right text-lg font-extrabold text-[#0d3b6e]">
+                {title}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <DialogDescription asChild>
+            <div className="space-y-3 px-5 py-4 text-right text-sm leading-relaxed text-[#3a5f86]">
+              <p className="whitespace-pre-line">
+                {detailText || "פרטי הכיסוי יופיעו בהצעה לאחר חיתום בהראל."}
+              </p>
+              <p className="text-xs text-[#7a93ad]">
+                הפירוט להמחשה לפי הראל · הכיסוי הסופי בהתאם לתנאי הפוליסה ולחיתום.
+              </p>
+            </div>
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

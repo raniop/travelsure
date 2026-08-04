@@ -787,6 +787,7 @@ const InsuranceProposal = () => {
   const PlanCheck = ({
     label,
     description,
+    infoDetail,
     footnote,
     checked,
     onChange,
@@ -796,6 +797,7 @@ const InsuranceProposal = () => {
   }: {
     label: string;
     description?: string;
+    infoDetail?: string;
     footnote?: string;
     checked: boolean;
     onChange: (v: boolean) => void;
@@ -806,17 +808,12 @@ const InsuranceProposal = () => {
     <CoverageCard
       title={label}
       description={description}
+      infoDetail={infoDetail}
       footnote={footnote}
       checked={checked}
       onChange={onChange}
       icon={icon}
       variant={variant}
-      onInfo={() =>
-        toast({
-          title: label,
-          description: description || "פרטי הכיסוי יופיעו בהצעה לאחר חיתום בהראל.",
-        })
-      }
     >
       {children}
     </CoverageCard>
@@ -968,14 +965,16 @@ const InsuranceProposal = () => {
           </PlanCheck>
           <PlanCheck
             label="ביטול / קיצור נסיעה"
-            description="החזר הוצאות במקרה של ביטול או קיצור נסיעה מסיבות רפואיות או בעקבות צווי חירום, בהתאם לתנאי הפוליסה."
+            description={
+              "החזר לביטול/קיצור הנסיעה בעקבות אירוע רפואי או צו 8.\nבנוסף, החזר עבור שינוי תוכניות הנסיעה (לדוגמא, החזר על הכרטיסים, מלונות וכד') במקרה של אשפוז בחו״ל מעל יומיים."
+            }
             checked={plan.cancellation}
             onChange={(v) => patchPersonPlan(key, { cancellation: v })}
             icon={COVERAGE_ICONS.cancel}
           />
           <PlanCheck
             label="ביטול וקיצור נסיעה מורחב"
-            description="החזרים מקסימליים גבוהים יותר מהכיסוי הבסיסי לביטול או קיצור נסיעה."
+            description="החזרים מקסימליים גבוהים יותר מהכיסוי הבסיסי לביטול או קיצור נסיעה (עד תקרות מורחבות לפי תנאי הפוליסה)."
             checked={plan.cancellationExpanded}
             onChange={(v) => patchPersonPlan(key, { cancellationExpanded: v })}
             icon={COVERAGE_ICONS.cancel}
@@ -1002,7 +1001,8 @@ const InsuranceProposal = () => {
           />
           <PlanCheck
             label="ספורט אתגרי"
-            description="לדוגמה, במקרה של פציעה במהלך פעילות ספורט אתגרי. לא ניתן לרכישה יחד עם כיסוי להיריון."
+            description="לדוגמה, במקרה של פציעה במהלך פעילות ספורט אתגרי."
+            footnote="לא ניתן לרכישה יחד עם כיסוי להיריון"
             checked={plan.adventureSports}
             onChange={(v) => patchPersonPlan(key, { adventureSports: v })}
             icon={COVERAGE_ICONS.adventure}
@@ -1032,7 +1032,8 @@ const InsuranceProposal = () => {
           </PlanCheck>
           <PlanCheck
             label="ספורט חורף"
-            description="לדוגמה, במקרה של פציעה במהלך סקי או סנובורד. לא ניתן לרכישה יחד עם כיסוי להיריון."
+            description="לדוגמה, במקרה של פציעה במהלך סקי או סנובורד."
+            footnote="לא ניתן לרכישה יחד עם כיסוי להיריון"
             checked={plan.winterSports}
             onChange={(v) => patchPersonPlan(key, { winterSports: v })}
             icon={COVERAGE_ICONS.winter}
@@ -1148,7 +1149,7 @@ const InsuranceProposal = () => {
             icon={COVERAGE_ICONS.car}
           >
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי (לא מחיר)</p>
+              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי</p>
               <div className="flex gap-2">
                 {(["1500", "6000"] as const).map((lim) => (
                   <button
@@ -1197,7 +1198,7 @@ const InsuranceProposal = () => {
             icon={COVERAGE_ICONS.bike}
           >
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי (לא מחיר)</p>
+              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי</p>
               <div className="flex flex-wrap gap-2">
                 {(["2500", "4500", "6000"] as const).map((lim) => (
                   <button
