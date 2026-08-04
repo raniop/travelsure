@@ -404,7 +404,8 @@ const HEALTH_YN: { yes: [number, number]; no: [number, number] }[] = [
 
 /** Mid-Y of each question's yes/no cell band (from template grid). */
 const HEALTH_Q_Y: Record<string, number> = {
-  q1: 97,
+  // Q1 checkboxes sit with the question title (71.2–85.4), NOT the note below.
+  q1: 78,
   q2: 119,
   q22: 287,
   q3: 349,
