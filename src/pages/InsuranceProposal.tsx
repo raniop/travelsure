@@ -1931,49 +1931,29 @@ const InsuranceProposal = () => {
             )}
 
             {step === "success" && (
-              <div className="px-2 py-8 text-center sm:px-6 sm:py-10" style={{ textAlign: "center" }}>
+              <div className="tp-center px-2 py-8 sm:px-6 sm:py-10" style={{ textAlign: "center" }}>
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f4f1] text-[#2f6b63]">
                   <Check className="h-8 w-8" />
                 </div>
-                <h2
-                  className="text-2xl font-extrabold text-[#143834]"
-                  style={{ textAlign: "center" }}
-                >
-                  ההצעה נשלחה בהצלחה
-                </h2>
-                <p
-                  className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600"
-                  style={{ textAlign: "center" }}
-                >
+                <h2 className="text-2xl font-extrabold text-[#143834]">ההצעה נשלחה בהצלחה</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
                   טופס ההצעה הממולא התקבל אצל אופיר ושות׳. שמרו את מספר הפנייה למעקב מולנו.
                 </p>
                 {proposalNumber ? (
                   <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-b from-[#e8f4f1] to-white px-5 py-5">
-                    <p
-                      className="text-xs font-bold tracking-wide text-[#2f6b63]"
-                      style={{ textAlign: "center" }}
-                    >
-                      מספר פנייה באופיר
-                    </p>
+                    <p className="text-xs font-bold tracking-wide text-[#2f6b63]">מספר פנייה באופיר</p>
                     <p
                       className="mt-2 font-mono text-2xl font-extrabold tracking-wider text-[#143834]"
                       dir="ltr"
-                      style={{ textAlign: "center" }}
                     >
                       {proposalNumber}
                     </p>
-                    <p
-                      className="mt-3 text-xs leading-relaxed text-slate-500"
-                      style={{ textAlign: "center" }}
-                    >
+                    <p className="mt-3 text-xs leading-relaxed text-slate-500">
                       מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר פוליסה בהראל.
                     </p>
                   </div>
                 ) : null}
-                <p
-                  className="mx-auto mt-5 max-w-md text-sm text-slate-500"
-                  style={{ textAlign: "center" }}
-                >
+                <p className="mx-auto mt-5 max-w-md text-sm text-slate-500">
                   ניצור קשר להמשך הטיפול מול הראל.
                 </p>
               </div>

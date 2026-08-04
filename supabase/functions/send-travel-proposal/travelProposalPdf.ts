@@ -341,14 +341,14 @@ async function loadFont(): Promise<Uint8Array> {
 
 // —— Page 1 calibrated geometry ——
 const DEST_BOX: Record<string, { x0: number; x1: number; y: number }> = {
-  europe: { x0: 543.0, x1: 551.2, y: 243 },
-  asia: { x0: 499.7, x1: 507.9, y: 243 },
-  australia: { x0: 462.8, x1: 471.0, y: 243 },
-  latam: { x0: 409.2, x1: 417.4, y: 243 },
-  canada: { x0: 320.2, x1: 328.4, y: 243 },
-  africa: { x0: 283.4, x1: 291.6, y: 243 },
-  antarctica: { x0: 236.8, x1: 244.9, y: 243 },
-  usa: { x0: 543.0, x1: 551.2, y: 262 },
+  europe: { x0: 543.0, x1: 551.2, y: 244.5 },
+  asia: { x0: 499.7, x1: 507.9, y: 244.5 },
+  australia: { x0: 462.8, x1: 471.0, y: 244.5 },
+  latam: { x0: 409.2, x1: 417.4, y: 244.5 },
+  canada: { x0: 320.2, x1: 328.4, y: 244.5 },
+  africa: { x0: 283.4, x1: 291.6, y: 244.5 },
+  antarctica: { x0: 236.8, x1: 244.9, y: 244.5 },
+  usa: { x0: 543.0, x1: 551.2, y: 263.5 },
 };
 
 /** RTL: מ- (from) is on the right, עד- (to) on the left. */
@@ -531,9 +531,9 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   drawText(page, font, s(input.city), 150, 488, 8, 120);
   drawText(page, font, s(input.occupation), 28, 488, 8, 110);
 
-  drawText(page, font, s(input.phone), 445, 520, 8, 95);
-  drawText(page, font, s(input.mobile), 360, 520, 8, 65);
-  drawText(page, font, s(input.email), 175, 520, 8, 120);
+  drawText(page, font, s(input.phone), 448, 520, 8, 95);
+  drawText(page, font, s(input.mobile), 348, 520, 8, 70);
+  drawText(page, font, s(input.email), 195, 520, 8, 100);
 
   if (input.israeliResidents !== false) {
     markInBox(page, font, 259.7, 267.9, 569.3, 7);

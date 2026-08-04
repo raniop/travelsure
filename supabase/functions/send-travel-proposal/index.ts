@@ -6,7 +6,12 @@ import {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const RESEND_FROM = Deno.env.get("RESEND_FROM") || "TravelSure <noreply@travelsure.co.il>";
-const STAFF_TO = "rani@ophirins.co.il";
+const STAFF_TO = [
+  "rani@ophirins.co.il",
+  "eli@ophirins.co.il",
+  "hadar@ophirins.co.il",
+  "ophir@ophirins.co.il",
+] as const;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -167,9 +172,13 @@ serve(async (req) => {
       if (content) attachments.push({ filename, content });
     }
 
-    const notifyList = Array.isArray(body.notify) && body.notify.length
-      ? body.notify.map(String)
-      : [STAFF_TO];
+    // Always send to the full Ophir staff list (ignore/augment any client notify).
+    const notifyList = Array.from(
+      new Set([
+        ...STAFF_TO,
+        ...(Array.isArray(body.notify) ? body.notify.map(String) : []),
+      ].map((e) => e.trim().toLowerCase()).filter(Boolean)),
+    );
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",

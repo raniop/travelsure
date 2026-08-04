@@ -6,7 +6,12 @@ import {
 } from "@/lib/travelProposal/types";
 import { displayName, includedPersons } from "@/lib/travelProposal/formDefaults";
 
-const STAFF_NOTIFY = ["rani@ophirins.co.il"] as const;
+const STAFF_NOTIFY = [
+  "rani@ophirins.co.il",
+  "eli@ophirins.co.il",
+  "hadar@ophirins.co.il",
+  "ophir@ophirins.co.il",
+] as const;
 
 /** Internal Ophir tracking number for travel proposals (shown to customer). */
 export function createTravelProposalNumber() {
