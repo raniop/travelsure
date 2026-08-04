@@ -1,4 +1,5 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { he } from "date-fns/locale/he";
 import { cn } from "@/lib/utils";
 import {
   DESTINATION_OPTIONS,
@@ -7,10 +8,13 @@ import {
   type YesNo,
 } from "@/lib/travelProposal/types";
 import { DESTINATION_MAP_PATHS } from "@/components/travelProposal/destinationMaps";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Baby,
   Bike,
   BriefcaseMedical,
+  CalendarDays,
   Camera,
   Car,
   Check,
@@ -133,7 +137,82 @@ export function DestinationPicker({
   );
 }
 
-/** Manual trip dates only — no calendar popup */
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+function TripDateField({
+  label,
+  hint,
+  value,
+  onValueChange,
+  error,
+  disabledBefore,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  onValueChange: (next: string) => void;
+  error?: string;
+  /** Dates strictly before this day are disabled in the calendar */
+  disabledBefore?: Date;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = parseDdMmYyyy(value);
+  const minDay = disabledBefore ? startOfDay(disabledBefore) : undefined;
+
+  return (
+    <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">
+      <p className="text-sm font-extrabold text-[#143834]">{label}</p>
+      <p className="mt-1 text-[11px] text-slate-400">{hint}</p>
+      <Popover open={open} onOpenChange={setOpen}>
+        <div className="relative mt-2">
+          <input
+            dir="ltr"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="DD/MM/YYYY"
+            value={value}
+            onChange={(e) => onValueChange(maskDate(e.target.value))}
+            onClick={() => setOpen(true)}
+            onFocus={() => setOpen(true)}
+            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
+          />
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="פתיחת תאריכון"
+              className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#2f6b63] transition hover:bg-[#e8f4f1]"
+            >
+              <CalendarDays className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+        </div>
+        <PopoverContent
+          className="w-auto p-0"
+          align="center"
+          sideOffset={8}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <Calendar
+            mode="single"
+            locale={he}
+            selected={selected}
+            defaultMonth={selected ?? minDay ?? new Date()}
+            disabled={minDay ? { before: minDay } : undefined}
+            onSelect={(date) => {
+              if (!date) return;
+              onValueChange(toDdMmYyyy(date));
+              setOpen(false);
+            }}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+    </div>
+  );
+}
+
+/** Calendar on click for the specific field + manual DD/MM/YYYY typing */
 export function TripDateRangePicker({
   from,
   to,
@@ -147,42 +226,32 @@ export function TripDateRangePicker({
   fromError?: string;
   toError?: string;
 }) {
-  const days = (() => {
-    const f = parseDdMmYyyy(from);
-    const t = parseDdMmYyyy(to);
-    if (!f || !t) return null;
-    return Math.round((t.getTime() - f.getTime()) / 86400000) + 1;
-  })();
+  const fromDate = parseDdMmYyyy(from);
+  const toDate = parseDdMmYyyy(to);
+  const days =
+    fromDate && toDate
+      ? Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1
+      : null;
 
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">
-          <p className="text-sm font-extrabold text-[#143834]">מתי יוצאים?</p>
-          <p className="mt-1 text-[11px] text-slate-400">* תאריך יציאה · DD/MM/YYYY</p>
-          <input
-            dir="ltr"
-            inputMode="numeric"
-            placeholder="DD/MM/YYYY"
-            value={from}
-            onChange={(e) => onChange(maskDate(e.target.value), to)}
-            className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
-          />
-          {fromError && <p className="mt-1 text-xs text-rose-600">{fromError}</p>}
-        </div>
-        <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">
-          <p className="text-sm font-extrabold text-[#143834]">מתי חוזרים?</p>
-          <p className="mt-1 text-[11px] text-slate-400">* תאריך חזרה · DD/MM/YYYY</p>
-          <input
-            dir="ltr"
-            inputMode="numeric"
-            placeholder="DD/MM/YYYY"
-            value={to}
-            onChange={(e) => onChange(from, maskDate(e.target.value))}
-            className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
-          />
-          {toError && <p className="mt-1 text-xs text-rose-600">{toError}</p>}
-        </div>
+        <TripDateField
+          label="מתי יוצאים?"
+          hint="* תאריך יציאה · בחרו בלוח או הזינו ידנית"
+          value={from}
+          onValueChange={(next) => onChange(next, to)}
+          error={fromError}
+          disabledBefore={startOfDay(new Date())}
+        />
+        <TripDateField
+          label="מתי חוזרים?"
+          hint="* תאריך חזרה · בחרו בלוח או הזינו ידנית"
+          value={to}
+          onValueChange={(next) => onChange(from, next)}
+          error={toError}
+          disabledBefore={fromDate ? startOfDay(fromDate) : startOfDay(new Date())}
+        />
       </div>
       {days != null && days > 0 && (
         <p className="text-center text-sm font-bold text-[#2f6b63]" style={{ textAlign: "center" }}>

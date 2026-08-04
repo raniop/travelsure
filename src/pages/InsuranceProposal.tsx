@@ -1322,7 +1322,9 @@ const InsuranceProposal = () => {
                 <div className="space-y-3">
                   <div className="tp-center text-center">
                     <h3 className="text-center text-lg font-extrabold text-[#143834]">מתי נוסעים?</h3>
-                    <p className="mt-1 text-center text-xs text-slate-500">הזינו תאריכי יציאה וחזרה ידנית</p>
+                    <p className="mt-1 text-center text-xs text-slate-500">
+                      לחצו על השדה לבחירה בלוח שנה — או הזינו ידנית
+                    </p>
                   </div>
                   <TripDateRangePicker
                     from={form.tripFrom}
