@@ -46,15 +46,15 @@ export const parseDdMmYyyy = (value: string): Date | undefined => {
 };
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  const stroke = active ? "#143834" : "#2f6b63";
-  const fill = active ? "#8fc4b6" : "#c5ddd6";
+  const stroke = active ? "#0f2f2c" : "#1f4b46";
+  const fill = active ? "#5fa898" : "#9ecfc2";
   return (
-    <svg viewBox="0 0 48 48" className="h-12 w-12" aria-hidden>
+    <svg viewBox="0 0 48 48" className="h-[58px] w-[58px] sm:h-16 sm:w-16" aria-hidden>
       <path
         d={DESTINATION_MAP_PATHS[id]}
         fill={fill}
         stroke={stroke}
-        strokeWidth={1.15}
+        strokeWidth={1.4}
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -73,11 +73,18 @@ export function DestinationPicker({
 }) {
   return (
     <div className="space-y-5">
-      <div className="tp-center text-center">
-        <h3 className="text-center text-xl font-extrabold text-[#143834]">בחרו יעד נסיעה</h3>
-        <p className="mt-1 text-center text-sm text-slate-500">אפשר לבחור יותר מיעד אחד</p>
+      <div className="tp-center" style={{ textAlign: "center" }}>
+        <h3
+          className="text-xl font-extrabold text-[#143834]"
+          style={{ textAlign: "center" }}
+        >
+          בחרו יעד נסיעה
+        </h3>
+        <p className="mt-1 text-sm text-slate-500" style={{ textAlign: "center" }}>
+          לחצו על כל יעד שרלוונטי — אפשר יותר מאחד
+        </p>
       </div>
-      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:gap-x-4 sm:gap-y-6">
         {DESTINATION_OPTIONS.map((d) => {
           const active = selected.includes(d.id);
           return (
@@ -86,36 +93,50 @@ export function DestinationPicker({
               type="button"
               onClick={() => onToggle(d.id)}
               aria-pressed={active}
-              className="group flex flex-col items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6b63]/40"
+              className="group flex flex-col items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6b63]/40"
             >
               <span
                 className={cn(
-                  "relative flex h-[112px] w-[112px] flex-col items-center justify-center gap-0.5 rounded-full bg-white px-2 shadow-[0_10px_28px_-12px_rgba(20,56,52,.5)] transition duration-200 sm:h-[120px] sm:w-[120px]",
+                  "relative flex h-[100px] w-[100px] items-center justify-center rounded-full bg-white transition duration-200 sm:h-[112px] sm:w-[112px]",
                   active
-                    ? "ring-[3px] ring-[#143834] scale-[1.03]"
-                    : "ring-1 ring-black/5 group-hover:ring-[#2f6b63]/35 group-hover:shadow-lg",
+                    ? "shadow-[0_12px_28px_-12px_rgba(20,56,52,.55)] ring-[3px] ring-[#143834] scale-[1.04]"
+                    : "shadow-[0_8px_20px_-12px_rgba(20,56,52,.4)] ring-1 ring-slate-200/80 group-hover:ring-[#2f6b63]/45",
                 )}
               >
                 <DestMapIcon id={d.id} active={active} />
-                <span
-                  className={cn(
-                    "max-w-[100px] text-center text-[11px] font-extrabold leading-tight sm:text-xs",
-                    active ? "text-[#143834]" : "text-[#1f4b46]",
-                  )}
-                >
-                  {d.labelHe}
-                </span>
                 {active && (
-                  <span className="absolute -left-0.5 -top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#2f6b63] text-white shadow">
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  <span className="absolute -left-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#2f6b63] text-white shadow-md">
+                    <Check className="h-4 w-4" strokeWidth={3} />
                   </span>
                 )}
+              </span>
+              <span
+                className={cn(
+                  "max-w-[120px] text-center text-sm font-extrabold leading-snug",
+                  active ? "text-[#143834]" : "text-slate-600",
+                )}
+                style={{ textAlign: "center" }}
+              >
+                {d.labelHe}
               </span>
             </button>
           );
         })}
       </div>
-      {error && <p className="text-center text-xs text-rose-600">{error}</p>}
+      {selected.length > 0 && (
+        <p className="text-center text-xs font-semibold text-[#2f6b63]" style={{ textAlign: "center" }}>
+          נבחרו:{" "}
+          {selected
+            .map((id) => DESTINATION_OPTIONS.find((o) => o.id === id)?.labelHe)
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
+      {error && (
+        <p className="text-center text-xs text-rose-600" style={{ textAlign: "center" }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

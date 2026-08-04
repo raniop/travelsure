@@ -209,11 +209,22 @@ const InsuranceProposal = () => {
   const toggleDest = (id: (typeof DESTINATION_OPTIONS)[number]["id"]) => {
     setForm((prev) => {
       const has = prev.destinations.includes(id);
-      return {
-        ...prev,
-        destinations: has ? prev.destinations.filter((d) => d !== id) : [...prev.destinations, id],
-      };
+      const destinations = has
+        ? prev.destinations.filter((d) => d !== id)
+        : [...prev.destinations, id];
+      const countriesDetail = destinations
+        .map((d) => DESTINATION_OPTIONS.find((o) => o.id === d)?.labelHe)
+        .filter(Boolean)
+        .join(", ");
+      return { ...prev, destinations, countriesDetail };
     });
+    if (errors.destinations) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.destinations;
+        return next;
+      });
+    }
   };
 
   const handleIdentityLookup = async () => {
@@ -242,7 +253,13 @@ const InsuranceProposal = () => {
             ...next.primary,
             firstNameHe: c.firstNameHe || next.primary.firstNameHe,
             lastNameHe: c.lastNameHe || next.primary.lastNameHe,
-            birthDate: birth && isValidDateDdMmYyyy(birth) ? birth : formatDateInput(birth.replace(/\D/g, "")) || next.primary.birthDate,
+            firstNameEn: c.firstNameEn || next.primary.firstNameEn,
+            lastNameEn: c.lastNameEn || next.primary.lastNameEn,
+            gender: c.gender || next.primary.gender,
+            birthDate:
+              birth && isValidDateDdMmYyyy(birth)
+                ? birth
+                : formatDateInput(birth.replace(/\D/g, "")) || next.primary.birthDate,
             idNumber: c.id || normalized,
           };
           next.mobile = c.phone || next.mobile;
@@ -301,7 +318,6 @@ const InsuranceProposal = () => {
         if (form.usaFrom && !isValidDateDdMmYyyy(form.usaFrom)) nextErrors.usaFrom = "תאריך לא תקין";
         if (form.usaTo && !isValidDateDdMmYyyy(form.usaTo)) nextErrors.usaTo = "תאריך לא תקין";
       }
-      if (!form.countriesDetail.trim()) nextErrors.countriesDetail = "נא לפרט מדינות";
       if (!form.mobile.trim()) nextErrors.mobile = "שדה חובה";
       if (!isValidEmail(form.email)) nextErrors.email = "דוא״ל לא תקין";
     }
@@ -1307,15 +1323,6 @@ const InsuranceProposal = () => {
                     </Field>
                   </div>
                 )}
-
-                <Field label="נא פרט את המדינות בהן בכוונתך לבקר" required error={errors.countriesDetail}>
-                  <Textarea
-                    className="min-h-[88px] rounded-2xl border-slate-200 bg-white text-right"
-                    placeholder="לדוגמה: צרפת, איטליה, ספרד"
-                    value={form.countriesDetail}
-                    onChange={(e) => setField("countriesDetail", e.target.value)}
-                  />
-                </Field>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="נייד" required error={errors.mobile}>

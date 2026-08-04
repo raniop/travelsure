@@ -3,6 +3,10 @@ export type ClaimCrmCustomer = {
   primaryName: string;
   firstNameHe: string;
   lastNameHe: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  /** Mapped from CRM sexType: 1=male, 2=female */
+  gender: "male" | "female" | "";
   birthDate: string;
   email: string;
   phone: string;
@@ -59,6 +63,14 @@ const personMatchesId = (person: Record<string, unknown>, normalizedId: string, 
   return padded === normalizedId || custIdRaw === rawId;
 };
 
+const normalizeCrmGender = (value: unknown): "male" | "female" | "" => {
+  if (value === null || value === undefined || value === "") return "";
+  const v = String(value).trim().toLowerCase();
+  if (v === "1" || v === "m" || v === "male" || v === "זכר") return "male";
+  if (v === "2" || v === "f" || v === "female" || v === "נקבה") return "female";
+  return "";
+};
+
 const mapPerson = (person: Record<string, unknown>, fallbackId: string): ClaimCrmCustomer => {
   const primaryName = pickStr(person.clientName, person.name, person.fullName);
   const firstNameHe = pickStr(
@@ -77,15 +89,32 @@ const mapPerson = (person: Record<string, unknown>, fallbackId: string): ClaimCr
     person.lname,
     primaryName.split(/\s+/).slice(1).join(" ")
   );
+  const firstNameEn = pickStr(
+    person.engFname,
+    person.firstNameEn,
+    person.firstNameEnglish,
+    person.engFirstName
+  );
+  const lastNameEn = pickStr(
+    person.engLname,
+    person.lastNameEn,
+    person.lastNameEnglish,
+    person.engLastName
+  );
 
   return {
     id: fallbackId,
     primaryName: primaryName || `${firstNameHe} ${lastNameHe}`.trim(),
     firstNameHe,
     lastNameHe,
+    firstNameEn,
+    lastNameEn,
+    gender: normalizeCrmGender(
+      person.sexType ?? person.SexType ?? person.gender ?? person.sex ?? person.Sex
+    ),
     birthDate: normalizeDate(person.birthDate || person.dateOfBirth || person.dob || person.bDate),
     email: pickStr(person.email, person.mail, person.eMail, person.emailAddress),
-    phone: pickStr(person.phone, person.mobile, person.cell, person.tel, person.telephone),
+    phone: pickStr(person.mobile, person.phone, person.cell, person.tel, person.telephone),
   };
 };
 
