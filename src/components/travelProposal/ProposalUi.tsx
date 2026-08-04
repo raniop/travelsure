@@ -96,7 +96,7 @@ const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => 
       src={src}
       alt=""
       draggable={false}
-      className="pointer-events-none h-[88px] w-[88px] object-contain sm:h-[98px] sm:w-[98px]"
+      className="pointer-events-none h-[96px] w-[96px] object-contain sm:h-[108px] sm:w-[108px]"
     />
   );
 };
@@ -139,7 +139,7 @@ export function DestinationPicker({
                 >
                   <DestMapIcon id={d.id} active={active} />
                   <span
-                    className="mt-[-2px] max-w-[120px] text-center text-[12px] font-semibold leading-snug text-[#3d8bc4] sm:max-w-[132px] sm:text-[13px]"
+                    className="mt-0 max-w-[120px] text-center text-[12px] font-semibold leading-snug text-[#2f6fa8] sm:max-w-[132px] sm:text-[13px]"
                     style={{ textAlign: "center" }}
                   >
                     {d.labelHe}
