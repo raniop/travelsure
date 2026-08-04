@@ -358,14 +358,22 @@ const InsuranceProposal = () => {
     }
 
     if (current === "payment") {
-      if (!form.payerName.trim()) nextErrors.payerName = "שדה חובה";
-      if (!isValidIsraeliId(form.payerId)) nextErrors.payerId = "ת.ז לא תקינה";
-      if (!isValidCardNumber(form.cardNumber)) nextErrors.cardNumber = "מספר כרטיס לא תקין";
-      if (!isValidCardExpiry(form.cardExp)) nextErrors.cardExp = "תוקף לא תקין";
-      if (!/^\d{3,4}$/.test(form.cardCvv)) nextErrors.cardCvv = "CVV לא תקין";
-      if (!form.paymentConsent) nextErrors.paymentConsent = "יש לאשר חיוב";
-      if (!form.declarationsAccepted) nextErrors.declarationsAccepted = "יש לאשר הצהרות";
-      if (!isValidDateDdMmYyyy(form.signatureDate)) nextErrors.signatureDate = "תאריך לא תקין";
+      // Payment details are optional at proposal stage — validate only if filled
+      if (form.payerId.trim() && !isValidIsraeliId(form.payerId)) {
+        nextErrors.payerId = "ת.ז לא תקינה";
+      }
+      if (form.cardNumber.trim() && !isValidCardNumber(form.cardNumber)) {
+        nextErrors.cardNumber = "מספר כרטיס לא תקין";
+      }
+      if (form.cardExp.trim() && !isValidCardExpiry(form.cardExp)) {
+        nextErrors.cardExp = "תוקף לא תקין";
+      }
+      if (form.cardCvv.trim() && !/^\d{3,4}$/.test(form.cardCvv)) {
+        nextErrors.cardCvv = "CVV לא תקין";
+      }
+      if (form.signatureDate.trim() && !isValidDateDdMmYyyy(form.signatureDate)) {
+        nextErrors.signatureDate = "תאריך לא תקין";
+      }
     }
 
     setErrors(nextErrors);
@@ -411,11 +419,6 @@ const InsuranceProposal = () => {
   };
 
   const handleSubmit = async () => {
-    if (!form.declarationsAccepted || !form.paymentConsent) {
-      toast({ title: "יש לאשר הצהרות ותשלום", variant: "destructive" });
-      setStep("payment");
-      return;
-    }
     setIsSending(true);
     setStep("sending");
     try {
@@ -1509,7 +1512,9 @@ const InsuranceProposal = () => {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h2 className="text-lg font-extrabold text-[#143834]">תשלום בכרטיס אשראי</h2>
-                    <p className="mt-1 text-xs text-slate-500">פרטי בעל הכרטיס והצהרות</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      אופציונלי בשלב זה — אפשר להמשיך גם בלי פרטי כרטיס
+                    </p>
                   </div>
                   <Button
                     type="button"
@@ -1522,14 +1527,14 @@ const InsuranceProposal = () => {
                   </Button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="שם בעל הכרטיס" required error={errors.payerName}>
+                  <Field label="שם בעל הכרטיס" error={errors.payerName}>
                     <Input
                       className={inputClass}
                       value={form.payerName}
                       onChange={(e) => setField("payerName", e.target.value)}
                     />
                   </Field>
-                  <Field label="מספר ת.ז" required error={errors.payerId}>
+                  <Field label="מספר ת.ז" error={errors.payerId}>
                     <Input
                       className={inputClass}
                       inputMode="numeric"
@@ -1548,7 +1553,7 @@ const InsuranceProposal = () => {
                       }
                     />
                   </Field>
-                  <Field label="מס׳ כרטיס" required error={errors.cardNumber}>
+                  <Field label="מס׳ כרטיס" error={errors.cardNumber}>
                     <Input
                       className={inputClass}
                       dir="ltr"
@@ -1559,7 +1564,7 @@ const InsuranceProposal = () => {
                       }
                     />
                   </Field>
-                  <Field label="בתוקף עד (MM/YY)" required error={errors.cardExp}>
+                  <Field label="בתוקף עד (MM/YY)" error={errors.cardExp}>
                     <Input
                       className={inputClass}
                       dir="ltr"
@@ -1568,7 +1573,7 @@ const InsuranceProposal = () => {
                       onChange={(e) => setField("cardExp", formatCardExpInput(e.target.value))}
                     />
                   </Field>
-                  <Field label="CVV" required error={errors.cardCvv}>
+                  <Field label="CVV" error={errors.cardCvv}>
                     <Input
                       className={inputClass}
                       dir="ltr"
@@ -1580,7 +1585,7 @@ const InsuranceProposal = () => {
                       }
                     />
                   </Field>
-                  <Field label="תאריך חתימה" required error={errors.signatureDate}>
+                  <Field label="תאריך חתימה" error={errors.signatureDate}>
                     <Input
                       className={inputClass}
                       dir="ltr"
@@ -1596,12 +1601,7 @@ const InsuranceProposal = () => {
                     onCheckedChange={(c) => setField("paymentConsent", !!c)}
                     className="mt-0.5"
                   />
-                  <span>
-                    אני מאשר/ת את נכונות פרטי התשלום ואת החיוב בכרטיס האשראי
-                    {errors.paymentConsent && (
-                      <span className="mt-1 block text-xs text-rose-600">{errors.paymentConsent}</span>
-                    )}
-                  </span>
+                  <span>אני מאשר/ת את נכונות פרטי התשלום ואת החיוב בכרטיס האשראי</span>
                 </label>
                 <label className="flex items-start gap-2 text-sm text-slate-700">
                   <Checkbox
@@ -1609,14 +1609,7 @@ const InsuranceProposal = () => {
                     onCheckedChange={(c) => setField("declarationsAccepted", !!c)}
                     className="mt-0.5"
                   />
-                  <span>
-                    קראתי ואני מאשר/ת את הצהרות המועמדים לביטוח ומסירת הפרטים לאופיר ושות׳
-                    {errors.declarationsAccepted && (
-                      <span className="mt-1 block text-xs text-rose-600">
-                        {errors.declarationsAccepted}
-                      </span>
-                    )}
-                  </span>
+                  <span>קראתי ואני מאשר/ת את הצהרות המועמדים לביטוח ומסירת הפרטים לאופיר ושות׳</span>
                 </label>
                 <label className="flex items-start gap-2 text-sm text-slate-700">
                   <Checkbox
