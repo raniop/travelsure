@@ -331,7 +331,6 @@ export type CoverageCardProps = {
   title: string;
   description?: string;
   footnote?: string;
-  priceHint?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   icon?: ReactNode;
@@ -343,7 +342,6 @@ export function CoverageCard({
   title,
   description,
   footnote,
-  priceHint,
   checked,
   onChange,
   icon,
@@ -370,19 +368,7 @@ export function CoverageCard({
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3.5">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-[15px] font-extrabold text-[#143834]">{title}</p>
-              {priceHint && (
-                <span
-                  className={cn(
-                    "text-xs font-bold",
-                    checked ? "text-[#2f6b63]" : "text-[#143834]",
-                  )}
-                >
-                  {priceHint}
-                </span>
-              )}
-            </div>
+            <p className="text-[15px] font-extrabold text-[#143834]">{title}</p>
             {description && (
               <p className="mt-1.5 text-[12px] leading-relaxed text-slate-600">{description}</p>
             )}

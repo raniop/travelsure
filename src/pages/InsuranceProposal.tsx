@@ -749,7 +749,6 @@ const InsuranceProposal = () => {
     label,
     description,
     footnote,
-    priceHint,
     checked,
     onChange,
     icon,
@@ -759,7 +758,6 @@ const InsuranceProposal = () => {
     label: string;
     description?: string;
     footnote?: string;
-    priceHint?: string;
     checked: boolean;
     onChange: (v: boolean) => void;
     icon?: ReactNode;
@@ -770,7 +768,6 @@ const InsuranceProposal = () => {
       title={label}
       description={description}
       footnote={footnote}
-      priceHint={priceHint}
       checked={checked}
       onChange={onChange}
       icon={icon}
@@ -792,7 +789,7 @@ const InsuranceProposal = () => {
             ה · תכנית הביטוח — פירסט קלאס
           </h3>
           <p className="mt-1 text-sm text-slate-500">
-            ביטוח רפואי בסיסי כלול. אפשר להסיר כיסויים כלולים או להוסיף הרחבות בתשלום.
+            סמנו את הכיסויים הרלוונטיים להצעה. זהו טופס לבדיקה בהראל — ללא תמחור.
           </p>
         </div>
 
@@ -805,7 +802,6 @@ const InsuranceProposal = () => {
             onChange={(v) => patchPersonPlan(key, { optOutSearchRescue: !v })}
             icon={COVERAGE_ICONS.rescue}
             variant="included"
-            priceHint="$0.00"
             footnote="ניתן להסיר כיסוי זה"
           />
           <PlanCheck
@@ -815,7 +811,6 @@ const InsuranceProposal = () => {
             onChange={(v) => patchPersonPlan(key, { optOutThirdParty: !v })}
             icon={COVERAGE_ICONS.thirdParty}
             variant="included"
-            priceHint="$0.00"
             footnote="ניתן להסיר כיסוי זה"
           />
           <PlanCheck
@@ -831,11 +826,10 @@ const InsuranceProposal = () => {
               }
             }}
             icon={COVERAGE_ICONS.baggage}
-            priceHint="הרחבה"
           />
           <PlanCheck
             label="כבודה מורחבת — פריט יקר ערך"
-            description="הרחבה לכיסוי פריט יקר ערך עד $2,000. דורשת כבודה בסיסית."
+            description="כיסוי לפריט יקר ערך עד $2,000. דורש בחירה של כבודה בסיסית."
             checked={plan.baggageValuables}
             onChange={(v) => {
               if (v) {
@@ -845,7 +839,6 @@ const InsuranceProposal = () => {
               }
             }}
             icon={COVERAGE_ICONS.camera}
-            priceHint="הרחבה"
             footnote={plan.baggageValuables ? "סמנו איזה פריט לכלול" : undefined}
           >
             <div className="space-y-2">
@@ -891,7 +884,6 @@ const InsuranceProposal = () => {
             checked={plan.cancellation}
             onChange={(v) => patchPersonPlan(key, { cancellation: v })}
             icon={COVERAGE_ICONS.cancel}
-            priceHint="הרחבה"
           />
           <PlanCheck
             label="ביטול וקיצור נסיעה מורחב"
@@ -899,7 +891,6 @@ const InsuranceProposal = () => {
             checked={plan.cancellationExpanded}
             onChange={(v) => patchPersonPlan(key, { cancellationExpanded: v })}
             icon={COVERAGE_ICONS.cancel}
-            priceHint="הרחבה"
           />
         </div>
 
@@ -911,7 +902,6 @@ const InsuranceProposal = () => {
             checked={plan.priorCondition}
             onChange={(v) => patchPersonPlan(key, { priorCondition: v })}
             icon={COVERAGE_ICONS.health}
-            priceHint="הרחבה"
           />
           <PlanCheck
             label="הרחבה להיריון"
@@ -919,7 +909,6 @@ const InsuranceProposal = () => {
             checked={plan.pregnancy}
             onChange={(v) => patchPersonPlan(key, { pregnancy: v })}
             icon={COVERAGE_ICONS.pregnancy}
-            priceHint="הרחבה"
           />
         </div>
 
@@ -931,7 +920,6 @@ const InsuranceProposal = () => {
             checked={plan.adventureSports}
             onChange={(v) => patchPersonPlan(key, { adventureSports: v })}
             icon={COVERAGE_ICONS.adventure}
-            priceHint="הרחבה"
           >
             <div className="grid grid-cols-2 gap-2">
               <Field label="מ-">
