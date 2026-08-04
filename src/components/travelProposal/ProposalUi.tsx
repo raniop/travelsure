@@ -414,6 +414,8 @@ export type CoverageCardProps = {
   onChange: (v: boolean) => void;
   icon?: ReactNode;
   variant?: "included" | "optional" | "optout";
+  /** Required by health declaration — cannot be unchecked */
+  locked?: boolean;
   children?: ReactNode;
 };
 
@@ -427,36 +429,52 @@ export function CoverageCard({
   onChange,
   icon,
   variant = "optional",
+  locked = false,
   children,
 }: CoverageCardProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const detailText = infoDetail || description;
+  const toggle = () => {
+    if (locked) return;
+    onChange(!checked);
+  };
 
   return (
     <div
       className={cn(
         "overflow-hidden rounded-2xl bg-white shadow-[0_4px_18px_rgba(20,60,110,0.08)] transition duration-200",
         checked ? "ring-[1.5px] ring-[#1a6bb5]" : "ring-1 ring-[#d5e4f0]",
+        locked && "ring-[#1a6bb5]",
       )}
     >
       <div
         className={cn(
           "flex w-full items-stretch",
-          checked ? "bg-[#eaf4fb]" : "bg-white",
+          checked || locked ? "bg-[#eaf4fb]" : "bg-white",
         )}
       >
         {/* RTL: first = right — selection circle */}
         <button
           type="button"
-          onClick={() => onChange(!checked)}
+          onClick={toggle}
+          disabled={locked}
           aria-pressed={checked}
-          aria-label={checked ? `הסרת ${title}` : `בחירת ${title}`}
-          className="flex shrink-0 items-center pe-2 ps-3"
+          aria-label={
+            locked
+              ? `${title} — חובה לפי הצהרת בריאות`
+              : checked
+                ? `הסרת ${title}`
+                : `בחירת ${title}`
+          }
+          className={cn(
+            "flex shrink-0 items-center pe-2 ps-3",
+            locked && "cursor-not-allowed",
+          )}
         >
           <span
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full border-[2.5px] transition",
-              checked
+              checked || locked
                 ? "border-[#2f9e3a] bg-[#2f9e3a] text-white"
                 : "border-[#9bb8d4] bg-white text-transparent",
             )}
@@ -468,8 +486,12 @@ export function CoverageCard({
         {/* Icon */}
         <button
           type="button"
-          onClick={() => onChange(!checked)}
-          className="flex shrink-0 items-center px-1 text-[#1a6bb5]"
+          onClick={toggle}
+          disabled={locked}
+          className={cn(
+            "flex shrink-0 items-center px-1 text-[#1a6bb5]",
+            locked && "cursor-not-allowed",
+          )}
           tabIndex={-1}
           aria-hidden
         >
@@ -479,8 +501,12 @@ export function CoverageCard({
         {/* Title + coverage detail (limits OK, no premium price) */}
         <button
           type="button"
-          onClick={() => onChange(!checked)}
-          className="min-w-0 flex-1 px-2 py-3.5 text-right"
+          onClick={toggle}
+          disabled={locked}
+          className={cn(
+            "min-w-0 flex-1 px-2 py-3.5 text-right",
+            locked && "cursor-not-allowed",
+          )}
         >
           <p className="text-[15px] font-bold leading-snug text-[#0d3b6e]">{title}</p>
           {description && (
@@ -488,8 +514,13 @@ export function CoverageCard({
               {description}
             </p>
           )}
-          {footnote && <p className="mt-1.5 text-[11px] text-[#7a93ad]">{footnote}</p>}
-          {variant === "included" && checked && (
+          {locked && (
+            <p className="mt-1.5 text-[11px] font-bold text-[#1a6bb5]">
+              חובה לפי הצהרת הבריאות — לא ניתן להסיר
+            </p>
+          )}
+          {footnote && !locked && <p className="mt-1.5 text-[11px] text-[#7a93ad]">{footnote}</p>}
+          {variant === "included" && checked && !locked && (
             <p className="mt-1 text-[11px] font-semibold text-[#1a6bb5]">כלול ברובד הבסיס</p>
           )}
         </button>
@@ -533,6 +564,11 @@ export function CoverageCard({
               <p className="whitespace-pre-line">
                 {detailText || "פרטי הכיסוי יופיעו בהצעה לאחר חיתום בהראל."}
               </p>
+              {locked && (
+                <p className="rounded-xl bg-[#eaf4fb] px-3 py-2 text-xs font-semibold text-[#0d3b6e]">
+                  כיסוי זה חובה לפי תשובות בהצהרת הבריאות ולא ניתן להסרה.
+                </p>
+              )}
               <p className="text-xs text-[#7a93ad]">
                 הפירוט להמחשה לפי הראל · הכיסוי הסופי בהתאם לתנאי הפוליסה ולחיתום.
               </p>

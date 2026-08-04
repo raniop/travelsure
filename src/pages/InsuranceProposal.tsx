@@ -18,9 +18,12 @@ import {
   isValidEmail,
   isValidIsraeliId,
   markAllHealthNo,
+  requiresPriorConditionCoverage,
+  requiresPregnancyCoverage,
 } from "@/lib/travelProposal/formDefaults";
 import {
   DESTINATION_OPTIONS,
+  PERSON_KEYS,
   PERSON_LABELS_HE,
   VALUABLE_OPTIONS,
   type InsuredPerson,
@@ -163,6 +166,34 @@ const InsuranceProposal = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [step]);
+
+  // Lock required health-driven coverages when entering the plan step
+  useEffect(() => {
+    if (step !== "plan") return;
+    setForm((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const key of PERSON_KEYS) {
+        if (!next[key].included) continue;
+        const health = next[key].health;
+        const plan = next[key].plan;
+        const needPrior = requiresPriorConditionCoverage(health);
+        const needPreg = requiresPregnancyCoverage(health);
+        if ((needPrior && !plan.priorCondition) || (needPreg && !plan.pregnancy)) {
+          changed = true;
+          next[key] = {
+            ...next[key],
+            plan: {
+              ...plan,
+              priorCondition: needPrior ? true : plan.priorCondition,
+              pregnancy: needPreg ? true : plan.pregnancy,
+            },
+          };
+        }
+      }
+      return changed ? next : prev;
+    });
   }, [step]);
 
   const progressSteps = STEPS;
@@ -793,6 +824,7 @@ const InsuranceProposal = () => {
     onChange,
     icon,
     variant = "optional",
+    locked,
     children,
   }: {
     label: string;
@@ -803,6 +835,7 @@ const InsuranceProposal = () => {
     onChange: (v: boolean) => void;
     icon?: ReactNode;
     variant?: "included" | "optional" | "optout";
+    locked?: boolean;
     children?: ReactNode;
   }) => (
     <CoverageCard
@@ -814,6 +847,7 @@ const InsuranceProposal = () => {
       onChange={onChange}
       icon={icon}
       variant={variant}
+      locked={locked}
     >
       {children}
     </CoverageCard>
@@ -821,6 +855,9 @@ const InsuranceProposal = () => {
 
   const renderPlanFor = (key: PersonKey) => {
     const plan = form[key].plan;
+    const health = form[key].health;
+    const priorLocked = requiresPriorConditionCoverage(health);
+    const pregnancyLocked = requiresPregnancyCoverage(health);
     return (
       <div className="space-y-5">
         <div className="tp-center space-y-3 text-center" style={{ textAlign: "center" }}>
@@ -988,16 +1025,24 @@ const InsuranceProposal = () => {
           <PlanCheck
             label="החמרה של מצב רפואי קודם"
             description="כיסוי להחמרה של מצב רפואי קודם בחו״ל, בהתאם לתנאי הפוליסה ולחיתום הרפואי."
-            checked={plan.priorCondition}
-            onChange={(v) => patchPersonPlan(key, { priorCondition: v })}
+            checked={plan.priorCondition || priorLocked}
+            onChange={(v) => {
+              if (priorLocked) return;
+              patchPersonPlan(key, { priorCondition: v });
+            }}
             icon={COVERAGE_ICONS.health}
+            locked={priorLocked}
           />
           <PlanCheck
             label="הרחבה להיריון"
             description="למבוטחת שגילה עד 42, היריון עד שבוע 32 (כולל), בהתאם לתנאי הפוליסה."
-            checked={plan.pregnancy}
-            onChange={(v) => patchPersonPlan(key, { pregnancy: v })}
+            checked={plan.pregnancy || pregnancyLocked}
+            onChange={(v) => {
+              if (pregnancyLocked) return;
+              patchPersonPlan(key, { pregnancy: v });
+            }}
             icon={COVERAGE_ICONS.pregnancy}
+            locked={pregnancyLocked}
           />
           <PlanCheck
             label="ספורט אתגרי"

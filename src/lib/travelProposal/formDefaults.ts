@@ -29,6 +29,21 @@ export const emptyHealth = (): PersonHealth => ({
   q52HighRisk: "",
 });
 
+/**
+ * Harel: positive health answers that require purchasing
+ * «החמרה של מצב רפואי קודם» — locked on the coverages step.
+ */
+export const requiresPriorConditionCoverage = (h: PersonHealth): boolean => {
+  if (h.q2 === "yes") return true;
+  if (h.q3 === "yes" && h.q31 === "yes") return true;
+  if (h.q4 === "yes") return true;
+  return false;
+};
+
+/** Pregnancy (non high-risk) requires the pregnancy extension */
+export const requiresPregnancyCoverage = (h: PersonHealth): boolean =>
+  h.q5Pregnant === "yes" && h.q52HighRisk !== "yes";
+
 export const emptyPlan = (): PersonPlan => ({
   optOutSearchRescue: false,
   optOutThirdParty: false,
