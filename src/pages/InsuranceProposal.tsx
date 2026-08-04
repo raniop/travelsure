@@ -820,28 +820,69 @@ const InsuranceProposal = () => {
           />
           <PlanCheck
             label="כבודה — אובדן או גניבה"
-            description="מטען אישי נלווה לכל תקופת הביטוח"
+            description="כיסוי בסיסי למטען אישי נלווה לכל תקופת הביטוח"
             checked={plan.baggage}
-            onChange={(v) => patchPersonPlan(key, { baggage: v })}
+            onChange={(v) => {
+              if (v) {
+                patchPersonPlan(key, { baggage: true });
+              } else {
+                // Removing basic also clears the extended valuables tier
+                patchPersonPlan(key, { baggage: false, baggageValuables: false, valuableItems: [] });
+              }
+            }}
             icon={COVERAGE_ICONS.baggage}
             priceHint="הרחבה"
+          />
+          <PlanCheck
+            label="כבודה מורחבת — פריט יקר ערך"
+            description="הרחבה לכיסוי פריט יקר ערך עד $2,000. דורשת כבודה בסיסית."
+            checked={plan.baggageValuables}
+            onChange={(v) => {
+              if (v) {
+                patchPersonPlan(key, { baggage: true, baggageValuables: true });
+              } else {
+                patchPersonPlan(key, { baggageValuables: false, valuableItems: [] });
+              }
+            }}
+            icon={COVERAGE_ICONS.camera}
+            priceHint="הרחבה"
+            footnote={plan.baggageValuables ? "סמנו איזה פריט לכלול" : undefined}
           >
-            <div className="grid gap-2">
-              <p className="text-[11px] font-semibold text-slate-600">פריט יקר ערך עד $2,000</p>
-              {VALUABLE_OPTIONS.map((v) => (
-                <label key={v.id} className="flex items-center gap-2 text-xs">
-                  <Checkbox
-                    checked={plan.valuableItems.includes(v.id)}
-                    onCheckedChange={(c) => {
-                      const next = c
-                        ? [...plan.valuableItems, v.id]
-                        : plan.valuableItems.filter((x) => x !== v.id);
-                      patchPersonPlan(key, { valuableItems: next });
-                    }}
-                  />
-                  {v.labelHe}
-                </label>
-              ))}
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-600">בחרו פריט יקר ערך עד $2,000</p>
+              <div className="grid gap-2">
+                {VALUABLE_OPTIONS.map((v) => {
+                  const on = plan.valuableItems.includes(v.id);
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => {
+                        const next = on
+                          ? plan.valuableItems.filter((x) => x !== v.id)
+                          : [...plan.valuableItems, v.id];
+                        patchPersonPlan(key, { valuableItems: next });
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-right text-xs transition ${
+                        on
+                          ? "border-[#2f6b63]/35 bg-white text-[#143834]"
+                          : "border-transparent bg-white/70 text-slate-700 hover:border-[#2f6b63]/20"
+                      }`}
+                    >
+                      <span className="min-w-0 flex-1 font-semibold">{v.labelHe}</span>
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                          on
+                            ? "border-[#2f6b63] bg-[#2f6b63] text-white"
+                            : "border-slate-300 bg-white text-transparent"
+                        }`}
+                      >
+                        <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </PlanCheck>
           <PlanCheck

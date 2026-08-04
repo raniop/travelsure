@@ -33,6 +33,7 @@ export const emptyPlan = (): PersonPlan => ({
   optOutSearchRescue: false,
   optOutThirdParty: false,
   baggage: false,
+  baggageValuables: false,
   valuableItems: [],
   cancellation: false,
   cancellationExpanded: false,

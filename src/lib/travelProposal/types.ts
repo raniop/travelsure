@@ -56,6 +56,8 @@ export type PersonPlan = {
   /** Opt-out of included third-party liability */
   optOutThirdParty: boolean;
   baggage: boolean;
+  /** Extended baggage — valuable item up to $2,000 */
+  baggageValuables: boolean;
   valuableItems: ValuableItemId[];
   cancellation: boolean;
   cancellationExpanded: boolean;
