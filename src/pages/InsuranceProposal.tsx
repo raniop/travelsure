@@ -1481,18 +1481,18 @@ const InsuranceProposal = () => {
             {step === "intro" && (
               <div className="tp-center mx-auto max-w-md space-y-5 text-center">
                 <h2 className="text-center text-xl font-bold text-[#143834]">איך זה עובד?</h2>
-                <ol className="mx-auto max-w-sm space-y-3 text-sm text-slate-600">
+                <ol className="mx-auto w-full max-w-sm space-y-3 text-sm text-slate-600" dir="rtl">
                   {[
-                    "מזים תעודת זהות — ואנחנו ממלאים אוטומטית מהמערכת",
+                    "מזינים תעודת זהות — ואנחנו ממלאים אוטומטית מהמערכת",
                     "משלימים פרטי נסיעה, מבוטחים והצהרת בריאות",
                     "בוחרים כיסויים ומזינים תשלום",
                     "שולחים — והטופס הרשמי של הראל מגיע לסוכנות",
                   ].map((text, i) => (
-                    <li key={text} className="flex items-center justify-center gap-3 text-right">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">
-                        {i + 1}
+                    <li key={text} className="flex w-full items-start gap-3 text-right">
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-xs font-bold text-[#1f4b46]">
+                        {["א", "ב", "ג", "ד"][i]}
                       </span>
-                      <span className="flex-1">{text}</span>
+                      <span className="min-w-0 flex-1 text-right leading-relaxed">{text}</span>
                     </li>
                   ))}
                 </ol>
