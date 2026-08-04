@@ -1399,6 +1399,11 @@ const InsuranceProposal = () => {
         .proposal-page .tp-center p {
           text-align: center !important;
         }
+        .proposal-page .tp-steps,
+        .proposal-page .tp-steps li,
+        .proposal-page .tp-steps .tp-step-text {
+          text-align: right !important;
+        }
         @keyframes tp-rise {
           from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
@@ -1453,26 +1458,31 @@ const InsuranceProposal = () => {
           <div className="h-1.5 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
           <div className="p-5 sm:p-7">
             {step === "intro" && (
-              <div className="tp-center mx-auto max-w-md space-y-5 text-center">
-                <h2 className="text-center text-xl font-bold text-[#143834]">איך זה עובד?</h2>
-                <ol className="mx-auto w-full max-w-sm space-y-3 text-sm text-slate-600" dir="rtl">
+              <div className="mx-auto max-w-md space-y-5">
+                <h2 className="tp-center text-center text-xl font-bold text-[#143834]">איך זה עובד?</h2>
+                <ol className="tp-steps mx-auto w-full max-w-[22rem] space-y-3.5 text-sm text-slate-600" dir="rtl">
                   {[
                     "מזינים תעודת זהות — ואנחנו ממלאים אוטומטית מהמערכת",
                     "משלימים פרטי נסיעה, מבוטחים והצהרת בריאות",
                     "בוחרים כיסויים לפי הצורך",
                     "שולחים — והטופס הרשמי של הראל מגיע לסוכנות",
                   ].map((text, i) => (
-                    <li key={text} className="flex w-full items-center gap-3 text-right">
+                    <li
+                      key={text}
+                      className="grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-3"
+                    >
                       <span
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f4f1] text-[#1f4b46]"
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e8f4f1] text-[13px] font-bold leading-none text-[#1f4b46]"
                         aria-hidden
                       >
-                        {/* Hebrew glyphs sit high/left in the em-box — nudge for optical center */}
-                        <span className="block text-[13px] font-bold leading-none translate-x-[0.08em] translate-y-[0.12em]">
+                        <span
+                          className="block"
+                          style={{ transform: "translate(0.05em, 0.06em)" }}
+                        >
                           {["א", "ב", "ג", "ד"][i]}
                         </span>
                       </span>
-                      <span className="min-w-0 flex-1 text-right leading-snug">{text}</span>
+                      <span className="tp-step-text leading-snug">{text}</span>
                     </li>
                   ))}
                 </ol>
