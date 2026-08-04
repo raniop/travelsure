@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -163,6 +163,9 @@ const InsuranceProposal = () => {
   const [crmName, setCrmName] = useState("");
   const [activeHealthPerson, setActiveHealthPerson] = useState<PersonKey>("primary");
   const [activePlanPerson, setActivePlanPerson] = useState<PersonKey>("primary");
+  const [personLookupKey, setPersonLookupKey] = useState<PersonKey | null>(null);
+  const [proposalNumber, setProposalNumber] = useState("");
+  const personLookupDoneRef = useRef<Partial<Record<PersonKey, string>>>({});
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -232,6 +235,86 @@ const InsuranceProposal = () => {
 
   const patchPerson = (key: PersonKey, patch: Partial<InsuredPerson>) => {
     setForm((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  };
+
+  const applyCrmCustomerToPerson = (
+    key: PersonKey,
+    normalized: string,
+    c: {
+      id: string;
+      firstNameHe: string;
+      lastNameHe: string;
+      firstNameEn: string;
+      lastNameEn: string;
+      gender: "" | "male" | "female";
+      birthDate: string;
+    },
+  ) => {
+    const birth = formatClaimDateDisplay(c.birthDate);
+    const birthDate =
+      birth && isValidDateDdMmYyyy(birth)
+        ? birth
+        : formatDateInput(birth.replace(/\D/g, "")) || "";
+
+    setForm((prev) => {
+      const person = prev[key];
+      const gender = c.gender || person.gender;
+      return {
+        ...prev,
+        [key]: {
+          ...person,
+          idNumber: c.id || normalized,
+          firstNameHe: c.firstNameHe || person.firstNameHe,
+          lastNameHe: c.lastNameHe || person.lastNameHe,
+          firstNameEn: c.firstNameEn || person.firstNameEn,
+          lastNameEn: c.lastNameEn || person.lastNameEn,
+          gender,
+          birthDate: birthDate || person.birthDate,
+          health:
+            gender === "male"
+              ? {
+                  ...person.health,
+                  q5Pregnant: "",
+                  q51Week: "",
+                  q52HighRisk: "",
+                }
+              : person.health,
+          plan: gender === "male" ? { ...person.plan, pregnancy: false } : person.plan,
+        },
+      };
+    });
+  };
+
+  const lookupPersonById = async (key: PersonKey, rawId: string) => {
+    const digits = rawId.replace(/\D/g, "");
+    if (digits.length !== 9 || !isValidIsraeliId(digits)) return;
+    const normalized = normalizeIsraeliId(digits);
+    if (personLookupDoneRef.current[key] === normalized) return;
+
+    setPersonLookupKey(key);
+    try {
+      const result = await lookupClaimCustomerById(normalized);
+      personLookupDoneRef.current[key] = normalized;
+      if (!result.ok) return;
+      applyCrmCustomerToPerson(key, normalized, result.customer);
+      toast({
+        title: "מצאנו את המבוטח במערכת",
+        description: `${PERSON_LABELS_HE[key]}: מילאנו אוטומטית את הפרטים הידועים`,
+      });
+    } finally {
+      setPersonLookupKey((prev) => (prev === key ? null : prev));
+    }
+  };
+
+  const onPersonIdChange = (key: PersonKey, value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 9);
+    if (personLookupDoneRef.current[key] && personLookupDoneRef.current[key] !== normalizeIsraeliId(digits)) {
+      delete personLookupDoneRef.current[key];
+    }
+    patchPerson(key, { idNumber: digits });
+    if (digits.length === 9 && isValidIsraeliId(digits)) {
+      void lookupPersonById(key, digits);
+    }
   };
 
   const patchPersonHealth = (key: PersonKey, patch: Partial<InsuredPerson["health"]>) => {
@@ -425,6 +508,9 @@ const InsuranceProposal = () => {
       if (form.signatureDate.trim() && !isValidDateDdMmYyyy(form.signatureDate)) {
         nextErrors.signatureDate = "תאריך לא תקין";
       }
+      if (!form.declarationsAccepted) {
+        nextErrors.declarationsAccepted = "חובה לאשר את ההצהרות";
+      }
     }
 
     setErrors(nextErrors);
@@ -473,7 +559,8 @@ const InsuranceProposal = () => {
     setIsSending(true);
     setStep("sending");
     try {
-      await submitTravelProposal(form, files);
+      const result = await submitTravelProposal(form, files);
+      setProposalNumber(result.proposalNumber || "");
       setStep("success");
       toast({ title: "ההצעה נשלחה בהצלחה" });
     } catch (err) {
@@ -552,15 +639,18 @@ const InsuranceProposal = () => {
             </div>
           </Field>
           <Field label="מספר ת.ז" required error={errors[`${key}.idNumber`]}>
-            <Input
-              className={inputClass}
-              inputMode="numeric"
-              maxLength={9}
-              value={person.idNumber}
-              onChange={(e) =>
-                patchPerson(key, { idNumber: e.target.value.replace(/\D/g, "").slice(0, 9) })
-              }
-            />
+            <div className="relative">
+              <Input
+                className={inputClass}
+                inputMode="numeric"
+                maxLength={9}
+                value={person.idNumber}
+                onChange={(e) => onPersonIdChange(key, e.target.value)}
+              />
+              {personLookupKey === key && (
+                <Loader2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#2f6b63]" />
+              )}
+            </div>
           </Field>
           <Field label="שם משפחה בעברית" required error={errors[`${key}.lastNameHe`]}>
             <Input
@@ -1758,30 +1848,28 @@ const InsuranceProposal = () => {
                   </Field>
                 </div>
 
-                <label className="flex items-start gap-2 text-sm text-slate-700">
-                  <Checkbox
-                    checked={form.paymentConsent}
-                    onCheckedChange={(c) => setField("paymentConsent", !!c)}
-                    className="mt-0.5"
-                  />
-                  <span>אני מאשר/ת את נכונות פרטי התשלום ואת החיוב בכרטיס האשראי</span>
-                </label>
-                <label className="flex items-start gap-2 text-sm text-slate-700">
-                  <Checkbox
-                    checked={form.declarationsAccepted}
-                    onCheckedChange={(c) => setField("declarationsAccepted", !!c)}
-                    className="mt-0.5"
-                  />
-                  <span>קראתי ואני מאשר/ת את הצהרות המועמדים לביטוח ומסירת הפרטים לאופיר ושות׳</span>
-                </label>
-                <label className="flex items-start gap-2 text-sm text-slate-700">
-                  <Checkbox
-                    checked={form.marketingConsentExtra}
-                    onCheckedChange={(c) => setField("marketingConsentExtra", !!c)}
-                    className="mt-0.5"
-                  />
-                  <span>הסכמה לקבלת דברי פרסומת נוספת מקבוצת הראל</span>
-                </label>
+                <div>
+                  <label className="flex items-start gap-2 text-sm text-slate-700">
+                    <Checkbox
+                      checked={form.declarationsAccepted}
+                      onCheckedChange={(c) => {
+                        setField("declarationsAccepted", !!c);
+                        if (errors.declarationsAccepted) {
+                          setErrors((prev) => {
+                            const next = { ...prev };
+                            delete next.declarationsAccepted;
+                            return next;
+                          });
+                        }
+                      }}
+                      className="mt-0.5"
+                    />
+                    <span>קראתי ואני מאשר/ת את הצהרות המועמדים לביטוח ומסירת הפרטים לאופיר ושות׳</span>
+                  </label>
+                  {errors.declarationsAccepted && (
+                    <p className="mt-1 text-xs text-rose-600">{errors.declarationsAccepted}</p>
+                  )}
+                </div>
                 <Field label="הערות לסוכנות">
                   <Textarea
                     className="min-h-[70px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
@@ -1843,13 +1931,50 @@ const InsuranceProposal = () => {
             )}
 
             {step === "success" && (
-              <div className="py-6 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
+              <div className="px-2 py-8 text-center sm:px-6 sm:py-10" style={{ textAlign: "center" }}>
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f4f1] text-[#2f6b63]">
                   <Check className="h-8 w-8" />
                 </div>
-                <h2 className="mt-4 text-2xl font-extrabold text-[#143834]">ההצעה נשלחה</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-                  טופס ההצעה הממולא התקבל אצל אופיר ושות׳. ניצור קשר להמשך הטיפול מול הראל.
+                <h2
+                  className="text-2xl font-extrabold text-[#143834]"
+                  style={{ textAlign: "center" }}
+                >
+                  ההצעה נשלחה בהצלחה
+                </h2>
+                <p
+                  className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600"
+                  style={{ textAlign: "center" }}
+                >
+                  טופס ההצעה הממולא התקבל אצל אופיר ושות׳. שמרו את מספר הפנייה למעקב מולנו.
+                </p>
+                {proposalNumber ? (
+                  <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-b from-[#e8f4f1] to-white px-5 py-5">
+                    <p
+                      className="text-xs font-bold tracking-wide text-[#2f6b63]"
+                      style={{ textAlign: "center" }}
+                    >
+                      מספר פנייה באופיר
+                    </p>
+                    <p
+                      className="mt-2 font-mono text-2xl font-extrabold tracking-wider text-[#143834]"
+                      dir="ltr"
+                      style={{ textAlign: "center" }}
+                    >
+                      {proposalNumber}
+                    </p>
+                    <p
+                      className="mt-3 text-xs leading-relaxed text-slate-500"
+                      style={{ textAlign: "center" }}
+                    >
+                      מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר פוליסה בהראל.
+                    </p>
+                  </div>
+                ) : null}
+                <p
+                  className="mx-auto mt-5 max-w-md text-sm text-slate-500"
+                  style={{ textAlign: "center" }}
+                >
+                  ניצור קשר להמשך הטיפול מול הראל.
                 </p>
               </div>
             )}

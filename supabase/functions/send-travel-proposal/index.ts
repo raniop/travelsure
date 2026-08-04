@@ -100,6 +100,10 @@ serve(async (req) => {
     const tripFrom = formatDateDisplay(summary.tripFrom || formData.tripFrom);
     const tripTo = formatDateDisplay(summary.tripTo || formData.tripTo);
 
+    const proposalNumber = String(
+      body.proposalNumber || summary.proposalNumber || "",
+    ).trim();
+
     const html = `
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -108,14 +112,20 @@ serve(async (req) => {
   <div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 4px 24px rgba(15,23,42,.08);">
     <h1 style="margin:0 0 6px;color:#1f4b46;font-size:22px;">הצעה לביטוח נסיעות לחו״ל (רפואי)</h1>
     <p style="margin:0 0 18px;color:#64748b;font-size:14px;">טופס דיגיטלי TravelSure / אופיר ושות׳ · הראל מהדורת 07/2026</p>
+    ${
+      proposalNumber
+        ? `<p style="margin:0 0 18px;font-size:18px;letter-spacing:0.5px;"><strong>מספר פנייה באופיר: ${escapeHtml(proposalNumber)}</strong></p>`
+        : ""
+    }
     ${section(
       "פרטי הנסיעה",
       [
-        row("מבוטח ראשי", fullName, false),
-        row("מתאריך", tripFrom, true, true),
-        row("עד תאריך", tripTo, false, true),
-        row("יעדים", summary.destinationsLabel || "", true),
-        row("מדינות", summary.countriesDetail || formData.countriesDetail, false),
+        row("מספר פנייה", proposalNumber, false, true),
+        row("מבוטח ראשי", fullName, true),
+        row("מתאריך", tripFrom, false, true),
+        row("עד תאריך", tripTo, true, true),
+        row("יעדים", summary.destinationsLabel || "", false),
+        row("מדינות", summary.countriesDetail || formData.countriesDetail, true),
       ].join(""),
     )}
     ${section(
@@ -170,7 +180,9 @@ serve(async (req) => {
       body: JSON.stringify({
         from: RESEND_FROM,
         to: notifyList,
-        subject: `הצעה לביטוח נסיעות לחו״ל: ${fullName}`,
+        subject: proposalNumber
+          ? `הצעה לביטוח נסיעות לחו״ל · ${proposalNumber} · ${fullName}`
+          : `הצעה לביטוח נסיעות לחו״ל: ${fullName}`,
         html,
         attachments,
       }),
@@ -187,7 +199,7 @@ serve(async (req) => {
 
     const resendData = await resendRes.json();
     return new Response(
-      JSON.stringify({ success: true, id: resendData.id, pdfAttached: !!pdfBase64 }),
+      JSON.stringify({ success: true, id: resendData.id, pdfAttached: !!pdfBase64, proposalNumber }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (err) {

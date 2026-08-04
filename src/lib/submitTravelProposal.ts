@@ -8,6 +8,13 @@ import { displayName, includedPersons } from "@/lib/travelProposal/formDefaults"
 
 const STAFF_NOTIFY = ["rani@ophirins.co.il"] as const;
 
+/** Internal Ophir tracking number for travel proposals (shown to customer). */
+export function createTravelProposalNumber() {
+  const year = new Date().getFullYear();
+  const tail = `${Date.now() % 10000}${Math.floor(Math.random() * 90 + 10)}`.padStart(6, "0").slice(0, 6);
+  return `TP${year}${tail}`;
+}
+
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -26,6 +33,7 @@ const yn = (v: string) => (v === "yes" ? "כן" : v === "no" ? "לא" : "");
 export async function submitTravelProposal(form: TravelProposalForm, files: File[] = []) {
   const people = includedPersons(form);
   const primaryName = displayName(form.primary) || "מבוטח";
+  const proposalNumber = createTravelProposalNumber();
 
   const destinationsLabel = form.destinations
     .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.labelHe || id)
@@ -53,6 +61,7 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
     .join("");
 
   const summary = {
+    proposalNumber,
     primaryName,
     tripFrom: form.tripFrom,
     tripTo: form.tripTo,
@@ -92,8 +101,9 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
     fullName: primaryName,
     email: form.email,
     phone: form.mobile || form.phone,
-    subject: `הצעה לביטוח נסיעות לחו״ל: ${primaryName}`,
-    message: `הצעה דיגיטלית לביטוח נסיעות לחו״ל עבור ${primaryName}, ${form.tripFrom}–${form.tripTo}`,
+    proposalNumber,
+    subject: `הצעה לביטוח נסיעות לחו״ל · ${proposalNumber} · ${primaryName}`,
+    message: `הצעה דיגיטלית לביטוח נסיעות לחו״ל · מספר פנייה ${proposalNumber} · עבור ${primaryName}, ${form.tripFrom}–${form.tripTo}`,
     notify: [...STAFF_NOTIFY],
     travelPayload: summary,
     formData: form,
@@ -128,7 +138,11 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
       });
       if (res.ok) {
         const data = await res.json().catch(() => ({ success: true }));
-        return { ok: true as const, data };
+        return {
+          ok: true as const,
+          proposalNumber: String((data as { proposalNumber?: string }).proposalNumber || proposalNumber),
+          data,
+        };
       }
       lastError = new Error(`HTTP ${res.status} at ${endpoint.url}`);
     } catch (err) {
