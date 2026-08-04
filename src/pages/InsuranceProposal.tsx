@@ -1108,17 +1108,12 @@ const InsuranceProposal = () => {
             radial-gradient(900px 360px at 50% -5%, rgba(47,107,99,.10), transparent 55%),
             linear-gradient(180deg, #eef6fb 0%, #f3faf8 42%, #eef5f2 100%);
         }
-        .proposal-page::before {
-          content: "";
-          pointer-events: none;
-          position: absolute;
-          inset: 0 0 auto 0;
-          height: 180px;
-          opacity: .35;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='160' viewBox='0 0 1200 160' fill='none'%3E%3Cpath d='M40 120 L70 70 L100 120 M160 120 L190 55 L220 120 M280 120 L300 80 L320 120 M380 110 C400 60 440 60 460 110 M520 120 L540 75 L560 120 M620 120 L650 50 L680 120 M760 115 C780 70 820 70 840 115 M900 120 L930 65 L960 120 M1020 120 L1040 85 L1060 120' stroke='%232f6b63' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: center top;
-          background-size: min(1100px, 140%) auto;
+        /* Override global [dir=rtl] h1/h2 { text-align: right } for centered hero */
+        .proposal-page .tp-center,
+        .proposal-page .tp-center h1,
+        .proposal-page .tp-center h2,
+        .proposal-page .tp-center p {
+          text-align: center !important;
         }
         @keyframes tp-rise {
           from { opacity: 0; transform: translateY(14px); }
@@ -1144,15 +1139,15 @@ const InsuranceProposal = () => {
       `}</style>
 
       <div className={`relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-10 ${showNav ? "pb-28" : ""}`}>
-        <header className="tp-rise mb-7 flex w-full flex-col items-center text-center">
+        <header className="tp-rise tp-center mb-7 flex w-full flex-col items-center justify-center">
           <img src={logo} alt="TravelSure" className="mx-auto h-[88px] w-auto drop-shadow-sm sm:h-28" />
-          <h1 className="mt-4 w-full text-3xl font-extrabold text-[#143834] sm:text-4xl">
+          <h1 className="mt-4 w-full text-center text-3xl font-extrabold text-[#143834] sm:text-4xl">
             הצעה לביטוח נסיעות לחו״ל
           </h1>
-          <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600 sm:text-base">
+          <p className="mx-auto mt-2 max-w-lg text-center text-sm text-slate-600 sm:text-base">
             תהליך דיגיטלי קצר · ממלאים פעם אחת ומקבלים את טופס הראל הרשמי מוכן
           </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
+          <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-[#2f6b63]" />
               הראל · פירסט קלאס
@@ -1174,8 +1169,8 @@ const InsuranceProposal = () => {
           <div className="h-1.5 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
           <div className="p-5 sm:p-7">
             {step === "intro" && (
-              <div className="mx-auto max-w-md space-y-5 text-center">
-                <h2 className="text-xl font-bold text-[#143834]">איך זה עובד?</h2>
+              <div className="tp-center mx-auto max-w-md space-y-5 text-center">
+                <h2 className="text-center text-xl font-bold text-[#143834]">איך זה עובד?</h2>
                 <ol className="mx-auto max-w-sm space-y-3 text-sm text-slate-600">
                   {[
                     "מזים תעודת זהות — ואנחנו ממלאים אוטומטית מהמערכת",
@@ -1275,9 +1270,9 @@ const InsuranceProposal = () => {
                 />
 
                 <div className="space-y-3">
-                  <div className="text-center">
-                    <h3 className="text-lg font-extrabold text-[#143834]">מתי נוסעים?</h3>
-                    <p className="mt-1 text-xs text-slate-500">בחרו תאריכי יציאה וחזרה בלוח השנה</p>
+                  <div className="tp-center text-center">
+                    <h3 className="text-center text-lg font-extrabold text-[#143834]">מתי נוסעים?</h3>
+                    <p className="mt-1 text-center text-xs text-slate-500">בחרו תאריכי יציאה וחזרה בלוח השנה</p>
                   </div>
                   <TripDateRangePicker
                     from={form.tripFrom}

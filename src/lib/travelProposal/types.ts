@@ -171,13 +171,13 @@ export const PERSON_LABELS_HE: Record<PersonKey, string> = {
 
 export const DESTINATION_OPTIONS: { id: DestinationId; labelHe: string }[] = [
   { id: "europe", labelHe: "אירופה" },
-  { id: "asia", labelHe: "אסיה" },
-  { id: "australia", labelHe: "אוסטרליה" },
-  { id: "latam", labelHe: "מרכז ודרום אמריקה" },
-  { id: "canada", labelHe: "קנדה" },
   { id: "africa", labelHe: "אפריקה" },
-  { id: "antarctica", labelHe: "אנטארקטיקה" },
+  { id: "canada", labelHe: "קנדה" },
   { id: "usa", labelHe: "ארה״ב" },
+  { id: "antarctica", labelHe: "אנטארקטיקה" },
+  { id: "australia", labelHe: "אוסטרליה" },
+  { id: "latam", labelHe: "דרום ומרכז אמריקה" },
+  { id: "asia", labelHe: "אסיה" },
 ];
 
 export const VALUABLE_OPTIONS: { id: ValuableItemId; labelHe: string }[] = [

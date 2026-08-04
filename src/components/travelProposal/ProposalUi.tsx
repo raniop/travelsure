@@ -9,6 +9,7 @@ import {
   type Step,
   type YesNo,
 } from "@/lib/travelProposal/types";
+import { DESTINATION_MAP_PATHS } from "@/components/travelProposal/destinationMaps";
 import {
   Baby,
   Bike,
@@ -44,68 +45,21 @@ export const parseDdMmYyyy = (value: string): Date | undefined => {
   return d;
 };
 
-/** Simple line-art region marks — Harel-like circular destination tiles */
-const DestMark = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  const stroke = active ? "#1f4b46" : "#2f6b63";
-  const fill = active ? "rgba(47,107,99,0.12)" : "transparent";
-  const common = { fill, stroke, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  switch (id) {
-    case "europe":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M14 34c2-8 6-14 12-16 4-1 8 1 10 5 2 4 1 9-2 12-4 4-10 5-14 3-3-1-5-2-6-4z" {...common} />
-          <path d="M18 18c2-3 5-5 9-5 3 0 5 1 7 3" fill="none" stroke={stroke} strokeWidth={1.6} />
-        </svg>
-      );
-    case "usa":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M10 18h22l2 4v10l-4 4H14l-4-6V18z" {...common} />
-          <path d="M32 20l6-2v8l-4 2" fill="none" stroke={stroke} strokeWidth={1.6} />
-        </svg>
-      );
-    case "canada":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M24 12l3 7h7l-5.5 4.5 2 7L24 26l-6.5 4.5 2-7L14 19h7z" {...common} />
-        </svg>
-      );
-    case "africa":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M24 10c8 2 12 8 11 16-1 7-6 12-12 14-7 1-12-3-13-10-1-8 4-16 14-20z" {...common} />
-        </svg>
-      );
-    case "asia":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M12 28c2-10 8-16 16-18 6-1 10 2 12 8 2 6-1 12-6 15-6 4-14 3-18 0-3-2-5-3-4-5z" {...common} />
-          <circle cx="28" cy="22" r="2" fill={stroke} />
-        </svg>
-      );
-    case "australia":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <ellipse cx="24" cy="24" rx="12" ry="9" {...common} />
-          <circle cx="34" cy="34" r="2.5" fill={active ? "#1f4b46" : "#2f6b63"} />
-        </svg>
-      );
-    case "latam":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M22 8c6 2 10 6 11 12 1 5-1 9-4 13-2 3-4 6-5 9-4-2-7-7-8-13-1-7 1-14 6-21z" {...common} />
-        </svg>
-      );
-    case "antarctica":
-      return (
-        <svg viewBox="0 0 48 48" className="h-9 w-9" aria-hidden>
-          <path d="M24 10l10 18H14L24 10z" {...common} />
-          <path d="M14 30h20v4H14z" fill={active ? "rgba(47,107,99,0.2)" : "none"} stroke={stroke} strokeWidth={1.6} />
-        </svg>
-      );
-    default:
-      return null;
-  }
+const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
+  const stroke = active ? "#143834" : "#2f6b63";
+  const fill = active ? "#8fc4b6" : "#c5ddd6";
+  return (
+    <svg viewBox="0 0 48 48" className="h-12 w-12" aria-hidden>
+      <path
+        d={DESTINATION_MAP_PATHS[id]}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={1.15}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 };
 
 export function DestinationPicker({
@@ -118,12 +72,12 @@ export function DestinationPicker({
   error?: string;
 }) {
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h3 className="text-xl font-extrabold text-[#143834]">בחרו יעד נסיעה</h3>
-        <p className="mt-1 text-sm text-slate-500">אפשר לבחור יותר מיעד אחד</p>
+    <div className="space-y-5">
+      <div className="tp-center text-center">
+        <h3 className="text-center text-xl font-extrabold text-[#143834]">בחרו יעד נסיעה</h3>
+        <p className="mt-1 text-center text-sm text-slate-500">אפשר לבחור יותר מיעד אחד</p>
       </div>
-      <div className="mx-auto grid max-w-lg grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4 sm:gap-y-5">
+      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
         {DESTINATION_OPTIONS.map((d) => {
           const active = selected.includes(d.id);
           return (
@@ -132,38 +86,30 @@ export function DestinationPicker({
               type="button"
               onClick={() => onToggle(d.id)}
               aria-pressed={active}
-              className="group flex flex-col items-center gap-2.5 rounded-2xl p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6b63]/40"
+              className="group flex flex-col items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f6b63]/40"
             >
               <span
                 className={cn(
-                  "relative flex h-[84px] w-[84px] items-center justify-center rounded-full border-[3px] bg-white transition duration-200 sm:h-[92px] sm:w-[92px]",
+                  "relative flex h-[112px] w-[112px] flex-col items-center justify-center gap-0.5 rounded-full bg-white px-2 shadow-[0_10px_28px_-12px_rgba(20,56,52,.5)] transition duration-200 sm:h-[120px] sm:w-[120px]",
                   active
-                    ? "border-[#143834] shadow-[0_12px_28px_-16px_rgba(20,56,52,.55)] scale-[1.03]"
-                    : "border-[#2f6b63]/22 group-hover:border-[#2f6b63]/55 group-hover:shadow-md",
+                    ? "ring-[3px] ring-[#143834] scale-[1.03]"
+                    : "ring-1 ring-black/5 group-hover:ring-[#2f6b63]/35 group-hover:shadow-lg",
                 )}
               >
+                <DestMapIcon id={d.id} active={active} />
                 <span
                   className={cn(
-                    "absolute inset-2 rounded-full transition",
-                    active ? "bg-gradient-to-br from-[#e8f4f1] to-white" : "bg-[#f7fbfa]",
+                    "max-w-[100px] text-center text-[11px] font-extrabold leading-tight sm:text-xs",
+                    active ? "text-[#143834]" : "text-[#1f4b46]",
                   )}
-                />
-                <span className="relative z-[1]">
-                  <DestMark id={d.id} active={active} />
+                >
+                  {d.labelHe}
                 </span>
                 {active && (
                   <span className="absolute -left-0.5 -top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#2f6b63] text-white shadow">
                     <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
                 )}
-              </span>
-              <span
-                className={cn(
-                  "text-sm font-bold transition",
-                  active ? "text-[#143834]" : "text-slate-600",
-                )}
-              >
-                {d.labelHe}
               </span>
             </button>
           );
@@ -211,8 +157,8 @@ export function TripDateRangePicker({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="text-right">
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="text-center sm:text-right">
           <p className="text-base font-extrabold text-[#143834]">מתי יוצאים?</p>
           <p className="mt-2 text-[11px] text-slate-400">* תאריך יציאה</p>
           <p
@@ -226,7 +172,7 @@ export function TripDateRangePicker({
           </p>
           {fromError && <p className="mt-1 text-xs text-rose-600">{fromError}</p>}
         </div>
-        <div className="text-right">
+        <div className="text-center sm:text-right">
           <p className="text-base font-extrabold text-[#143834]">מתי חוזרים?</p>
           <p className="mt-2 text-[11px] text-slate-400">* תאריך חזרה</p>
           <p
