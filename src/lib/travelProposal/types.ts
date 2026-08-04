@@ -8,7 +8,6 @@ export type Step =
   | "insureds"
   | "health"
   | "plan"
-  | "payment"
   | "review"
   | "sending"
   | "success";

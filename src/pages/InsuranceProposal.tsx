@@ -9,11 +9,8 @@ import {
   createInitialTravelProposalForm,
   displayName,
   emptyPerson,
-  formatCardExpInput,
   formatDateInput,
   includedPersons,
-  isValidCardExpiry,
-  isValidCardNumber,
   isValidDateDdMmYyyy,
   isValidEmail,
   isValidIsraeliId,
@@ -106,7 +103,6 @@ const STEPS: { id: Step; label: string }[] = [
   { id: "insureds", label: "מבוטחים" },
   { id: "health", label: "בריאות" },
   { id: "plan", label: "כיסויים" },
-  { id: "payment", label: "תשלום" },
   { id: "review", label: "שליחה" },
 ];
 
@@ -397,12 +393,6 @@ const InsuranceProposal = () => {
           };
           next.mobile = c.phone || next.mobile;
           next.email = c.email || next.email;
-          next.payerName =
-            next.payerName ||
-            [c.firstNameHe, c.lastNameHe].filter(Boolean).join(" ") ||
-            c.primaryName;
-          next.payerId = next.payerId || c.id || normalized;
-          next.payerMobile = next.payerMobile || c.phone;
         }
         return next;
       });
@@ -491,23 +481,7 @@ const InsuranceProposal = () => {
       }
     }
 
-    if (current === "payment") {
-      // Payment details are optional at proposal stage — validate only if filled
-      if (form.payerId.trim() && !isValidIsraeliId(form.payerId)) {
-        nextErrors.payerId = "ת.ז לא תקינה";
-      }
-      if (form.cardNumber.trim() && !isValidCardNumber(form.cardNumber)) {
-        nextErrors.cardNumber = "מספר כרטיס לא תקין";
-      }
-      if (form.cardExp.trim() && !isValidCardExpiry(form.cardExp)) {
-        nextErrors.cardExp = "תוקף לא תקין";
-      }
-      if (form.cardCvv.trim() && !/^\d{3,4}$/.test(form.cardCvv)) {
-        nextErrors.cardCvv = "CVV לא תקין";
-      }
-      if (form.signatureDate.trim() && !isValidDateDdMmYyyy(form.signatureDate)) {
-        nextErrors.signatureDate = "תאריך לא תקין";
-      }
+    if (current === "review") {
       if (!form.declarationsAccepted) {
         nextErrors.declarationsAccepted = "חובה לאשר את ההצהרות";
       }
@@ -522,13 +496,13 @@ const InsuranceProposal = () => {
       toast({ title: "יש להשלים שדות חובה", variant: "destructive" });
       return;
     }
-    const order: Step[] = ["identity", "trip", "insureds", "health", "plan", "payment", "review"];
+    const order: Step[] = ["identity", "trip", "insureds", "health", "plan", "review"];
     const i = order.indexOf(step);
     if (i >= 0 && i < order.length - 1) setStep(order[i + 1]);
   };
 
   const goBack = () => {
-    const order: Step[] = ["intro", "identity", "trip", "insureds", "health", "plan", "payment", "review"];
+    const order: Step[] = ["intro", "identity", "trip", "insureds", "health", "plan", "review"];
     const i = order.indexOf(step);
     if (i > 0) setStep(order[i - 1]);
   };
@@ -545,21 +519,21 @@ const InsuranceProposal = () => {
     if (activePlanPerson === key) setActivePlanPerson("primary");
   };
 
-  const copyPrimaryToPayer = () => {
-    setForm((prev) => ({
-      ...prev,
-      payerName: displayName(prev.primary) || prev.payerName,
-      payerId: prev.primary.idNumber || prev.payerId,
-      payerMobile: prev.mobile || prev.payerMobile,
-      payerPhone: prev.phone || prev.payerPhone,
-    }));
-  };
-
   const handleSubmit = async () => {
+    if (!validateStep("review")) {
+      toast({ title: "יש לאשר את ההצהרות לפני השליחה", variant: "destructive" });
+      return;
+    }
     setIsSending(true);
     setStep("sending");
     try {
-      const result = await submitTravelProposal(form, files);
+      const today = new Date();
+      const signatureDate =
+        form.signatureDate.trim() ||
+        `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${String(
+          today.getFullYear(),
+        ).slice(-2)}`;
+      const result = await submitTravelProposal({ ...form, signatureDate }, files);
       setProposalNumber(result.proposalNumber || "");
       setStep("success");
       toast({ title: "ההצעה נשלחה בהצלחה" });
@@ -1485,7 +1459,7 @@ const InsuranceProposal = () => {
                   {[
                     "מזינים תעודת זהות — ואנחנו ממלאים אוטומטית מהמערכת",
                     "משלימים פרטי נסיעה, מבוטחים והצהרת בריאות",
-                    "בוחרים כיסויים ומזינים תשלום",
+                    "בוחרים כיסויים לפי הצורך",
                     "שולחים — והטופס הרשמי של הראל מגיע לסוכנות",
                   ].map((text, i) => (
                     <li key={text} className="flex w-full items-center gap-3 text-right">
@@ -1766,92 +1740,28 @@ const InsuranceProposal = () => {
               </div>
             )}
 
-            {step === "payment" && (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-lg font-extrabold text-[#143834]">תשלום בכרטיס אשראי</h2>
-                    <p className="mt-1 text-xs text-slate-500">
-                      אופציונלי בשלב זה — אפשר להמשיך גם בלי פרטי כרטיס
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl"
-                    onClick={copyPrimaryToPayer}
-                  >
-                    העתק ממבוטח ראשי
-                  </Button>
+            {step === "review" && (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="text-lg font-extrabold text-[#143834]">סיכום ושליחה</h2>
+                  <p className="mt-1 text-xs text-slate-500">בדקו שהכל נכון לפני השליחה</p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="שם בעל הכרטיס" error={errors.payerName}>
-                    <Input
-                      className={inputClass}
-                      value={form.payerName}
-                      onChange={(e) => setField("payerName", e.target.value)}
-                    />
-                  </Field>
-                  <Field label="מספר ת.ז" error={errors.payerId}>
-                    <Input
-                      className={inputClass}
-                      inputMode="numeric"
-                      maxLength={9}
-                      value={form.payerId}
-                      onChange={(e) => setField("payerId", e.target.value.replace(/\D/g, "").slice(0, 9))}
-                    />
-                  </Field>
-                  <Field label="מספר תשלומים">
-                    <Input
-                      className={inputClass}
-                      inputMode="numeric"
-                      value={form.installments}
-                      onChange={(e) =>
-                        setField("installments", e.target.value.replace(/\D/g, "").slice(0, 2))
-                      }
-                    />
-                  </Field>
-                  <Field label="מס׳ כרטיס" error={errors.cardNumber}>
-                    <Input
-                      className={inputClass}
-                      dir="ltr"
-                      inputMode="numeric"
-                      value={form.cardNumber}
-                      onChange={(e) =>
-                        setField("cardNumber", e.target.value.replace(/\D/g, "").slice(0, 16))
-                      }
-                    />
-                  </Field>
-                  <Field label="בתוקף עד (MM/YY)" error={errors.cardExp}>
-                    <Input
-                      className={inputClass}
-                      dir="ltr"
-                      placeholder="MM/YY"
-                      value={form.cardExp}
-                      onChange={(e) => setField("cardExp", formatCardExpInput(e.target.value))}
-                    />
-                  </Field>
-                  <Field label="CVV" error={errors.cardCvv}>
-                    <Input
-                      className={inputClass}
-                      dir="ltr"
-                      inputMode="numeric"
-                      maxLength={4}
-                      value={form.cardCvv}
-                      onChange={(e) =>
-                        setField("cardCvv", e.target.value.replace(/\D/g, "").slice(0, 4))
-                      }
-                    />
-                  </Field>
-                  <Field label="תאריך חתימה" error={errors.signatureDate}>
-                    <Input
-                      className={inputClass}
-                      dir="ltr"
-                      value={form.signatureDate}
-                      onChange={(e) => setField("signatureDate", formatDateInput(e.target.value))}
-                    />
-                  </Field>
+                <div className="space-y-2 rounded-2xl border border-[#2f6b63]/10 bg-[#f7fbfa] p-4 text-sm text-slate-700">
+                  <p>
+                    <strong>מבוטח ראשי:</strong> {displayName(form.primary)}
+                  </p>
+                  <p>
+                    <strong>נסיעה:</strong> {form.tripFrom} – {form.tripTo}
+                  </p>
+                  <p>
+                    <strong>יעדים:</strong>{" "}
+                    {form.destinations
+                      .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.labelHe)
+                      .join(", ")}
+                  </p>
+                  <p>
+                    <strong>מבוטחים:</strong> {people.length}
+                  </p>
                 </div>
 
                 <div>
@@ -1876,6 +1786,7 @@ const InsuranceProposal = () => {
                     <p className="mt-1 text-xs text-rose-600">{errors.declarationsAccepted}</p>
                   )}
                 </div>
+
                 <Field label="הערות לסוכנות">
                   <Textarea
                     className="min-h-[70px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
@@ -1883,32 +1794,7 @@ const InsuranceProposal = () => {
                     onChange={(e) => setField("notes", e.target.value)}
                   />
                 </Field>
-              </div>
-            )}
 
-            {step === "review" && (
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">סיכום ושליחה</h2>
-                  <p className="mt-1 text-xs text-slate-500">בדקו שהכל נכון לפני השליחה</p>
-                </div>
-                <div className="space-y-2 rounded-2xl border border-[#2f6b63]/10 bg-[#f7fbfa] p-4 text-sm text-slate-700">
-                  <p>
-                    <strong>מבוטח ראשי:</strong> {displayName(form.primary)}
-                  </p>
-                  <p>
-                    <strong>נסיעה:</strong> {form.tripFrom} – {form.tripTo}
-                  </p>
-                  <p>
-                    <strong>יעדים:</strong>{" "}
-                    {form.destinations
-                      .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.labelHe)
-                      .join(", ")}
-                  </p>
-                  <p>
-                    <strong>מבוטחים:</strong> {people.length}
-                  </p>
-                </div>
                 <Button
                   className="tp-cta h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white"
                   onClick={handleSubmit}

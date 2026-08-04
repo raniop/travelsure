@@ -23,7 +23,6 @@ import {
   Camera,
   Car,
   Check,
-  CreditCard,
   HeartPulse,
   Info,
   Laptop,
@@ -597,7 +596,6 @@ const STEP_META: Partial<Record<Step, { label: string; icon: typeof Plane; short
   insureds: { label: "נוסעים", icon: Users },
   health: { label: "בריאות", icon: HeartPulse },
   plan: { label: "כיסויים", icon: Umbrella },
-  payment: { label: "תשלום", icon: CreditCard },
   review: { label: "שליחה", icon: Send },
 };
 
