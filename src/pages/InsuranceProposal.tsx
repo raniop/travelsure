@@ -73,6 +73,14 @@ import {
   normalizeIsraeliId,
 } from "@/lib/claimCrmLookup";
 import {
+  COVERAGE_ICONS,
+  CoverageCard,
+  DestinationPicker,
+  HealthQuestionCard,
+  PillYesNo,
+  TripDateRangePicker,
+} from "@/components/travelProposal/ProposalUi";
+import {
   ArrowLeft,
   ArrowRight,
   Check,
@@ -131,27 +139,7 @@ const YesNoToggle = ({
   value: YesNo;
   onChange: (v: YesNo) => void;
   name: string;
-}) => (
-  <div className="flex gap-2" role="group" aria-label={name}>
-    {[
-      { v: "no" as const, label: "לא" },
-      { v: "yes" as const, label: "כן" },
-    ].map((opt) => (
-      <button
-        key={opt.v}
-        type="button"
-        onClick={() => onChange(opt.v)}
-        className={`h-11 flex-1 rounded-2xl border text-sm font-semibold transition ${
-          value === opt.v
-            ? "border-[#2f6b63] bg-[#2f6b63] text-white shadow-sm shadow-[#2f6b63]/25"
-            : "border-slate-200 bg-white text-slate-600 hover:border-[#2f6b63]/35"
-        }`}
-      >
-        {opt.label}
-      </button>
-    ))}
-  </div>
-);
+}) => <PillYesNo value={value} onChange={onChange} name={name} />;
 
 const inputClass =
   "h-12 rounded-2xl border-slate-200 bg-slate-50/80 text-right shadow-none transition focus-visible:bg-white focus-visible:ring-[#2f6b63]";
@@ -541,10 +529,10 @@ const InsuranceProposal = () => {
     const q2FollowUpPositive = q21Yes || h.q22 === "yes";
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-extrabold text-[#143834]">
+            <h3 className="text-base font-extrabold text-[#143834]">
               ד · הצהרת בריאות — {PERSON_LABELS_HE[key]}
             </h3>
             <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{HEALTH_INTRO}</p>
@@ -553,44 +541,47 @@ const InsuranceProposal = () => {
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-xl"
+            className="rounded-full border-[#2f6b63]/30 text-[#2f6b63]"
             onClick={() => patchPerson(key, markAllHealthNo(person))}
           >
             סמן הכל לא
           </Button>
         </div>
 
-        {/* שאלה 1 */}
-        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
-          <Field label={Q1_TITLE} required error={errors[`${key}.q1`]}>
-            <YesNoToggle value={h.q1} onChange={(v) => patchPersonHealth(key, { q1: v })} name="q1" />
-          </Field>
-          <p className="text-[11px] leading-relaxed text-slate-500">{Q1_NOTE}</p>
+        <HealthQuestionCard
+          number={1}
+          title={Q1_TITLE.replace(/^1\.\s*/, "")}
+          note={Q1_NOTE}
+          value={h.q1}
+          onChange={(v) => patchPersonHealth(key, { q1: v })}
+          error={errors[`${key}.q1`]}
+        >
           {h.q1 === "yes" && (
-            <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+            <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
               {Q1_REJECT}
             </p>
           )}
-        </div>
+        </HealthQuestionCard>
 
-        {/* שאלה 2 */}
-        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
-          <Field label={Q2_TITLE} required error={errors[`${key}.q2`]}>
-            <YesNoToggle value={h.q2} onChange={(v) => patchPersonHealth(key, { q2: v })} name="q2" />
-          </Field>
-          <p className="text-[11px] leading-relaxed text-slate-500">{Q2_EXCEPTIONS}</p>
-          {h.q2 === "yes" && <p className="text-[11px] font-semibold text-[#1f4b46]">{Q2_IF_YES}</p>}
-          {h.q2 === "no" && <p className="text-[11px] text-slate-500">{Q2_IF_NO}</p>}
-
+        <HealthQuestionCard
+          number={2}
+          title={Q2_TITLE.replace(/^2\.\s*/, "")}
+          note={Q2_EXCEPTIONS}
+          value={h.q2}
+          onChange={(v) => patchPersonHealth(key, { q2: v })}
+          error={errors[`${key}.q2`]}
+        >
+          {h.q2 === "yes" && <p className="mt-2 text-[11px] font-semibold text-[#1f4b46]">{Q2_IF_YES}</p>}
+          {h.q2 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q2_IF_NO}</p>}
           {h.q2 === "yes" && (
-            <div className="mt-3 space-y-4 rounded-2xl border border-amber-200/70 bg-amber-50/40 p-4">
+            <div className="mt-3 space-y-4 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
               <div className="space-y-2">
                 <p className="text-xs font-extrabold text-[#143834]">{Q21_TITLE}</p>
-                <div className="grid gap-2.5">
+                <div className="grid gap-2">
                   {Q21_OPTIONS.map((c) => (
                     <label
                       key={c.id}
-                      className="flex items-start gap-2.5 rounded-xl border border-white/80 bg-white/80 px-3 py-2.5 text-xs leading-relaxed text-slate-700"
+                      className="flex items-start gap-2.5 rounded-xl border border-white bg-white px-3 py-2.5 text-xs leading-relaxed text-slate-700"
                     >
                       <Checkbox
                         checked={h.q21Conditions.includes(c.id)}
@@ -606,51 +597,56 @@ const InsuranceProposal = () => {
                     </label>
                   ))}
                 </div>
-                {!q21Yes && h.q2 === "yes" && (
+                {!q21Yes && (
                   <p className="text-[11px] font-semibold text-amber-800">{Q21_NEGATIVE_EXT}</p>
                 )}
               </div>
-
               <div className="space-y-2">
                 <p className="text-xs font-extrabold text-[#143834]">{Q22_TITLE}</p>
                 <p className="text-[11px] leading-relaxed text-slate-600">{Q22_BODY}</p>
-                <Field label="" error={errors[`${key}.q22`]}>
-                  <YesNoToggle
+                <div className="flex justify-end">
+                  <PillYesNo
                     value={h.q22}
                     onChange={(v) => patchPersonHealth(key, { q22: v })}
                     name="q22"
                   />
-                </Field>
+                </div>
+                {errors[`${key}.q22`] && (
+                  <p className="text-xs text-rose-600">{errors[`${key}.q22`]}</p>
+                )}
               </div>
-
               {q2FollowUpPositive && (
-                <p className="rounded-xl bg-white/80 px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+                <p className="rounded-xl bg-white px-3 py-2 text-[11px] leading-relaxed text-slate-600">
                   {Q2_POSITIVE_DOC}
                 </p>
               )}
             </div>
           )}
-        </div>
+        </HealthQuestionCard>
 
-        {/* שאלה 3 */}
-        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
-          <Field label={Q3_TITLE} required error={errors[`${key}.q3`]}>
-            <YesNoToggle value={h.q3} onChange={(v) => patchPersonHealth(key, { q3: v })} name="q3" />
-          </Field>
-          <p className="text-xs leading-relaxed text-slate-700">{Q3_TOPICS}</p>
-          <p className="text-[11px] leading-relaxed text-slate-500">{Q3_NOTE}</p>
-          {h.q3 === "yes" && <p className="text-[11px] font-semibold text-[#1f4b46]">{Q3_IF_YES}</p>}
-          {h.q3 === "no" && <p className="text-[11px] text-slate-500">{Q3_IF_NO}</p>}
-
+        <HealthQuestionCard
+          number={3}
+          title={Q3_TITLE.replace(/^3\.\s*/, "")}
+          note={`${Q3_TOPICS} ${Q3_NOTE}`}
+          value={h.q3}
+          onChange={(v) => patchPersonHealth(key, { q3: v })}
+          error={errors[`${key}.q3`]}
+        >
+          {h.q3 === "yes" && <p className="mt-2 text-[11px] font-semibold text-[#1f4b46]">{Q3_IF_YES}</p>}
+          {h.q3 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q3_IF_NO}</p>}
           {h.q3 === "yes" && (
-            <div className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <Field label={Q31_TITLE} required error={errors[`${key}.q31`]}>
-                <YesNoToggle
+            <div className="mt-3 space-y-2 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-extrabold text-[#143834]">{Q31_TITLE}</p>
+                <PillYesNo
                   value={h.q31}
                   onChange={(v) => patchPersonHealth(key, { q31: v })}
                   name="q31"
                 />
-              </Field>
+              </div>
+              {errors[`${key}.q31`] && (
+                <p className="text-xs text-rose-600">{errors[`${key}.q31`]}</p>
+              )}
               {h.q31 === "no" && (
                 <p className="text-[11px] leading-relaxed text-slate-600">{Q31_IF_NO}</p>
               )}
@@ -659,15 +655,17 @@ const InsuranceProposal = () => {
               )}
             </div>
           )}
-        </div>
+        </HealthQuestionCard>
 
-        {/* שאלה 4 */}
-        <div className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
-          <Field label={Q4_TITLE} required error={errors[`${key}.q4`]}>
-            <YesNoToggle value={h.q4} onChange={(v) => patchPersonHealth(key, { q4: v })} name="q4" />
-          </Field>
+        <HealthQuestionCard
+          number={4}
+          title={Q4_TITLE.replace(/^4\.\s*/, "")}
+          value={h.q4}
+          onChange={(v) => patchPersonHealth(key, { q4: v })}
+          error={errors[`${key}.q4`]}
+        >
           {h.q4 === "yes" && (
-            <>
+            <div className="mt-3 space-y-2">
               <Field label={Q4_DETAILS_LABEL} hint={Q4_DETAILS_HINT}>
                 <Textarea
                   className="min-h-[80px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
@@ -677,21 +675,20 @@ const InsuranceProposal = () => {
                 />
               </Field>
               <p className="text-[11px] leading-relaxed text-slate-600">{Q4_IF_YES}</p>
-            </>
+            </div>
           )}
-        </div>
+        </HealthQuestionCard>
 
-        {/* הריון */}
         {person.gender === "female" && (
-          <div className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50/30 p-4">
+          <div className="space-y-3 rounded-[22px] border border-rose-100 bg-rose-50/20 p-4">
             <p className="text-xs font-extrabold text-[#143834]">{PREGNANCY_SECTION_TITLE}</p>
-            <Field label={Q5_TITLE} required error={errors[`${key}.q5`]}>
-              <YesNoToggle
-                value={h.q5Pregnant}
-                onChange={(v) => patchPersonHealth(key, { q5Pregnant: v })}
-                name="q5"
-              />
-            </Field>
+            <HealthQuestionCard
+              number={5}
+              title={Q5_TITLE.replace(/^5\.\s*/, "")}
+              value={h.q5Pregnant}
+              onChange={(v) => patchPersonHealth(key, { q5Pregnant: v })}
+              error={errors[`${key}.q5`]}
+            />
             {h.q5Pregnant === "yes" && (
               <>
                 <Field label={Q51_TITLE} required error={errors[`${key}.q51`]}>
@@ -706,22 +703,23 @@ const InsuranceProposal = () => {
                     }
                   />
                 </Field>
-                <Field label={Q52_TITLE} required error={errors[`${key}.q52`]}>
-                  <YesNoToggle
-                    value={h.q52HighRisk}
-                    onChange={(v) => patchPersonHealth(key, { q52HighRisk: v })}
-                    name="q52"
-                  />
-                </Field>
-                {h.q52HighRisk === "yes" && (
-                  <p className="rounded-xl bg-rose-100/80 px-3 py-2 text-xs font-semibold text-rose-700">
-                    {Q52_REJECT}
-                  </p>
-                )}
-                {h.q52HighRisk === "no" && (
-                  <p className="text-[11px] font-semibold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
-                )}
-                <p className="text-[11px] leading-relaxed text-slate-500">{PREGNANCY_AGE_NOTE}</p>
+                <HealthQuestionCard
+                  number="5.2"
+                  title={Q52_TITLE.replace(/^5\.2\s*/, "")}
+                  value={h.q52HighRisk}
+                  onChange={(v) => patchPersonHealth(key, { q52HighRisk: v })}
+                  error={errors[`${key}.q52`]}
+                >
+                  {h.q52HighRisk === "yes" && (
+                    <p className="mt-3 rounded-xl bg-rose-100/80 px-3 py-2 text-xs font-semibold text-rose-700">
+                      {Q52_REJECT}
+                    </p>
+                  )}
+                  {h.q52HighRisk === "no" && (
+                    <p className="mt-3 text-[11px] font-semibold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
+                  )}
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{PREGNANCY_AGE_NOTE}</p>
+                </HealthQuestionCard>
               </>
             )}
           </div>
@@ -732,53 +730,81 @@ const InsuranceProposal = () => {
 
   const PlanCheck = ({
     label,
+    description,
+    footnote,
     checked,
     onChange,
-    hint,
+    icon,
+    variant = "optional",
+    children,
   }: {
     label: string;
+    description?: string;
+    footnote?: string;
     checked: boolean;
     onChange: (v: boolean) => void;
-    hint?: string;
+    icon?: ReactNode;
+    variant?: "included" | "optional" | "optout";
+    children?: ReactNode;
   }) => (
-    <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 transition hover:border-[#2f6b63]/30">
-      <Checkbox checked={checked} onCheckedChange={(c) => onChange(!!c)} className="mt-0.5" />
-      <span>
-        <span className="block text-sm font-semibold text-slate-800">{label}</span>
-        {hint && <span className="mt-0.5 block text-[11px] text-slate-400">{hint}</span>}
-      </span>
-    </label>
+    <CoverageCard
+      title={label}
+      description={description}
+      footnote={footnote}
+      checked={checked}
+      onChange={onChange}
+      icon={icon}
+      variant={variant}
+    >
+      {children}
+    </CoverageCard>
   );
 
   const renderPlanFor = (key: PersonKey) => {
     const plan = form[key].plan;
     return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-extrabold text-[#143834]">פירסט קלאס — {PERSON_LABELS_HE[key]}</h3>
-        <p className="text-xs text-slate-500">
-          ביטוח רפואי בסיסי כלול. אפשר להסיר כיסויים כלולים או להוסיף הרחבות.
-        </p>
-        <div className="grid gap-2">
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base font-extrabold text-[#143834]">
+            ה · תכנית הביטוח — פירסט קלאס · {PERSON_LABELS_HE[key]}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">
+            ביטוח רפואי בסיסי כלול. אפשר להסיר כיסויים כלולים או להוסיף הרחבות.
+          </p>
+        </div>
+
+        <p className="text-sm font-extrabold text-[#143834]">כיסויים כלולים ברובד הבסיס</p>
+        <div className="space-y-2.5">
           <PlanCheck
-            label="לא מעוניין בחיפוש, איתור וחילוץ (כלול בבסיס)"
+            label="חיפוש, איתור וחילוץ"
+            description="כלול ברובד הבסיס. סמנו אם אינכם מעוניינים בכיסוי זה."
             checked={plan.optOutSearchRescue}
             onChange={(v) => patchPersonPlan(key, { optOutSearchRescue: v })}
+            icon={COVERAGE_ICONS.rescue}
+            variant="optout"
+            footnote={plan.optOutSearchRescue ? "סומן: לא מעוניין" : "ניתן להסיר כיסוי זה"}
           />
           <PlanCheck
-            label="לא מעוניין בחבות כלפי צד ג׳ (כלול בבסיס)"
+            label="חבות כלפי צד ג׳"
+            description="כלול ברובד הבסיס. סמנו אם אינכם מעוניינים בכיסוי זה."
             checked={plan.optOutThirdParty}
             onChange={(v) => patchPersonPlan(key, { optOutThirdParty: v })}
+            icon={COVERAGE_ICONS.thirdParty}
+            variant="optout"
+            footnote={plan.optOutThirdParty ? "סומן: לא מעוניין" : "ניתן להסיר כיסוי זה"}
           />
         </div>
-        <p className="pt-2 text-xs font-bold text-[#2f6b63]">הרחבות בתוספת תשלום</p>
-        <div className="grid gap-2">
+
+        <p className="pt-2 text-sm font-extrabold text-[#143834]">הרחבות בתוספת תשלום</p>
+        <div className="space-y-2.5">
           <PlanCheck
             label="כבודה — אובדן או גניבה"
+            description="מטען אישי נלווה לכל תקופת הביטוח"
             checked={plan.baggage}
             onChange={(v) => patchPersonPlan(key, { baggage: v })}
-          />
-          {plan.baggage && (
-            <div className="mr-2 grid gap-2 rounded-2xl bg-slate-50 p-3 sm:mr-6">
+            icon={COVERAGE_ICONS.baggage}
+          >
+            <div className="grid gap-2">
               <p className="text-[11px] font-semibold text-slate-600">פריט יקר ערך עד $2,000</p>
               {VALUABLE_OPTIONS.map((v) => (
                 <label key={v.id} className="flex items-center gap-2 text-xs">
@@ -795,34 +821,43 @@ const InsuranceProposal = () => {
                 </label>
               ))}
             </div>
-          )}
+          </PlanCheck>
           <PlanCheck
             label="ביטול / קיצור נסיעה"
+            description="החזר לביטול או קיצור נסיעה בעקבות אירוע רפואי או צו"
             checked={plan.cancellation}
             onChange={(v) => patchPersonPlan(key, { cancellation: v })}
+            icon={COVERAGE_ICONS.cancel}
           />
           <PlanCheck
             label="ביטול וקיצור נסיעה מורחב"
+            description="החזרים מקסימליים גבוהים יותר מהכיסוי הבסיסי"
             checked={plan.cancellationExpanded}
             onChange={(v) => patchPersonPlan(key, { cancellationExpanded: v })}
+            icon={COVERAGE_ICONS.cancel}
           />
           <PlanCheck
             label="החמרה של מצב רפואי קודם"
+            description="כיסוי להחמרה למצב רפואי שנרכש, בהתאם לתנאי הפוליסה"
             checked={plan.priorCondition}
             onChange={(v) => patchPersonPlan(key, { priorCondition: v })}
+            icon={COVERAGE_ICONS.health}
           />
           <PlanCheck
             label="הרחבה להיריון"
+            description="למבוטחת שגילה עד 42, היריון עד שבוע 32 (כולל)"
             checked={plan.pregnancy}
             onChange={(v) => patchPersonPlan(key, { pregnancy: v })}
+            icon={COVERAGE_ICONS.pregnancy}
           />
           <PlanCheck
             label="ספורט אתגרי חובבני"
+            description="לא ניתן לרכישה יחד עם כיסוי להיריון"
             checked={plan.adventureSports}
             onChange={(v) => patchPersonPlan(key, { adventureSports: v })}
-          />
-          {plan.adventureSports && (
-            <div className="mr-2 grid grid-cols-2 gap-2 sm:mr-6">
+            icon={COVERAGE_ICONS.adventure}
+          >
+            <div className="grid grid-cols-2 gap-2">
               <Field label="מ-">
                 <Input
                   className={inputClass}
@@ -844,14 +879,15 @@ const InsuranceProposal = () => {
                 />
               </Field>
             </div>
-          )}
+          </PlanCheck>
           <PlanCheck
             label="ספורט חורף"
+            description="לא ניתן לרכישה יחד עם כיסוי להיריון"
             checked={plan.winterSports}
             onChange={(v) => patchPersonPlan(key, { winterSports: v })}
-          />
-          {plan.winterSports && (
-            <div className="mr-2 grid grid-cols-2 gap-2 sm:mr-6">
+            icon={COVERAGE_ICONS.winter}
+          >
+            <div className="grid grid-cols-2 gap-2">
               <Field label="מ-">
                 <Input
                   className={inputClass}
@@ -873,28 +909,51 @@ const InsuranceProposal = () => {
                 />
               </Field>
             </div>
-          )}
+          </PlanCheck>
           <PlanCheck
             label="ספורט מקצועני"
             checked={plan.proSports}
             onChange={(v) => patchPersonPlan(key, { proSports: v })}
-          />
+            icon={COVERAGE_ICONS.pro}
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="מ-">
+                <Input
+                  className={inputClass}
+                  dir="ltr"
+                  value={plan.proFrom}
+                  onChange={(e) => patchPersonPlan(key, { proFrom: formatDateInput(e.target.value) })}
+                />
+              </Field>
+              <Field label="עד-">
+                <Input
+                  className={inputClass}
+                  dir="ltr"
+                  value={plan.proTo}
+                  onChange={(e) => patchPersonPlan(key, { proTo: formatDateInput(e.target.value) })}
+                />
+              </Field>
+            </div>
+          </PlanCheck>
           <PlanCheck
             label="תאונות אישיות"
+            description="פיצוי בגין מוות/נכות/כוויות/שברים/אשפוז כתוצאה מתאונה בחו״ל"
             checked={plan.personalAccident}
             onChange={(v) => patchPersonPlan(key, { personalAccident: v })}
+            icon={COVERAGE_ICONS.accident}
           />
           <PlanCheck
             label="תאונות אישיות בספורט אתגרי"
             checked={plan.personalAccidentAdventure}
             onChange={(v) => patchPersonPlan(key, { personalAccidentAdventure: v })}
+            icon={COVERAGE_ICONS.accident}
           />
           <PlanCheck
             label="מחשב נישא / טאבלט עד $2,000"
             checked={plan.laptop}
             onChange={(v) => patchPersonPlan(key, { laptop: v })}
-          />
-          {plan.laptop && (
+            icon={COVERAGE_ICONS.laptop}
+          >
             <Field label="דגם">
               <Input
                 className={inputClass}
@@ -902,13 +961,13 @@ const InsuranceProposal = () => {
                 onChange={(e) => patchPersonPlan(key, { laptopModel: e.target.value })}
               />
             </Field>
-          )}
+          </PlanCheck>
           <PlanCheck
             label="טלפון נייד עד $750"
             checked={plan.phone}
             onChange={(v) => patchPersonPlan(key, { phone: v })}
-          />
-          {plan.phone && (
+            icon={COVERAGE_ICONS.phone}
+          >
             <Field label="דגם">
               <Input
                 className={inputClass}
@@ -916,14 +975,14 @@ const InsuranceProposal = () => {
                 onChange={(e) => patchPersonPlan(key, { phoneModel: e.target.value })}
               />
             </Field>
-          )}
+          </PlanCheck>
           <PlanCheck
             label="אופניים דו־גלגליים"
             checked={plan.bicycle}
             onChange={(v) => patchPersonPlan(key, { bicycle: v })}
-          />
-          {plan.bicycle && (
-            <div className="mr-2 space-y-2 rounded-2xl bg-slate-50 p-3 sm:mr-6">
+            icon={COVERAGE_ICONS.bike}
+          >
+            <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 {(["2500", "4500", "6000"] as const).map((lim) => (
                   <button
@@ -968,14 +1027,15 @@ const InsuranceProposal = () => {
                 />
               </Field>
             </div>
-          )}
+          </PlanCheck>
           <PlanCheck
             label="ביטול השתתפות עצמית לרכב שכור"
+            description="לנהגים בגילאי 24–75"
             checked={plan.rentalCar}
             onChange={(v) => patchPersonPlan(key, { rentalCar: v })}
-          />
-          {plan.rentalCar && (
-            <div className="mr-2 space-y-2 rounded-2xl bg-slate-50 p-3 sm:mr-6">
+            icon={COVERAGE_ICONS.car}
+          >
+            <div className="space-y-2">
               <div className="flex gap-2">
                 {(["1500", "6000"] as const).map((lim) => (
                   <button
@@ -1015,7 +1075,7 @@ const InsuranceProposal = () => {
                 </Field>
               </div>
             </div>
-          )}
+          </PlanCheck>
         </div>
       </div>
     );
@@ -1028,9 +1088,20 @@ const InsuranceProposal = () => {
       <style>{`
         .proposal-page {
           background:
-            radial-gradient(1100px 520px at 88% -10%, rgba(74,222,128,.18), transparent 55%),
-            radial-gradient(820px 420px at -10% 20%, rgba(47,107,99,.14), transparent 50%),
-            linear-gradient(180deg, #f3faf7 0%, #eef6f3 45%, #e9f2ef 100%);
+            radial-gradient(900px 360px at 50% -5%, rgba(47,107,99,.10), transparent 55%),
+            linear-gradient(180deg, #eef6fb 0%, #f3faf8 42%, #eef5f2 100%);
+        }
+        .proposal-page::before {
+          content: "";
+          pointer-events: none;
+          position: absolute;
+          inset: 0 0 auto 0;
+          height: 180px;
+          opacity: .35;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='160' viewBox='0 0 1200 160' fill='none'%3E%3Cpath d='M40 120 L70 70 L100 120 M160 120 L190 55 L220 120 M280 120 L300 80 L320 120 M380 110 C400 60 440 60 460 110 M520 120 L540 75 L560 120 M620 120 L650 50 L680 120 M760 115 C780 70 820 70 840 115 M900 120 L930 65 L960 120 M1020 120 L1040 85 L1060 120' stroke='%232f6b63' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: center top;
+          background-size: min(1100px, 140%) auto;
         }
         @keyframes tp-rise {
           from { opacity: 0; transform: translateY(14px); }
@@ -1178,7 +1249,7 @@ const InsuranceProposal = () => {
             )}
 
             {step === "trip" && (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {crmFound && (
                   <div className="flex items-start gap-3 rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#2f6b63]" />
@@ -1190,50 +1261,33 @@ const InsuranceProposal = () => {
                     </div>
                   </div>
                 )}
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">פרטי הנסיעה</h2>
-                  <p className="mt-1 text-xs text-slate-500">תאריכים, יעדים ודרכי התקשרות</p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="מתאריך" required error={errors.tripFrom}>
-                    <Input
-                      className={inputClass}
-                      dir="ltr"
-                      placeholder="DD/MM/YYYY"
-                      value={form.tripFrom}
-                      onChange={(e) => setField("tripFrom", formatDateInput(e.target.value))}
-                    />
-                  </Field>
-                  <Field label="עד תאריך" required error={errors.tripTo}>
-                    <Input
-                      className={inputClass}
-                      dir="ltr"
-                      placeholder="DD/MM/YYYY"
-                      value={form.tripTo}
-                      onChange={(e) => setField("tripTo", formatDateInput(e.target.value))}
-                    />
-                  </Field>
-                </div>
-                <Field label="יעד הנסיעה" required error={errors.destinations}>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {DESTINATION_OPTIONS.map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => toggleDest(d.id)}
-                        className={`rounded-2xl border px-3 py-2.5 text-sm font-semibold transition ${
-                          form.destinations.includes(d.id)
-                            ? "border-[#2f6b63] bg-[#2f6b63] text-white shadow-sm shadow-[#2f6b63]/20"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-[#2f6b63]/30"
-                        }`}
-                      >
-                        {d.labelHe}
-                      </button>
-                    ))}
+
+                <DestinationPicker
+                  selected={form.destinations}
+                  onToggle={toggleDest}
+                  error={errors.destinations}
+                />
+
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <h3 className="text-lg font-extrabold text-[#143834]">מתי נוסעים?</h3>
+                    <p className="mt-1 text-xs text-slate-500">בחרו תאריכי יציאה וחזרה בלוח השנה</p>
                   </div>
-                </Field>
+                  <TripDateRangePicker
+                    from={form.tripFrom}
+                    to={form.tripTo}
+                    onChange={(from, to) => {
+                      setField("tripFrom", from);
+                      setField("tripTo", to);
+                    }}
+                    fromError={errors.tripFrom}
+                    toError={errors.tripTo}
+                  />
+                </div>
+
                 {form.destinations.includes("usa") && (
-                  <div className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:grid-cols-2">
+                  <div className="grid gap-3 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4 sm:grid-cols-2">
+                    <p className="sm:col-span-2 text-xs font-bold text-[#143834]">תקופת שהייה בארה״ב (אם רלוונטי)</p>
                     <Field label="ארה״ב מ-" error={errors.usaFrom}>
                       <Input
                         className={inputClass}
@@ -1252,14 +1306,16 @@ const InsuranceProposal = () => {
                     </Field>
                   </div>
                 )}
+
                 <Field label="נא פרט את המדינות בהן בכוונתך לבקר" required error={errors.countriesDetail}>
                   <Textarea
-                    className="min-h-[88px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
+                    className="min-h-[88px] rounded-2xl border-slate-200 bg-white text-right"
                     placeholder="לדוגמה: צרפת, איטליה, ספרד"
                     value={form.countriesDetail}
                     onChange={(e) => setField("countriesDetail", e.target.value)}
                   />
                 </Field>
+
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="נייד" required error={errors.mobile}>
                     <Input
