@@ -43,6 +43,8 @@ export type TravelPersonPdf = {
     optOutSearchRescue?: boolean;
     optOutThirdParty?: boolean;
     baggage?: boolean;
+    /** Extended baggage — valuable item coverage (separate from basic baggage). */
+    baggageValuables?: boolean;
     valuableItems?: string[];
     cancellation?: boolean;
     cancellationExpanded?: boolean;
@@ -255,18 +257,22 @@ function drawText(
 }
 
 function mark(page: PDFPage, font: PDFFont, x: number, yFromTop: number, size = 9) {
+  // Baseline offset ~0.32*size keeps the glyph visually centered on yFromTop.
   page.drawText("X", {
     x,
-    y: topY(yFromTop) - size * 0.15,
+    y: topY(yFromTop) - size * 0.32,
     size,
     font,
     color: INK,
   });
 }
 
+/** Center an X inside a checkbox / cell (x0→x1). Prefer size ≤ box width. */
 function markInBox(page: PDFPage, font: PDFFont, x0: number, x1: number, yFromTop: number, size = 9) {
-  const w = widthOf("X", font, size);
-  mark(page, font, x0 + (x1 - x0 - w) / 2, yFromTop, size);
+  const boxW = Math.max(1, x1 - x0);
+  const used = Math.min(size, boxW * 0.85);
+  const w = widthOf("X", font, used);
+  mark(page, font, x0 + (boxW - w) / 2, yFromTop, used);
 }
 
 function drawDigits(
@@ -278,13 +284,13 @@ function drawDigits(
   size = 10,
 ) {
   const chars = [...digitsOnly(value)];
-  const slots = Math.min(chars.length, ticks.length - 1);
+  const slots = Math.min(chars.length, Math.max(0, ticks.length - 1));
   for (let i = 0; i < slots; i++) {
     const ch = chars[i];
     const slotW = ticks[i + 1] - ticks[i];
     const w = widthOf(ch, font, size);
     const x = ticks[i] + (slotW - w) / 2;
-    page.drawText(ch, { x, y: topY(yFromTop) - size * 0.15, size, font, color: INK });
+    page.drawText(ch, { x, y: topY(yFromTop) - size * 0.32, size, font, color: INK });
   }
 }
 
@@ -369,17 +375,18 @@ const USA_TO_SEGS: [number, number][] = [
 
 /** Insured rows: gender boxes + digit combs + name baselines (y from top). */
 const INSURED_ROWS = [
-  { genderY: 605, digitY: 612, nameHeY: 608, nameEnY: 618 }, // primary
-  { genderY: 639, digitY: 646, nameHeY: 642, nameEnY: 652 }, // spouse
-  { genderY: 673, digitY: 680, nameHeY: 676, nameEnY: 686 }, // child1
-  { genderY: 707, digitY: 714, nameHeY: 710, nameEnY: 720 }, // child2
-  { genderY: 741, digitY: 748, nameHeY: 744, nameEnY: 754 }, // child3
-  { genderY: 775, digitY: 782, nameHeY: 778, nameEnY: 788 }, // child4
+  { genderY: 605.5, digitY: 613, nameHeY: 605, nameEnY: 628 }, // primary
+  { genderY: 639.5, digitY: 647, nameHeY: 639, nameEnY: 662 }, // spouse
+  { genderY: 673.5, digitY: 681, nameHeY: 673, nameEnY: 696 }, // child1
+  { genderY: 707.5, digitY: 715, nameHeY: 707, nameEnY: 730 }, // child2
+  { genderY: 741.5, digitY: 749, nameHeY: 741, nameEnY: 764 }, // child3
+  { genderY: 775.5, digitY: 783, nameHeY: 775, nameEnY: 798 }, // child4
 ];
 const GENDER_MALE = { x0: 498.3, x1: 506.4 };
 const GENDER_FEMALE = { x0: 480.0, x1: 488.1 };
 const ID_TICKS = [340.2, 354.8, 369.4, 384.0, 398.6, 413.2, 427.8, 442.4, 456.9, 471.5];
-const DOB_TICKS = [43.3, 58.4, 73.4, 88.4, 103.4, 118.5]; // DDMMYY
+/** 7 ticks → 6 digit slots DDMMYY (was missing leftmost tick → dropped final digit). */
+const DOB_TICKS = [28.3, 43.3, 58.4, 73.4, 88.4, 103.4, 118.5];
 const NAME_LAST_X = 230;
 const NAME_LAST_W = 105;
 const NAME_FIRST_X = 125;
@@ -395,15 +402,16 @@ const HEALTH_YN: { yes: [number, number]; no: [number, number] }[] = [
   { yes: [43.4, 58.4], no: [28.5, 43.4] }, // child4
 ];
 
+/** Mid-Y of each question's yes/no cell band (from template grid). */
 const HEALTH_Q_Y: Record<string, number> = {
-  q1: 90,
-  q2: 126,
-  q22: 290,
-  q3: 348,
-  q31: 424,
-  q4: 470,
-  q5: 548,
-  q52: 584,
+  q1: 97,
+  q2: 119,
+  q22: 287,
+  q3: 349,
+  q31: 436,
+  q4: 473,
+  q5: 553,
+  q52: 578,
 };
 
 const Q21_BOX: Record<string, { x0: number; x1: number; y: number }> = {
@@ -414,21 +422,29 @@ const Q21_BOX: Record<string, { x0: number; x1: number; y: number }> = {
   liver: { x0: 513.0, x1: 521.2, y: 262 },
 };
 
-// —— Page 3/4 plan columns (X center for checkmark per person) ——
-const PLAN_COL_X = [375.5, 325.5, 276.5, 227.5, 178.5, 129.0];
+// —— Page 3/4 plan columns (cell mid-X per person, right→left) ——
+const PLAN_COL = [
+  { x0: 343.9, x1: 394.4 }, // primary
+  { x0: 294.6, x1: 343.9 }, // spouse
+  { x0: 245.9, x1: 294.6 }, // child1
+  { x0: 196.5, x1: 245.9 }, // child2
+  { x0: 147.2, x1: 196.5 }, // child3
+  { x0: 97.6, x1: 147.2 }, // child4
+];
 const PLAN_ROW_Y = {
-  optOutSearch: 76,
-  optOutThird: 112,
-  baggage: 155,
-  cancellation: 250,
-  cancellationExpanded: 290,
-  priorCondition: 340,
-  pregnancy: 420,
-  adventure: 535,
-  winter: 558,
-  pro: 581,
-  personalAccident: 620,
-  personalAccidentAdventure: 665,
+  optOutSearch: 77,
+  optOutThird: 113,
+  /** Basic baggage row (not the valuables block below it). */
+  baggage: 143,
+  cancellation: 263,
+  cancellationExpanded: 309,
+  priorCondition: 365,
+  pregnancy: 460,
+  adventure: 531,
+  winter: 554,
+  pro: 577,
+  personalAccident: 610,
+  personalAccidentAdventure: 660,
   laptop: 700,
   phone: 722,
 };
@@ -478,15 +494,15 @@ function markYnPerson(
 ) {
   const col = HEALTH_YN[personIdx];
   if (!col) return;
-  if (isYes(answer)) markInBox(page, font, col.yes[0], col.yes[1], yFromTop, 8);
-  else if (isNo(answer)) markInBox(page, font, col.no[0], col.no[1], yFromTop, 8);
+  if (isYes(answer)) markInBox(page, font, col.yes[0], col.yes[1], yFromTop, 7);
+  else if (isNo(answer)) markInBox(page, font, col.no[0], col.no[1], yFromTop, 7);
 }
 
 function markPlan(page: PDFPage, font: PDFFont, personIdx: number, yFromTop: number, on: boolean) {
   if (!on) return;
-  const x = PLAN_COL_X[personIdx];
-  if (x == null) return;
-  mark(page, font, x - 3, yFromTop, 10);
+  const col = PLAN_COL[personIdx];
+  if (!col) return;
+  markInBox(page, font, col.x0, col.x1, yFromTop, 9);
 }
 
 function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
@@ -499,7 +515,7 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   const dests = new Set((input.destinations || []).map((d) => String(d).toLowerCase()));
   for (const [id, box] of Object.entries(DEST_BOX)) {
     if (dests.has(id) || (id === "usa" && (s(input.usaFrom) || s(input.usaTo)))) {
-      markInBox(page, font, box.x0, box.x1, box.y, 9);
+      markInBox(page, font, box.x0, box.x1, box.y, 7);
     }
   }
   if (dests.has("usa") || s(input.usaFrom) || s(input.usaTo)) {
@@ -507,7 +523,7 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     drawDateSegments(page, font, input.usaTo, USA_TO_SEGS, 262, 8);
   }
 
-  drawText(page, font, s(input.countriesDetail), 28, 290, 8, 380);
+  drawText(page, font, s(input.countriesDetail), 40, 284, 8, 360);
 
   // Contact row
   drawText(page, font, s(input.street), 350, 488, 8, 160);
@@ -515,12 +531,12 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   drawText(page, font, s(input.city), 150, 488, 8, 120);
   drawText(page, font, s(input.occupation), 28, 488, 8, 110);
 
-  drawText(page, font, s(input.phone), 440, 518, 8, 85);
-  drawText(page, font, s(input.mobile), 300, 518, 8, 110);
-  drawText(page, font, s(input.email), 28, 518, 8, 250);
+  drawText(page, font, s(input.phone), 445, 520, 8, 95);
+  drawText(page, font, s(input.mobile), 360, 520, 8, 65);
+  drawText(page, font, s(input.email), 175, 520, 8, 120);
 
   if (input.israeliResidents !== false) {
-    markInBox(page, font, 259.7, 267.9, 569, 9);
+    markInBox(page, font, 259.7, 267.9, 569.3, 7);
   }
 
   const people = PERSON_KEYS.map((k) => input[k] || {});
@@ -528,13 +544,13 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     if (idx > 0 && !p.included) return;
     const row = INSURED_ROWS[idx];
     if (!row) return;
-    if (isMale(s(p.gender))) markInBox(page, font, GENDER_MALE.x0, GENDER_MALE.x1, row.genderY, 9);
-    if (isFemale(s(p.gender))) markInBox(page, font, GENDER_FEMALE.x0, GENDER_FEMALE.x1, row.genderY, 9);
+    if (isMale(s(p.gender))) markInBox(page, font, GENDER_MALE.x0, GENDER_MALE.x1, row.genderY, 7);
+    if (isFemale(s(p.gender))) markInBox(page, font, GENDER_FEMALE.x0, GENDER_FEMALE.x1, row.genderY, 7);
     drawDigits(page, font, s(p.idNumber), ID_TICKS, row.digitY, 10);
     drawDigits(page, font, dateDigits6(p.birthDate), DOB_TICKS, row.digitY, 10);
-    drawText(page, font, s(p.lastNameHe), NAME_LAST_X, row.nameHeY, 7, NAME_LAST_W);
+    drawText(page, font, s(p.lastNameHe), NAME_LAST_X, row.nameHeY, 8, NAME_LAST_W);
     drawText(page, font, s(p.lastNameEn), NAME_LAST_X, row.nameEnY, 7, NAME_LAST_W);
-    drawText(page, font, s(p.firstNameHe), NAME_FIRST_X, row.nameHeY, 7, NAME_FIRST_W);
+    drawText(page, font, s(p.firstNameHe), NAME_FIRST_X, row.nameHeY, 8, NAME_FIRST_W);
     drawText(page, font, s(p.firstNameEn), NAME_FIRST_X, row.nameEnY, 7, NAME_FIRST_W);
   });
 }
@@ -601,7 +617,10 @@ function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     markPlan(page, font, idx, PLAN_ROW_Y.laptop, !!plan.laptop);
     markPlan(page, font, idx, PLAN_ROW_Y.phone, !!plan.phone);
 
-    for (const v of plan.valuableItems || []) valuables.add(v);
+    // Valuable-item ticks only when extended baggage was chosen
+    if (plan.baggage && plan.baggageValuables) {
+      for (const v of plan.valuableItems || []) valuables.add(v);
+    }
     if (plan.laptopModel) laptopModel = s(plan.laptopModel);
     if (plan.phoneModel) phoneModel = s(plan.phoneModel);
     if (plan.adventureFrom) adventureFrom = s(plan.adventureFrom);
@@ -694,23 +713,23 @@ function fillPage5(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   drawText(page, font, s(input.agentName) || "אופיר ושות׳", 320, 305, 8, 70);
   drawText(page, font, sigDate, 460, 305, 8, 70);
 
-  // Payment (section ט) — row baselines ~350 / 374 / 400 / 425
-  drawText(page, font, s(input.payerName), 330, 350, 9, 210);
-  drawDigits(page, font, s(input.payerId), PAYER_ID_TICKS, 350, 10);
+  // Payment (section ט) — values sit in the lower half of each row (below labels)
+  drawText(page, font, s(input.payerName), 330, 354, 9, 210);
+  drawDigits(page, font, s(input.payerId), PAYER_ID_TICKS, 354, 10);
   const install = digitsOnly(s(input.installments) || "1").slice(0, 2);
-  if (install) drawText(page, font, install, 70, 350, 11, 80);
+  if (install) drawText(page, font, install, 70, 354, 11, 80);
 
   const card = digitsOnly(s(input.cardNumber)).slice(0, 16);
-  drawDigits(page, font, card, CARD_TICKS, 374, 10);
-  drawDigits(page, font, digitsOnly(s(input.cardExp)).slice(0, 4), EXP_TICKS, 374, 10);
-  drawDigits(page, font, digitsOnly(s(input.cardCvv)).slice(0, 3), CVV_TICKS, 374, 10);
+  drawDigits(page, font, card, CARD_TICKS, 378, 10);
+  drawDigits(page, font, digitsOnly(s(input.cardExp)).slice(0, 4), EXP_TICKS, 378, 10);
+  drawDigits(page, font, digitsOnly(s(input.cardCvv)).slice(0, 3), CVV_TICKS, 378, 10);
 
-  drawText(page, font, s(input.payerStreet), 360, 400, 8, 160);
-  drawText(page, font, s(input.payerHouseNo), 290, 400, 8, 30);
-  drawText(page, font, s(input.payerCity), 120, 400, 8, 120);
-  drawText(page, font, s(input.payerZip), 35, 400, 8, 60);
-  drawText(page, font, s(input.payerPhone), 360, 425, 8, 150);
-  drawText(page, font, s(input.payerMobile), 40, 425, 8, 180);
+  drawText(page, font, s(input.payerStreet), 360, 404, 8, 160);
+  drawText(page, font, s(input.payerHouseNo), 290, 404, 8, 30);
+  drawText(page, font, s(input.payerCity), 120, 404, 8, 120);
+  drawText(page, font, s(input.payerZip), 35, 404, 8, 60);
+  drawText(page, font, s(input.payerPhone), 360, 428, 8, 150);
+  drawText(page, font, s(input.payerMobile), 120, 428, 8, 100);
 
   drawText(page, font, sigDate, 460, 585, 8, 70);
   drawText(page, font, s(input.payerName), 40, 585, 8, 150);
