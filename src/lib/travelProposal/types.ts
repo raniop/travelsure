@@ -3,8 +3,8 @@ export type Gender = "" | "male" | "female";
 
 export type Step =
   | "intro"
+  | "identity"
   | "trip"
-  | "contact"
   | "insureds"
   | "health"
   | "plan"
