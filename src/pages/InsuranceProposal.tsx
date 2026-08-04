@@ -78,6 +78,7 @@ import {
   DestinationPicker,
   HealthQuestionCard,
   PillYesNo,
+  ProposalIconStepper,
   TripDateRangePicker,
 } from "@/components/travelProposal/ProposalUi";
 import {
@@ -172,8 +173,6 @@ const InsuranceProposal = () => {
             : step),
     ),
   );
-  const progressPct =
-    step === "intro" ? 0 : ((progressIndex + 1) / progressSteps.length) * 100;
 
   const people = useMemo(() => includedPersons(form), [form]);
   const nextDependentKey = DEPENDENT_KEYS.find((k) => !form[k].included);
@@ -533,7 +532,7 @@ const InsuranceProposal = () => {
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 className="text-base font-extrabold text-[#143834]">
-              ד · הצהרת בריאות — {PERSON_LABELS_HE[key]}
+              הצהרת בריאות — {PERSON_LABELS_HE[key]}
             </h3>
             <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{HEALTH_INTRO}</p>
           </div>
@@ -732,6 +731,7 @@ const InsuranceProposal = () => {
     label,
     description,
     footnote,
+    priceHint,
     checked,
     onChange,
     icon,
@@ -741,6 +741,7 @@ const InsuranceProposal = () => {
     label: string;
     description?: string;
     footnote?: string;
+    priceHint?: string;
     checked: boolean;
     onChange: (v: boolean) => void;
     icon?: ReactNode;
@@ -751,6 +752,7 @@ const InsuranceProposal = () => {
       title={label}
       description={description}
       footnote={footnote}
+      priceHint={priceHint}
       checked={checked}
       onChange={onChange}
       icon={icon}
@@ -763,46 +765,48 @@ const InsuranceProposal = () => {
   const renderPlanFor = (key: PersonKey) => {
     const plan = form[key].plan;
     return (
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-base font-extrabold text-[#143834]">
-            ה · תכנית הביטוח — פירסט קלאס · {PERSON_LABELS_HE[key]}
+      <div className="space-y-5">
+        <div className="text-center sm:text-right">
+          <span className="inline-flex rounded-full bg-[#143834] px-3 py-1 text-[11px] font-bold text-white">
+            {PERSON_LABELS_HE[key]}
+          </span>
+          <h3 className="mt-2 text-lg font-extrabold text-[#143834]">
+            ה · תכנית הביטוח — פירסט קלאס
           </h3>
-          <p className="mt-1 text-xs text-slate-500">
-            ביטוח רפואי בסיסי כלול. אפשר להסיר כיסויים כלולים או להוסיף הרחבות.
+          <p className="mt-1 text-sm text-slate-500">
+            ביטוח רפואי בסיסי כלול. אפשר להסיר כיסויים כלולים או להוסיף הרחבות בתשלום.
           </p>
         </div>
 
-        <p className="text-sm font-extrabold text-[#143834]">כיסויים כלולים ברובד הבסיס</p>
-        <div className="space-y-2.5">
+        <p className="text-base font-extrabold text-[#143834]">כיסויים נפוצים</p>
+        <div className="space-y-3">
           <PlanCheck
             label="חיפוש, איתור וחילוץ"
-            description="כלול ברובד הבסיס. סמנו אם אינכם מעוניינים בכיסוי זה."
-            checked={plan.optOutSearchRescue}
-            onChange={(v) => patchPersonPlan(key, { optOutSearchRescue: v })}
+            description="כיסוי לחיפוש, איתור וחילוץ בחו״ל — כלול ברובד הבסיס"
+            checked={!plan.optOutSearchRescue}
+            onChange={(v) => patchPersonPlan(key, { optOutSearchRescue: !v })}
             icon={COVERAGE_ICONS.rescue}
-            variant="optout"
-            footnote={plan.optOutSearchRescue ? "סומן: לא מעוניין" : "ניתן להסיר כיסוי זה"}
+            variant="included"
+            priceHint="$0.00"
+            footnote="ניתן להסיר כיסוי זה"
           />
           <PlanCheck
             label="חבות כלפי צד ג׳"
-            description="כלול ברובד הבסיס. סמנו אם אינכם מעוניינים בכיסוי זה."
-            checked={plan.optOutThirdParty}
-            onChange={(v) => patchPersonPlan(key, { optOutThirdParty: v })}
+            description="כיסוי לחבות כלפי צד שלישי — כלול ברובד הבסיס"
+            checked={!plan.optOutThirdParty}
+            onChange={(v) => patchPersonPlan(key, { optOutThirdParty: !v })}
             icon={COVERAGE_ICONS.thirdParty}
-            variant="optout"
-            footnote={plan.optOutThirdParty ? "סומן: לא מעוניין" : "ניתן להסיר כיסוי זה"}
+            variant="included"
+            priceHint="$0.00"
+            footnote="ניתן להסיר כיסוי זה"
           />
-        </div>
-
-        <p className="pt-2 text-sm font-extrabold text-[#143834]">הרחבות בתוספת תשלום</p>
-        <div className="space-y-2.5">
           <PlanCheck
             label="כבודה — אובדן או גניבה"
             description="מטען אישי נלווה לכל תקופת הביטוח"
             checked={plan.baggage}
             onChange={(v) => patchPersonPlan(key, { baggage: v })}
             icon={COVERAGE_ICONS.baggage}
+            priceHint="הרחבה"
           >
             <div className="grid gap-2">
               <p className="text-[11px] font-semibold text-slate-600">פריט יקר ערך עד $2,000</p>
@@ -828,6 +832,7 @@ const InsuranceProposal = () => {
             checked={plan.cancellation}
             onChange={(v) => patchPersonPlan(key, { cancellation: v })}
             icon={COVERAGE_ICONS.cancel}
+            priceHint="הרחבה"
           />
           <PlanCheck
             label="ביטול וקיצור נסיעה מורחב"
@@ -835,13 +840,19 @@ const InsuranceProposal = () => {
             checked={plan.cancellationExpanded}
             onChange={(v) => patchPersonPlan(key, { cancellationExpanded: v })}
             icon={COVERAGE_ICONS.cancel}
+            priceHint="הרחבה"
           />
+        </div>
+
+        <p className="pt-1 text-base font-extrabold text-[#143834]">כיסויים בשביל הבריאות שלך</p>
+        <div className="space-y-3">
           <PlanCheck
             label="החמרה של מצב רפואי קודם"
-            description="כיסוי להחמרה למצב רפואי שנרכש, בהתאם לתנאי הפוליסה"
+            description="כיסוי להחמרה למצב רפואי קודם, בהתאם לתנאי הפוליסה"
             checked={plan.priorCondition}
             onChange={(v) => patchPersonPlan(key, { priorCondition: v })}
             icon={COVERAGE_ICONS.health}
+            priceHint="הרחבה"
           />
           <PlanCheck
             label="הרחבה להיריון"
@@ -849,13 +860,19 @@ const InsuranceProposal = () => {
             checked={plan.pregnancy}
             onChange={(v) => patchPersonPlan(key, { pregnancy: v })}
             icon={COVERAGE_ICONS.pregnancy}
+            priceHint="הרחבה"
           />
+        </div>
+
+        <p className="pt-1 text-base font-extrabold text-[#143834]">ספורט והרחבות נוספות</p>
+        <div className="space-y-3">
           <PlanCheck
             label="ספורט אתגרי חובבני"
             description="לא ניתן לרכישה יחד עם כיסוי להיריון"
             checked={plan.adventureSports}
             onChange={(v) => patchPersonPlan(key, { adventureSports: v })}
             icon={COVERAGE_ICONS.adventure}
+            priceHint="הרחבה"
           >
             <div className="grid grid-cols-2 gap-2">
               <Field label="מ-">
@@ -1148,19 +1165,8 @@ const InsuranceProposal = () => {
         </header>
 
         {step !== "intro" && step !== "success" && step !== "sending" && (
-          <div className="tp-rise tp-rise-d1 mb-5">
-            <div className="mb-2 flex justify-between text-[11px] font-semibold text-slate-500">
-              <span>{progressSteps[Math.min(progressIndex, progressSteps.length - 1)]?.label}</span>
-              <span>
-                {Math.min(progressIndex + 1, progressSteps.length)} / {progressSteps.length}
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/70">
-              <div
-                className="h-full rounded-full bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80] transition-all duration-500"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
+          <div className="tp-rise tp-rise-d1 mb-6">
+            <ProposalIconStepper steps={progressSteps} currentIndex={progressIndex} />
           </div>
         )}
 
@@ -1379,9 +1385,12 @@ const InsuranceProposal = () => {
 
             {step === "health" && (
               <div className="space-y-4">
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">ד · הצהרת בריאות</h2>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-600">{HEALTH_DISCLAIMER}</p>
+                <div className="rounded-[24px] border border-[#d7e8e3] bg-gradient-to-l from-[#e8f4f1]/80 to-white p-4 sm:p-5">
+                  <p className="text-xs font-bold text-[#2f6b63]">מה מכוסה בביטוח?</p>
+                  <h2 className="mt-1 text-lg font-extrabold leading-snug text-[#143834] sm:text-xl">
+                    בניגוד לחברת תעופה, אנחנו חברת ביטוח. אז אנחנו חייבים לשאול גם שאלות כאלה בנסיעה לחו״ל
+                  </h2>
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{HEALTH_DISCLAIMER}</p>
                 </div>
                 {people.length > 1 && (
                   <div className="flex flex-wrap gap-2">
@@ -1440,10 +1449,6 @@ const InsuranceProposal = () => {
 
             {step === "plan" && (
               <div className="space-y-4">
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">תכנית הביטוח — פירסט קלאס</h2>
-                  <p className="mt-1 text-xs text-slate-500">בחרו כיסויים לכל מבוטח</p>
-                </div>
                 {people.length > 1 && (
                   <div className="flex flex-wrap gap-2">
                     {people.map(({ key }) => (
