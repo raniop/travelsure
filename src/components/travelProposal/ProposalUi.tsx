@@ -42,26 +42,37 @@ export const parseDdMmYyyy = (value: string): Date | undefined => {
   return d;
 };
 
+const maskDate = (raw: string) => {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  const dd = digits.slice(0, 2);
+  const mm = digits.slice(2, 4);
+  const yyyy = digits.slice(4, 8);
+  if (digits.length <= 2) return dd;
+  if (digits.length <= 4) return `${dd}/${mm}`;
+  return `${dd}/${mm}/${yyyy}`;
+};
+
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
-  const stroke = active ? "#0f2f2c" : "#1f4b46";
-  const fill = active ? "#5fa898" : "#9ecconst DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => (
-  <svg viewBox="0 0 48 48" className="h-14 w-14 sm:h-[62px] sm:w-[62px]" aria-hidden>
-    <defs>
-      <linearGradient id={`dest-grad-${id}`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={active ? "#a8d5cb" : "#d5ebe5"} />
-        <stop offset="100%" stopColor={active ? "#5fa898" : "#9ecfc2"} />
-      </linearGradient>
-    </defs>
-    <path
-      d={DESTINATION_MAP_PATHS[id]}
-      fill={`url(#dest-grad-${id})`}
-      stroke={active ? "#143834" : "#2f6b63"}
-      strokeWidth={1.25}
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    />
-  </svg>
-);
+  const gradId = `dest-grad-${id}`;
+  return (
+    <svg viewBox="0 0 48 48" className="h-14 w-14 sm:h-[62px] sm:w-[62px]" aria-hidden>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={active ? "#a8d5cb" : "#d5ebe5"} />
+          <stop offset="100%" stopColor={active ? "#5fa898" : "#9ecfc2"} />
+        </linearGradient>
+      </defs>
+      <path
+        d={DESTINATION_MAP_PATHS[id]}
+        fill={`url(#${gradId})`}
+        stroke={active ? "#143834" : "#2f6b63"}
+        strokeWidth={1.25}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+};
 
 export function DestinationPicker({
   selected,
@@ -171,15 +182,7 @@ export function TripDateRangePicker({
             inputMode="numeric"
             placeholder="DD/MM/YYYY"
             value={from}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
-              const dd = digits.slice(0, 2);
-              const mm = digits.slice(2, 4);
-              const yyyy = digits.slice(4, 8);
-              const next =
-                digits.length <= 2 ? dd : digits.length <= 4 ? `${dd}/${mm}` : `${dd}/${mm}/${yyyy}`;
-              onChange(next, to);
-            }}
+            onChange={(e) => onChange(maskDate(e.target.value), to)}
             className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
           />
           {fromError && <p className="mt-1 text-xs text-rose-600">{fromError}</p>}
@@ -192,15 +195,7 @@ export function TripDateRangePicker({
             inputMode="numeric"
             placeholder="DD/MM/YYYY"
             value={to}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
-              const dd = digits.slice(0, 2);
-              const mm = digits.slice(2, 4);
-              const yyyy = digits.slice(4, 8);
-              const next =
-                digits.length <= 2 ? dd : digits.length <= 4 ? `${dd}/${mm}` : `${dd}/${mm}/${yyyy}`;
-              onChange(from, next);
-            }}
+            onChange={(e) => onChange(from, maskDate(e.target.value))}
             className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
           />
           {toError && <p className="mt-1 text-xs text-rose-600">{toError}</p>}
@@ -215,7 +210,18 @@ export function TripDateRangePicker({
   );
 }
 
-ne-flex overflow-hidden rounded-full border-2 border-[#2f6b63]/30 bg-white shadow-sm"
+export function PillYesNo({
+  value,
+  onChange,
+  name,
+}: {
+  value: YesNo;
+  onChange: (v: YesNo) => void;
+  name: string;
+}) {
+  return (
+    <div
+      className="inline-flex overflow-hidden rounded-full border-2 border-[#2f6b63]/30 bg-white shadow-sm"
       role="group"
       aria-label={name}
     >
@@ -352,9 +358,7 @@ export function CoverageCard({
   );
 }
 
-const STEP_META: Partial<
-  Record<Step, { label: string; icon: typeof Plane; short?: string }>
-> = {
+const STEP_META: Partial<Record<Step, { label: string; icon: typeof Plane; short?: string }>> = {
   identity: { label: "זיהוי", icon: UserRound },
   trip: { label: "לאן?", icon: Plane, short: "יעד" },
   insureds: { label: "נוסעים", icon: Users },
