@@ -176,18 +176,24 @@ const InsuranceProposal = () => {
       const next = { ...prev };
       for (const key of PERSON_KEYS) {
         if (!next[key].included) continue;
-        const health = next[key].health;
-        const plan = next[key].plan;
+        const person = next[key];
+        const health = person.health;
+        const plan = person.plan;
         const needPrior = requiresPriorConditionCoverage(health);
-        const needPreg = requiresPregnancyCoverage(health);
-        if ((needPrior && !plan.priorCondition) || (needPreg && !plan.pregnancy)) {
+        const needPreg = requiresPregnancyCoverage(health, person.gender);
+        const clearPreg = person.gender !== "female" && plan.pregnancy;
+        if (
+          (needPrior && !plan.priorCondition) ||
+          (needPreg && !plan.pregnancy) ||
+          clearPreg
+        ) {
           changed = true;
           next[key] = {
             ...next[key],
             plan: {
               ...plan,
               priorCondition: needPrior ? true : plan.priorCondition,
-              pregnancy: needPreg ? true : plan.pregnancy,
+              pregnancy: person.gender === "female" ? (needPreg ? true : plan.pregnancy) : false,
             },
           };
         }
@@ -518,7 +524,22 @@ const InsuranceProposal = () => {
                 <button
                   key={o.v}
                   type="button"
-                  onClick={() => patchPerson(key, { gender: o.v })}
+                  onClick={() => {
+                    if (o.v === "male") {
+                      patchPerson(key, {
+                        gender: o.v,
+                        health: {
+                          ...form[key].health,
+                          q5Pregnant: "",
+                          q51Week: "",
+                          q52HighRisk: "",
+                        },
+                        plan: { ...form[key].plan, pregnancy: false },
+                      });
+                    } else {
+                      patchPerson(key, { gender: o.v });
+                    }
+                  }}
                   className={`h-11 flex-1 rounded-2xl border text-sm font-semibold ${
                     person.gender === o.v
                       ? "border-[#2f6b63] bg-[#2f6b63] text-white"
@@ -856,8 +877,9 @@ const InsuranceProposal = () => {
   const renderPlanFor = (key: PersonKey) => {
     const plan = form[key].plan;
     const health = form[key].health;
+    const isFemale = form[key].gender === "female";
     const priorLocked = requiresPriorConditionCoverage(health);
-    const pregnancyLocked = requiresPregnancyCoverage(health);
+    const pregnancyLocked = requiresPregnancyCoverage(health, form[key].gender);
     return (
       <div className="space-y-5">
         <div className="tp-center space-y-3 text-center" style={{ textAlign: "center" }}>
@@ -1033,21 +1055,23 @@ const InsuranceProposal = () => {
             icon={COVERAGE_ICONS.health}
             locked={priorLocked}
           />
-          <PlanCheck
-            label="הרחבה להיריון"
-            description="למבוטחת שגילה עד 42, היריון עד שבוע 32 (כולל), בהתאם לתנאי הפוליסה."
-            checked={plan.pregnancy || pregnancyLocked}
-            onChange={(v) => {
-              if (pregnancyLocked) return;
-              patchPersonPlan(key, { pregnancy: v });
-            }}
-            icon={COVERAGE_ICONS.pregnancy}
-            locked={pregnancyLocked}
-          />
+          {isFemale && (
+            <PlanCheck
+              label="הרחבה להיריון"
+              description="למבוטחת שגילה עד 42, היריון עד שבוע 32 (כולל), בהתאם לתנאי הפוליסה."
+              checked={plan.pregnancy || pregnancyLocked}
+              onChange={(v) => {
+                if (pregnancyLocked) return;
+                patchPersonPlan(key, { pregnancy: v });
+              }}
+              icon={COVERAGE_ICONS.pregnancy}
+              locked={pregnancyLocked}
+            />
+          )}
           <PlanCheck
             label="ספורט אתגרי"
             description="לדוגמה, במקרה של פציעה במהלך פעילות ספורט אתגרי."
-            footnote="לא ניתן לרכישה יחד עם כיסוי להיריון"
+            footnote={isFemale ? "לא ניתן לרכישה יחד עם כיסוי להיריון" : undefined}
             checked={plan.adventureSports}
             onChange={(v) => patchPersonPlan(key, { adventureSports: v })}
             icon={COVERAGE_ICONS.adventure}
@@ -1078,7 +1102,7 @@ const InsuranceProposal = () => {
           <PlanCheck
             label="ספורט חורף"
             description="לדוגמה, במקרה של פציעה במהלך סקי או סנובורד."
-            footnote="לא ניתן לרכישה יחד עם כיסוי להיריון"
+            footnote={isFemale ? "לא ניתן לרכישה יחד עם כיסוי להיריון" : undefined}
             checked={plan.winterSports}
             onChange={(v) => patchPersonPlan(key, { winterSports: v })}
             icon={COVERAGE_ICONS.winter}

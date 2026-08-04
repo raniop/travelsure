@@ -40,9 +40,12 @@ export const requiresPriorConditionCoverage = (h: PersonHealth): boolean => {
   return false;
 };
 
-/** Pregnancy (non high-risk) requires the pregnancy extension */
-export const requiresPregnancyCoverage = (h: PersonHealth): boolean =>
-  h.q5Pregnant === "yes" && h.q52HighRisk !== "yes";
+/** Pregnancy (non high-risk) requires the pregnancy extension — females only */
+export const requiresPregnancyCoverage = (
+  h: PersonHealth,
+  gender?: string,
+): boolean =>
+  gender === "female" && h.q5Pregnant === "yes" && h.q52HighRisk !== "yes";
 
 export const emptyPlan = (): PersonPlan => ({
   optOutSearchRescue: false,
