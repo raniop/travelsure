@@ -12,6 +12,7 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const [isSelfServiceOpen, setIsSelfServiceOpen] = useState(false);
   const { language, setLanguage, t, isRTL } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,6 +24,12 @@ const Header = () => {
     { href: "/services/car", label: t("services.car.title") },
     { href: "/services/home", label: t("services.home.title") },
     { href: "/services/business", label: t("services.business.title") },
+  ];
+
+  const selfServiceLinks = [
+    { href: "/claim", label: t("nav.selfService.claim") },
+    { href: "/Foreigners", label: t("nav.selfService.foreigners") },
+    { href: "/Insurance-Proposal", label: t("nav.selfService.proposal") },
   ];
 
   const navLinks = [
@@ -142,6 +149,21 @@ const Header = () => {
         ],
       },
       {
+        href: "/claim",
+        label: t("nav.selfService.claim"),
+        keywords: ["תביעה", "claim", "הגשת תביעה", "אונליין", "online claim"],
+      },
+      {
+        href: "/Foreigners",
+        label: t("nav.selfService.foreigners"),
+        keywords: ["עובדים זרים", "foreigners", "foreign workers", "עובד זר"],
+      },
+      {
+        href: "/Insurance-Proposal",
+        label: t("nav.selfService.proposal"),
+        keywords: ["הצעה", "proposal", "רפואי", "medical", "טופס הראל", "הצעת ביטוח"],
+      },
+      {
         href: "/privacy",
         label: t("footer.privacy"),
         keywords: ["פרטיות", "privacy", "מדיניות", "policy", "עוגיות", "cookies"],
@@ -248,6 +270,31 @@ const Header = () => {
                             className="text-muted-foreground hover:text-primary transition-colors text-base py-1"
                           >
                             {service.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Self-service Dropdown for Mobile */}
+                  <div className="border-b border-border">
+                    <button
+                      onClick={() => setIsSelfServiceOpen(!isSelfServiceOpen)}
+                      className="flex items-center justify-between w-full text-foreground hover:text-primary transition-colors font-medium text-lg py-2"
+                    >
+                      {t("nav.selfService")}
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isSelfServiceOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {isSelfServiceOpen && (
+                      <div className="flex flex-col gap-2 pb-3 pr-4">
+                        {selfServiceLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            to={item.href}
+                            onClick={() => setIsOpen(false)}
+                            className="text-muted-foreground hover:text-primary transition-colors text-base py-1"
+                          >
+                            {item.label}
                           </Link>
                         ))}
                       </div>
@@ -435,6 +482,33 @@ const Header = () => {
                         className="block px-4 py-2 text-foreground hover:bg-muted hover:text-primary transition-colors"
                       >
                         {service.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Self-service Dropdown for Desktop */}
+            <div
+              className="relative"
+              onMouseEnter={() => setIsSelfServiceOpen(true)}
+              onMouseLeave={() => setIsSelfServiceOpen(false)}
+            >
+              <button className="flex items-center gap-1 text-foreground hover:text-primary transition-colors font-medium">
+                {t("nav.selfService")}
+                <ChevronDown className={`w-4 h-4 transition-transform ${isSelfServiceOpen ? "rotate-180" : ""}`} />
+              </button>
+              {isSelfServiceOpen && (
+                <div className="absolute top-full pt-2 right-0 z-50">
+                  <div className="bg-background border border-border rounded-lg shadow-lg py-2 min-w-[240px]">
+                    {selfServiceLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        className="block px-4 py-2 text-foreground hover:bg-muted hover:text-primary transition-colors"
+                      >
+                        {item.label}
                       </Link>
                     ))}
                   </div>

@@ -14,6 +14,10 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     "nav.home": "בית",
     "nav.services": "שירותים",
+    "nav.selfService": "שירות עצמי",
+    "nav.selfService.claim": "הגשת תביעה אונליין",
+    "nav.selfService.foreigners": "ביטוח לעובדים זרים",
+    "nav.selfService.proposal": "הצעה לביטוח נסיעות לחו״ל",
     "nav.about": "אודות",
     "nav.faq": "שאלות נפוצות",
     "nav.contact": "צור קשר",
@@ -170,6 +174,10 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     "nav.home": "Home",
     "nav.services": "Services",
+    "nav.selfService": "Self-Service",
+    "nav.selfService.claim": "File a claim online",
+    "nav.selfService.foreigners": "Foreign workers insurance",
+    "nav.selfService.proposal": "Travel insurance proposal",
     "nav.about": "About",
     "nav.faq": "FAQ",
     "nav.contact": "Contact",
