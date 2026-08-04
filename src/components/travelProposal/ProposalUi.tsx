@@ -1,7 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { he } from "date-fns/locale";
-import type { DateRange } from "react-day-picker";
-import { Calendar } from "@/components/ui/calendar";
+import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import {
   DESTINATION_OPTIONS,
@@ -47,20 +44,24 @@ export const parseDdMmYyyy = (value: string): Date | undefined => {
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
   const stroke = active ? "#0f2f2c" : "#1f4b46";
-  const fill = active ? "#5fa898" : "#9ecfc2";
-  return (
-    <svg viewBox="0 0 48 48" className="h-[58px] w-[58px] sm:h-16 sm:w-16" aria-hidden>
-      <path
-        d={DESTINATION_MAP_PATHS[id]}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth={1.4}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-};
+  const fill = active ? "#5fa898" : "#9ecconst DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => (
+  <svg viewBox="0 0 48 48" className="h-14 w-14 sm:h-[62px] sm:w-[62px]" aria-hidden>
+    <defs>
+      <linearGradient id={`dest-grad-${id}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={active ? "#a8d5cb" : "#d5ebe5"} />
+        <stop offset="100%" stopColor={active ? "#5fa898" : "#9ecfc2"} />
+      </linearGradient>
+    </defs>
+    <path
+      d={DESTINATION_MAP_PATHS[id]}
+      fill={`url(#dest-grad-${id})`}
+      stroke={active ? "#143834" : "#2f6b63"}
+      strokeWidth={1.25}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+  </svg>
+);
 
 export function DestinationPicker({
   selected,
@@ -74,17 +75,14 @@ export function DestinationPicker({
   return (
     <div className="space-y-5">
       <div className="tp-center" style={{ textAlign: "center" }}>
-        <h3
-          className="text-xl font-extrabold text-[#143834]"
-          style={{ textAlign: "center" }}
-        >
+        <h3 className="text-xl font-extrabold text-[#143834]" style={{ textAlign: "center" }}>
           בחרו יעד נסיעה
         </h3>
         <p className="mt-1 text-sm text-slate-500" style={{ textAlign: "center" }}>
           לחצו על כל יעד שרלוונטי — אפשר יותר מאחד
         </p>
       </div>
-      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:gap-x-4 sm:gap-y-6">
+      <div className="mx-auto grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4">
         {DESTINATION_OPTIONS.map((d) => {
           const active = selected.includes(d.id);
           return (
@@ -97,10 +95,10 @@ export function DestinationPicker({
             >
               <span
                 className={cn(
-                  "relative flex h-[100px] w-[100px] items-center justify-center rounded-full bg-white transition duration-200 sm:h-[112px] sm:w-[112px]",
+                  "relative flex h-[108px] w-[108px] flex-col items-center justify-center gap-0.5 rounded-full bg-white px-2 transition duration-200 sm:h-[118px] sm:w-[118px]",
                   active
-                    ? "shadow-[0_12px_28px_-12px_rgba(20,56,52,.55)] ring-[3px] ring-[#143834] scale-[1.04]"
-                    : "shadow-[0_8px_20px_-12px_rgba(20,56,52,.4)] ring-1 ring-slate-200/80 group-hover:ring-[#2f6b63]/45",
+                    ? "shadow-[0_14px_30px_-14px_rgba(20,56,52,.55)] ring-[3px] ring-[#143834]"
+                    : "shadow-[0_10px_24px_-14px_rgba(20,56,52,.4)] ring-1 ring-slate-200/90 group-hover:ring-[#2f6b63]/40",
                 )}
               >
                 <DestMapIcon id={d.id} active={active} />
@@ -141,6 +139,7 @@ export function DestinationPicker({
   );
 }
 
+/** Manual trip dates only — no calendar popup */
 export function TripDateRangePicker({
   from,
   to,
@@ -154,112 +153,69 @@ export function TripDateRangePicker({
   fromError?: string;
   toError?: string;
 }) {
-  const selected = useMemo<DateRange | undefined>(() => {
+  const days = (() => {
     const f = parseDdMmYyyy(from);
     const t = parseDdMmYyyy(to);
-    if (!f && !t) return undefined;
-    return { from: f, to: t };
-  }, [from, to]);
-
-  const [month, setMonth] = useState<Date>(() => selected?.from || new Date());
-  const [months, setMonths] = useState(1);
-
-  useEffect(() => {
-    const sync = () => setMonths(window.innerWidth < 720 ? 1 : 2);
-    sync();
-    window.addEventListener("resize", sync);
-    return () => window.removeEventListener("resize", sync);
-  }, []);
-
-  const days =
-    selected?.from && selected?.to
-      ? Math.round((selected.to.getTime() - selected.from.getTime()) / 86400000) + 1
-      : null;
+    if (!f || !t) return null;
+    return Math.round((t.getTime() - f.getTime()) / 86400000) + 1;
+  })();
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="text-center sm:text-right">
-          <p className="text-base font-extrabold text-[#143834]">מתי יוצאים?</p>
-          <p className="mt-2 text-[11px] text-slate-400">* תאריך יציאה</p>
-          <p
-            className={cn(
-              "mt-1 border-b-2 pb-1 text-lg font-bold tracking-wide",
-              from ? "border-[#2f6b63] text-[#143834]" : "border-slate-200 text-slate-300",
-            )}
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">
+          <p className="text-sm font-extrabold text-[#143834]">מתי יוצאים?</p>
+          <p className="mt-1 text-[11px] text-slate-400">* תאריך יציאה · DD/MM/YYYY</p>
+          <input
             dir="ltr"
-          >
-            {from || "DD/MM/YYYY"}
-          </p>
+            inputMode="numeric"
+            placeholder="DD/MM/YYYY"
+            value={from}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+              const dd = digits.slice(0, 2);
+              const mm = digits.slice(2, 4);
+              const yyyy = digits.slice(4, 8);
+              const next =
+                digits.length <= 2 ? dd : digits.length <= 4 ? `${dd}/${mm}` : `${dd}/${mm}/${yyyy}`;
+              onChange(next, to);
+            }}
+            className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
+          />
           {fromError && <p className="mt-1 text-xs text-rose-600">{fromError}</p>}
         </div>
-        <div className="text-center sm:text-right">
-          <p className="text-base font-extrabold text-[#143834]">מתי חוזרים?</p>
-          <p className="mt-2 text-[11px] text-slate-400">* תאריך חזרה</p>
-          <p
-            className={cn(
-              "mt-1 border-b-2 pb-1 text-lg font-bold tracking-wide",
-              to ? "border-[#2f6b63] text-[#143834]" : "border-slate-200 text-slate-300",
-            )}
+        <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">
+          <p className="text-sm font-extrabold text-[#143834]">מתי חוזרים?</p>
+          <p className="mt-1 text-[11px] text-slate-400">* תאריך חזרה · DD/MM/YYYY</p>
+          <input
             dir="ltr"
-          >
-            {to || "DD/MM/YYYY"}
-          </p>
+            inputMode="numeric"
+            placeholder="DD/MM/YYYY"
+            value={to}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+              const dd = digits.slice(0, 2);
+              const mm = digits.slice(2, 4);
+              const yyyy = digits.slice(4, 8);
+              const next =
+                digits.length <= 2 ? dd : digits.length <= 4 ? `${dd}/${mm}` : `${dd}/${mm}/${yyyy}`;
+              onChange(from, next);
+            }}
+            className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:bg-white focus:ring-2 focus:ring-[#2f6b63]/20"
+          />
           {toError && <p className="mt-1 text-xs text-rose-600">{toError}</p>}
         </div>
       </div>
-
-      <div className="overflow-hidden rounded-[28px] border border-white bg-white p-3 shadow-[0_18px_50px_-28px_rgba(20,56,52,.45)] sm:p-5">
-        <Calendar
-          mode="range"
-          locale={he}
-          numberOfMonths={months}
-          month={month}
-          onMonthChange={setMonth}
-          selected={selected}
-          onSelect={(range) => {
-            onChange(
-              range?.from ? toDdMmYyyy(range.from) : "",
-              range?.to ? toDdMmYyyy(range.to) : range?.from ? toDdMmYyyy(range.from) : "",
-            );
-          }}
-          disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
-          className="mx-auto w-full"
-          classNames={{
-            months: "flex flex-col gap-4 sm:flex-row sm:gap-8 justify-center",
-            caption_label: "text-base font-bold text-[#143834]",
-            head_cell: "text-[#2f6b63]/70 rounded-md w-10 font-semibold text-[0.8rem]",
-            day: "h-10 w-10 rounded-full text-sm",
-            day_selected:
-              "bg-[#2f6b63] text-white hover:bg-[#275a53] hover:text-white focus:bg-[#2f6b63] focus:text-white rounded-full",
-            day_range_start: "rounded-full bg-[#2f6b63] text-white",
-            day_range_end: "rounded-full bg-[#2f6b63] text-white",
-            day_range_middle: "aria-selected:bg-[#e8f4f1] aria-selected:text-[#143834] rounded-none",
-            day_today: "bg-[#e8f4f1] text-[#143834] font-bold",
-          }}
-        />
-        <p className="mt-3 text-center text-sm font-bold text-[#2f6b63]">
-          {days != null
-            ? `סה״כ: ${days === 1 ? "יום אחד" : `${days} ימים`}`
-            : "בחרו טווח תאריכים בלוח"}
+      {days != null && days > 0 && (
+        <p className="text-center text-sm font-bold text-[#2f6b63]" style={{ textAlign: "center" }}>
+          סה״כ: {days === 1 ? "יום אחד" : `${days} ימים`}
         </p>
-      </div>
+      )}
     </div>
   );
 }
 
-export function PillYesNo({
-  value,
-  onChange,
-  name,
-}: {
-  value: YesNo;
-  onChange: (v: YesNo) => void;
-  name: string;
-}) {
-  return (
-    <div
-      className="inline-flex overflow-hidden rounded-full border-2 border-[#2f6b63]/30 bg-white shadow-sm"
+ne-flex overflow-hidden rounded-full border-2 border-[#2f6b63]/30 bg-white shadow-sm"
       role="group"
       aria-label={name}
     >
