@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { stripEmojisForPlainText } from "@/lib/bbq/plainText";
 
 const PAYBOX_GROUP_LINK = "https://links.payboxapp.com/k5qia1URTZb";
 const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500, היתרה = 500 − סכום ניכויים מאירועים
@@ -26,14 +27,16 @@ function buildDepositRequestWhatsAppMessage(
   currentBalance: number,
   groupName?: string,
 ): string {
-  const groupLabel = groupName?.trim() ? `קבוצת «${groupName.trim()}»` : "הקבוצה";
+  const cleanMemberName = stripEmojisForPlainText(memberName) || memberName.trim();
+  const cleanGroupName = groupName ? stripEmojisForPlainText(groupName) : "";
+  const groupLabel = cleanGroupName ? `קבוצת «${cleanGroupName}»` : "הקבוצה";
   const balanceLine =
     currentBalance < 0
       ? `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נוצל יותר מהיתרה, ויש להפקיד מחדש.`
       : `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נמוכה, וכדאי להפקיד מחדש.`;
 
   return [
-    `שלום ${memberName}!`,
+    `שלום ${cleanMemberName}!`,
     "",
     `זו הודעה מ${groupLabel} לגבי קופת האירועים המשותפת (מזון ועלויות אירועים).`,
     "",
@@ -700,45 +703,73 @@ interface UpdateBalanceDialogProps {
 const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: UpdateBalanceDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [balance, setBalance] = useState((member.balance || 0).toString());
+  const [depositAmount, setDepositAmount] = useState("");
+  const [manualMode, setManualMode] = useState(false);
+  const [manualBalance, setManualBalance] = useState("");
   const { toast } = useToast();
+
+  const currentBalance = member.balance ?? 0;
+
+  useEffect(() => {
+    if (!open) return;
+    setDepositAmount("");
+    setManualMode(false);
+    setManualBalance((member.balance ?? 0).toString());
+  }, [open, member.balance, member.id]);
+
+  const parsedDeposit = parseFloat(depositAmount);
+  const depositValid = depositAmount.trim() !== "" && !isNaN(parsedDeposit) && parsedDeposit > 0;
+  const newBalancePreview = depositValid
+    ? parseFloat((currentBalance + parsedDeposit).toFixed(2))
+    : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const balanceValue = parseFloat(balance);
-    if (isNaN(balanceValue)) {
-      toast({
-        title: "שגיאה",
-        description: "אנא הזן יתרה תקינה (מספר)",
-        variant: "destructive"
-      });
-      return;
+    let balanceValue: number;
+    if (manualMode) {
+      balanceValue = parseFloat(manualBalance);
+      if (isNaN(balanceValue)) {
+        toast({
+          title: "שגיאה",
+          description: "אנא הזן יתרה תקינה (מספר)",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      if (!depositValid) {
+        toast({
+          title: "שגיאה",
+          description: "הזן כמה הופקד (מספר גדול מ-0)",
+          variant: "destructive",
+        });
+        return;
+      }
+      balanceValue = parseFloat((currentBalance + parsedDeposit).toFixed(2));
     }
-    // יתרה שלילית = החבר חרג וחייב להשלים (מותר)
 
     try {
       setLoading(true);
 
-      // Get current member data
       const members = await apiClient.getMembers(groupId);
       const currentMember = members.find((m: any) => m.id === member.id);
-      
+
       if (!currentMember) {
         throw new Error("חבר לא נמצא");
       }
 
-      // Round only when saving to database (to prevent floating point precision issues)
-      // Use parseFloat with toFixed to ensure exactly 2 decimal places
       const roundedBalance = parseFloat(balanceValue.toFixed(2));
       await apiClient.updateMember(member.id, {
         ...currentMember,
-        balance: roundedBalance
+        balance: roundedBalance,
       });
 
       toast({
         title: "הצלחה!",
-        description: "היתרה עודכנה בהצלחה"
+        description: manualMode
+          ? "היתרה עודכנה בהצלחה"
+          : `נרשמה הפקדה של ${parsedDeposit.toFixed(2)} ₪ — יתרה חדשה: ${roundedBalance.toFixed(2)} ₪`,
       });
 
       setOpen(false);
@@ -748,16 +779,16 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
       toast({
         title: "שגיאה",
         description: error.message || "לא הצלחנו לעדכן את היתרה",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdd500 = () => {
-    const currentBalance = parseFloat(balance) || 0;
-    setBalance((currentBalance + 500).toString());
+  const handleQuickDeposit = (amount: number) => {
+    setManualMode(false);
+    setDepositAmount(amount.toString());
   };
 
   return (
@@ -768,42 +799,100 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
       <DialogContent className="sm:max-w-[425px]" dir="rtl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>עדכן יתרה - {member.name}</DialogTitle>
+            <DialogTitle>רשום הפקדה — {member.name}</DialogTitle>
             <DialogDescription>
-              עדכן יתרה: כל חבר מתחיל עם 500 שקל, מורידים לפי אירועים. מינוס = החבר חייב להשלים.
+              הזן כמה הופקד ב-PayBox (או במזומן). המערכת תוסיף ליתרה הנוכחית — בלי חישובים ידניים.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="balance">יתרה נוכחית (₪) — מינוס = חייב להשלים</Label>
-              <Input
-                id="balance"
-                type="number"
-                step="0.01"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                placeholder="0.00"
-                dir="rtl"
-                className="text-right"
-                required
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleAdd500}
-              className="w-full"
+            <div
+              className={`rounded-lg border px-3 py-2.5 text-right ${
+                currentBalance < 0
+                  ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                  : "border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+              }`}
             >
-              <Wallet className="w-4 h-4 ml-2" />
-              הוסף 500 ₪ (תחילת חודש)
-            </Button>
+              <div className="text-xs opacity-80">יתרה נוכחית</div>
+              <div className="text-xl font-bold tabular-nums" dir="ltr">
+                {currentBalance.toFixed(2)} ₪
+              </div>
+            </div>
+
+            {!manualMode ? (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="deposit">כמה הופקד עכשיו? (₪)</Label>
+                  <Input
+                    id="deposit"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="למשל 200"
+                    dir="ltr"
+                    className="text-left tabular-nums"
+                    autoFocus
+                    required={!manualMode}
+                  />
+                </div>
+
+                {newBalancePreview != null && (
+                  <div className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2.5 text-right dark:border-teal-900 dark:bg-teal-950/30">
+                    <div className="text-xs text-teal-800 dark:text-teal-300">יתרה אחרי ההפקדה</div>
+                    <div className="text-lg font-bold text-teal-900 tabular-nums dark:text-teal-200" dir="ltr">
+                      {newBalancePreview.toFixed(2)} ₪
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 tabular-nums" dir="ltr">
+                      {currentBalance.toFixed(2)} + {parsedDeposit.toFixed(2)} = {newBalancePreview.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleQuickDeposit(500)}>
+                    <Wallet className="w-4 h-4 ml-1.5" />
+                    הפקדה 500 ₪
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleQuickDeposit(200)}>
+                    200 ₪
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="grid gap-2">
+                <Label htmlFor="balance">יתרה ידנית (₪)</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  step="0.01"
+                  value={manualBalance}
+                  onChange={(e) => setManualBalance(e.target.value)}
+                  placeholder="0.00"
+                  dir="ltr"
+                  className="text-left tabular-nums"
+                  required
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  לתיקון ידני בלבד — בדרך כלל עדיף «כמה הופקד».
+                </p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline text-right hover:text-foreground"
+              onClick={() => setManualMode((m) => !m)}
+            >
+              {manualMode ? "← חזרה להפקדה רגילה" : "קבע יתרה ידנית (מתקדם)"}
+            </button>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               ביטול
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "מעדכן..." : "עדכן"}
+            <Button type="submit" disabled={loading || (!manualMode && !depositValid)}>
+              {loading ? "שומר..." : manualMode ? "עדכן יתרה" : "רשום הפקדה"}
             </Button>
           </DialogFooter>
         </form>
