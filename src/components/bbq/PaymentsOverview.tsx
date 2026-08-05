@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Clock, ExternalLink, Wallet, TrendingDown, TrendingUp, Coins, Calendar, ArrowDownRight, UserPlus } from "lucide-react";
+import { CheckCircle2, Wallet, TrendingDown, TrendingUp, Coins, Calendar, UserPlus, MessageCircle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
+import { buildGuestPaymentWhatsAppMessage, whatsAppUrl } from "@/lib/bbq/payboxMessages";
 
 interface Payment {
   id: string;
@@ -20,6 +22,7 @@ interface Payment {
     total_cost: number;
   };
   payer_name?: string;
+  guest_phone?: string | null;
   paid_by_phone?: string;
   paid_by_name?: string;
   paid_at?: string;
@@ -28,11 +31,12 @@ interface Payment {
 
 interface PaymentsOverviewProps {
   groupId: string;
+  groupName?: string;
   userId?: string;
   isAdmin?: boolean;
 }
 
-const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverviewProps) => {
+const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: PaymentsOverviewProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({
@@ -89,14 +93,18 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
         })
         .map(e => e.id);
       
-      // Filter to show deducted payments OR all payments for future events
-      const deductedPayments = paymentsData.filter((p: any) => {
-        // For future events, show all payments
+      // חברים: נקזז מהיתרה | אורחים: pending/paid (לא חלק מהקופה)
+      const visiblePayments = paymentsData.filter((p: any) => {
         if (futureEventIds.includes(p.event_id)) {
           return true;
         }
-        // For past events, only show deducted payments
-        return p.payment_status === "deducted";
+        if (p.payer_type === "member") {
+          return p.payment_status === "deducted";
+        }
+        if (p.payer_type === "guest") {
+          return p.payment_status === "pending" || p.payment_status === "paid";
+        }
+        return false;
       });
       
       // Enrich with event and payer names
@@ -111,9 +119,10 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       }
       
       let enrichedPayments = await Promise.all(
-        deductedPayments.map(async (payment: any) => {
+        visiblePayments.map(async (payment: any) => {
           let payerName = "לא ידוע";
           let profileImage: string | null = null;
+          let guestPhone: string | null = null;
           const event = events.find(e => e.id === payment.event_id);
 
           if (payment.payer_type === "member") {
@@ -129,11 +138,13 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
               }
             }
           } else if (payment.payer_type === "guest") {
-            // For guests, we need to get from the event
             if (event) {
               const guests = await apiClient.getGuests(event.id);
               const guest = guests.find(g => g.id === payment.payer_id);
-              if (guest) payerName = guest.name;
+              if (guest) {
+                payerName = guest.name;
+                guestPhone = guest.phone ?? null;
+              }
             }
           }
 
@@ -161,6 +172,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           return {
             ...payment,
             payer_name: payerName,
+            guest_phone: guestPhone,
             paid_by_name: paidByName,
             profile_image: profileImage,
             event: event ? {
@@ -462,8 +474,9 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       
       toast({
         title: "הצלחה!",
-        description: "התשלום סומן כמשולם"
+        description: "התשלום סומן כמשולם",
       });
+      await loadPayments();
     } catch (error: any) {
       // Rollback on error
       setPayments(oldPayments);
@@ -476,6 +489,34 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
       });
     }
   };
+
+  const sendGuestPaymentWhatsApp = (payment: Payment) => {
+    if (!payment.guest_phone) {
+      toast({
+        title: "אין טלפון",
+        description: "הוסף מספר טלפון לאורח באירוע כדי לשלוח WhatsApp",
+        variant: "destructive",
+      });
+      return;
+    }
+    const eventDate = payment.event?.event_date
+      ? format(new Date(payment.event.event_date), "EEEE, d בMMMM yyyy", { locale: he })
+      : "";
+    const message = buildGuestPaymentWhatsAppMessage({
+      guestName: payment.payer_name || "אורח",
+      amount: payment.amount,
+      eventDateLabel: eventDate,
+      groupName,
+      eventDescription: (payment.event as any)?.description,
+    });
+    window.open(whatsAppUrl(payment.guest_phone, message), "_blank");
+    toast({ title: "נפתח WhatsApp", description: `בקשת תשלום ל-${payment.payer_name}` });
+  };
+
+  const guestPendingPayments = payments.filter(
+    (p) => p.payer_type === "guest" && p.payment_status === "pending",
+  );
+  const memberPaymentsList = payments.filter((p) => p.payer_type === "member");
 
   if (loading) {
     return (
@@ -587,19 +628,82 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
               <span dir="ltr" className="tabular-nums">{totalGuestPayments.toFixed(2)}</span> שקל
             </div>
             <p className="text-sm text-muted-foreground text-right">
-              סך הכל תשלומים של אורחים
+              {isAdmin && summary.pending > 0
+                ? `ממתין לגבייה: ${summary.pending.toFixed(2)} ₪`
+                : "סך הכל תשלומים של אורחים"}
             </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* אורחים — ממתינים לתשלום (מנהל) */}
+      {isAdmin && guestPendingPayments.length > 0 && (
+        <Card className="border-2 border-orange-300 shadow-md" dir="rtl">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="outline" className="border-orange-400 text-orange-700 bg-orange-50">
+                <Clock className="w-3.5 h-3.5 ml-1" />
+                {guestPendingPayments.length} ממתינים
+              </Badge>
+              <CardTitle className="text-lg text-right">אורחים שטרם שילמו</CardTitle>
+            </div>
+            <CardDescription className="text-right">
+              אורחים לא משלמים מהקופה של החברים — שלח/י בקשת תשלום ב-WhatsApp וסמן «שולם» כשהכסף הגיע.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {guestPendingPayments.map((payment) => {
+              const eventDate = payment.event?.event_date
+                ? format(new Date(payment.event.event_date), "d/MM/yyyy", { locale: he })
+                : "—";
+              return (
+                <div
+                  key={payment.id}
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border-2 border-orange-200 bg-orange-50/50 dark:bg-orange-950/20"
+                  dir="rtl"
+                >
+                  <div className="text-right min-w-0">
+                    <div className="font-semibold text-base">{payment.payer_name}</div>
+                    <div className="text-sm text-muted-foreground">אירוע {eventDate}</div>
+                    <div className="text-lg font-bold text-orange-700 tabular-nums mt-1" dir="ltr">
+                      {payment.amount.toFixed(2)} ₪
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => sendGuestPaymentWhatsApp(payment)}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="gap-1.5 bg-green-600 hover:bg-green-700"
+                      onClick={() => void markAsPaid(payment.id)}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      שולם
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payments List - Grouped by Event */}
       <div>
         <div className="mb-6" dir="rtl" style={{ direction: "rtl" }}>
-          <h3 className="text-lg md:text-xl font-semibold text-right">רשימת תשלומים</h3>
+          <h3 className="text-lg md:text-xl font-semibold text-right">ניכויים מחברים (לפי אירוע)</h3>
         </div>
 
-        {payments.length === 0 ? (
+        {memberPaymentsList.length === 0 ? (
           <Card className="border-2 shadow-md">
             <CardContent className="py-16 text-center">
               <div className="flex flex-col items-center gap-4">
@@ -615,8 +719,7 @@ const PaymentsOverview = ({ groupId, userId, isAdmin = false }: PaymentsOverview
           </Card>
         ) : (
           (() => {
-            // Group payments by event
-            const paymentsByEvent = payments.reduce((acc, payment) => {
+            const paymentsByEvent = memberPaymentsList.reduce((acc, payment) => {
               const eventId = payment.event?.id || 'unknown';
               if (!acc[eventId]) {
                 acc[eventId] = {

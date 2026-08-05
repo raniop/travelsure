@@ -671,7 +671,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
       setCalculating(true);
 
       const payingAttendees = attendees.filter(a => a.attended && (a.pays_with_group !== false));
-      const payingGuests = guests.filter(g => g.should_pay);
+      const payingGuests = guests.filter((g) => g.should_pay && g.attended !== false);
       const totalPaying = payingAttendees.length + payingGuests.length;
 
       if (totalPaying === 0) {
