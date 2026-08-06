@@ -386,10 +386,9 @@ export const policyTimeBucketForClaimType = (
       // קיצור מחו״ל — רק נסיעה שכרגע פעילה
       return "active";
     case "baggage":
-      // איחור בכבודה — רק נסיעה פעילה כעת
-      if (baggageSubtype === "delay") return "active";
-      // אובדן / גניבה — גם במהלך הנסיעה וגם אחרי שחזרתם
+      // איחור / אובדן / גניבה — נסיעה שהתחילה (פעילה או שכבר הסתיימה)
       if (
+        baggageSubtype === "delay" ||
         baggageSubtype === "loss" ||
         baggageSubtype === "theft" ||
         baggageSubtype === "loss_theft"
@@ -452,10 +451,10 @@ export const claimPolicyFilterCopy = (
 
   if (claimType === "baggage" && baggageSubtype === "delay") {
     return {
-      listHint: "מוצגות רק נסיעות שפעילות כרגע — מתאים לאיחור בהגעת כבודה (עד 3 שנים אחורה)",
-      emptyTitle: "לא מצאנו נסיעה פעילה כרגע",
+      listHint: "מוצגות נסיעות שהתחילו ב־3 השנים האחרונות — פעילות כעת או שכבר הסתיימו (איחור כבודה)",
+      emptyTitle: "לא מצאנו נסיעה מתאימה",
       emptyBody:
-        "לאיחור בכבודה נדרשת פוליסה שפעילה עכשיו. אם הנסיעה עדיין לא יצאה או שכבר חזרתם — בחרו סוג תביעה מתאים, או צרו קשר עם הסוכנות.",
+        "לאיחור בכבודה נדרשת פוליסה שנסיעתה כבר התחילה (עד 3 שנים אחורה). נסיעות עתידיות בלבד לא מוצגות כאן.",
       upcomingTitle: "נסיעות פעילות כעת",
       pastTitle: "נסיעות שעברו",
     };
