@@ -445,9 +445,12 @@
             <h3 id="identityTypeTitle"></h3>
           </div>
           <h2>זיהוי לפי תעודת זהות</h2>
-          <p class="muted">נאתר את הפרטים והפוליסות שלך במערכת — רק לקוחות עם פוליסה אצלנו יכולים להגיש תביעה</p>
+          <p class="muted">נאתר את הפרטים והפוליסות שלך במערכת. אם לא נמצא לפי ת״ז — הזינו גם מספר פוליסה</p>
           <label class="field">תעודת זהות <span class="req">*</span>
             <input id="lookupId" inputmode="numeric" maxlength="9" placeholder="9 ספרות" />
+          </label>
+          <label class="field">מספר פוליסה (אם לא מזהה לפי ת״ז)
+            <input id="lookupPolicyNumber" inputmode="numeric" maxlength="20" placeholder="לדוגמה 965708637026" />
           </label>
           <div id="identityError" class="error"></div>
           <div class="row-actions">
@@ -950,6 +953,75 @@
         }
       }
 
+      async function lookupByPolicyNumber(policyNumberInput, rawId) {
+        const policyNumber = String(policyNumberInput || "").replace(/[^\d]/g, "");
+        const normalizedId = String(rawId || "").replace(/[^\d]/g, "").padStart(9, "0");
+        if (!policyNumber || policyNumber.length < 6) return { ok: false, reason: "not_found" };
+        if (!isValidIsraeliId(normalizedId)) return { ok: false, reason: "invalid_id" };
+        try {
+          const res = await fetch(
+            `${CRM_URL}?id=${encodeURIComponent(policyNumber)}&pass=${encodeURIComponent(CRM_PASS)}`,
+            { headers: { Accept: "application/json" }, cache: "no-store" }
+          );
+          if (!res.ok) return { ok: false, reason: "upstream" };
+          const data = await res.json();
+          const policiesRaw = Array.isArray(data) ? data : [];
+          if (!policiesRaw.length) return { ok: false, reason: "not_found" };
+
+          let found = null;
+          for (const policy of policiesRaw) {
+            if (!Array.isArray(policy.customers)) continue;
+            for (const cust of policy.customers) {
+              const cid = String(cust.personId || cust.id || "").trim();
+              if (cid.padStart(9, "0") === normalizedId || cid === String(rawId).replace(/[^\d]/g, "")) {
+                found = cust;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          if (!found) return { ok: false, reason: "not_found" };
+
+          const primaryName = pickStr(found.clientName, found.name, found.fullName);
+          const customer = {
+            id: normalizedId,
+            primaryName,
+            firstNameHe: pickStr(found.firstName, found.firstNameHe, found.hebFname, primaryName.split(/\s+/)[0]),
+            lastNameHe: pickStr(found.lastName, found.lastNameHe, found.hebLname, primaryName.split(/\s+/).slice(1).join(" ")),
+            birthDate: normalizeDate(found.birthDate || found.dateOfBirth || found.dob),
+            email: pickStr(found.email, found.mail),
+            phone: pickStr(found.phone, found.mobile, found.cell),
+          };
+          const mapped = [];
+          for (const p of policiesRaw) {
+            const fullPolicyID = pickStr(p.fullPolicyID, p.policyNumber, p.policyId);
+            if (!fullPolicyID) continue;
+            const digits = fullPolicyID.replace(/[^\d]/g, "");
+            if (digits !== policyNumber) continue;
+            const policyDoc = Number(String(p.policyDoc ?? p.PolicyDoc ?? "0").trim());
+            mapped.push({
+              uid: fullPolicyID,
+              fullPolicyID,
+              policyDoc: Number.isFinite(policyDoc) ? policyDoc : 0,
+              issueDate: normalizeDate(p.issueDate),
+              startDate: normalizeDate(p.startDate),
+              endDate: normalizeDate(p.endDate),
+              areaName: pickStr(p.areaName, p.destination),
+            });
+          }
+          const best = new Map();
+          for (const policy of mapped) {
+            const prev = best.get(policy.fullPolicyID);
+            if (!prev || policy.policyDoc > prev.policyDoc) best.set(policy.fullPolicyID, policy);
+          }
+          const policies = Array.from(best.values());
+          if (!policies.length) return { ok: false, reason: "not_found" };
+          return { ok: true, customer, policies };
+        } catch {
+          return { ok: false, reason: "network" };
+        }
+      }
+
       function renderSteps() {
         const steps = [
           { id: "type", label: "סוג תביעה" },
@@ -1100,7 +1172,7 @@
 
       function policyTimeBucketForClaimType(type, baggageSub) {
         if (type === "trip_cancel") return "all";
-        if (type === "trip_shorten") return "active";
+        if (type === "trip_shorten") return "started";
         if (type === "baggage") {
           // delay / loss_theft / loss / theft / unset — active + past
           return "started";
@@ -2075,6 +2147,7 @@
       $("lookupBtn").onclick = async () => {
         $("identityError").textContent = "";
         const id = $("lookupId").value.trim();
+        const policyNo = ($("lookupPolicyNumber")?.value || "").trim().replace(/[^\d]/g, "");
         if (!isValidIsraeliId(id)) {
           $("identityError").textContent = "תעודת זהות לא תקינה";
           return;
@@ -2082,10 +2155,17 @@
         $("lookupBtn").disabled = true;
         $("lookupBtn").textContent = "מזהה...";
         try {
-          const result = await lookupById(id);
+          let result = await lookupById(id);
+          if (!result.ok && result.reason === "not_found" && policyNo) {
+            result = await lookupByPolicyNumber(policyNo, id);
+          }
           if (!result.ok) {
             if (result.reason === "invalid_id") {
               $("identityError").textContent = "תעודת זהות לא תקינה";
+              return;
+            }
+            if (result.reason === "not_found" && !policyNo) {
+              $("identityError").textContent = "לא נמצאה פוליסה לפי ת״ז — נסו גם להזין מספר פוליסה";
               return;
             }
             crmCustomer = null;

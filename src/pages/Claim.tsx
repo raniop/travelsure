@@ -14,6 +14,7 @@ import {
   groupClaimPolicies,
   isValidIsraeliId,
   lookupClaimCustomerById,
+  lookupClaimCustomerByPolicyNumber,
   policyTimeBucketForClaimType,
 } from "@/lib/claimCrmLookup";
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
@@ -238,6 +239,7 @@ const Claim = () => {
   const [submitFilesCount, setSubmitFilesCount] = useState(0);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupId, setLookupId] = useState("");
+  const [lookupPolicyNumber, setLookupPolicyNumber] = useState("");
   const [lookupError, setLookupError] = useState("");
   const [crmCustomer, setCrmCustomer] = useState<ClaimCrmCustomer | null>(null);
   const [crmPolicies, setCrmPolicies] = useState<ClaimCrmPolicy[]>([]);
@@ -470,10 +472,18 @@ const Claim = () => {
     }
     setIsLookingUp(true);
     try {
-      const result = await lookupClaimCustomerById(lookupId);
+      let result = await lookupClaimCustomerById(lookupId);
+      const policyNo = lookupPolicyNumber.trim().replace(/[^\d]/g, "");
+      if (!result.ok && (result as { reason?: string }).reason === "not_found" && policyNo) {
+        result = await lookupClaimCustomerByPolicyNumber(policyNo, lookupId);
+      }
       if (!result.ok) {
         if ((result as { ok: false; reason: string }).reason === "invalid_id") {
           setLookupError("תעודת זהות לא תקינה");
+          return;
+        }
+        if ((result as { ok: false; reason: string }).reason === "not_found" && !policyNo) {
+          setLookupError("לא נמצאה פוליסה לפי ת״ז — נסו גם להזין מספר פוליסה");
           return;
         }
         setCrmCustomer(null);
@@ -1091,17 +1101,32 @@ const Claim = () => {
               ) : null}
               <h2 className="text-2xl font-extrabold text-[#143834]">זיהוי לפי תעודת זהות</h2>
               <p className="mt-1 text-sm text-slate-500">
-                נאתר את הפרטים והפוליסות שלך במערכת — רק לקוחות עם פוליסה פעילה אצלנו יכולים להגיש תביעה
+                נאתר את הפרטים והפוליסות שלך במערכת. אם לא נמצא לפי ת״ז — הזינו גם מספר פוליסה
               </p>
-              <div className="mt-6 max-w-md">
+              <div className="mt-6 max-w-md space-y-4">
                 <Field label="תעודת זהות" required error={lookupError}>
                   <Input
                     className="bg-slate-50 text-lg tracking-wide"
                     inputMode="numeric"
                     maxLength={9}
                     value={lookupId}
-                    onChange={(e) => setLookupId(e.target.value.replace(/[^\d]/g, "").slice(0, 9))}
+                    onChange={(e) => {
+                      setLookupId(e.target.value.replace(/[^\d]/g, "").slice(0, 9));
+                      if (lookupError) setLookupError("");
+                    }}
                     placeholder="9 ספרות"
+                  />
+                </Field>
+                <Field label="מספר פוליסה (אם לא מזהה לפי ת״ז)">
+                  <Input
+                    className="bg-slate-50 text-lg tracking-wide"
+                    inputMode="numeric"
+                    value={lookupPolicyNumber}
+                    onChange={(e) => {
+                      setLookupPolicyNumber(e.target.value.replace(/[^\d]/g, "").slice(0, 20));
+                      if (lookupError) setLookupError("");
+                    }}
+                    placeholder="לדוגמה 965708637026"
                   />
                 </Field>
               </div>

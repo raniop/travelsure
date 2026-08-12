@@ -246,6 +246,85 @@ export async function lookupClaimCustomerById(idInput: string): Promise<ClaimCrm
   }
 }
 
+/**
+ * Some CRM records are not returned by GetByIdU on person ID, but work when queried by policy number.
+ * Use this as a fallback: fetch by policy number and match the insured ID on the policy.
+ */
+export async function lookupClaimCustomerByPolicyNumber(
+  policyNumberInput: string,
+  idInput: string
+): Promise<ClaimCrmLookupResult> {
+  const policyNumber = String(policyNumberInput || "").trim().replace(/[^\d]/g, "");
+  const rawId = String(idInput || "").trim().replace(/[^\d]/g, "");
+  if (!policyNumber || policyNumber.length < 6) return { ok: false, reason: "not_found" };
+  if (!isValidIsraeliId(rawId)) return { ok: false, reason: "invalid_id" };
+
+  const normalizedId = normalizeIsraeliId(rawId);
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const url = `${CRM_GET_BY_ID}?id=${encodeURIComponent(policyNumber)}&pass=${encodeURIComponent(CRM_GET_BY_ID_PASS)}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) return { ok: false, reason: "upstream" };
+
+    const data = await res.json();
+    const policiesRaw = Array.isArray(data) ? data : [];
+    if (!policiesRaw.length) return { ok: false, reason: "not_found" };
+
+    let foundPerson: Record<string, unknown> | null = null;
+    for (const policy of policiesRaw) {
+      if (!Array.isArray(policy?.customers)) continue;
+      for (const cust of policy.customers) {
+        if (personMatchesId(cust, normalizedId, rawId)) {
+          foundPerson = cust;
+          break;
+        }
+      }
+      if (foundPerson) break;
+    }
+
+    if (!foundPerson) return { ok: false, reason: "not_found" };
+
+    const policies = keepLatestPolicyAdditions(
+      policiesRaw
+        .map((p: Record<string, unknown>) => mapPolicy(p))
+        .filter((p) => p.fullPolicyID && p.fullPolicyID.replace(/[^\d]/g, "") === policyNumber)
+    );
+
+    // If filter by exact policy number emptied the list, keep all mapped from response
+    const finalPolicies =
+      policies.length > 0
+        ? policies
+        : keepLatestPolicyAdditions(
+            policiesRaw.map((p: Record<string, unknown>) => mapPolicy(p)).filter((p) => p.fullPolicyID)
+          );
+
+    if (!finalPolicies.length) return { ok: false, reason: "not_found" };
+
+    finalPolicies.sort((a, b) => {
+      const ad = new Date(a.issueDate || 0).getTime();
+      const bd = new Date(b.issueDate || 0).getTime();
+      return bd - ad;
+    });
+
+    return {
+      ok: true,
+      customer: mapPerson(foundPerson, normalizedId),
+      policies: finalPolicies,
+    };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+}
+
 export const CLAIM_CONTACT = {
   phoneDisplay: "073-272-1111",
   phoneHref: "tel:+972732721111",
@@ -383,8 +462,8 @@ export const policyTimeBucketForClaimType = (
       // ביטול לפני יציאה — גם עתידיות וגם כאלה שכבר פגו (מגישים אחרי פקיעה)
       return "all";
     case "trip_shorten":
-      // קיצור מחו״ל — רק נסיעה שכרגע פעילה
-      return "active";
+      // קיצור נסיעה — נסיעה שהתחילה (פעילה או שכבר הסתיימה)
+      return "started";
     case "baggage":
       // איחור / אובדן / גניבה — נסיעה שהתחילה (פעילה או שכבר הסתיימה)
       if (
