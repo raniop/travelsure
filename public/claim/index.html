@@ -1222,16 +1222,6 @@
       }
 
       function claimPolicyFilterCopy(type, baggageSub) {
-        if (type === "trip_shorten") {
-          return {
-            listHint: "מוצגות נסיעות שהתחילו ב־3 השנים האחרונות — כולל פוליסות שכבר הסתיימו (קיצור נסיעה)",
-            emptyTitle: "לא מצאנו נסיעה מתאימה",
-            emptyBody:
-              "לקיצור נסיעה נדרשת פוליסה שנסיעתה כבר התחילה, גם אם כבר חזרתם (עד 3 שנים אחורה). נסיעות עתידיות בלבד לא מוצגות כאן.",
-            upcomingTitle: "נסיעות פעילות כעת",
-            pastTitle: "נסיעות שעברו (גם פוליסות שכבר הסתיימו)",
-          };
-        }
         if (type === "baggage" && baggageSub === "delay") {
           return {
             listHint: "מוצגות נסיעות שהתחילו ב־3 השנים האחרונות — פעילות כעת או שכבר הסתיימו (איחור כבודה)",
@@ -1409,31 +1399,20 @@
           }
 
           if (olderGroups.length) {
-            const expandOlder = claimType === "trip_shorten" || showPastYearsPolicies;
-            if (claimType === "trip_shorten") {
-              html += `<section class="policy-section">
-                <div class="policy-section-head">
+            const title = showPastYearsPolicies
+              ? "הסתר פוליסות של שנים קודמות"
+              : "הצג פוליסות של שנים קודמות";
+            const chevron = showPastYearsPolicies ? "▴" : "▾";
+            html += `<section class="policy-section">
+              <button type="button" class="policy-past-toggle" data-toggle-past-years aria-expanded="${showPastYearsPolicies ? "true" : "false"}">
+                <div class="policy-section-head" style="margin:0">
                   <span class="policy-section-icon past">🕘</span>
-                  <div><h4>נסיעות משנים קודמות</h4><small>${olderCount} פוליסות · ${olderGroups.length} שנים</small></div>
+                  <div><h4>${title}</h4><small>${olderCount} פוליסות · ${olderGroups.length} שנים</small></div>
                 </div>
-                ${yearBlockHtml(olderGroups, "")}
-              </section>`;
-            } else {
-              const title = showPastYearsPolicies
-                ? "הסתר פוליסות של שנים קודמות"
-                : "הצג פוליסות של שנים קודמות";
-              const chevron = showPastYearsPolicies ? "▴" : "▾";
-              html += `<section class="policy-section">
-                <button type="button" class="policy-past-toggle" data-toggle-past-years aria-expanded="${showPastYearsPolicies ? "true" : "false"}">
-                  <div class="policy-section-head" style="margin:0">
-                    <span class="policy-section-icon past">🕘</span>
-                    <div><h4>${title}</h4><small>${olderCount} פוליסות · ${olderGroups.length} שנים</small></div>
-                  </div>
-                  <span class="chevron" aria-hidden="true">${chevron}</span>
-                </button>
-                ${expandOlder ? `<div class="policy-past-body">${yearBlockHtml(olderGroups, "")}</div>` : ""}
-              </section>`;
-            }
+                <span class="chevron" aria-hidden="true">${chevron}</span>
+              </button>
+              ${showPastYearsPolicies ? `<div class="policy-past-body">${yearBlockHtml(olderGroups, "")}</div>` : ""}
+            </section>`;
           }
         }
         $("policyGrid").innerHTML = html || `<p class="muted">לא נמצאו פוליסות להצגה</p>`;
