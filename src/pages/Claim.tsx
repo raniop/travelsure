@@ -1216,32 +1216,46 @@ const Claim = () => {
 
                 {pastPoliciesOlderYears.length ? (
                   <section className="space-y-4">
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-right transition hover:border-slate-300 hover:bg-slate-50"
-                      onClick={() => setShowPastYearsPolicies((v) => !v)}
-                      aria-expanded={showPastYearsPolicies}
-                    >
+                    {claimType === "trip_shorten" ? (
                       <div className="flex items-center gap-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
                           <History className="h-4 w-4" />
                         </span>
                         <div>
-                          <h3 className="text-sm font-extrabold text-[#143834]">
-                            {showPastYearsPolicies ? "הסתר פוליסות של שנים קודמות" : "הצג פוליסות של שנים קודמות"}
-                          </h3>
+                          <h3 className="text-sm font-extrabold text-[#143834]">נסיעות משנים קודמות</h3>
                           <p className="text-xs text-slate-500">
                             {pastOlderCount} פוליסות · {pastPoliciesOlderYears.length} שנים
                           </p>
                         </div>
                       </div>
-                      {showPastYearsPolicies ? (
-                        <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
-                      )}
-                    </button>
-                    {showPastYearsPolicies ? (
+                    ) : (
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-right transition hover:border-slate-300 hover:bg-slate-50"
+                        onClick={() => setShowPastYearsPolicies((v) => !v)}
+                        aria-expanded={showPastYearsPolicies}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                            <History className="h-4 w-4" />
+                          </span>
+                          <div>
+                            <h3 className="text-sm font-extrabold text-[#143834]">
+                              {showPastYearsPolicies ? "הסתר פוליסות של שנים קודמות" : "הצג פוליסות של שנים קודמות"}
+                            </h3>
+                            <p className="text-xs text-slate-500">
+                              {pastOlderCount} פוליסות · {pastPoliciesOlderYears.length} שנים
+                            </p>
+                          </div>
+                        </div>
+                        {showPastYearsPolicies ? (
+                          <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
+                        )}
+                      </button>
+                    )}
+                    {claimType === "trip_shorten" || showPastYearsPolicies ? (
                       <div className="space-y-4">
                         {pastPoliciesOlderYears.map(({ year, policies }) => (
                           <div key={`past-old-${year}`}>
