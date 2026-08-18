@@ -1,5 +1,6 @@
 import {
   DESTINATION_OPTIONS,
+  PERSON_KEYS,
   PERSON_LABELS_HE,
   type PersonKey,
   type TravelProposalForm,
@@ -37,6 +38,39 @@ const yn = (v: string) => (v === "yes" ? "כן" : v === "no" ? "לא" : "");
 
 export async function submitTravelProposal(form: TravelProposalForm, files: File[] = []) {
   const people = includedPersons(form);
+  const normalizedPeople = people.map(({ key, person }) => {
+    const h = { ...person.health };
+    if (people.length > 1) {
+      const g = form.healthGroup || { q1: "", q2: "", q3: "", q4: "", q5: "" };
+      if (g.q1 === "yes" && h.q1 !== "yes") h.q1 = "no";
+      if (g.q1 === "no") h.q1 = "no";
+      if (g.q2 === "yes" && h.q2 !== "yes") h.q2 = "no";
+      if (g.q2 === "no") {
+        h.q2 = "no";
+        h.q22 = "";
+        h.q21Conditions = [];
+      }
+      if (g.q3 === "yes" && h.q3 !== "yes") h.q3 = "no";
+      if (g.q3 === "no") {
+        h.q3 = "no";
+        h.q31 = "";
+      }
+      if (g.q4 === "yes" && h.q4 !== "yes") h.q4 = "no";
+      if (g.q4 === "no") {
+        h.q4 = "no";
+        h.q4Details = "";
+      }
+      if (g.q5 === "yes" && h.q5Pregnant !== "yes") h.q5Pregnant = person.gender === "female" ? "no" : "";
+      if (g.q5 === "no" && person.gender === "female") h.q5Pregnant = "no";
+    }
+    return { key, person: { ...person, included: true, health: h } };
+  });
+
+  const formForPdf = { ...form };
+  for (const { key, person } of normalizedPeople) {
+    formForPdf[key] = person;
+  }
+
   const primaryName = displayName(form.primary) || "מבוטח";
   const proposalNumber = createTravelProposalNumber();
 
@@ -44,7 +78,7 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
     .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.labelHe || id)
     .join(", ");
 
-  const insuredsText = people
+  const insuredsText = normalizedPeople
     .map(({ key, person }) => {
       const label = PERSON_LABELS_HE[key as PersonKey];
       return `${label}: ${displayName(person)} | ת.ז ${person.idNumber} | לידה ${person.birthDate} | מין ${
@@ -53,7 +87,7 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
     })
     .join("\n");
 
-  const insuredsHtml = people
+  const insuredsHtml = normalizedPeople
     .map(({ key, person }, i) => {
       const label = PERSON_LABELS_HE[key as PersonKey];
       const bg = i % 2 ? "#fff" : "#f8fafc";
@@ -99,6 +133,12 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
     }),
   );
 
+  const insureds = PERSON_KEYS.map((key) => ({
+    key,
+    ...formForPdf[key],
+    included: key === "primary" ? true : !!formForPdf[key].included,
+  }));
+
   const payload = {
     mode: "travel-proposal",
     type: "travel-proposal",
@@ -111,7 +151,17 @@ export async function submitTravelProposal(form: TravelProposalForm, files: File
     message: `הצעה דיגיטלית לביטוח נסיעות לחו״ל · מספר פנייה ${proposalNumber} · עבור ${primaryName}, ${form.tripFrom}–${form.tripTo}`,
     notify: [...STAFF_NOTIFY],
     travelPayload: summary,
-    formData: form,
+    formData: {
+      ...formForPdf,
+      primary: formForPdf.primary,
+      spouse: formForPdf.spouse,
+      child1: formForPdf.child1,
+      child2: formForPdf.child2,
+      child3: formForPdf.child3,
+      child4: formForPdf.child4,
+      insureds,
+    },
+    insureds,
     attachments,
   };
 

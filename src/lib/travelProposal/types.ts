@@ -135,6 +135,15 @@ export type TravelProposalForm = {
   // Shared plan notes (models written once on PDF when primary selected)
   baggageValuablesNote: string;
 
+  /** Household yes/no for health questions when more than one insured */
+  healthGroup: {
+    q1: YesNo;
+    q2: YesNo;
+    q3: YesNo;
+    q4: YesNo;
+    q5: YesNo;
+  };
+
   // Declarations
   declarationsAccepted: boolean;
   marketingConsentExtra: boolean;

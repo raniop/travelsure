@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { he } from "date-fns/locale/he";
 import { cn } from "@/lib/utils";
 import {
@@ -182,12 +182,23 @@ function TripDateField({
   const [open, setOpen] = useState(false);
   const selected = parseDdMmYyyy(value);
   const minDay = disabledBefore ? startOfDay(disabledBefore) : undefined;
+  const [month, setMonth] = useState<Date>(() => selected ?? minDay ?? new Date());
+
+  useEffect(() => {
+    if (selected) setMonth(selected);
+  }, [value]);
 
   const field = (
     <>
       <p className={cn("font-extrabold text-[#143834]", compact ? "text-xs" : "text-sm")}>{label}</p>
       {!compact && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (next) setMonth(selected ?? minDay ?? new Date());
+        }}
+      >
         <div className={cn("relative", compact ? "mt-1.5" : "mt-2")}>
           <input
             dir="ltr"
@@ -197,7 +208,6 @@ function TripDateField({
             value={value}
             onChange={(e) => onValueChange(maskDate(e.target.value))}
             onClick={() => setOpen(true)}
-            onFocus={() => setOpen(true)}
             className={cn(
               "h-12 w-full border border-slate-200 bg-white px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:ring-2 focus:ring-[#2f6b63]/20",
               compact ? "rounded-full" : "rounded-xl bg-slate-50/80 focus:bg-white",
@@ -214,24 +224,29 @@ function TripDateField({
           </PopoverTrigger>
         </div>
         <PopoverContent
-          className="w-auto p-0"
+          className="w-[280px] p-0"
           align="center"
+          side="bottom"
           sideOffset={8}
+          avoidCollisions={false}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <Calendar
-            mode="single"
-            locale={he}
-            selected={selected}
-            defaultMonth={selected ?? minDay ?? new Date()}
-            disabled={minDay ? { before: minDay } : undefined}
-            onSelect={(date) => {
-              if (!date) return;
-              onValueChange(toDdMmYyyy(date));
-              setOpen(false);
-            }}
-            initialFocus
-          />
+          <div className="h-[348px] overflow-hidden" dir="ltr">
+            <Calendar
+              mode="single"
+              locale={he}
+              month={month}
+              onMonthChange={setMonth}
+              selected={selected}
+              disabled={minDay ? { before: minDay } : undefined}
+              onSelect={(date) => {
+                if (!date) return;
+                onValueChange(toDdMmYyyy(date));
+                setOpen(false);
+              }}
+            />
+          </div>
         </PopoverContent>
       </Popover>
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}

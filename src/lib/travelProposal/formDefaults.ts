@@ -125,6 +125,8 @@ export const createInitialTravelProposalForm = (): TravelProposalForm => ({
 
   baggageValuablesNote: "",
 
+  healthGroup: { q1: "", q2: "", q3: "", q4: "", q5: "" },
+
   declarationsAccepted: false,
   marketingConsentExtra: false,
 

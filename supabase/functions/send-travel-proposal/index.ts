@@ -74,6 +74,9 @@ serve(async (req) => {
     const body = await req.json();
     const summary = (body.travelPayload || body.summary || {}) as Record<string, unknown>;
     const formData = (body.formData || body.form || {}) as TravelProposalPdfInput;
+    const insureds = (Array.isArray(body.insureds) ? body.insureds : formData.insureds) as
+      | TravelProposalPdfInput["insureds"]
+      | undefined;
     const fullName = String(
       body.fullName ||
         summary.primaryName ||
@@ -87,9 +90,21 @@ serve(async (req) => {
       });
     }
 
+    const fromList = Array.isArray(insureds) ? insureds : [];
+    const byKey = Object.fromEntries(
+      fromList.filter((p) => p && typeof p === "object" && "key" in p).map((p) => [String((p as { key?: string }).key), p]),
+    );
+
     const pdfInput: TravelProposalPdfInput = {
       ...summary,
       ...formData,
+      primary: (byKey.primary || formData.primary) as TravelProposalPdfInput["primary"],
+      spouse: (byKey.spouse || formData.spouse) as TravelProposalPdfInput["spouse"],
+      child1: (byKey.child1 || formData.child1) as TravelProposalPdfInput["child1"],
+      child2: (byKey.child2 || formData.child2) as TravelProposalPdfInput["child2"],
+      child3: (byKey.child3 || formData.child3) as TravelProposalPdfInput["child3"],
+      child4: (byKey.child4 || formData.child4) as TravelProposalPdfInput["child4"],
+      insureds: fromList.length ? fromList : formData.insureds,
       agentName: String(formData.agentName || summary.agentName || "אופיר ושות׳ סוכנות לביטוח"),
       agentNo: "59795",
       signatureDate: String(formData.signatureDate || summary.signatureDate || ""),

@@ -114,9 +114,30 @@ export type TravelProposalPdfInput = {
   payerPhone?: string;
   payerMobile?: string;
   signatureDate?: string;
+  insureds?: Array<TravelPersonPdf & { key?: string }>;
 };
 
 const PERSON_KEYS = ["primary", "spouse", "child1", "child2", "child3", "child4"] as const;
+
+function personShouldFill(p: TravelPersonPdf, idx: number): boolean {
+  if (idx === 0) return true;
+  if (p.included === true) return true;
+  return Boolean(
+    s(p.idNumber) || s(p.firstNameHe) || s(p.lastNameHe) || s(p.firstNameEn) || s(p.lastNameEn),
+  );
+}
+
+function resolvePeople(input: TravelProposalPdfInput): TravelPersonPdf[] {
+  const fromArray = Array.isArray(input.insureds) ? input.insureds : [];
+  const byKey: Partial<Record<(typeof PERSON_KEYS)[number], TravelPersonPdf>> = {};
+  for (const row of fromArray) {
+    const key = String(row?.key || "");
+    if ((PERSON_KEYS as readonly string[]).includes(key)) {
+      byKey[key as (typeof PERSON_KEYS)[number]] = row;
+    }
+  }
+  return PERSON_KEYS.map((k) => byKey[k] || input[k] || {});
+}
 
 const s = (v: unknown) => String(v ?? "").trim();
 const pad2 = (n: string) => String(n || "").padStart(2, "0");
@@ -540,9 +561,9 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     markInBox(page, font, 259.7, 267.9, 569.3, 7);
   }
 
-  const people = PERSON_KEYS.map((k) => input[k] || {});
+  const people = resolvePeople(input);
   people.forEach((p, idx) => {
-    if (idx > 0 && !p.included) return;
+    if (!personShouldFill(p, idx)) return;
     const row = INSURED_ROWS[idx];
     if (!row) return;
     if (isMale(s(p.gender))) markInBox(page, font, GENDER_MALE.x0, GENDER_MALE.x1, row.genderY, 7);
@@ -557,11 +578,11 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
 }
 
 function fillPage2(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
-  const people = PERSON_KEYS.map((k) => input[k] || {});
+  const people = resolvePeople(input);
   let q4Details = "";
 
   people.forEach((p, idx) => {
-    if (idx > 0 && !p.included) return;
+    if (!personShouldFill(p, idx)) return;
     const h = p.health || {};
     markYnPerson(page, font, idx, HEALTH_Q_Y.q1, h.q1 || "no");
     markYnPerson(page, font, idx, HEALTH_Q_Y.q2, h.q2 || "no");
@@ -589,7 +610,7 @@ function fillPage2(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
 }
 
 function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
-  const people = PERSON_KEYS.map((k) => input[k] || {});
+  const people = resolvePeople(input);
   const valuables = new Set<string>();
   let laptopModel = "";
   let phoneModel = "";
@@ -601,7 +622,7 @@ function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   let proTo = "";
 
   people.forEach((p, idx) => {
-    if (idx > 0 && !p.included) return;
+    if (!personShouldFill(p, idx)) return;
     const plan = p.plan || {};
     if (plan.optOutSearchRescue) markPlan(page, font, idx, PLAN_ROW_Y.optOutSearch, true);
     if (plan.optOutThirdParty) markPlan(page, font, idx, PLAN_ROW_Y.optOutThird, true);
@@ -649,7 +670,7 @@ function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
 }
 
 function fillPage4(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
-  const people = PERSON_KEYS.map((k) => input[k] || {});
+  const people = resolvePeople(input);
   let bikeModel = "";
   let bikeDate = "";
   let bikeValue = "";
@@ -657,7 +678,7 @@ function fillPage4(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   let rentalTo = "";
 
   people.forEach((p, idx) => {
-    if (idx > 0 && !p.included) return;
+    if (!personShouldFill(p, idx)) return;
     const plan = p.plan || {};
     markPlan(page, font, idx, PLAN_P4_Y.bicycle, !!plan.bicycle);
     markPlan(page, font, idx, PLAN_P4_Y.rental, !!plan.rentalCar);
@@ -689,11 +710,11 @@ function fillPage4(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
 }
 
 function fillPage5(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
-  const people = PERSON_KEYS.map((k) => input[k] || {});
+  const people = resolvePeople(input);
   const sigDate = formatDate(input.signatureDate) || formatDate(new Date().toISOString().slice(0, 10));
 
   people.forEach((p, idx) => {
-    if (idx > 0 && !p.included) return;
+    if (!personShouldFill(p, idx)) return;
     // Children under 18 typically don't sign — still fill name/id for adults; fill all included for completeness.
     const y = SIG_ROWS_Y[idx];
     if (y == null) return;

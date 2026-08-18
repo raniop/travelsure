@@ -66,6 +66,7 @@ import {
   Q52_REJECT,
   Q52_TITLE,
 } from "@/lib/travelProposal/healthQuestions";
+import { HouseholdHealth } from "@/components/travelProposal/HouseholdHealth";
 import { submitTravelProposal } from "@/lib/submitTravelProposal";
 import {
   formatClaimDateDisplay,
@@ -217,6 +218,26 @@ const InsuranceProposal = () => {
 
   const people = useMemo(() => includedPersons(form), [form]);
   const nextDependentKey = DEPENDENT_KEYS.find((k) => !form[k].included);
+
+  useEffect(() => {
+    if (step !== "health" || people.length < 2) return;
+    setForm((prev) => {
+      const g = prev.healthGroup || { q1: "", q2: "", q3: "", q4: "", q5: "" };
+      if (g.q1 || g.q2 || g.q3 || g.q4 || g.q5) return prev;
+      const p = prev.primary.health;
+      if (!p.q1 && !p.q2 && !p.q3 && !p.q4) return prev;
+      return {
+        ...prev,
+        healthGroup: {
+          q1: p.q1 || "",
+          q2: p.q2 || "",
+          q3: p.q3 || "",
+          q4: p.q4 || "",
+          q5: p.q5Pregnant || "",
+        },
+      };
+    });
+  }, [step, people.length]);
 
   const setField = <K extends keyof TravelProposalForm>(name: K, value: TravelProposalForm[K]) => {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -460,16 +481,44 @@ const InsuranceProposal = () => {
     }
 
     if (current === "health") {
+      if (people.length > 1) {
+        const g = form.healthGroup;
+        if (!g.q1) nextErrors.healthq1 = "חובה";
+        if (g.q1 === "yes" && !people.some(({ person }) => person.health.q1 === "yes")) {
+          nextErrors.q1who = "יש לבחור על מי חלה התשובה";
+        }
+        if (!g.q2) nextErrors.healthq2 = "חובה";
+        if (g.q2 === "yes" && !people.some(({ person }) => person.health.q2 === "yes")) {
+          nextErrors.q2who = "יש לבחור על מי חלה התשובה";
+        }
+        if (!g.q3) nextErrors.healthq3 = "חובה";
+        if (g.q3 === "yes" && !people.some(({ person }) => person.health.q3 === "yes")) {
+          nextErrors.q3who = "יש לבחור על מי חלה התשובה";
+        }
+        if (!g.q4) nextErrors.healthq4 = "חובה";
+        if (g.q4 === "yes" && !people.some(({ person }) => person.health.q4 === "yes")) {
+          nextErrors.q4who = "יש לבחור על מי חלה התשובה";
+        }
+        const females = people.filter(({ person }) => person.gender === "female");
+        if (females.length > 0) {
+          if (!g.q5) nextErrors.healthq5 = "חובה";
+          if (g.q5 === "yes" && !females.some(({ person }) => person.health.q5Pregnant === "yes")) {
+            nextErrors.q5who = "יש לבחור על מי חלה התשובה";
+          }
+        }
+      }
       for (const { key, person } of people) {
-        if (!person.health.q1) nextErrors[`${key}.q1`] = "חובה";
-        if (!person.health.q2) nextErrors[`${key}.q2`] = "חובה";
-        if (!person.health.q3) nextErrors[`${key}.q3`] = "חובה";
-        if (!person.health.q4) nextErrors[`${key}.q4`] = "חובה";
+        if (people.length === 1) {
+          if (!person.health.q1) nextErrors[`${key}.q1`] = "חובה";
+          if (!person.health.q2) nextErrors[`${key}.q2`] = "חובה";
+          if (!person.health.q3) nextErrors[`${key}.q3`] = "חובה";
+          if (!person.health.q4) nextErrors[`${key}.q4`] = "חובה";
+        }
         if (person.health.q1 === "yes") nextErrors[`${key}.q1`] = "תשובה חיובית — לא ניתן לקבל לביטוח";
         if (person.health.q2 === "yes" && !person.health.q22) nextErrors[`${key}.q22`] = "חובה";
         if (person.health.q3 === "yes" && !person.health.q31) nextErrors[`${key}.q31`] = "חובה";
         if (person.gender === "female") {
-          if (!person.health.q5Pregnant) nextErrors[`${key}.q5`] = "חובה";
+          if (people.length === 1 && !person.health.q5Pregnant) nextErrors[`${key}.q5`] = "חובה";
           if (person.health.q5Pregnant === "yes") {
             if (!person.health.q51Week) nextErrors[`${key}.q51`] = "חובה";
             if (!person.health.q52HighRisk) nextErrors[`${key}.q52`] = "חובה";
@@ -1671,25 +1720,20 @@ const InsuranceProposal = () => {
                   </h2>
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{HEALTH_DISCLAIMER}</p>
                 </div>
-                {people.length > 1 && (
-                  <div className="flex flex-wrap gap-2">
-                    {people.map(({ key }) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setActiveHealthPerson(key)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                          activeHealthPerson === key
-                            ? "bg-[#2f6b63] text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {PERSON_LABELS_HE[key]}
-                      </button>
-                    ))}
-                  </div>
+                {people.length > 1 ? (
+                  <HouseholdHealth
+                    people={people}
+                    form={form}
+                    errors={errors}
+                    onPatchHealth={patchPersonHealth}
+                    onPatchPerson={patchPerson}
+                    onPatchGroup={(patch) =>
+                      setForm((prev) => ({ ...prev, healthGroup: { ...prev.healthGroup, ...patch } }))
+                    }
+                  />
+                ) : (
+                  renderHealthFor(activeHealthPerson)
                 )}
-                {renderHealthFor(activeHealthPerson)}
                 <Field label="צירוף מסמכים רפואיים (אופציונלי)">
                   <label className="flex cursor-pointer items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-3 text-sm text-slate-600">
                     <FileUp className="h-4 w-4" />
@@ -1757,9 +1801,11 @@ const InsuranceProposal = () => {
                   <p className="mt-1 text-xs text-slate-500">בדקו שהכל נכון לפני השליחה</p>
                 </div>
                 <div className="space-y-2 rounded-2xl border border-[#2f6b63]/10 bg-[#f7fbfa] p-4 text-sm text-slate-700">
-                  <p>
-                    <strong>מבוטח ראשי:</strong> {displayName(form.primary)}
-                  </p>
+                  {people.map(({ key, person }) => (
+                    <p key={key}>
+                      <strong>{PERSON_LABELS_HE[key]}:</strong> {displayName(person) || "—"}
+                    </p>
+                  ))}
                   <p>
                     <strong>נסיעה:</strong> {form.tripFrom} – {form.tripTo}
                   </p>
@@ -1768,9 +1814,6 @@ const InsuranceProposal = () => {
                     {form.destinations
                       .map((id) => DESTINATION_OPTIONS.find((d) => d.id === id)?.labelHe)
                       .join(", ")}
-                  </p>
-                  <p>
-                    <strong>מבוטחים:</strong> {people.length}
                   </p>
                 </div>
 
