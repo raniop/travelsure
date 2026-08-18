@@ -15,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Baby,
   Bike,
@@ -192,47 +191,54 @@ function TripDateField({
     <>
       <p className={cn("font-extrabold text-[#143834]", compact ? "text-xs" : "text-sm")}>{label}</p>
       {!compact && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
-      <Popover
+      <div className={cn("relative", compact ? "mt-1.5" : "mt-2")}>
+        <input
+          dir="ltr"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="DD/MM/YYYY"
+          value={value}
+          onChange={(e) => onValueChange(maskDate(e.target.value))}
+          onClick={() => {
+            setMonth(selected ?? minDay ?? new Date());
+            setOpen(true);
+          }}
+          className={cn(
+            "h-12 w-full border border-slate-200 bg-white px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:ring-2 focus:ring-[#2f6b63]/20",
+            compact ? "rounded-full" : "rounded-xl bg-slate-50/80 focus:bg-white",
+          )}
+        />
+        <button
+          type="button"
+          aria-label="פתיחת תאריכון"
+          onClick={() => {
+            setMonth(selected ?? minDay ?? new Date());
+            setOpen(true);
+          }}
+          className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#2f6b63] transition hover:bg-[#e8f4f1]"
+        >
+          <CalendarDays className="h-4 w-4" />
+        </button>
+      </div>
+      <Dialog
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
           if (next) setMonth(selected ?? minDay ?? new Date());
         }}
       >
-        <div className={cn("relative", compact ? "mt-1.5" : "mt-2")}>
-          <input
-            dir="ltr"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="DD/MM/YYYY"
-            value={value}
-            onChange={(e) => onValueChange(maskDate(e.target.value))}
-            onClick={() => setOpen(true)}
-            className={cn(
-              "h-12 w-full border border-slate-200 bg-white px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:ring-2 focus:ring-[#2f6b63]/20",
-              compact ? "rounded-full" : "rounded-xl bg-slate-50/80 focus:bg-white",
-            )}
-          />
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              aria-label="פתיחת תאריכון"
-              className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#2f6b63] transition hover:bg-[#e8f4f1]"
-            >
-              <CalendarDays className="h-4 w-4" />
-            </button>
-          </PopoverTrigger>
-        </div>
-        <PopoverContent
-          className="w-[280px] p-0"
-          align="center"
-          side="bottom"
-          sideOffset={8}
-          avoidCollisions={false}
+        <DialogContent
+          className="max-h-[90vh] w-[min(100vw-1.5rem,360px)] overflow-y-auto rounded-2xl p-4 sm:rounded-2xl"
+          dir="rtl"
           onOpenAutoFocus={(e) => e.preventDefault()}
-          onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <div className="h-[348px] overflow-hidden" dir="ltr">
+          <DialogHeader>
+            <DialogTitle className="text-center text-base font-extrabold text-[#143834]">
+              {label}
+            </DialogTitle>
+            <DialogDescription className="sr-only">בחירת תאריך בלוח שנה</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center" dir="ltr">
             <Calendar
               mode="single"
               locale={he}
@@ -247,8 +253,8 @@ function TripDateField({
               }}
             />
           </div>
-        </PopoverContent>
-      </Popover>
+        </DialogContent>
+      </Dialog>
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
     </>
   );
