@@ -1787,10 +1787,14 @@
       $("addBaggage").onclick = () => addBaggageRow();
       $("addExpense").onclick = () => addExpenseRow();
 
-      const CLAIM_FILE_TARGET_BYTES = 1200000;
+      const CLAIM_FILE_TARGET_BYTES = 900000;
       const CLAIM_FILE_MAX_BYTES = 8000000;
-      const CLAIM_MAX_IMAGE_EDGE = 2000;
+      const CLAIM_TOTAL_UPLOAD_BUDGET_BYTES = 3200000;
+      const CLAIM_MAX_IMAGE_EDGE = 1800;
+      const CLAIM_MAX_PDF_PAGES = 20;
+      const CLAIM_PDF_PAGE_EDGE = 1400;
       let isPreparingFiles = false;
+      let pdfLibsPromise = null;
 
       function setFilesStatus(message, isError) {
         const el = $("status");
@@ -1820,6 +1824,38 @@
         return base + newExt;
       }
 
+      function formatFileSize(bytes) {
+        if (!bytes && bytes !== 0) return "";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      }
+
+      function claimSubmitErrorMessage(error) {
+        const raw = error && error.message ? String(error.message) : String(error || "");
+        const lower = raw.toLowerCase();
+        if (
+          lower.indexOf("too large") >= 0 ||
+          lower.indexOf("payload") >= 0 ||
+          lower.indexOf("413") >= 0 ||
+          lower.indexOf("entity too large") >= 0 ||
+          raw.indexOf("גדולים מדי") >= 0
+        ) {
+          return "המסמכים גדולים מדי לשליחה. נסו לצרף פחות קבצים או לצלם/לסרוק מחדש באיכות נמוכה יותר.";
+        }
+        if (
+          lower.indexOf("failed to fetch") >= 0 ||
+          lower.indexOf("network") >= 0 ||
+          lower.indexOf("offline") >= 0 ||
+          lower.indexOf("timeout") >= 0 ||
+          lower.indexOf("abort") >= 0
+        ) {
+          return "נראה שיש בעיית רשת. בדקו את החיבור לאינטרנט ונסו שוב. אם זה נמשך — שלחו את המסמכים ל־ophir@ophirins.co.il";
+        }
+        if (raw && /[\u0590-\u05FF]/.test(raw) && raw !== "fail" && raw !== "claim_submit_failed") return raw;
+        return "לא הצלחנו לשלוח את התביעה כרגע. נסו שוב בעוד כמה דקות. אם זה חוזר — כתבו ל־ophir@ophirins.co.il וצרפו את המסמכים.";
+      }
+
       function loadImageElement(file) {
         return new Promise((resolve, reject) => {
           const url = URL.createObjectURL(file);
@@ -1836,9 +1872,15 @@
         });
       }
 
-      async function compressImageFile(file) {
+      function canvasToJpegBlob(canvas, quality) {
+        return new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", quality));
+      }
+
+      async function compressImageFile(file, targetBytes, maxEdge) {
+        const target = targetBytes || CLAIM_FILE_TARGET_BYTES;
+        const edge = maxEdge || CLAIM_MAX_IMAGE_EDGE;
         const originalSize = file.size;
-        if (originalSize <= CLAIM_FILE_TARGET_BYTES) {
+        if (originalSize <= target) {
           return { file: file, compressed: false, error: "" };
         }
         try {
@@ -1855,7 +1897,7 @@
             }
             return { file: file, compressed: false, error: "" };
           }
-          const scale = Math.min(1, CLAIM_MAX_IMAGE_EDGE / Math.max(width, height));
+          const scale = Math.min(1, edge / Math.max(width, height));
           width = Math.max(1, Math.round(width * scale));
           height = Math.max(1, Math.round(height * scale));
           const canvas = document.createElement("canvas");
@@ -1864,12 +1906,12 @@
           const ctx = canvas.getContext("2d");
           if (!ctx) return { file: file, compressed: false, error: "" };
           ctx.drawImage(img, 0, 0, width, height);
-          let quality = 0.82;
+          let quality = 0.78;
           let blob = null;
-          while (quality >= 0.45) {
-            blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-            if (blob && blob.size <= CLAIM_FILE_TARGET_BYTES) break;
-            quality -= 0.12;
+          while (quality >= 0.4) {
+            blob = await canvasToJpegBlob(canvas, quality);
+            if (blob && blob.size <= target) break;
+            quality -= 0.1;
           }
           if (!blob || blob.size >= originalSize) {
             if (originalSize > CLAIM_FILE_MAX_BYTES) {
@@ -1888,17 +1930,143 @@
               error: '"' + file.name + '" עדיין גדול מדי אחרי כיווץ (' + formatFileSize(blob.size) + ").",
             };
           }
-          const compressedFile = new File([blob], renameKeepBase(file.name, ".jpg"), {
-            type: "image/jpeg",
-            lastModified: Date.now(),
-          });
-          return { file: compressedFile, compressed: true, error: "" };
+          return {
+            file: new File([blob], renameKeepBase(file.name, ".jpg"), {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            }),
+            compressed: true,
+            error: "",
+          };
         } catch (_) {
           if (originalSize > CLAIM_FILE_MAX_BYTES) {
             return {
               file: file,
               compressed: false,
               error: '"' + file.name + '" גדול מדי ולא ניתן לכווץ בדפדפן זה.',
+            };
+          }
+          return { file: file, compressed: false, error: "" };
+        }
+      }
+
+      async function loadPdfLibs() {
+        if (pdfLibsPromise) return pdfLibsPromise;
+        pdfLibsPromise = (async () => {
+          const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/+esm");
+          const pdfLib = await import("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm");
+          pdfjs.GlobalWorkerOptions.workerSrc =
+            "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+          return { pdfjs: pdfjs, PDFDocument: pdfLib.PDFDocument };
+        })();
+        return pdfLibsPromise;
+      }
+
+      async function compressPdfFile(file, targetBytes, pageEdge, jpegQuality) {
+        const target = targetBytes || CLAIM_FILE_TARGET_BYTES;
+        const edge = pageEdge || CLAIM_PDF_PAGE_EDGE;
+        const quality = typeof jpegQuality === "number" ? jpegQuality : 0.62;
+        const originalSize = file.size;
+        if (originalSize <= target) {
+          return { file: file, compressed: false, error: "" };
+        }
+        try {
+          const libs = await loadPdfLibs();
+          const data = await file.arrayBuffer();
+          const pdf = await libs.pdfjs.getDocument({ data: data.slice(0) }).promise;
+          const pageCount = Math.min(pdf.numPages || 0, CLAIM_MAX_PDF_PAGES);
+          if (!pageCount) return prepareNonImageFile(file);
+          const out = await libs.PDFDocument.create();
+          for (let i = 1; i <= pageCount; i += 1) {
+            const page = await pdf.getPage(i);
+            const base = page.getViewport({ scale: 1 });
+            const scale = Math.min(1, edge / Math.max(base.width, base.height));
+            const viewport = page.getViewport({ scale: scale || 1 });
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.floor(viewport.width));
+            canvas.height = Math.max(1, Math.floor(viewport.height));
+            const ctx = canvas.getContext("2d");
+            if (!ctx) continue;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            await page.render({ canvasContext: ctx, viewport: viewport, canvas: canvas }).promise;
+            const blob = await canvasToJpegBlob(canvas, quality);
+            if (!blob) continue;
+            const jpgBytes = new Uint8Array(await blob.arrayBuffer());
+            const embedded = await out.embedJpg(jpgBytes);
+            const outPage = out.addPage([embedded.width, embedded.height]);
+            outPage.drawImage(embedded, {
+              x: 0,
+              y: 0,
+              width: embedded.width,
+              height: embedded.height,
+            });
+          }
+          const saved = await out.save();
+          if (!saved.byteLength || saved.byteLength >= originalSize) {
+            if (originalSize > CLAIM_FILE_MAX_BYTES) {
+              return {
+                file: file,
+                compressed: false,
+                error:
+                  'ה־PDF "' +
+                  file.name +
+                  '" גדול מדי (' +
+                  formatFileSize(originalSize) +
+                  ") ולא ניתן לכווץ מספיק.",
+              };
+            }
+            return { file: file, compressed: false, error: "" };
+          }
+          if (saved.byteLength > CLAIM_FILE_MAX_BYTES) {
+            if (edge > 900 || quality > 0.45) {
+              return compressPdfFile(
+                file,
+                target,
+                Math.max(900, Math.floor(edge * 0.75)),
+                Math.max(0.42, quality - 0.12)
+              );
+            }
+            return {
+              file: file,
+              compressed: false,
+              error:
+                'ה־PDF "' +
+                file.name +
+                '" עדיין גדול מדי אחרי כיווץ (' +
+                formatFileSize(saved.byteLength) +
+                "). פצלו למספר קבצים או סרקו באיכות נמוכה יותר.",
+            };
+          }
+          if (saved.byteLength > target && (edge > 1000 || quality > 0.5)) {
+            const tighter = await compressPdfFile(
+              file,
+              target,
+              Math.max(1000, Math.floor(edge * 0.85)),
+              Math.max(0.48, quality - 0.1)
+            );
+            if (tighter.compressed && tighter.file.size < saved.byteLength) return tighter;
+          }
+          return {
+            file: new File([saved], renameKeepBase(file.name, ".pdf"), {
+              type: "application/pdf",
+              lastModified: Date.now(),
+            }),
+            compressed: true,
+            error: "",
+          };
+        } catch (err) {
+          console.error("PDF compress failed:", err);
+          if (originalSize > CLAIM_FILE_MAX_BYTES) {
+            return {
+              file: file,
+              compressed: false,
+              error:
+                'ה־PDF "' +
+                file.name +
+                '" גדול מדי (' +
+                formatFileSize(originalSize) +
+                ") ולא ניתן לכווץ בדפדפן זה.",
             };
           }
           return { file: file, compressed: false, error: "" };
@@ -1926,14 +2094,18 @@
         };
       }
 
+      async function prepareClaimFile(file, targetBytes) {
+        if (isImageFile(file)) return compressImageFile(file, targetBytes);
+        if (isPdfFile(file)) return compressPdfFile(file, targetBytes);
+        return prepareNonImageFile(file);
+      }
+
       async function prepareClaimFiles(files) {
         const accepted = [];
         const errors = [];
         let compressedCount = 0;
         for (const file of files) {
-          const result = isImageFile(file)
-            ? await compressImageFile(file)
-            : prepareNonImageFile(file);
+          const result = await prepareClaimFile(file);
           if (result.error) {
             errors.push(result.error);
             continue;
@@ -1944,11 +2116,61 @@
         return { accepted: accepted, compressedCount: compressedCount, errors: errors };
       }
 
-      function formatFileSize(bytes) {
-        if (!bytes && bytes !== 0) return "";
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      function fileDedupeKey(file) {
+        return file.name + "::" + file.size + "::" + file.lastModified;
+      }
+
+      function dedupeClaimFiles(files) {
+        const seen = {};
+        const out = [];
+        files.forEach((file) => {
+          const key = fileDedupeKey(file);
+          if (seen[key]) return;
+          seen[key] = true;
+          out.push(file);
+        });
+        return out;
+      }
+
+      function totalClaimFilesBytes(files) {
+        return files.reduce((sum, f) => sum + (f.size || 0), 0);
+      }
+
+      async function fitClaimFilesForUpload(files) {
+        const unique = dedupeClaimFiles(files);
+        let compressedCount = 0;
+        const ensurePrepared = async (list, target) => {
+          const next = [];
+          for (const file of list) {
+            const result = await prepareClaimFile(file, target);
+            if (result.error) return { files: next, error: result.error };
+            if (result.compressed) compressedCount += 1;
+            next.push(result.file);
+          }
+          return { files: next };
+        };
+        let prepared = await ensurePrepared(unique, CLAIM_FILE_TARGET_BYTES);
+        if (prepared.error) {
+          return { files: unique, compressedCount: compressedCount, error: prepared.error };
+        }
+        let working = prepared.files;
+        if (totalClaimFilesBytes(working) <= CLAIM_TOTAL_UPLOAD_BUDGET_BYTES) {
+          return { files: working, compressedCount: compressedCount };
+        }
+        prepared = await ensurePrepared(working, 450000);
+        if (prepared.error) {
+          return { files: working, compressedCount: compressedCount, error: prepared.error };
+        }
+        working = prepared.files;
+        if (totalClaimFilesBytes(working) <= CLAIM_TOTAL_UPLOAD_BUDGET_BYTES) {
+          return { files: working, compressedCount: compressedCount };
+        }
+        return {
+          files: working,
+          compressedCount: compressedCount,
+          error:
+            "המסמכים גדולים מדי לשליחה גם אחרי כיווץ אוטומטי. צרפו פחות קבצים, או סרקו/צלמו מחדש באיכות נמוכה יותר, ונסו שוב.",
+        };
       }
 
       function flattenAttachedFiles() {
@@ -2398,17 +2620,36 @@
           // Server allocates professional sequential number: 20260001, 20260002, ...
           delete payload.claimNumber;
 
+          let filesForSend = selectedFiles.slice();
+          if (filesForSend.length) {
+            const fitted = await fitClaimFilesForUpload(filesForSend);
+            if (fitted.error) {
+              return { ok: false, error: fitted.error, claimNumber: "" };
+            }
+            filesForSend = fitted.files;
+            selectedFiles = filesForSend;
+          }
+
           const filesPayload = [];
-          for (const file of selectedFiles) {
-            const content = await fileToBase64(file);
-            filesPayload.push({
-              name: file.name,
-              filename: file.name,
-              contentType: file.type || "application/octet-stream",
-              type: file.type || "application/octet-stream",
-              contentBase64: content,
-              content: content,
-            });
+          try {
+            for (const file of filesForSend) {
+              const content = await fileToBase64(file);
+              filesPayload.push({
+                name: file.name,
+                filename: file.name,
+                contentType: file.type || "application/octet-stream",
+                type: file.type || "application/octet-stream",
+                contentBase64: content,
+                content: content,
+              });
+            }
+          } catch (err) {
+            console.error("Claim file read failed:", err);
+            return {
+              ok: false,
+              error: "לא הצלחנו לקרוא את הקבצים לשליחה (ייתכן שהם גדולים מדי לזיכרון המכשיר). נסו קבצים קטנים יותר או שלחו ל־ophir@ophirins.co.il",
+              claimNumber: "",
+            };
           }
 
           async function postJson(bodyObj) {
@@ -2422,12 +2663,24 @@
                 },
                 body: JSON.stringify(bodyObj),
               });
-              if (!res.ok) return { ok: false };
+              if (!res.ok) {
+                return {
+                  ok: false,
+                  status: res.status,
+                  error:
+                    res.status === 413
+                      ? "המסמכים גדולים מדי לשליחה. נסו לצרף פחות קבצים או לצלם/לסרוק מחדש באיכות נמוכה יותר."
+                      : "",
+                };
+              }
               const data = await res.json().catch(() => ({}));
-              if (data.error) return { ok: false };
+              if (data.error) return { ok: false, error: String(data.error || "") };
               return { ok: true, mode: data.mode || "", claimNumber: data.claimNumber || "" };
-            } catch (_) {
-              return { ok: false };
+            } catch (err) {
+              return {
+                ok: false,
+                error: claimSubmitErrorMessage(err),
+              };
             }
           }
 
@@ -2447,7 +2700,7 @@
             "תיאור:",
             payload.details || "",
             "",
-            "קבצים שנבחרו (" + selectedFiles.length + "): " + selectedFiles.map((f) => f.name).join(", "),
+            "קבצים שנבחרו (" + filesForSend.length + "): " + filesForSend.map((f) => f.name).join(", "),
           ].join("\n").slice(0, 4800);
 
           // One email only: details + documents together.
@@ -2472,9 +2725,11 @@
             })),
           });
 
+          let sentWithoutAttachments = false;
           // If oversized scans block the request, retry once without file bytes (still one email).
           if (!primary.ok && filesPayload.length > 0) {
             primary = await postJson(baseClaimBody);
+            if (primary.ok) sentWithoutAttachments = true;
           }
 
           let resolvedNumber = primary.claimNumber || "";
@@ -2503,7 +2758,15 @@
             );
           }
 
-          if (primary.ok) return { ok: true, claimNumber: resolvedNumber };
+          if (primary.ok) {
+            return {
+              ok: true,
+              claimNumber: resolvedNumber,
+              warning: sentWithoutAttachments
+                ? "התביעה נשלחה, אך המסמכים לא צורפו בגלל גודלם. שלחו אותם במייל ל־ophir@ophirins.co.il עם מספר התביעה."
+                : "",
+            };
+          }
 
           // Email path failed entirely — still try lightweight staff notify before OPHIR fallback.
           const staffOk = await Promise.all(
@@ -2516,18 +2779,29 @@
               })
             )
           );
-          if (staffOk.some((r) => r.ok)) return { ok: true, claimNumber: resolvedNumber };
+          if (staffOk.some((r) => r.ok)) {
+            return {
+              ok: true,
+              claimNumber: resolvedNumber,
+              warning:
+                "התביעה התקבלה אצלנו, אך ייתכן שחלק מהמסמכים לא צורפו. אם לא תקבלו אישור במייל — שלחו את הקבצים ל־ophir@ophirins.co.il",
+            };
+          }
 
           const body = new FormData();
           body.append("payload", JSON.stringify(payload));
-          selectedFiles.forEach((f) => body.append("files[]", f));
+          filesForSend.forEach((f) => body.append("files[]", f));
           for (const url of OPHIR_FALLBACKS) {
             try {
-              const res = await fetch(url, { method: "POST", body });
+              const res = await fetch(url, { method: "POST", body: body });
               if (res.ok) return { ok: true, claimNumber: resolvedNumber };
             } catch (_) {}
           }
-          return { ok: false, claimNumber: resolvedNumber };
+          return {
+            ok: false,
+            claimNumber: resolvedNumber,
+            error: primary.error || claimSubmitErrorMessage("fail"),
+          };
         }
 
         function setSendingPhase(phase) {
@@ -2567,7 +2841,7 @@
           } finally {
             clearInterval(tick);
           }
-          if (!result.ok) throw new Error("fail");
+          if (!result.ok) throw new Error(result.error || "fail");
           $("successClaimNumber").textContent = result.claimNumber || "";
           $("successSummary").innerHTML =
             "<li><strong>שם:</strong> " + (payload.fullName || "") + "</li>" +
@@ -2580,10 +2854,17 @@
           $("baggageItems").innerHTML = ""; $("expenseItems").innerHTML = "";
           renderTypes();
           showStep("success");
+          if (result.warning) {
+            const warn = document.createElement("p");
+            warn.style.cssText = "margin:12px 0 0;padding:10px 12px;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:13px;font-weight:700;text-align:right";
+            warn.textContent = result.warning;
+            const box = $("successClaimNumber");
+            if (box && box.parentElement) box.parentElement.appendChild(warn);
+          }
         } catch (err) {
           showStep("files");
           status.classList.remove("hidden");
-          status.textContent = "שגיאה בשליחת התביעה. נסו שוב בעוד מספר דקות.";
+          status.textContent = claimSubmitErrorMessage(err);
           status.classList.add("err");
         } finally {
           $("submitBtn").disabled = false;

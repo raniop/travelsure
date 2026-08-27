@@ -1,4 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  claimSubmitErrorMessage,
+  fitClaimFilesForUpload,
+  formatClaimFileSize,
+  totalClaimFilesBytes,
+} from "@/lib/claimFilePrepare";
 
 const OPHIR_CLAIM_ENDPOINTS = [
   "https://ophir.travelsure.co.il/api-claim.ashx",
@@ -68,9 +74,19 @@ const buildClaimMessage = (payload: Record<string, unknown>, files: File[], clai
   return `${multiline}\n\n---\n${compact}`.slice(0, 4800);
 };
 
-type InvokeResult = { ok: boolean; mode?: string; claimNumber?: string };
+type InvokeResult = { ok: boolean; mode?: string; claimNumber?: string; status?: number; error?: string };
 
 export type ClaimSubmitProgress = "preparing" | "uploading" | "sending";
+
+function classifyInvokeFailure(status?: number, message?: string): string {
+  if (status === 413 || /too large|payload|entity too large/i.test(message || "")) {
+    return "המסמכים גדולים מדי לשליחה. נסו לצרף פחות קבצים או לצלם/לסרוק מחדש באיכות נמוכה יותר.";
+  }
+  if (/failed to fetch|network|offline|timeout|abort/i.test(message || "")) {
+    return "נראה שיש בעיית רשת. בדקו את החיבור לאינטרנט ונסו שוב. אם זה נמשך — שלחו את המסמכים ל־ophir@ophirins.co.il";
+  }
+  return claimSubmitErrorMessage(message || "claim_submit_failed");
+}
 
 /** Submit claim via live Supabase contact function (CORS-safe). Always notifies Rani + Eli. */
 export async function submitClaimRequest(
@@ -85,24 +101,54 @@ export async function submitClaimRequest(
   else delete fullPayload.claimNumber;
 
   onProgress?.(files.length ? "preparing" : "sending");
-  const attachments = await Promise.all(
-    files.map(async (file) => {
-      const content = await fileToBase64(file);
-      return {
-        name: file.name,
-        filename: file.name,
-        contentType: file.type || "application/octet-stream",
-        type: file.type || "application/octet-stream",
-        contentBase64: content,
-        content,
-      };
-    })
-  );
-  if (files.length) onProgress?.("uploading");
+
+  let filesToSend = files;
+  if (files.length) {
+    const fitted = await fitClaimFilesForUpload(files);
+    if (fitted.error) {
+      return { ok: false as const, error: fitted.error, claimNumber: pendingNumber };
+    }
+    filesToSend = fitted.files;
+  }
+
+  let attachments: Array<{
+    name: string;
+    filename: string;
+    contentType: string;
+    type: string;
+    contentBase64: string;
+    content: string;
+  }> = [];
+
+  try {
+    attachments = await Promise.all(
+      filesToSend.map(async (file) => {
+        const content = await fileToBase64(file);
+        return {
+          name: file.name,
+          filename: file.name,
+          contentType: file.type || "application/octet-stream",
+          type: file.type || "application/octet-stream",
+          contentBase64: content,
+          content,
+        };
+      })
+    );
+  } catch (err) {
+    console.error("Claim file read failed:", err);
+    return {
+      ok: false as const,
+      error:
+        "לא הצלחנו לקרוא את הקבצים לשליחה (ייתכן שהם גדולים מדי לזיכרון המכשיר). נסו קבצים קטנים יותר או שלחו ל־ophir@ophirins.co.il",
+      claimNumber: pendingNumber,
+    };
+  }
+
+  if (filesToSend.length) onProgress?.("uploading");
   onProgress?.("sending");
 
   const messagePlaceholder = pendingNumber || "יוקצה בעת השליחה";
-  const message = buildClaimMessage(fullPayload, files, messagePlaceholder);
+  const message = buildClaimMessage(fullPayload, filesToSend, messagePlaceholder);
 
   const tryInvoke = async (body: Record<string, unknown>): Promise<InvokeResult> => {
     try {
@@ -114,9 +160,18 @@ export async function submitClaimRequest(
           claimNumber: String((data as { claimNumber?: string }).claimNumber || ""),
         };
       }
-      return { ok: false };
-    } catch {
-      return { ok: false };
+      const status =
+        typeof (error as { context?: { status?: number } } | null)?.context?.status === "number"
+          ? (error as { context: { status: number } }).context.status
+          : undefined;
+      const msg =
+        (data as { error?: string } | null)?.error ||
+        (error as { message?: string } | null)?.message ||
+        "";
+      return { ok: false, status, error: classifyInvokeFailure(status, msg) };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err || "");
+      return { ok: false, error: classifyInvokeFailure(undefined, msg) };
     }
   };
 
@@ -126,6 +181,8 @@ export async function submitClaimRequest(
   const claimPayloadWithFiles = {
     ...fullPayload,
     attachedFileNames: attachmentNames,
+    attachmentBytes: totalClaimFilesBytes(filesToSend),
+    attachmentBytesLabel: formatClaimFileSize(totalClaimFilesBytes(filesToSend)),
   };
 
   const baseClaimBody = {
@@ -149,8 +206,10 @@ export async function submitClaimRequest(
   });
 
   // If oversized scans block the request, retry once without file bytes (still a single email).
+  let sentWithoutAttachments = false;
   if (!primary.ok && attachments.length > 0) {
     primary = await tryInvoke(baseClaimBody);
+    if (primary.ok) sentWithoutAttachments = true;
   }
 
   let resolvedNumber = primary.claimNumber || pendingNumber;
@@ -160,7 +219,7 @@ export async function submitClaimRequest(
 
   // Old deployed function only emails ophir@. Fan-out claim text to Rani + Eli explicitly.
   if (primary.ok && primary.mode !== "claim") {
-    const fanoutMessage = buildClaimMessage(fullPayload, files, resolvedNumber);
+    const fanoutMessage = buildClaimMessage(fullPayload, filesToSend, resolvedNumber);
     await Promise.all(
       STAFF_NOTIFY.map((staffEmail) =>
         tryInvoke({
@@ -174,10 +233,16 @@ export async function submitClaimRequest(
   }
 
   if (primary.ok) {
-    return { ok: true as const, claimNumber: resolvedNumber };
+    return {
+      ok: true as const,
+      claimNumber: resolvedNumber,
+      warning: sentWithoutAttachments
+        ? "התביעה נשלחה, אך המסמכים לא צורפו בגלל גודלם. שלחו אותם במייל ל־ophir@ophirins.co.il עם מספר התביעה."
+        : undefined,
+    };
   }
 
-  const staffMessage = buildClaimMessage(fullPayload, files, resolvedNumber);
+  const staffMessage = buildClaimMessage(fullPayload, filesToSend, resolvedNumber);
   const staffOk = await Promise.all(
     STAFF_NOTIFY.map((staffEmail) =>
       tryInvoke({
@@ -189,21 +254,26 @@ export async function submitClaimRequest(
     )
   );
   if (staffOk.some((r) => r.ok)) {
-    return { ok: true as const, claimNumber: resolvedNumber };
+    return {
+      ok: true as const,
+      claimNumber: resolvedNumber,
+      warning:
+        "התביעה התקבלה אצלנו, אך ייתכן שחלק מהמסמכים לא צורפו. אם לא תקבלו אישור במייל — שלחו את הקבצים ל־ophir@ophirins.co.il",
+    };
   }
 
   const body = new FormData();
   body.append("payload", JSON.stringify({ ...fullPayload, claimNumber: resolvedNumber }));
-  files.forEach((file) => body.append("files[]", file));
+  filesToSend.forEach((file) => body.append("files[]", file));
 
-  let lastError = "claim submit failed";
+  let lastError = primary.error || "claim submit failed";
   for (const url of OPHIR_CLAIM_ENDPOINTS) {
     try {
       const res = await fetch(url, { method: "POST", body });
       if (res.ok) return { ok: true as const, claimNumber: resolvedNumber };
-      lastError = `HTTP ${res.status}`;
+      lastError = classifyInvokeFailure(res.status, `HTTP ${res.status}`);
     } catch (err) {
-      lastError = err instanceof Error ? err.message : "network error";
+      lastError = classifyInvokeFailure(undefined, err instanceof Error ? err.message : "network error");
     }
   }
 

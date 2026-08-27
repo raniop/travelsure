@@ -27,7 +27,11 @@ import {
   getClaimDocumentRequirements,
   missingRequiredClaimDocs,
 } from "@/lib/claimDocuments";
-import { formatClaimFileSize, prepareClaimFiles } from "@/lib/claimFilePrepare";
+import {
+  claimSubmitErrorMessage,
+  formatClaimFileSize,
+  prepareClaimFiles,
+} from "@/lib/claimFilePrepare";
 import {
   IsraeliBank,
   IsraeliBranch,
@@ -767,12 +771,20 @@ const Claim = () => {
       setLookupId("");
       setLookupError("");
       setStep("success");
+      if (result.warning) {
+        toast({
+          title: "התביעה נשלחה — שימו לב",
+          description: result.warning,
+        });
+      }
     } catch (error) {
       console.error("Claim submit failed:", error);
+      const description = claimSubmitErrorMessage(error);
       setStep("files");
+      setErrors((prev) => ({ ...prev, files: description }));
       toast({
-        title: "שגיאה בשליחת התביעה",
-        description: "אנא נסה שוב בעוד מספר דקות.",
+        title: "לא הצלחנו לשלוח את התביעה",
+        description,
         variant: "destructive",
       });
     } finally {
