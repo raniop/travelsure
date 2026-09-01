@@ -1699,7 +1699,7 @@ export default function BuyInsNew() {
                     "rounded-xl border backdrop-blur-xl shadow-[0_10px_30px_-15px_rgba(2,6,23,.25)] transition-all duration-300",
                     validationErrors[index] && validationErrors[index].length > 0
                       ? "border-rose-300 bg-rose-50/80"
-                      : "border-white/60 bg-white/90",
+                      : "border-sky-100 bg-sky-50/60",
                     removingCustomerIndex === index
                       ? "opacity-0 -translate-x-4 scale-95"
                       : "opacity-100 translate-x-0 scale-100"
