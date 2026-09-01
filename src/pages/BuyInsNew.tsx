@@ -2127,12 +2127,8 @@ export default function BuyInsNew() {
                     shatapId ||
                     getQueryParam(params, ["aff", "shatapId", "id"]) ||
                     "709";
-                  const fromDate =
-                    getQueryParam(params, ["from", "From", "start", "startDate"]) ||
-                    normalizeDateForHarel(new Date().toISOString());
-                  const toDate =
-                    getQueryParam(params, ["to", "To", "end", "endDate"]) ||
-                    normalizeDateForHarel(new Date().toISOString());
+                  const fromDate = getQueryParam(params, ["from", "From", "start", "startDate"]);
+                  const toDate = getQueryParam(params, ["to", "To", "end", "endDate"]);
                   const docket = getQueryParam(params, ["docket", "Docket"]) || "0";
                   const returnUrl = getQueryParam(params, ["return", "Return"]);
 
@@ -2141,8 +2137,12 @@ export default function BuyInsNew() {
                   harelParams.set("Goto", "true");
                   harelParams.set("aid", resolvedShatapId);
                   harelParams.set("Nosim", String(activeCustomers.length));
-                  harelParams.set("From", normalizeDateForHarel(fromDate));
-                  harelParams.set("To", normalizeDateForHarel(toDate));
+                  if (fromDate) {
+                    harelParams.set("From", normalizeDateForHarel(fromDate));
+                  }
+                  if (toDate) {
+                    harelParams.set("To", normalizeDateForHarel(toDate));
+                  }
                   harelParams.set("Docket", docket);
                   if (returnUrl) {
                     harelParams.set("Return", returnUrl);
