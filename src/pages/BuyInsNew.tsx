@@ -636,6 +636,15 @@ const normalizeDateForHarel = (value: string) => {
   return iso ? isoToDDMMYYYY(iso) : trimmed;
 };
 
+const queryDateToIso = (value: string) => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (trimmed.includes("/")) {
+    return ddmmyyyyToISO(trimmed) || "";
+  }
+  return fmtDateToInput(trimmed) || "";
+};
+
 const birthDateParts = (value: string) => {
   if (!value) return null;
   const trimmed = value.trim();
@@ -724,10 +733,22 @@ export default function BuyInsNew() {
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
   const [nameSanitizedNotice, setNameSanitizedNotice] = useState<Record<number, boolean>>({});
+  const [travelDates, setTravelDates] = useState<{ from: string; to: string }>({ from: "", to: "" });
+  const [travelDateError, setTravelDateError] = useState("");
 
   const didAutofillRef = useRef<Record<number, boolean>>({});
   const nameNoticeTimersRef = useRef<Record<number, number>>({});
   const [cameFromVerifyIdentity, setCameFromVerifyIdentity] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialFrom = getQueryParam(params, ["from", "From", "start", "startDate"]);
+    const initialTo = getQueryParam(params, ["to", "To", "end", "endDate"]);
+    setTravelDates({
+      from: queryDateToIso(initialFrom),
+      to: queryDateToIso(initialTo),
+    });
+  }, []);
 
   // טעינת נתונים מ-sessionStorage אם הגיע מ-verify-identity
   useEffect(() => {
@@ -2088,6 +2109,40 @@ export default function BuyInsNew() {
               </p>
             </div>
 
+            <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-3">
+              <div className="text-sm font-bold text-[#0b4e86] mb-2 text-right">תאריכי נסיעה (אופציונלי)</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="rtl">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך יציאה</label>
+                  <input
+                    type="date"
+                    value={travelDates.from}
+                    onChange={(e) => {
+                      setTravelDateError("");
+                      setTravelDates((prev) => ({ ...prev, from: e.target.value }));
+                    }}
+                    className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך חזרה</label>
+                  <input
+                    type="date"
+                    value={travelDates.to}
+                    min={travelDates.from || undefined}
+                    onChange={(e) => {
+                      setTravelDateError("");
+                      setTravelDates((prev) => ({ ...prev, to: e.target.value }));
+                    }}
+                    className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                  />
+                </div>
+              </div>
+              {travelDateError && (
+                <div className="mt-2 text-xs font-medium text-rose-600 text-right">{travelDateError}</div>
+              )}
+            </div>
+
             {/* כפתורי ניווט */}
             <div className="flex flex-col items-center gap-3">
               {/* הצגת שגיאות ולידציה */}
@@ -2122,13 +2177,26 @@ export default function BuyInsNew() {
               onClick={() => {
                 const isValid = validateForm();
                 if (isValid) {
+                  if ((travelDates.from && !travelDates.to) || (!travelDates.from && travelDates.to)) {
+                    setTravelDateError("כדי לשלוח תאריכים יש לבחור גם יציאה וגם חזרה.");
+                    return;
+                  }
+                  if (travelDates.from && travelDates.to && travelDates.to < travelDates.from) {
+                    setTravelDateError("תאריך חזרה חייב להיות זהה או מאוחר מתאריך היציאה.");
+                    return;
+                  }
+
                   const params = new URLSearchParams(window.location.search);
                   const resolvedShatapId =
                     shatapId ||
                     getQueryParam(params, ["aff", "shatapId", "id"]) ||
                     "709";
-                  const fromDate = getQueryParam(params, ["from", "From", "start", "startDate"]);
-                  const toDate = getQueryParam(params, ["to", "To", "end", "endDate"]);
+                  const fromDate =
+                    (travelDates.from ? isoToDDMMYYYY(travelDates.from) : "") ||
+                    getQueryParam(params, ["from", "From", "start", "startDate"]);
+                  const toDate =
+                    (travelDates.to ? isoToDDMMYYYY(travelDates.to) : "") ||
+                    getQueryParam(params, ["to", "To", "end", "endDate"]);
                   const docket = getQueryParam(params, ["docket", "Docket"]) || "0";
                   const returnUrl = getQueryParam(params, ["return", "Return"]);
 
