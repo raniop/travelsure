@@ -1654,11 +1654,11 @@ export default function BuyInsNew() {
             </div>
           </div>
 
-          <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-3">
-            <div className="text-sm font-bold text-[#0b4e86] mb-2 text-right">תאריכי נסיעה (אופציונלי)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="rtl">
+          <div className="mb-4 rounded-xl border border-sky-200/80 bg-white/65 backdrop-blur-md p-3 sm:p-4">
+            <div className="text-sm sm:text-base font-bold text-[#0b4e86] mb-2 text-right">תאריכי נסיעה (אופציונלי)</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3" dir="rtl">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך יציאה</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 text-right">תאריך יציאה</label>
                 <input
                   type="date"
                   value={travelDates.from}
@@ -1666,11 +1666,11 @@ export default function BuyInsNew() {
                     setTravelDateError("");
                     setTravelDates((prev) => ({ ...prev, from: e.target.value }));
                   }}
-                  className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                  className="w-full h-10 sm:h-11 rounded-xl border border-slate-300/90 bg-white/95 px-3 text-sm text-[#0b4e86] shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך חזרה</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1 text-right">תאריך חזרה</label>
                 <input
                   type="date"
                   value={travelDates.to}
@@ -1679,7 +1679,7 @@ export default function BuyInsNew() {
                     setTravelDateError("");
                     setTravelDates((prev) => ({ ...prev, to: e.target.value }));
                   }}
-                  className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                  className="w-full h-10 sm:h-11 rounded-xl border border-slate-300/90 bg-white/95 px-3 text-sm text-[#0b4e86] shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                 />
               </div>
             </div>
