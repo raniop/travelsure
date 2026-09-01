@@ -1654,6 +1654,40 @@ export default function BuyInsNew() {
             </div>
           </div>
 
+          <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-3">
+            <div className="text-sm font-bold text-[#0b4e86] mb-2 text-right">תאריכי נסיעה (אופציונלי)</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="rtl">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך יציאה</label>
+                <input
+                  type="date"
+                  value={travelDates.from}
+                  onChange={(e) => {
+                    setTravelDateError("");
+                    setTravelDates((prev) => ({ ...prev, from: e.target.value }));
+                  }}
+                  className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך חזרה</label>
+                <input
+                  type="date"
+                  value={travelDates.to}
+                  min={travelDates.from || undefined}
+                  onChange={(e) => {
+                    setTravelDateError("");
+                    setTravelDates((prev) => ({ ...prev, to: e.target.value }));
+                  }}
+                  className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                />
+              </div>
+            </div>
+            {travelDateError && (
+              <div className="mt-2 text-xs font-medium text-rose-600 text-right">{travelDateError}</div>
+            )}
+          </div>
+
           <div className="space-y-3 sm:space-y-4">
             {customers.map((customer, index) => {
               const canRemoveCustomer = customers.length > 1 && (index !== 0 || isGetByIdU);
@@ -2107,40 +2141,6 @@ export default function BuyInsNew() {
               <p className="text-[10px] font-medium text-[#0b4e86] leading-relaxed mt-1.5">
                 שדות החובה מסומנים בכוכבית.
               </p>
-            </div>
-
-            <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-3">
-              <div className="text-sm font-bold text-[#0b4e86] mb-2 text-right">תאריכי נסיעה (אופציונלי)</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="rtl">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך יציאה</label>
-                  <input
-                    type="date"
-                    value={travelDates.from}
-                    onChange={(e) => {
-                      setTravelDateError("");
-                      setTravelDates((prev) => ({ ...prev, from: e.target.value }));
-                    }}
-                    className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1 text-right">תאריך חזרה</label>
-                  <input
-                    type="date"
-                    value={travelDates.to}
-                    min={travelDates.from || undefined}
-                    onChange={(e) => {
-                      setTravelDateError("");
-                      setTravelDates((prev) => ({ ...prev, to: e.target.value }));
-                    }}
-                    className="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
-                  />
-                </div>
-              </div>
-              {travelDateError && (
-                <div className="mt-2 text-xs font-medium text-rose-600 text-right">{travelDateError}</div>
-              )}
             </div>
 
             {/* כפתורי ניווט */}
