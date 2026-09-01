@@ -221,7 +221,7 @@ function FloatingInput({
         }}
         className={cn(
           "w-full h-11 bg-transparent px-0 pt-6 pb-0.5",
-          "border-b border-slate-300",
+          "border-b border-slate-500/70",
           "focus:outline-none focus:border-b-2 focus:border-sky-500",
           "transition-all duration-200",
           className
