@@ -679,13 +679,17 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
           entry.personId || entry.PersonId || entry.personID || entry.PersonID || entry.id || entry.ID
         );
         if (!personId) return;
-        const riders =
-          entry.riders ||
-          entry.Riders ||
-          policy.riders ||
-          policy.Riders;
+        const riders = entry.riders || entry.Riders;
         const status = hasPriorConditionFromRiders(riders);
         const existing = latestByPersonId.get(personId);
+        const existingKnown = existing && existing.status !== "unknown";
+        const nextKnown = status !== "unknown";
+
+        // Never replace known person-specific status with unknown.
+        if (existingKnown && !nextKnown) {
+          return;
+        }
+
         if (!existing || score >= existing.score) {
           latestByPersonId.set(personId, { score, status, policyLabel });
         }
