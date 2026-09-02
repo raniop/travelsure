@@ -374,6 +374,13 @@ type AdditionalCustomer = {
   phone: string;
 };
 
+type PriorConditionStatus = "yes" | "no" | "unknown";
+
+type PriorConditionInfo = {
+  status: PriorConditionStatus;
+  policyLabel: string;
+};
+
 const API_BASE_URL = "https://mobile.ophirins.co.il";
 
 const normalizeIdValue = (value: unknown) => {
@@ -400,6 +407,54 @@ const normalizeGender = (value: unknown): "M" | "F" | "" => {
   if (v === "1") return "M";
   if (v === "2") return "F";
   return "";
+};
+
+const POLICY_PERSON_ARRAY_KEYS = [
+  "persons",
+  "people",
+  "insureds",
+  "insuredPersons",
+  "policyPersons",
+  "customers",
+  "insuredPersonsList",
+] as const;
+
+const PRIOR_CONDITION_RIDER_CODE = 172;
+
+const hasPriorConditionFromRiders = (riders: unknown): PriorConditionStatus => {
+  if (!Array.isArray(riders)) return "unknown";
+  const hasPriorCondition = riders.some((rider) => {
+    if (!rider || typeof rider !== "object") return false;
+    const riderObj = rider as Record<string, unknown>;
+    const code = Number(riderObj.riderCode ?? riderObj.RiderCode ?? riderObj.code ?? riderObj.Code);
+    if (!Number.isNaN(code) && code === PRIOR_CONDITION_RIDER_CODE) {
+      return true;
+    }
+    const name = String(riderObj.riderName ?? riderObj.RiderName ?? riderObj.name ?? riderObj.Name ?? "").trim();
+    return /החמרה|מצב רפואי קודם|prior\s*condition|pre[-\s]?existing/i.test(name);
+  });
+  return hasPriorCondition ? "yes" : "no";
+};
+
+const resolvePolicySortScore = (policy: Record<string, unknown>, fallbackIndex: number) => {
+  const issueDate = pickString(policy, ["issueDate", "IssueDate", "createdAt", "CreatedAt", "startDate", "StartDate"]);
+  if (issueDate) {
+    const ts = new Date(issueDate).getTime();
+    if (!Number.isNaN(ts)) return ts;
+  }
+  const policyIndex = Number(policy.policyIndex ?? policy.PolicyIndex ?? policy.index ?? policy.Index);
+  if (!Number.isNaN(policyIndex)) return policyIndex;
+  return fallbackIndex;
+};
+
+const buildPolicyLabel = (policy: Record<string, unknown>) => {
+  const policyId = pickString(policy, ["fullPolicyID", "fullPolicyId", "policyId", "PolicyId", "policyID"]);
+  const issueDate = pickString(policy, ["issueDate", "IssueDate"]);
+  const datePart = fmtDateToInput(issueDate);
+  if (policyId && datePart) return `פוליסה ${policyId} · ${datePart}`;
+  if (policyId) return `פוליסה ${policyId}`;
+  if (datePart) return `פוליסה אחרונה · ${datePart}`;
+  return "פוליסה אחרונה";
 };
 
 const extractPersonEntriesFromPolicies = (policies: unknown): Array<Record<string, unknown>> => {
@@ -583,7 +638,66 @@ const mapPeopleResponseToCustomers = (payload: unknown, normalizedId: string) =>
 const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
   const entries = extractPersonEntriesFromPolicies(policies);
   if (entries.length === 0) {
-    return { primaryCustomer: null, additionalCustomers: [] as AdditionalCustomer[] };
+    return {
+      primaryCustomer: null,
+      additionalCustomers: [] as AdditionalCustomer[],
+      priorConditionById: {} as Record<string, PriorConditionInfo>,
+    };
+  }
+
+  const priorConditionById: Record<string, PriorConditionInfo> = {};
+  if (Array.isArray(policies)) {
+    const latestByPersonId = new Map<
+      string,
+      { score: number; status: PriorConditionStatus; policyLabel: string }
+    >();
+
+    policies.forEach((policyItem, index) => {
+      if (!policyItem || typeof policyItem !== "object") return;
+      const policy = policyItem as Record<string, unknown>;
+      const score = resolvePolicySortScore(policy, index);
+      const policyLabel = buildPolicyLabel(policy);
+
+      const personEntries: Array<Record<string, unknown>> = [];
+      POLICY_PERSON_ARRAY_KEYS.forEach((key) => {
+        const maybeArray = policy[key];
+        if (Array.isArray(maybeArray)) {
+          maybeArray.forEach((item) => {
+            if (item && typeof item === "object") {
+              personEntries.push(item as Record<string, unknown>);
+            }
+          });
+        }
+      });
+
+      if (personEntries.length === 0) {
+        personEntries.push(policy);
+      }
+
+      personEntries.forEach((entry) => {
+        const personId = normalizeIdValue(
+          entry.personId || entry.PersonId || entry.personID || entry.PersonID || entry.id || entry.ID
+        );
+        if (!personId) return;
+        const riders =
+          entry.riders ||
+          entry.Riders ||
+          policy.riders ||
+          policy.Riders;
+        const status = hasPriorConditionFromRiders(riders);
+        const existing = latestByPersonId.get(personId);
+        if (!existing || score >= existing.score) {
+          latestByPersonId.set(personId, { score, status, policyLabel });
+        }
+      });
+    });
+
+    latestByPersonId.forEach((value, personId) => {
+      priorConditionById[personId] = {
+        status: value.status,
+        policyLabel: value.policyLabel,
+      };
+    });
   }
 
   const primaryEntry =
@@ -606,7 +720,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
     new Map(additionalCustomers.map((item) => [String(item.personId), item])).values()
   );
 
-  return { primaryCustomer, additionalCustomers: uniqueAdditional };
+  return { primaryCustomer, additionalCustomers: uniqueAdditional, priorConditionById };
 };
 
 const getQueryParam = (params: URLSearchParams, keys: string[]) => {
@@ -733,6 +847,7 @@ export default function BuyInsNew() {
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
   const [nameSanitizedNotice, setNameSanitizedNotice] = useState<Record<number, boolean>>({});
+  const [priorConditionById, setPriorConditionById] = useState<Record<string, PriorConditionInfo>>({});
   const [travelDates, setTravelDates] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [travelDateError, setTravelDateError] = useState("");
 
@@ -967,6 +1082,32 @@ export default function BuyInsNew() {
       });
       delete nameNoticeTimersRef.current[customerIndex];
     }, 2500);
+  };
+
+  const getPriorConditionBadge = (customerId: string) => {
+    const normalized = normalizeIdValue(customerId);
+    if (!normalized) return null;
+    const info = priorConditionById[normalized];
+    if (!info) return null;
+    if (info.status === "yes") {
+      return {
+        className: "bg-rose-50 text-rose-700 border border-rose-200",
+        text: "החמרה למחלה קיימת: כן",
+        policyLabel: info.policyLabel,
+      };
+    }
+    if (info.status === "no") {
+      return {
+        className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+        text: "החמרה למחלה קיימת: לא",
+        policyLabel: info.policyLabel,
+      };
+    }
+    return {
+      className: "bg-slate-100 text-slate-700 border border-slate-200",
+      text: "החמרה למחלה קיימת: אין נתון",
+      policyLabel: info.policyLabel,
+    };
   };
 
   const removeCustomer = (customerIndex: number) => {
@@ -1249,6 +1390,7 @@ export default function BuyInsNew() {
                 primaryName,
               },
               allCustomers: mapped.additionalCustomers,
+              priorConditionById: mapped.priorConditionById,
             };
           } else {
             json = { found: false };
@@ -1292,6 +1434,7 @@ export default function BuyInsNew() {
                   primaryName,
                 },
                 allCustomers: mapped.additionalCustomers,
+                priorConditionById: mapped.priorConditionById,
               };
             } else {
               json = { found: false };
@@ -1337,6 +1480,11 @@ export default function BuyInsNew() {
           const split = (!firstNameHe && !lastNameHe && fullName) ? splitNameHe(fullName) : { first: firstNameHe, last: lastNameHe };
 
           const gender = (customer.gender as string) || "";
+          const priorConditionMap =
+            (json?.priorConditionById as Record<string, PriorConditionInfo> | undefined) || {};
+          if (Object.keys(priorConditionMap).length > 0) {
+            setPriorConditionById((prev) => ({ ...prev, ...priorConditionMap }));
+          }
 
           const previousId = previousCustomerIds[customerIndex] || "";
           const idChanged = previousId !== clean;
@@ -1691,6 +1839,8 @@ export default function BuyInsNew() {
           <div className="space-y-3 sm:space-y-4">
             {customers.map((customer, index) => {
               const canRemoveCustomer = customers.length > 1 && (index !== 0 || isGetByIdU);
+              const customerIdForStatus = index === 0 ? id : customer.id;
+              const priorConditionBadge = getPriorConditionBadge(customerIdForStatus);
               return (
                 <div
                   key={index}
@@ -1714,6 +1864,14 @@ export default function BuyInsNew() {
                       {index === 0 && (
                         <div className="text-sm font-medium text-slate-500 mt-0.5">
                           איש הקשר לצורך רכישת הביטוח
+                        </div>
+                      )}
+                      {priorConditionBadge && (
+                        <div className="mt-2 flex flex-col items-end gap-1">
+                          <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
+                            {priorConditionBadge.text}
+                          </span>
+                          <span className="text-[11px] text-slate-500">{priorConditionBadge.policyLabel}</span>
                         </div>
                       )}
                     </div>
