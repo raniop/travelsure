@@ -379,6 +379,7 @@ type PriorConditionStatus = "yes" | "no" | "unknown";
 type PriorConditionInfo = {
   status: PriorConditionStatus;
   policyLabel: string;
+  policyId?: string;
 };
 
 const API_BASE_URL = "https://mobile.ophirins.co.il";
@@ -455,6 +456,34 @@ const buildPolicyLabel = (policy: Record<string, unknown>) => {
   if (policyId) return `פוליסה ${policyId}`;
   if (datePart) return `פוליסה אחרונה · ${datePart}`;
   return "פוליסה אחרונה";
+};
+
+const mergePriorConditionMaps = (
+  baseMap: Record<string, PriorConditionInfo>,
+  nextMap: Record<string, PriorConditionInfo>
+) => {
+  const merged: Record<string, PriorConditionInfo> = { ...baseMap };
+  Object.entries(nextMap).forEach(([personId, nextInfo]) => {
+    const current = merged[personId];
+    if (!current) {
+      merged[personId] = nextInfo;
+      return;
+    }
+    const currentKnown = current.status !== "unknown";
+    const nextKnown = nextInfo.status !== "unknown";
+    if (!currentKnown && nextKnown) {
+      merged[personId] = nextInfo;
+      return;
+    }
+    if (!currentKnown && !nextKnown) {
+      merged[personId] = {
+        ...current,
+        policyLabel: nextInfo.policyLabel || current.policyLabel,
+        policyId: nextInfo.policyId || current.policyId,
+      };
+    }
+  });
+  return merged;
 };
 
 const extractPersonEntriesFromPolicies = (policies: unknown): Array<Record<string, unknown>> => {
@@ -649,7 +678,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
   if (Array.isArray(policies)) {
     const latestByPersonId = new Map<
       string,
-      { score: number; status: PriorConditionStatus; policyLabel: string }
+      { score: number; status: PriorConditionStatus; policyLabel: string; policyId: string }
     >();
 
     policies.forEach((policyItem, index) => {
@@ -657,6 +686,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
       const policy = policyItem as Record<string, unknown>;
       const score = resolvePolicySortScore(policy, index);
       const policyLabel = buildPolicyLabel(policy);
+      const policyId = pickString(policy, ["fullPolicyID", "fullPolicyId", "policyId", "PolicyId", "policyID"]);
 
       const personEntries: Array<Record<string, unknown>> = [];
       POLICY_PERSON_ARRAY_KEYS.forEach((key) => {
@@ -691,7 +721,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
         }
 
         if (!existing || score >= existing.score) {
-          latestByPersonId.set(personId, { score, status, policyLabel });
+          latestByPersonId.set(personId, { score, status, policyLabel, policyId });
         }
       });
     });
@@ -700,6 +730,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
       priorConditionById[personId] = {
         status: value.status,
         policyLabel: value.policyLabel,
+        policyId: value.policyId,
       };
     });
   }
@@ -1429,6 +1460,32 @@ export default function BuyInsNew() {
 
           if (useGetByIdU) {
             const mapped = mapPoliciesToCustomers(payload, normalizedId);
+            let priorConditionMap = mapped.priorConditionById;
+            const primaryPrior = priorConditionMap[normalizedId];
+
+            if (primaryPrior?.status === "unknown" && primaryPrior.policyId) {
+              try {
+                const policyLookupUrl = `${API_BASE_URL}/api/policy/GetByIdU?id=${encodeURIComponent(primaryPrior.policyId)}&pass=Admin$123`;
+                const policyRes = await fetch(policyLookupUrl, {
+                  cache: "no-store",
+                  signal: controller.signal,
+                });
+                if (policyRes.ok) {
+                  const policyText = await policyRes.text();
+                  let policyPayload: unknown = null;
+                  try {
+                    policyPayload = policyText ? JSON.parse(policyText) : null;
+                  } catch {
+                    policyPayload = null;
+                  }
+                  const policyMapped = mapPoliciesToCustomers(policyPayload, normalizedId);
+                  priorConditionMap = mergePriorConditionMaps(priorConditionMap, policyMapped.priorConditionById);
+                }
+              } catch (err) {
+                console.warn("Fallback policy lookup for prior condition failed:", err);
+              }
+            }
+
             if (mapped.primaryCustomer) {
               const primaryName = `${mapped.primaryCustomer.firstNameHe} ${mapped.primaryCustomer.lastNameHe}`.trim();
               json = {
@@ -1438,7 +1495,7 @@ export default function BuyInsNew() {
                   primaryName,
                 },
                 allCustomers: mapped.additionalCustomers,
-                priorConditionById: mapped.priorConditionById,
+                priorConditionById: priorConditionMap,
               };
             } else {
               json = { found: false };
