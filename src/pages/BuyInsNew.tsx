@@ -1091,7 +1091,7 @@ export default function BuyInsNew() {
     if (!info) return null;
     if (info.status === "yes") {
       return {
-        className: "bg-rose-50 text-rose-700 border border-rose-200",
+        className: "bg-rose-100 text-rose-800 border border-rose-300",
         text: "החמרה למחלה קיימת: כן",
         policyLabel: info.policyLabel,
       };
@@ -1867,7 +1867,7 @@ export default function BuyInsNew() {
                         </div>
                       )}
                       {priorConditionBadge && (
-                        <div className="mt-2 flex flex-col items-end gap-1">
+                        <div className="mt-2 w-fit ml-auto flex flex-col items-end gap-1 text-right">
                           <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
                             {priorConditionBadge.text}
                           </span>
