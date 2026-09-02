@@ -1928,11 +1928,10 @@ export default function BuyInsNew() {
                         </div>
                       )}
                       {priorConditionBadge && (
-                        <div className="mt-2 w-fit ml-auto flex flex-col items-end gap-1 text-right">
+                        <div className="mt-2 w-fit ml-auto text-right">
                           <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
                             {priorConditionBadge.text}
                           </span>
-                          <span className="text-[11px] text-slate-500">{priorConditionBadge.policyLabel}</span>
                         </div>
                       )}
                     </div>
