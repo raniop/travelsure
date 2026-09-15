@@ -519,19 +519,6 @@
               <label class="field" id="countryWrap"><span id="countryLabel">הארץ בה אירע המקרה</span> <span class="req">*</span><input name="country" required /></label>
             </div>
             <label class="field">תיאור מדויק ומפורט של המקרה <span class="req">*</span><textarea name="details" required></textarea></label>
-            <div id="totalWrap" class="grid grid-2">
-              <label class="field">סכום נתבע <span class="req">*</span><input name="claimAmount" inputmode="decimal" placeholder="לדוגמה 250" /></label>
-              <div class="field currency-box">
-                <span>מטבע <span class="req">*</span></span>
-                <input type="hidden" name="claimCurrency" id="claimCurrency" value="USD" />
-                <button type="button" class="currency-btn" id="currencyBtn"><span id="currencyBtnLabel">USD · דולר אמריקאי</span><span>▼</span></button>
-                <div id="currencyHint" class="currency-hint hidden"></div>
-                <div id="currencyMenu" class="currency-menu hidden">
-                  <input id="currencySearch" type="search" placeholder="חיפוש מטבע / מדינה / יעד..." autocomplete="off" />
-                  <ul id="currencyList"></ul>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div id="baggageWrap" class="hidden">
@@ -545,6 +532,21 @@
             <div id="expenseItems"></div>
             <button type="button" class="btn btn-outline" id="addExpense">+ הוסף הוצאה</button>
           </div>
+
+          <div id="totalWrap" class="grid grid-2">
+              <label class="field" id="claimAmountField"><span id="claimAmountLabel">סכום נתבע</span> <span class="req">*</span><input name="claimAmount" inputmode="decimal" placeholder="לדוגמה 250" /></label>
+              <div class="field currency-box" id="claimCurrencyBox">
+                <span>מטבע <span class="req">*</span></span>
+                <input type="hidden" name="claimCurrency" id="claimCurrency" value="USD" />
+                <button type="button" class="currency-btn" id="currencyBtn"><span id="currencyBtnLabel">USD · דולר אמריקאי</span><span>▼</span></button>
+                <div id="currencyHint" class="currency-hint hidden"></div>
+                <div id="currencyMenu" class="currency-menu hidden">
+                  <input id="currencySearch" type="search" placeholder="חיפוש מטבע / מדינה / יעד..." autocomplete="off" />
+                  <ul id="currencyList"></ul>
+                </div>
+              </div>
+              <p id="claimAmountHint" class="currency-hint hidden" style="grid-column:1/-1"></p>
+            </div>
 
           <h3>אופן תשלום (העברה בנקאית)</h3>
           <div class="grid grid-2">
@@ -1468,6 +1470,89 @@
         return a + " " + c;
       }
 
+      function parseClaimAmount(raw) {
+        let s = String(raw || "").trim().replace(/[^\d.,\-]/g, "");
+        if (!s) return NaN;
+        const hasComma = s.indexOf(",") >= 0;
+        const hasDot = s.indexOf(".") >= 0;
+        if (hasComma && hasDot) {
+          if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(",", ".");
+          else s = s.replace(/,/g, "");
+        } else if (hasComma) {
+          s = s.replace(",", ".");
+        }
+        const n = Number(s);
+        return Number.isFinite(n) ? n : NaN;
+      }
+
+      function formatSummedAmount(total) {
+        if (!Number.isFinite(total) || total <= 0) return "";
+        const rounded = Math.round(total * 100) / 100;
+        return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+      }
+
+      function sumClaimExpenses(rows) {
+        const filled = (rows || []).filter((e) => String(e.amount || "").trim());
+        if (!filled.length) return { total: "", currency: "USD", hasMixedCurrencies: false, count: 0 };
+        const primary = String(filled[0].currency || "USD").trim().toUpperCase() || "USD";
+        let sum = 0;
+        let hasMixed = false;
+        let count = 0;
+        filled.forEach((row) => {
+          const n = parseClaimAmount(String(row.amount || ""));
+          if (!Number.isFinite(n) || n <= 0) return;
+          const cur = String(row.currency || primary).trim().toUpperCase() || primary;
+          if (cur !== primary) {
+            hasMixed = true;
+            return;
+          }
+          sum += n;
+          count += 1;
+        });
+        return {
+          total: formatSummedAmount(sum),
+          currency: primary,
+          hasMixedCurrencies: hasMixed,
+          count: count,
+        };
+      }
+
+      function expensesDriveTotal() {
+        return claimType === "medical" || claimType === "trip_cancel";
+      }
+
+      function syncExpenseDrivenTotal() {
+        const amountInput = form.claimAmount;
+        const hint = $("claimAmountHint");
+        const label = $("claimAmountLabel");
+        const currencyBtn = $("currencyBtn");
+        if (!amountInput) return;
+        if (!expensesDriveTotal()) {
+          if (label) label.textContent = "סכום נתבע";
+          if (hint) {
+            hint.classList.add("hidden");
+            hint.textContent = "";
+          }
+          if (claimType !== "baggage" || baggageSubtype !== "delay") {
+            amountInput.readOnly = false;
+            if (currencyBtn) currencyBtn.disabled = false;
+          }
+          return;
+        }
+        const summed = sumClaimExpenses(collectRows($("expenseItems")));
+        amountInput.readOnly = true;
+        if (currencyBtn) currencyBtn.disabled = true;
+        if (label) label.textContent = 'סה״כ סכום נתבע';
+        amountInput.value = summed.total || "";
+        if (summed.currency) setClaimCurrency(summed.currency, { manual: true });
+        if (hint) {
+          hint.classList.remove("hidden");
+          hint.textContent = summed.hasMixedCurrencies
+            ? ("מחושב במטבע " + summed.currency + " בלבד — יש הוצאות במטבעות אחרים שלא נכללו")
+            : "מחושב אוטומטית לפי פירוט ההוצאות";
+        }
+      }
+
       function currencyMeta(code) {
         return CLAIM_CURRENCIES.find((c) => c.code === code) || null;
       }
@@ -1639,9 +1724,15 @@
           <button type="button" class="btn btn-outline" data-remove>הסר</button>`;
         row.querySelector("[data-remove]").onclick = () => {
           if ($("expenseItems").children.length > 1) row.remove();
+          syncExpenseDrivenTotal();
         };
+        row.querySelectorAll("[data-k]").forEach((el) => {
+          el.addEventListener("input", syncExpenseDrivenTotal);
+          el.addEventListener("change", syncExpenseDrivenTotal);
+        });
         $("expenseItems").appendChild(row);
         wireAllDateInputs(row);
+        syncExpenseDrivenTotal();
       }
 
       function syncTypeUi() {
@@ -1717,6 +1808,7 @@
         renderDocsChecklist();
         if (!$("baggageItems").children.length) addBaggageRow();
         if (!$("expenseItems").children.length) addExpenseRow();
+        syncExpenseDrivenTotal();
       }
 
       function collectRows(container) {
@@ -2478,18 +2570,23 @@
         if ((claimType === "trip_cancel" || claimType === "trip_shorten") && !get("claimReason")) {
           $("detailsError").textContent = "יש למלא את סיבת הביטול / הקיצור"; return;
         }
+        if (expensesDriveTotal()) syncExpenseDrivenTotal();
         const needsClaimAmount =
           claimType === "medical" ||
           claimType === "trip_cancel" ||
           claimType === "trip_shorten" ||
           (claimType === "baggage" && baggageSubtype !== "delay");
         if (needsClaimAmount && !get("claimAmount")) {
-          $("detailsError").textContent = "יש למלא סכום נתבע"; return;
+          $("detailsError").textContent = expensesDriveTotal()
+            ? "מלאו פירוט הוצאות כדי לחשב את סה״כ הסכום הנתבע"
+            : "יש למלא סכום נתבע";
+          return;
         }
         if (needsClaimAmount && !get("claimCurrency")) {
           $("detailsError").textContent = "יש לבחור מטבע"; return;
         }
         if (claimType === "medical" || claimType === "trip_cancel") {
+          syncExpenseDrivenTotal();
           const expenseRows = collectRows($("expenseItems"));
           const filled = expenseRows.filter((r) => r.date || r.type || r.amount);
           const complete = filled.filter((r) => r.date && r.type && r.amount);
@@ -2506,6 +2603,16 @@
           const badDate = complete.find((r) => r.date && !parseDateToIso(r.date) && !/^\d{4}-\d{2}-\d{2}$/.test(r.date));
           if (badDate) {
             $("detailsError").textContent = "תאריך הוצאה לא תקין — יש להזין בפורמט יום/חודש/שנה";
+            return;
+          }
+          const summed = sumClaimExpenses(expenseRows);
+          if (summed.hasMixedCurrencies) {
+            $("detailsError").textContent = "כל ההוצאות חייבות להיות באותו מטבע כדי לחשב סה״כ אוטומטי";
+            $("expenseWrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+          }
+          if (!summed.total) {
+            $("detailsError").textContent = "לא ניתן לחשב סכום נתבע — בדקו את סכומי ההוצאות";
             return;
           }
         }

@@ -14,6 +14,10 @@ type Props = {
   /** When true, amount+currency locked (e.g. baggage delay fixed 155 USD). */
   locked?: boolean;
   lockedHint?: string;
+  /** Amount auto-calculated from expense rows — not editable. */
+  computed?: boolean;
+  computedHint?: string;
+  amountLabel?: string;
 };
 
 export function ClaimAmountCurrencyFields({
@@ -26,15 +30,18 @@ export function ClaimAmountCurrencyFields({
   currencyError,
   locked = false,
   lockedHint,
+  computed = false,
+  computedHint,
+  amountLabel = "סכום נתבע",
 }: Props) {
   const [manualCurrency, setManualCurrency] = useState(false);
   const suggestedCode = useMemo(() => suggestCurrencyForDestination(destination), [destination]);
 
   useEffect(() => {
-    if (locked || manualCurrency) return;
+    if (locked || computed || manualCurrency) return;
     if (!destination.trim()) return;
     if (currency !== suggestedCode) onCurrencyChange(suggestedCode);
-  }, [destination, suggestedCode, locked, manualCurrency, currency, onCurrencyChange]);
+  }, [destination, suggestedCode, locked, computed, manualCurrency, currency, onCurrencyChange]);
 
   if (locked) {
     return (
@@ -48,11 +55,29 @@ export function ClaimAmountCurrencyFields({
     );
   }
 
+  if (computed) {
+    return (
+      <div className="rounded-2xl border border-[#2f6b63]/15 bg-[#e8f4f1]/50 p-4">
+        <p className="text-sm font-bold text-[#143834]">
+          {amountLabel} <span className="text-rose-500">*</span>
+        </p>
+        <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#2f6b63]" dir="ltr">
+          {amount ? `${amount} ${currency}` : "—"}
+        </p>
+        <p className="mt-2 text-xs font-medium text-[#2f6b63]">
+          {computedHint || "מחושב אוטומטית לפי פירוט ההוצאות"}
+        </p>
+        {amountError ? <p className="mt-1 text-xs text-rose-600">{amountError}</p> : null}
+        {currencyError ? <p className="mt-1 text-xs text-rose-600">{currencyError}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-3 sm:grid-cols-[1.2fr_1fr]">
       <div>
         <label className="mb-1.5 block text-sm font-semibold text-[#143834]">
-          סכום נתבע <span className="text-rose-500">*</span>
+          {amountLabel} <span className="text-rose-500">*</span>
         </label>
         <Input
           className="bg-slate-50"

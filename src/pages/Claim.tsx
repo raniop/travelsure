@@ -20,7 +20,7 @@ import {
 import { ClaimDateInput } from "@/components/claim/ClaimDateInput";
 import { ClaimAmountCurrencyFields } from "@/components/claim/ClaimAmountCurrencyFields";
 import { ClaimCurrencyPicker } from "@/components/claim/ClaimCurrencyPicker";
-import { formatClaimTotal, suggestCurrencyForDestination } from "@/lib/claimCurrencies";
+import { formatClaimTotal, suggestCurrencyForDestination, sumClaimExpenses } from "@/lib/claimCurrencies";
 import { submitClaimRequest } from "@/lib/submitClaim";
 import {
   flattenClaimDocFiles,
@@ -272,6 +272,19 @@ const Claim = () => {
 
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
   const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
+  const expensesDriveTotal = claimType === "medical" || claimType === "trip_cancel";
+  const expenseTotals = useMemo(() => sumClaimExpenses(expenses), [expenses]);
+
+  useEffect(() => {
+    if (!expensesDriveTotal) return;
+    setFormData((prev) => {
+      const nextAmount = expenseTotals.total;
+      const nextCurrency = expenseTotals.currency || prev.claimCurrency || "USD";
+      if (prev.claimAmount === nextAmount && prev.claimCurrency === nextCurrency) return prev;
+      return { ...prev, claimAmount: nextAmount, claimCurrency: nextCurrency };
+    });
+  }, [expensesDriveTotal, expenseTotals.total, expenseTotals.currency]);
+
   const documentRequirements = useMemo(
     () => getClaimDocumentRequirements(claimType, baggageSubtype),
     [claimType, baggageSubtype]
@@ -641,11 +654,6 @@ const Claim = () => {
     if (!formData.accountNumber.trim()) next.accountNumber = "שדה חובה";
     if (!formData.declaration) next.declaration = "יש לאשר את ההצהרה";
 
-    if (claimType === "medical" || claimType === "trip_cancel" || claimType === "trip_shorten") {
-      if (!formData.claimAmount.trim()) next.claimAmount = "שדה חובה";
-      if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
-    }
-
     if (claimType === "medical" || claimType === "trip_cancel") {
       const filled = expenses.filter(
         (r) => r.date.trim() || r.type.trim() || r.amount.trim(),
@@ -657,7 +665,16 @@ const Claim = () => {
         next.expenses = "יש למלא לפחות הוצאה אחת (תאריך, סוג וסכום)";
       } else if (filled.length !== complete.length) {
         next.expenses = "יש להשלים תאריך, סוג הוצאה וסכום בכל שורה שהתחלתם";
+      } else if (!expenseTotals.total) {
+        next.claimAmount = "לא ניתן לחשב סכום נתבע — בדקו את סכומי ההוצאות";
+      } else if (expenseTotals.hasMixedCurrencies) {
+        next.expenses =
+          "כל ההוצאות חייבות להיות באותו מטבע כדי לחשב סה״כ אוטומטי (או פצלו לתביעות נפרדות)";
       }
+      if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
+    } else if (claimType === "trip_shorten") {
+      if (!formData.claimAmount.trim()) next.claimAmount = "שדה חובה";
+      if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
     }
 
     if (claimType === "trip_cancel" || claimType === "trip_shorten") {
@@ -1546,15 +1563,6 @@ const Claim = () => {
                     {claimType === "medical" ? "ה. פירוט מרכיבי התביעה" : "ה. פירוט הוצאות"}
                     <span className="mr-1 text-rose-500">*</span>
                   </h3>
-                  <ClaimAmountCurrencyFields
-                    amount={formData.claimAmount}
-                    currency={formData.claimCurrency}
-                    destination={formData.country}
-                    amountError={errors.claimAmount}
-                    currencyError={errors.claimCurrency}
-                    onAmountChange={(v) => setField("claimAmount", v)}
-                    onCurrencyChange={(v) => setField("claimCurrency", v)}
-                  />
                   <div className="space-y-3">
                     {expenses.map((row, idx) => (
                       <div
@@ -1605,9 +1613,9 @@ const Claim = () => {
                             const next = [...expenses];
                             next[idx] = { ...row, amount: e.target.value };
                             setExpenses(next);
-                            if (errors.expenses) {
+                            if (errors.expenses || errors.claimAmount) {
                               setErrors((prev) => {
-                                const { expenses: _e, ...rest } = prev;
+                                const { expenses: _e, claimAmount: _c, ...rest } = prev;
                                 return rest;
                               });
                             }
@@ -1661,6 +1669,21 @@ const Claim = () => {
                     <Plus className="h-4 w-4" />
                     הוסף הוצאה
                   </Button>
+                  <ClaimAmountCurrencyFields
+                    amount={formData.claimAmount}
+                    currency={formData.claimCurrency}
+                    computed
+                    amountLabel='סה״כ סכום נתבע'
+                    computedHint={
+                      expenseTotals.hasMixedCurrencies
+                        ? `מחושב במטבע ${formData.claimCurrency} בלבד — יש הוצאות במטבעות אחרים שלא נכללו`
+                        : "מחושב אוטומטית לפי פירוט ההוצאות"
+                    }
+                    amountError={errors.claimAmount}
+                    currencyError={errors.claimCurrency}
+                    onAmountChange={() => undefined}
+                    onCurrencyChange={() => undefined}
+                  />
                   {claimType === "medical" ? (
                     <>
                       <YesNoField

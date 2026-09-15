@@ -75,3 +75,60 @@ export function formatClaimTotal(amount: string, currency: string): string {
   if (!c) return a;
   return `${a} ${c}`;
 }
+
+/** Parse a user-entered money string (supports 1,234.50 / 1.234,50 / 250). */
+export function parseClaimAmount(raw: string): number {
+  let s = String(raw || "").trim().replace(/[^\d.,\-]/g, "");
+  if (!s) return Number.NaN;
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+  if (hasComma && hasDot) {
+    // Assume the last separator is the decimal mark.
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      s = s.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    s = s.replace(",", ".");
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+
+export function formatSummedAmount(total: number): string {
+  if (!Number.isFinite(total) || total <= 0) return "";
+  const rounded = Math.round(total * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+/** Sum expense rows into a claimed total. Uses the first filled row's currency as primary. */
+export function sumClaimExpenses(
+  expenses: Array<{ amount?: string; currency?: string }>
+): { total: string; currency: string; hasMixedCurrencies: boolean; count: number } {
+  const filled = expenses.filter((e) => String(e.amount || "").trim());
+  if (!filled.length) {
+    return { total: "", currency: "USD", hasMixedCurrencies: false, count: 0 };
+  }
+  const primary = String(filled[0].currency || "USD").trim().toUpperCase() || "USD";
+  let sum = 0;
+  let hasMixed = false;
+  let count = 0;
+  for (const row of filled) {
+    const n = parseClaimAmount(String(row.amount || ""));
+    if (!Number.isFinite(n) || n <= 0) continue;
+    const cur = String(row.currency || primary).trim().toUpperCase() || primary;
+    if (cur !== primary) {
+      hasMixed = true;
+      continue;
+    }
+    sum += n;
+    count += 1;
+  }
+  return {
+    total: formatSummedAmount(sum),
+    currency: primary,
+    hasMixedCurrencies: hasMixed,
+    count,
+  };
+}
