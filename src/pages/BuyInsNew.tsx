@@ -387,6 +387,12 @@ type SpecialDiscountInfo = {
   policyLabel: string;
 };
 
+type DiscountSwitchLinkInfo = {
+  aff: string;
+  url: string;
+  label: string;
+};
+
 const API_BASE_URL = "https://mobile.ophirins.co.il";
 
 const normalizeIdValue = (value: unknown) => {
@@ -427,6 +433,23 @@ const POLICY_PERSON_ARRAY_KEYS = [
 
 const PRIOR_CONDITION_RIDER_CODE = 172;
 const SPECIAL_DISCOUNT_PERCENTS = new Set(["10", "15", "20"]);
+const SPECIAL_DISCOUNT_SWITCH_LINKS: Record<string, DiscountSwitchLinkInfo> = {
+  "10": {
+    aff: "1282",
+    url: "https://ophir.travelsure.co.il/buyinsnew?aff=1282",
+    label: "10%",
+  },
+  "15": {
+    aff: "1283",
+    url: "https://ophir.travelsure.co.il/buyinsnew?aff=1283",
+    label: "15%",
+  },
+  "20": {
+    aff: "1284",
+    url: "https://ophir.travelsure.co.il/buyinsnew?aff=1284",
+    label: "20%",
+  },
+};
 
 const hasPriorConditionFromRiders = (riders: unknown): PriorConditionStatus => {
   if (!Array.isArray(riders)) return "unknown";
@@ -472,6 +495,11 @@ const extractSpecialDiscountLabel = (policy: Record<string, unknown>) => {
   const percent = match[1];
   if (!SPECIAL_DISCOUNT_PERCENTS.has(percent)) return "";
   return `אופיר מיוחד ${percent}%`;
+};
+
+const extractSpecialDiscountPercent = (discountLabel: string) => {
+  const match = String(discountLabel || "").match(/(10|15|20)\s*%/);
+  return match?.[1] || "";
 };
 
 const mergePriorConditionMaps = (
@@ -826,6 +854,11 @@ const getQueryParam = (params: URLSearchParams, keys: string[]) => {
 
 const GET_BY_IDU_AFFILIATES = new Set(["902", "1282", "1283", "1284", "1731"]);
 const SHOW_TRAVEL_DATE_PICKER = false;
+const SPECIAL_DISCOUNT_AFF_TO_PERCENT: Record<string, string> = {
+  "1282": "10",
+  "1283": "15",
+  "1284": "20",
+};
 
 const isGetByIdULink = (params: URLSearchParams) => {
   const affValue = getQueryParam(params, ["aff", "shatapId", "id"]);
@@ -1208,9 +1241,27 @@ export default function BuyInsNew() {
     if (!normalized) return null;
     const info = specialDiscountById[normalized];
     if (!info?.discountLabel) return null;
+    const discountPercent = extractSpecialDiscountPercent(info.discountLabel);
+    const currentAff = shatapId || getQueryParam(new URLSearchParams(window.location.search), ["aff", "shatapId", "id"]);
+    const currentPercent = SPECIAL_DISCOUNT_AFF_TO_PERCENT[currentAff] || "";
+    const switchLink =
+      discountPercent && currentPercent && discountPercent !== currentPercent
+        ? SPECIAL_DISCOUNT_SWITCH_LINKS[discountPercent]
+        : undefined;
+
+    let className = "bg-indigo-50 text-indigo-700 border border-indigo-200";
+    if (discountPercent === "10") {
+      className = "bg-amber-50 text-amber-700 border border-amber-200";
+    } else if (discountPercent === "15") {
+      className = "bg-violet-50 text-violet-700 border border-violet-200";
+    } else if (discountPercent === "20") {
+      className = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    }
+
     return {
-      className: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      className,
       text: `הנחה אחרונה: ${info.discountLabel}`,
+      switchLink,
     };
   };
 
@@ -2009,16 +2060,27 @@ export default function BuyInsNew() {
                         </div>
                       )}
                       {(priorConditionBadge || specialDiscountBadge) && (
-                        <div className="mt-2 w-fit ml-auto flex flex-col items-end gap-1 text-right">
+                        <div className="mt-2 w-full flex flex-col items-end gap-1 text-right">
                           {priorConditionBadge && (
                             <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
                               {priorConditionBadge.text}
                             </span>
                           )}
                           {specialDiscountBadge && (
-                            <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", specialDiscountBadge.className)}>
-                              {specialDiscountBadge.text}
-                            </span>
+                            <>
+                              <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", specialDiscountBadge.className)}>
+                                {specialDiscountBadge.text}
+                              </span>
+                              {specialDiscountBadge.switchLink && (
+                                <a
+                                  href={specialDiscountBadge.switchLink.url}
+                                  className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 transition"
+                                  title={`מעבר מהיר לשת\"פ ${specialDiscountBadge.switchLink.aff} (${specialDiscountBadge.switchLink.label})`}
+                                >
+                                  מעבר ישיר להנחה {specialDiscountBadge.switchLink.label}
+                                </a>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
