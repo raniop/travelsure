@@ -433,6 +433,11 @@ const POLICY_PERSON_ARRAY_KEYS = [
 
 const PRIOR_CONDITION_RIDER_CODE = 172;
 const SPECIAL_DISCOUNT_PERCENTS = new Set(["10", "15", "20"]);
+const PRIOR_CONDITION_STATUS_SCORE: Record<PriorConditionStatus, number> = {
+  unknown: 0,
+  no: 1,
+  yes: 2,
+};
 const SPECIAL_DISCOUNT_SWITCH_LINKS: Record<string, DiscountSwitchLinkInfo> = {
   "10": {
     aff: "1282",
@@ -513,17 +518,20 @@ const mergePriorConditionMaps = (
       merged[personId] = nextInfo;
       return;
     }
-    const currentKnown = current.status !== "unknown";
-    const nextKnown = nextInfo.status !== "unknown";
-    if (!currentKnown && nextKnown) {
+
+    const currentScore = PRIOR_CONDITION_STATUS_SCORE[current.status] ?? 0;
+    const nextScore = PRIOR_CONDITION_STATUS_SCORE[nextInfo.status] ?? 0;
+
+    if (nextScore > currentScore) {
       merged[personId] = nextInfo;
       return;
     }
-    if (!currentKnown && !nextKnown) {
+
+    if (nextScore === currentScore) {
       merged[personId] = {
         ...current,
-        policyLabel: nextInfo.policyLabel || current.policyLabel,
-        policyId: nextInfo.policyId || current.policyId,
+        policyLabel: current.policyLabel || nextInfo.policyLabel,
+        policyId: current.policyId || nextInfo.policyId,
       };
     }
   });
@@ -1668,7 +1676,7 @@ export default function BuyInsNew() {
           const priorConditionMap =
             (json?.priorConditionById as Record<string, PriorConditionInfo> | undefined) || {};
           if (Object.keys(priorConditionMap).length > 0) {
-            setPriorConditionById((prev) => ({ ...prev, ...priorConditionMap }));
+            setPriorConditionById((prev) => mergePriorConditionMaps(prev, priorConditionMap));
           }
           const specialDiscountMap =
             (json?.specialDiscountById as Record<string, SpecialDiscountInfo> | undefined) || {};
