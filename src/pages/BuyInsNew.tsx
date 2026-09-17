@@ -382,6 +382,11 @@ type PriorConditionInfo = {
   policyId?: string;
 };
 
+type SpecialDiscountInfo = {
+  discountLabel: string;
+  policyLabel: string;
+};
+
 const API_BASE_URL = "https://mobile.ophirins.co.il";
 
 const normalizeIdValue = (value: unknown) => {
@@ -421,6 +426,7 @@ const POLICY_PERSON_ARRAY_KEYS = [
 ] as const;
 
 const PRIOR_CONDITION_RIDER_CODE = 172;
+const SPECIAL_DISCOUNT_PERCENTS = new Set(["10", "15", "20"]);
 
 const hasPriorConditionFromRiders = (riders: unknown): PriorConditionStatus => {
   if (!Array.isArray(riders)) return "unknown";
@@ -458,6 +464,16 @@ const buildPolicyLabel = (policy: Record<string, unknown>) => {
   return "פוליסה אחרונה";
 };
 
+const extractSpecialDiscountLabel = (policy: Record<string, unknown>) => {
+  const agentName = pickString(policy, ["agentName", "AgentName", "affiliateName", "AffiliateName"]);
+  if (!agentName) return "";
+  const match = agentName.match(/אופיר\s*מיוחד\s*(10|15|20)\s*%/);
+  if (!match) return "";
+  const percent = match[1];
+  if (!SPECIAL_DISCOUNT_PERCENTS.has(percent)) return "";
+  return `אופיר מיוחד ${percent}%`;
+};
+
 const mergePriorConditionMaps = (
   baseMap: Record<string, PriorConditionInfo>,
   nextMap: Record<string, PriorConditionInfo>
@@ -482,6 +498,26 @@ const mergePriorConditionMaps = (
         policyId: nextInfo.policyId || current.policyId,
       };
     }
+  });
+  return merged;
+};
+
+const mergeSpecialDiscountMaps = (
+  baseMap: Record<string, SpecialDiscountInfo>,
+  nextMap: Record<string, SpecialDiscountInfo>
+) => {
+  const merged: Record<string, SpecialDiscountInfo> = { ...baseMap };
+  Object.entries(nextMap).forEach(([personId, nextInfo]) => {
+    const current = merged[personId];
+    if (!current) {
+      merged[personId] = nextInfo;
+      return;
+    }
+    merged[personId] = {
+      ...current,
+      discountLabel: nextInfo.discountLabel || current.discountLabel,
+      policyLabel: nextInfo.policyLabel || current.policyLabel,
+    };
   });
   return merged;
 };
@@ -671,14 +707,20 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
       primaryCustomer: null,
       additionalCustomers: [] as AdditionalCustomer[],
       priorConditionById: {} as Record<string, PriorConditionInfo>,
+      specialDiscountById: {} as Record<string, SpecialDiscountInfo>,
     };
   }
 
   const priorConditionById: Record<string, PriorConditionInfo> = {};
+  const specialDiscountById: Record<string, SpecialDiscountInfo> = {};
   if (Array.isArray(policies)) {
     const latestByPersonId = new Map<
       string,
       { score: number; status: PriorConditionStatus; policyLabel: string; policyId: string }
+    >();
+    const latestDiscountByPersonId = new Map<
+      string,
+      { score: number; discountLabel: string; policyLabel: string }
     >();
 
     policies.forEach((policyItem, index) => {
@@ -687,6 +729,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
       const score = resolvePolicySortScore(policy, index);
       const policyLabel = buildPolicyLabel(policy);
       const policyId = pickString(policy, ["fullPolicyID", "fullPolicyId", "policyId", "PolicyId", "policyID"]);
+      const discountLabel = extractSpecialDiscountLabel(policy);
 
       const personEntries: Array<Record<string, unknown>> = [];
       POLICY_PERSON_ARRAY_KEYS.forEach((key) => {
@@ -723,6 +766,12 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
         if (!existing || score >= existing.score) {
           latestByPersonId.set(personId, { score, status, policyLabel, policyId });
         }
+        if (discountLabel) {
+          const existingDiscount = latestDiscountByPersonId.get(personId);
+          if (!existingDiscount || score >= existingDiscount.score) {
+            latestDiscountByPersonId.set(personId, { score, discountLabel, policyLabel });
+          }
+        }
       });
     });
 
@@ -731,6 +780,13 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
         status: value.status,
         policyLabel: value.policyLabel,
         policyId: value.policyId,
+      };
+    });
+
+    latestDiscountByPersonId.forEach((value, personId) => {
+      specialDiscountById[personId] = {
+        discountLabel: value.discountLabel,
+        policyLabel: value.policyLabel,
       };
     });
   }
@@ -755,7 +811,7 @@ const mapPoliciesToCustomers = (policies: unknown, normalizedId: string) => {
     new Map(additionalCustomers.map((item) => [String(item.personId), item])).values()
   );
 
-  return { primaryCustomer, additionalCustomers: uniqueAdditional, priorConditionById };
+  return { primaryCustomer, additionalCustomers: uniqueAdditional, priorConditionById, specialDiscountById };
 };
 
 const getQueryParam = (params: URLSearchParams, keys: string[]) => {
@@ -884,6 +940,7 @@ export default function BuyInsNew() {
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
   const [nameSanitizedNotice, setNameSanitizedNotice] = useState<Record<number, boolean>>({});
   const [priorConditionById, setPriorConditionById] = useState<Record<string, PriorConditionInfo>>({});
+  const [specialDiscountById, setSpecialDiscountById] = useState<Record<string, SpecialDiscountInfo>>({});
   const [travelDates, setTravelDates] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [travelDateError, setTravelDateError] = useState("");
 
@@ -1143,6 +1200,17 @@ export default function BuyInsNew() {
       className: "bg-slate-100 text-slate-700 border border-slate-200",
       text: "החמרה למחלה קיימת: אין נתון",
       policyLabel: info.policyLabel,
+    };
+  };
+
+  const getSpecialDiscountBadge = (customerId: string) => {
+    const normalized = normalizeIdValue(customerId);
+    if (!normalized) return null;
+    const info = specialDiscountById[normalized];
+    if (!info?.discountLabel) return null;
+    return {
+      className: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+      text: `הנחה אחרונה: ${info.discountLabel}`,
     };
   };
 
@@ -1427,6 +1495,7 @@ export default function BuyInsNew() {
               },
               allCustomers: mapped.additionalCustomers,
               priorConditionById: mapped.priorConditionById,
+              specialDiscountById: mapped.specialDiscountById,
             };
           } else {
             json = { found: false };
@@ -1462,6 +1531,7 @@ export default function BuyInsNew() {
           if (useGetByIdU) {
             const mapped = mapPoliciesToCustomers(payload, normalizedId);
             let priorConditionMap = mapped.priorConditionById;
+            let specialDiscountMap = mapped.specialDiscountById;
             const primaryPrior = priorConditionMap[normalizedId];
 
             if (primaryPrior?.status === "unknown" && primaryPrior.policyId) {
@@ -1481,6 +1551,7 @@ export default function BuyInsNew() {
                   }
                   const policyMapped = mapPoliciesToCustomers(policyPayload, normalizedId);
                   priorConditionMap = mergePriorConditionMaps(priorConditionMap, policyMapped.priorConditionById);
+                  specialDiscountMap = mergeSpecialDiscountMaps(specialDiscountMap, policyMapped.specialDiscountById);
                 }
               } catch (err) {
                 console.warn("Fallback policy lookup for prior condition failed:", err);
@@ -1497,6 +1568,7 @@ export default function BuyInsNew() {
                 },
                 allCustomers: mapped.additionalCustomers,
                 priorConditionById: priorConditionMap,
+                specialDiscountById: specialDiscountMap,
               };
             } else {
               json = { found: false };
@@ -1546,6 +1618,11 @@ export default function BuyInsNew() {
             (json?.priorConditionById as Record<string, PriorConditionInfo> | undefined) || {};
           if (Object.keys(priorConditionMap).length > 0) {
             setPriorConditionById((prev) => ({ ...prev, ...priorConditionMap }));
+          }
+          const specialDiscountMap =
+            (json?.specialDiscountById as Record<string, SpecialDiscountInfo> | undefined) || {};
+          if (Object.keys(specialDiscountMap).length > 0) {
+            setSpecialDiscountById((prev) => ({ ...prev, ...specialDiscountMap }));
           }
 
           const previousId = previousCustomerIds[customerIndex] || "";
@@ -1905,6 +1982,7 @@ export default function BuyInsNew() {
               const canRemoveCustomer = customers.length > 1 && (index !== 0 || isGetByIdU);
               const customerIdForStatus = index === 0 ? id : customer.id;
               const priorConditionBadge = getPriorConditionBadge(customerIdForStatus);
+              const specialDiscountBadge = getSpecialDiscountBadge(customerIdForStatus);
               return (
                 <div
                   key={index}
@@ -1930,11 +2008,18 @@ export default function BuyInsNew() {
                           איש הקשר לצורך רכישת הביטוח
                         </div>
                       )}
-                      {priorConditionBadge && (
-                        <div className="mt-2 w-fit ml-auto text-right">
-                          <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
-                            {priorConditionBadge.text}
-                          </span>
+                      {(priorConditionBadge || specialDiscountBadge) && (
+                        <div className="mt-2 w-fit ml-auto flex flex-col items-end gap-1 text-right">
+                          {priorConditionBadge && (
+                            <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
+                              {priorConditionBadge.text}
+                            </span>
+                          )}
+                          {specialDiscountBadge && (
+                            <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", specialDiscountBadge.className)}>
+                              {specialDiscountBadge.text}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
