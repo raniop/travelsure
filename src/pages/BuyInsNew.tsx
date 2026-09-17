@@ -868,6 +868,7 @@ const getQueryParam = (params: URLSearchParams, keys: string[]) => {
 const GET_BY_IDU_AFFILIATES = new Set(["902", "1282", "1283", "1284", "1731"]);
 const SHOW_TRAVEL_DATE_PICKER = false;
 const CARRIED_CUSTOMERS_PARAM = "carryCustomers";
+const CARRIED_CUSTOMERS_STORAGE_KEY = "buyinsnew_carry_customers";
 const SPECIAL_DISCOUNT_AFF_TO_PERCENT: Record<string, string> = {
   "1282": "10",
   "1283": "15",
@@ -891,31 +892,35 @@ const decodeCarriedCustomers = (encoded: string): CarriedCustomersPayload | null
     const normalized = encoded.replace(/-/g, "+").replace(/_/g, "/");
     const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
     const json = decodeURIComponent(escape(atob(normalized + padding)));
-    const parsed = JSON.parse(json) as Partial<CarriedCustomersPayload>;
-    if (!parsed || !Array.isArray(parsed.customers)) return null;
-
-    const customers = parsed.customers
-      .filter((item) => item && typeof item === "object")
-      .map((item) => ({
-        id: String(item.id || ""),
-        gender: item.gender === "M" || item.gender === "F" ? item.gender : "",
-        firstNameHe: String(item.firstNameHe || ""),
-        lastNameHe: String(item.lastNameHe || ""),
-        firstNameEn: String(item.firstNameEn || ""),
-        lastNameEn: String(item.lastNameEn || ""),
-        birthDate: String(item.birthDate || ""),
-        email: String(item.email || ""),
-        phone: String(item.phone || ""),
-      }));
-
-    if (customers.length === 0) return null;
-    return {
-      id: String(parsed.id || customers[0]?.id || ""),
-      customers,
-    };
+    const parsed = JSON.parse(json);
+    return normalizeCarriedCustomersPayload(parsed);
   } catch {
     return null;
   }
+};
+
+const normalizeCarriedCustomersPayload = (payload: unknown): CarriedCustomersPayload | null => {
+  if (!payload || typeof payload !== "object") return null;
+  const parsed = payload as Partial<CarriedCustomersPayload>;
+  if (!Array.isArray(parsed.customers)) return null;
+  const customers = parsed.customers
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      id: String(item.id || ""),
+      gender: item.gender === "M" || item.gender === "F" ? item.gender : "",
+      firstNameHe: String(item.firstNameHe || ""),
+      lastNameHe: String(item.lastNameHe || ""),
+      firstNameEn: String(item.firstNameEn || ""),
+      lastNameEn: String(item.lastNameEn || ""),
+      birthDate: String(item.birthDate || ""),
+      email: String(item.email || ""),
+      phone: String(item.phone || ""),
+    }));
+  if (customers.length === 0) return null;
+  return {
+    id: String(parsed.id || customers[0]?.id || ""),
+    customers,
+  };
 };
 
 const isGetByIdULink = (params: URLSearchParams) => {
@@ -1050,9 +1055,17 @@ export default function BuyInsNew() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const carried = params.get(CARRIED_CUSTOMERS_PARAM);
-    if (!carried) return;
+    const fromQuery = carried ? decodeCarriedCustomers(carried) : null;
 
-    const payload = decodeCarriedCustomers(carried);
+    let fromStorage: CarriedCustomersPayload | null = null;
+    try {
+      const rawStored = sessionStorage.getItem(CARRIED_CUSTOMERS_STORAGE_KEY);
+      fromStorage = rawStored ? normalizeCarriedCustomersPayload(JSON.parse(rawStored)) : null;
+    } catch {
+      fromStorage = null;
+    }
+
+    const payload = fromQuery || fromStorage;
     if (!payload) return;
 
     setCustomers(payload.customers);
@@ -1064,10 +1077,14 @@ export default function BuyInsNew() {
       }, {})
     );
 
-    params.delete(CARRIED_CUSTOMERS_PARAM);
-    const nextQuery = params.toString();
-    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash || ""}`;
-    window.history.replaceState(null, "", nextUrl);
+    sessionStorage.removeItem(CARRIED_CUSTOMERS_STORAGE_KEY);
+
+    if (carried) {
+      params.delete(CARRIED_CUSTOMERS_PARAM);
+      const nextQuery = params.toString();
+      const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash || ""}`;
+      window.history.replaceState(null, "", nextUrl);
+    }
   }, []);
 
   useEffect(() => {
@@ -1371,6 +1388,16 @@ export default function BuyInsNew() {
       return targetUrl.toString();
     } catch {
       return switchInfo.url;
+    }
+  };
+
+  const saveCarriedCustomersToSession = () => {
+    const payload = normalizeCarriedCustomersPayload({ id, customers });
+    if (!payload) return;
+    try {
+      sessionStorage.setItem(CARRIED_CUSTOMERS_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage failures and rely on query param fallback.
     }
   };
 
@@ -2183,6 +2210,7 @@ export default function BuyInsNew() {
                               {specialDiscountBadge.switchLink && (
                                 <a
                                   href={buildDiscountSwitchHref(specialDiscountBadge.switchLink)}
+                                  onClick={() => saveCarriedCustomersToSession()}
                                   className="inline-flex w-fit ml-auto mt-1 items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 transition"
                                   title={`מעבר מהיר לשת\"פ ${specialDiscountBadge.switchLink.aff} (${specialDiscountBadge.switchLink.label})`}
                                 >
