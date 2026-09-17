@@ -2060,21 +2060,21 @@ export default function BuyInsNew() {
                         </div>
                       )}
                       {(priorConditionBadge || specialDiscountBadge) && (
-                        <div className="mt-2 w-full flex flex-col items-end gap-1 text-right">
+                        <div className="mt-2 w-full text-right">
                           {priorConditionBadge && (
-                            <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
+                            <span className={cn("inline-flex w-fit ml-auto items-center rounded-full px-2.5 py-1 text-xs font-semibold", priorConditionBadge.className)}>
                               {priorConditionBadge.text}
                             </span>
                           )}
                           {specialDiscountBadge && (
                             <>
-                              <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", specialDiscountBadge.className)}>
+                              <span className={cn("inline-flex w-fit ml-auto mt-1 items-center rounded-full px-2.5 py-1 text-xs font-semibold", specialDiscountBadge.className)}>
                                 {specialDiscountBadge.text}
                               </span>
                               {specialDiscountBadge.switchLink && (
                                 <a
                                   href={specialDiscountBadge.switchLink.url}
-                                  className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 transition"
+                                  className="inline-flex w-fit ml-auto mt-1 items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 transition"
                                   title={`מעבר מהיר לשת\"פ ${specialDiscountBadge.switchLink.aff} (${specialDiscountBadge.switchLink.label})`}
                                 >
                                   מעבר ישיר להנחה {specialDiscountBadge.switchLink.label}
