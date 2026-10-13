@@ -243,18 +243,23 @@ const FormsDownloads = () => {
   const totalForms = FORM_CATEGORIES.reduce((acc, category) => acc + category.forms.length, 0);
 
   return (
-    <div className="min-h-screen font-heebo bg-slate-50 text-slate-900" dir="rtl">
+    <div className="min-h-screen font-heebo bg-slate-50 text-slate-900 relative overflow-hidden" dir="rtl">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 right-[-90px] h-72 w-72 rounded-full bg-violet-200/55 blur-3xl" />
+        <div className="absolute top-[30%] left-[-110px] h-80 w-80 rounded-full bg-sky-200/50 blur-3xl" />
+        <div className="absolute bottom-[-120px] right-[35%] h-64 w-64 rounded-full bg-fuchsia-100/50 blur-3xl" />
+      </div>
       <Header />
       <div className="h-16 md:h-20" />
 
-      <main className="container-wide py-8 md:py-12">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 md:p-9 shadow-[0_24px_65px_-42px_rgba(15,23,42,0.35)]">
+      <main className="container-wide py-8 md:py-12 relative z-10">
+        <section className="rounded-3xl border border-white/70 bg-white/90 backdrop-blur-xl p-6 md:p-9 shadow-[0_26px_75px_-40px_rgba(76,29,149,0.22)]">
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_.9fr] gap-6 items-start">
             <div className="text-right">
-              <span className="inline-flex items-center rounded-full bg-[#0b4e86]/10 px-3 py-1 text-xs font-semibold text-[#0b4e86]">
+              <span className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
                 טפסים להורדה
               </span>
-              <h1 className="mt-3 text-3xl md:text-4xl font-black text-[#0b4e86] leading-tight">מרכז הטפסים</h1>
+              <h1 className="mt-3 text-3xl md:text-5xl font-black text-slate-900 leading-tight">מרכז הטפסים</h1>
               <p className="mt-3 text-sm md:text-base text-slate-600 leading-7 max-w-2xl">
                 ריכוז מלא של טפסים רשמיים לפי קטגוריות. כל כפתור פותח קישור ישיר למסמך המתאים.
               </p>
@@ -275,7 +280,7 @@ const FormsDownloads = () => {
                   <a
                     key={category.id}
                     href={`#${category.id}`}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition text-right"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition text-right shadow-sm"
                   >
                     {category.title}
                   </a>
@@ -300,7 +305,7 @@ const FormsDownloads = () => {
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="text-right flex-1">
-                      <h2 className="text-xl md:text-2xl font-black text-[#0b4e86]">{category.title}</h2>
+                      <h2 className="text-xl md:text-2xl font-black text-slate-900">{category.title}</h2>
                       <p className="mt-1 text-sm md:text-base text-slate-600">{category.subtitle}</p>
                     </div>
                   </div>
@@ -330,14 +335,14 @@ const FormsDownloads = () => {
                               href={form.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-2 rounded-lg bg-[#0b4e86] px-3 py-2 text-xs md:text-sm font-semibold text-white transition hover:bg-[#0a416f]"
+                              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-l from-violet-600 to-indigo-600 px-3.5 py-2 text-xs md:text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(109,40,217,0.55)] transition hover:from-violet-500 hover:to-indigo-500"
                             >
                               <ExternalLink className="h-4 w-4" />
                               <Download className="h-4 w-4" />
                               הורד טופס
                             </a>
                           ) : (
-                            <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs md:text-sm font-semibold text-slate-500">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs md:text-sm font-semibold text-slate-500">
                               <Download className="h-4 w-4" />
                               יתווסף בקרוב
                             </span>
