@@ -26,6 +26,7 @@ import CarInsurance from "./pages/CarInsurance";
 import HomeInsurance from "./pages/HomeInsurance";
 import BusinessInsurance from "./pages/BusinessInsurance";
 import BBQManager from "./pages/BBQManager";
+import FormsDownloads from "./pages/FormsDownloads";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const AppContent = () => {
         <Route path="/services/car" element={<CarInsurance />} />
         <Route path="/services/home" element={<HomeInsurance />} />
         <Route path="/services/business" element={<BusinessInsurance />} />
+        <Route path="/forms" element={<FormsDownloads />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />

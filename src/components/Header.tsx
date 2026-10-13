@@ -30,6 +30,7 @@ const Header = () => {
     { href: "/claim", label: t("nav.selfService.claim") },
     { href: "/Foreigners", label: t("nav.selfService.foreigners") },
     { href: "/Insurance-Proposal", label: t("nav.selfService.proposal") },
+    { href: "/forms", label: language === "he" ? "טפסים להורדה" : "Download forms" },
   ];
 
   const navLinks = [
@@ -164,12 +165,25 @@ const Header = () => {
         keywords: ["הצעה", "proposal", "רפואי", "medical", "טופס הראל", "הצעת ביטוח"],
       },
       {
+        href: "/forms",
+        label: language === "he" ? "טפסים להורדה" : "Download forms",
+        keywords: [
+          "טפסים",
+          "forms",
+          "הורדה",
+          "download",
+          "חו\"ל",
+          "עובדים זרים",
+          "תיירים",
+        ],
+      },
+      {
         href: "/privacy",
         label: t("footer.privacy"),
         keywords: ["פרטיות", "privacy", "מדיניות", "policy", "עוגיות", "cookies"],
       },
     ],
-    [t],
+    [language, t],
   );
 
   // Filter search results
