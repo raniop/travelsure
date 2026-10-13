@@ -19,14 +19,9 @@ const FORM_CATEGORIES: FormCategory[] = [
     title: 'חו"ל',
     forms: [
       {
-        title: "טופס תביעה ביטוח נסיעות",
-        description: "הורדת טופס תביעה לנסיעות לחו\"ל",
-        url: "",
-      },
-      {
-        title: "טופס הצטרפות לביטוח נסיעות",
-        description: "הורדת טופס הצטרפות/עדכון פרטים",
-        url: "",
+        title: 'טפסים ופוליסות חו"ל - הראל First Class',
+        description: 'מעבר ישיר לעמוד הרשמי של הראל עבור ביטוח נסיעות לחו"ל',
+        url: "https://www.harel-group.co.il/insurance/travel/policies/first-class",
       },
     ],
   },
@@ -35,14 +30,9 @@ const FORM_CATEGORIES: FormCategory[] = [
     title: "עובדים זרים",
     forms: [
       {
-        title: "טופס הצטרפות עובד זר",
-        description: "הורדת טופס בקשה לביטוח עובדים זרים",
-        url: "",
-      },
-      {
-        title: "טופס שינוי פרטי מעסיק",
-        description: "הורדת טופס לעדכון פרטי מעסיק/פוליסה",
-        url: "",
+        title: "טפסים ופוליסות עובדים זרים - הראל Safe Stay Plus",
+        description: "מעבר ישיר לעמוד הרשמי של הראל עבור ביטוח עובדים זרים",
+        url: "https://www.harel-group.co.il/insurance/foreign/policies/safe-stay-plus",
       },
     ],
   },
@@ -51,14 +41,9 @@ const FORM_CATEGORIES: FormCategory[] = [
     title: "תיירים",
     forms: [
       {
-        title: "טופס ביטוח תיירים",
-        description: "הורדת טופס הצטרפות לביטוח תיירים בישראל",
-        url: "",
-      },
-      {
-        title: "טופס הארכת ביטוח לתייר",
-        description: "הורדת טופס בקשה להארכת תקופת הביטוח",
-        url: "",
+        title: "טפסים ופוליסות תיירים - הראל Tour & Care",
+        description: "מעבר ישיר לעמוד הרשמי של הראל עבור ביטוח תיירים",
+        url: "https://www.harel-group.co.il/insurance/foreign/policies/tour-and-care",
       },
     ],
   },
