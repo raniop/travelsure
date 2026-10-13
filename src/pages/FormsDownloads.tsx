@@ -1,4 +1,4 @@
-import { Download, FileText } from "lucide-react";
+import { Download, ExternalLink, FileText, Globe, ShieldCheck, Sparkles, Users } from "lucide-react";
 import Header from "@/components/Header";
 
 type DownloadFormItem = {
@@ -10,6 +10,10 @@ type DownloadFormItem = {
 type FormCategory = {
   id: string;
   title: string;
+  subtitle: string;
+  icon: "travel" | "workers" | "tourists";
+  accent: string;
+  glow: string;
   forms: DownloadFormItem[];
 };
 
@@ -17,6 +21,10 @@ const FORM_CATEGORIES: FormCategory[] = [
   {
     id: "travel",
     title: 'חו"ל',
+    subtitle: "טפסים ומסמכים לביטוח נסיעות",
+    icon: "travel",
+    accent: "from-sky-500/20 via-cyan-400/15 to-blue-500/20",
+    glow: "shadow-[0_20px_60px_-25px_rgba(14,116,144,0.35)]",
     forms: [
       {
         title: "תעריפון דמי הביטוח - דרכון First Class",
@@ -73,6 +81,10 @@ const FORM_CATEGORIES: FormCategory[] = [
   {
     id: "foreign-workers",
     title: "עובדים זרים",
+    subtitle: "מסמכי Safe Stay Plus לעובדים זרים",
+    icon: "workers",
+    accent: "from-emerald-500/20 via-teal-400/15 to-lime-400/20",
+    glow: "shadow-[0_20px_60px_-25px_rgba(5,150,105,0.35)]",
     forms: [
       {
         title: "תנאי פוליסה מלאים - Safe Stay Plus (עברית)",
@@ -164,6 +176,10 @@ const FORM_CATEGORIES: FormCategory[] = [
   {
     id: "tourists",
     title: "תיירים",
+    subtitle: "מסמכי Tour & Care לתיירים בישראל",
+    icon: "tourists",
+    accent: "from-violet-500/20 via-fuchsia-400/15 to-indigo-500/20",
+    glow: "shadow-[0_20px_60px_-25px_rgba(109,40,217,0.35)]",
     forms: [
       {
         title: "תנאי פוליסה מלאים - Tour & Care",
@@ -219,80 +235,147 @@ const FORM_CATEGORIES: FormCategory[] = [
   },
 ];
 
+const categoryIcon = (icon: FormCategory["icon"]) => {
+  if (icon === "travel") return Globe;
+  if (icon === "workers") return Users;
+  return ShieldCheck;
+};
+
 const FormsDownloads = () => {
+  const totalForms = FORM_CATEGORIES.reduce((acc, category) => acc + category.forms.length, 0);
+
   return (
-    <div className="min-h-screen font-heebo bg-slate-50" dir="rtl">
-      <Header />
-      <div className="h-16 md:h-20" />
+    <div
+      className="min-h-screen font-heebo bg-slate-950 text-slate-100 relative overflow-hidden"
+      dir="rtl"
+    >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 right-[-140px] h-[460px] w-[460px] rounded-full bg-cyan-400/15 blur-3xl" />
+        <div className="absolute top-[26%] left-[-120px] h-[420px] w-[420px] rounded-full bg-violet-500/15 blur-3xl" />
+        <div className="absolute bottom-[-160px] right-[32%] h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_55%)]" />
+      </div>
 
-      <main className="container-wide py-8 md:py-12">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 md:p-8 shadow-sm">
-          <div className="text-right">
-            <p className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-              טפסים להורדה
-            </p>
-            <h1 className="mt-3 text-2xl md:text-3xl font-extrabold text-[#0b4e86]">מרכז הטפסים</h1>
-            <p className="mt-2 text-sm md:text-base text-slate-600">
-              כל הטפסים מסודרים לפי קטגוריות לנוחות מקסימלית. אפשר להוריד ולמלא.
-            </p>
-          </div>
-        </section>
+      <div className="relative z-10">
+        <Header />
+        <div className="h-16 md:h-20" />
 
-        <div className="mt-6 space-y-6">
-          {FORM_CATEGORIES.map((category) => (
-            <section
-              key={category.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm"
-            >
-              <h2 className="text-lg md:text-xl font-bold text-[#0b4e86] text-right">{category.title}</h2>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                {category.forms.map((form, index) => {
-                  const hasUrl = Boolean(form.url && form.url.trim());
-                  return (
-                    <article
-                      key={`${category.id}-${index}`}
-                      className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <button
-                          type="button"
-                          className="h-9 w-9 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-500"
-                          aria-hidden="true"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </button>
-                        <div className="text-right flex-1">
-                          <h3 className="text-sm md:text-base font-bold text-slate-800">{form.title}</h3>
-                          <p className="mt-1 text-xs md:text-sm text-slate-600">{form.description}</p>
-                        </div>
-                      </div>
+        <main className="container-wide py-8 md:py-14 space-y-7 md:space-y-10">
+          <section className="rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-xl p-6 md:p-10 shadow-[0_24px_80px_-30px_rgba(15,23,42,0.65)]">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-6 md:gap-8 items-start">
+              <div className="text-right">
+                <p className="inline-flex items-center gap-2 rounded-full border border-cyan-200/35 bg-cyan-300/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-100">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  טפסים להורדה
+                </p>
+                <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight tracking-tight text-white">
+                  מרכז הטפסים החדש
+                </h1>
+                <p className="mt-3 text-sm md:text-base text-slate-200/90 leading-7 max-w-2xl">
+                  כל הטפסים הרשמיים של הראל מרוכזים במקום אחד, בעיצוב חדש ומסודר לפי קטגוריות.
+                  לחיצה על כל פריט פותחת קישור ישיר למסמך המדויק.
+                </p>
 
-                      <div className="mt-3 flex justify-end">
-                        {hasUrl ? (
-                          <a
-                            href={form.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#0b4e86] px-3 py-2 text-xs md:text-sm font-semibold text-white hover:bg-[#0a3f6c] transition"
-                          >
-                            <Download className="h-4 w-4" />
-                            הורד טופס
-                          </a>
-                        ) : (
-                          <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs md:text-sm font-semibold text-slate-500">
-                            <Download className="h-4 w-4" />
-                            יתווסף בקרוב
-                          </span>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
+                <div className="mt-6 flex flex-wrap gap-2.5 justify-end">
+                  <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
+                    {FORM_CATEGORIES.length} קטגוריות
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
+                    {totalForms} קישורים ישירים
+                  </span>
+                </div>
               </div>
-            </section>
-          ))}
-        </div>
-      </main>
+
+              <div className="rounded-2xl border border-white/20 bg-slate-900/35 p-4 md:p-5 backdrop-blur-md">
+                <p className="text-right text-sm font-bold text-cyan-100">ניווט מהיר לקטגוריה</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+                  {FORM_CATEGORIES.map((category) => (
+                    <a
+                      key={category.id}
+                      href={`#${category.id}`}
+                      className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10 transition text-right"
+                    >
+                      {category.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="space-y-7 md:space-y-9">
+            {FORM_CATEGORIES.map((category) => (
+              <section
+                id={category.id}
+                key={category.id}
+                className={`rounded-[24px] border border-white/20 bg-white/10 backdrop-blur-xl p-4 md:p-6 ${category.glow}`}
+              >
+                <div className={`rounded-2xl border border-white/20 bg-gradient-to-l ${category.accent} p-4 md:p-5`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="h-12 w-12 rounded-xl border border-white/20 bg-white/15 flex items-center justify-center text-white">
+                      {(() => {
+                        const Icon = categoryIcon(category.icon);
+                        return <Icon className="h-5 w-5" />;
+                      })()}
+                    </div>
+                    <div className="text-right flex-1">
+                      <h2 className="text-xl md:text-2xl font-extrabold text-white">{category.title}</h2>
+                      <p className="mt-1 text-sm md:text-base text-slate-100/90">{category.subtitle}</p>
+                      <p className="mt-1 text-xs text-slate-200/85">{category.forms.length} פריטים בקטגוריה</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                  {category.forms.map((form, index) => {
+                    const hasUrl = Boolean(form.url && form.url.trim());
+                    return (
+                      <article
+                        key={`${category.id}-${index}`}
+                        className="group rounded-2xl border border-white/15 bg-slate-900/35 p-4 md:p-5 shadow-[0_15px_35px_-20px_rgba(15,23,42,0.8)] hover:border-cyan-300/55 hover:bg-slate-900/55 hover:-translate-y-0.5 transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <button
+                            type="button"
+                            className="h-10 w-10 rounded-xl border border-white/20 bg-white/10 flex items-center justify-center text-cyan-100 shrink-0"
+                            aria-hidden="true"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                          <div className="text-right flex-1">
+                            <h3 className="text-sm md:text-base font-bold text-slate-100 leading-6">{form.title}</h3>
+                            <p className="mt-1 text-xs md:text-sm text-slate-300/90 leading-6">{form.description}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                          {hasUrl ? (
+                            <a
+                              href={form.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/40 bg-gradient-to-l from-cyan-400 to-blue-500 px-3.5 py-2 text-xs md:text-sm font-semibold text-white shadow-[0_10px_25px_-12px_rgba(56,189,248,0.65)] hover:from-cyan-300 hover:to-blue-400 transition"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <Download className="h-4 w-4" />
+                              הורד טופס
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs md:text-sm font-semibold text-slate-300">
+                              <Download className="h-4 w-4" />
+                              יתווסף בקרוב
+                            </span>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
