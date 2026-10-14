@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Briefcase, Car, FileDown, FileText, Home, Users } from "lucide-react";
+import AgencyHeader from "@/components/AgencyHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/ophir-logo.png";
 
@@ -150,38 +151,7 @@ const MockupV2 = () => {
         <div aria-hidden="true" className="absolute left-[30cqw] top-[13.5cqw] h-[3cqw] w-[9cqw] rounded-full bg-white/[0.05]" />
 
         <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
-          <header className="flex flex-wrap items-center gap-x-7 gap-y-1.5 rounded-[20px] bg-white py-2.5 pl-2.5 pr-5 text-[#000144]">
-            <a href="#top" aria-label="אופיר ושות׳ סוכנות לביטוח, לדף הבית" className="flex min-h-[52px] items-center gap-3 text-[#000144] no-underline">
-              <img src={logo} alt="" className="block h-12 w-auto" />
-              <span className="flex flex-col leading-[1.1]">
-                <span className="text-[23px] font-extrabold">אופיר ושות׳</span>
-                <span className="text-sm font-semibold text-[#46557A]">סוכנות לביטוח</span>
-              </span>
-            </a>
-            <nav aria-label="ניווט ראשי" className="flex flex-[1_1_280px] flex-wrap justify-center gap-x-7">
-              {[
-                ["#get", "מה מקבלים"],
-                ["#how", "איך זה עובד"],
-                ["#services", "ביטוחים נוספים"],
-                ["#faq", "שאלות"],
-              ].map(([href, label]) => (
-                <a key={href} href={href} className="flex min-h-[44px] items-center text-[17px] font-semibold text-[#000144] no-underline hover:text-[#00A247]">
-                  {label}
-                </a>
-              ))}
-            </nav>
-            <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2">
-              <a href="tel:0732721111" dir="ltr" className="flex min-h-[44px] items-center text-[17px] font-bold text-[#000144] no-underline">
-                073-2721111
-              </a>
-              <Link to="/claim" className="box-border inline-flex min-h-[46px] items-center justify-center rounded-[14px] border-2 border-[#000144] px-[18px] text-[17px] font-bold text-[#000144] no-underline">
-                הגשת תביעה
-              </Link>
-              <a href="#top" className="inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#00A247] px-[22px] text-[17px] font-bold text-[#000144] no-underline">
-                להצעת מחיר
-              </a>
-            </div>
-          </header>
+          <AgencyHeader onLanding />
         </div>
 
         <div className="relative mx-auto flex max-w-[1200px] flex-col gap-8 px-6 pb-[88px] pt-16">
@@ -330,7 +300,7 @@ const MockupV2 = () => {
           <h2 className={h2Class}>מה מקבלים</h2>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-5">
             {benefits.map((b) => (
-              <div key={b.title} className="box-border flex min-h-[220px] flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7">
+              <div key={b.title} className="box-border flex min-h-[220px] !flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7">
                 {b.icon}
                 <div className="flex flex-col gap-1">
                   <span className="text-[32px] font-black leading-[1.05]">{b.title}</span>
@@ -370,7 +340,7 @@ const MockupV2 = () => {
       {/* Existing customers + other insurance lines */}
       <section id="services" className="px-6 pt-[88px]">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-9">
-          <div className="box-border flex flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] border-[3px] border-[#000144] p-12">
+          <div className="box-border flex !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] border-[3px] border-[#000144] p-12">
             <div className="flex max-w-[620px] flex-col gap-3">
               <h2 className={h2Class}>כבר מבוטחים אצלנו?</h2>
               <p className="m-0 text-[20px] font-medium text-[#33405F]">
@@ -395,7 +365,7 @@ const MockupV2 = () => {
               <Link
                 key={key}
                 to={to}
-                className="group box-border flex min-h-[200px] flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+                className="group box-border flex min-h-[200px] !flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
               >
                 <Icon aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
                 <div className="flex flex-col gap-1">
@@ -411,7 +381,7 @@ const MockupV2 = () => {
             ))}
             <Link
               to="/foreigners"
-              className="group box-border flex min-h-[200px] flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+              className="group box-border flex min-h-[200px] !flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
             >
               <Users aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
               <div className="flex flex-col gap-1">
@@ -430,7 +400,7 @@ const MockupV2 = () => {
 
       {/* Contact */}
       <section aria-label="יצירת קשר" className="px-6 pb-10 pt-[88px]">
-        <div className="mx-auto box-border flex max-w-[1200px] flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-12">
+        <div className="mx-auto box-border flex max-w-[1200px] !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-12">
           <h2 className={h2Class}>
             מעדיפים לדבר
             <br />
@@ -472,7 +442,7 @@ const MockupV2 = () => {
 
       {/* Footer */}
       <footer className="bg-[#000144] px-6 py-8 text-[#C9D3EA]">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-8 gap-y-2.5 text-base">
+        <div className="mx-auto flex max-w-[1200px] !flex-row flex-wrap items-center justify-between gap-x-8 gap-y-2.5 text-base">
           <span className="flex items-center gap-3">
             <span className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-white">
               <img src={logo} alt="" className="block h-[38px] w-auto" />

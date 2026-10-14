@@ -1008,6 +1008,12 @@ export default function BuyInsNew() {
     return getQueryParam(params, ["aff", "shatapId", "id"]) === "1731";
   })();
 
+  // theme=agency: embedded in the agency /purchase page, which supplies its own header and title
+  const isAgencyTheme = useMemo(
+    () => new URLSearchParams(window.location.search).get("theme") === "agency",
+    []
+  );
+
   const isGetByIdU = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return isGetByIdULink(params);
@@ -2020,9 +2026,11 @@ export default function BuyInsNew() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen relative"
-      style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
+      className={isAgencyTheme ? "agency-theme min-h-screen relative bg-[#F3F5F8] font-rubik text-[#000144]" : "min-h-screen relative"}
+      style={isAgencyTheme ? undefined : { fontFamily: "system-ui, -apple-system, sans-serif" }}
     >
+      {!isAgencyTheme && (
+      <>
       {/* Background */}
       <div className="fixed inset-0 -z-10 min-h-full">
         <img
@@ -2061,9 +2069,11 @@ export default function BuyInsNew() {
           </div>
         </div>
       </header>
+      </>
+      )}
 
-      <main className="mx-auto max-w-xl px-3 sm:px-4 py-2 sm:py-3">
-        <div className="mb-2 sm:mb-3 flex flex-col items-center text-center w-full">
+      <main className={isAgencyTheme ? "mx-auto max-w-xl px-3 sm:px-4 pt-6 pb-10" : "mx-auto max-w-xl px-3 sm:px-4 py-2 sm:py-3"}>
+        <div className={isAgencyTheme ? "hidden" : "mb-2 sm:mb-3 flex flex-col items-center text-center w-full"}>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0b4e86]" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             רכישת ביטוח נסיעות לחו״ל
           </h1>
@@ -2624,7 +2634,7 @@ export default function BuyInsNew() {
                     }
                   }, 150); // קצת delay כדי שה-state וה-DOM יתעדכנו (אחרי המיון)
                 }}
-                className="h-10 w-10 rounded-full text-white flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0 bg-[#0b4e86] hover:bg-[#0a3d6b]"
+                className={`h-10 w-10 rounded-full text-white flex items-center justify-center transition shadow-sm hover:shadow-md flex-shrink-0 ${isAgencyTheme ? "bg-[#000144] hover:bg-[#0C1060]" : "bg-[#0b4e86] hover:bg-[#0a3d6b]"}`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M12 5v14M5 12h14" />
@@ -2757,7 +2767,7 @@ export default function BuyInsNew() {
                   }
                 }
               }}
-              className="w-full sm:w-auto min-w-[280px] rounded-xl px-5 py-3 text-base font-bold transition shadow-sm hover:shadow-md bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#0b4e86]"
+              className={isAgencyTheme ? "w-full sm:w-auto min-w-[280px] rounded-[18px] px-6 py-4 text-[20px] font-extrabold transition bg-[#00A247] hover:bg-[#008C3D] text-[#000144]" : "w-full sm:w-auto min-w-[280px] rounded-xl px-5 py-3 text-base font-bold transition shadow-sm hover:shadow-md bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#0b4e86]"}
             >
               המשך תהליך באתר הראל
             </button>

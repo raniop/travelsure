@@ -324,3 +324,32 @@
   animation: float-particle 18s ease-in-out infinite;
   animation-delay: -8s;
 }
+
+/* Purchase form embedded in the agency /purchase page (BuyInsNew ?theme=agency) */
+.agency-theme,
+.agency-theme * {
+  font-family: "Rubik", system-ui, sans-serif !important;
+}
+.agency-theme [data-customer-index] {
+  border-radius: 24px;
+  border: 2px solid #E3E7EE;
+  background: #FFFFFF;
+  box-shadow: 0 12px 32px -18px rgba(7, 20, 51, 0.35);
+  backdrop-filter: none;
+}
+.agency-theme input:focus {
+  border-color: #00A247 !important;
+}
+.agency-theme .text-\[\#0b4e86\] {
+  color: #000144;
+}
+.agency-theme .bg-\[\#0b4e86\] {
+  background-color: #000144;
+}
+.agency-theme .border-\[\#0b4e86\],
+.agency-theme .border-\[\#18509C\] {
+  border-color: #000144;
+}
+.agency-theme .bg-\[\#18509C\] {
+  background-color: #000144;
+}
