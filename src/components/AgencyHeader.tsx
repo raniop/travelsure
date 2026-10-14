@@ -150,10 +150,7 @@ const AgencyHeader = ({ onLanding = false }: AgencyHeaderProps) => {
         </nav>
 
         <div className="ms-auto flex items-center gap-2.5 lg:ms-0 xl:gap-3.5">
-          <a href="tel:0732721111" dir="ltr" className="hidden min-h-[44px] items-center whitespace-nowrap text-[17px] font-bold text-[#000144] no-underline 2xl:flex">
-            073-2721111
-          </a>
-          <Link to="/claim" className="box-border hidden min-h-[46px] items-center justify-center whitespace-nowrap rounded-[14px] border-2 border-[#000144] px-4 text-[16px] font-bold text-[#000144] no-underline sm:inline-flex xl:text-[17px]">
+          <Link to="/claim" className="box-border hidden min-h-[46px] items-center justify-center whitespace-nowrap rounded-[14px] border-2 border-[#000144] px-4 text-[16px] font-bold text-[#000144] no-underline sm:inline-flex lg:hidden xl:inline-flex xl:text-[17px]">
             הגשת תביעה
           </Link>
           <span className="hidden lg:inline-flex">{quoteCta}</span>
