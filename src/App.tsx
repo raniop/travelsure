@@ -7,7 +7,6 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccessibilityMenu from "@/components/AccessibilityMenu";
 import ScrollToTop from "@/components/ScrollToTop";
 import ScrollIndicator from "@/components/ScrollIndicator";
-import Index from "./pages/Index";
 import Purchase from "./pages/Purchase";
 import BuyInsNew from "./pages/BuyInsNew";
 import Tirosh from "./pages/Tirosh";
@@ -42,7 +41,7 @@ const AppContent = () => {
       <ScrollToTop />
       <ScrollIndicator />
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<MockupV2 />} />
         <Route path="/purchase" element={<Purchase />} />
         <Route path="/buyinsnew" element={<BuyInsNew />} />
         <Route path="/tirosh" element={<Tirosh />} />

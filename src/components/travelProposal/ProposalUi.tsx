@@ -111,11 +111,11 @@ export function DestinationPicker({
   return (
     <div className="space-y-4">
       <div className="tp-center" style={{ textAlign: "center" }}>
-        <h3 className="text-xl font-extrabold text-[#0d3b6e]" style={{ textAlign: "center" }}>
+        <h3 className="text-[24px] font-black text-[#000144]" style={{ textAlign: "center" }}>
           בחרו יעד נסיעה
         </h3>
       </div>
-      <div className="mx-auto max-w-[860px] rounded-[28px] bg-[#e4eef7] px-3 py-6 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-[860px] rounded-[28px] bg-[#F3F5F8] px-3 py-6 sm:px-6 sm:py-8">
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4 sm:gap-x-6 sm:gap-y-7">
           {DESTINATION_OPTIONS.map((d) => {
             const active = selected.includes(d.id);
@@ -131,13 +131,13 @@ export function DestinationPicker({
                   className={cn(
                     "flex h-[142px] w-[142px] flex-col items-center justify-center rounded-full bg-white transition sm:h-[156px] sm:w-[156px]",
                     active
-                      ? "shadow-[0_6px_18px_rgba(47,158,58,0.28)] outline outline-[3.5px] outline-[#2f9e3a] outline-offset-0"
-                      : "shadow-[0_6px_18px_rgba(45,110,170,0.18)]",
+                      ? "outline outline-[3.5px] outline-[#00A247] outline-offset-0"
+                      : "outline outline-2 outline-[#E3E7EE] outline-offset-0 hover:outline-[#000144]/30",
                   )}
                 >
                   <DestMapIcon id={d.id} active={active} />
                   <span
-                    className="mt-0 max-w-[120px] text-center text-[12px] font-semibold leading-snug text-[#2f6fa8] sm:max-w-[132px] sm:text-[13px]"
+                    className="mt-0 max-w-[120px] text-center text-[12px] font-bold leading-snug text-[#000144] sm:max-w-[132px] sm:text-[13px]"
                     style={{ textAlign: "center" }}
                   >
                     {d.labelHe}
@@ -189,8 +189,8 @@ function TripDateField({
 
   const field = (
     <>
-      <p className={cn("font-extrabold text-[#143834]", compact ? "text-xs" : "text-sm")}>{label}</p>
-      {!compact && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
+      <p className={cn("font-extrabold text-[#000144]", compact ? "text-[13px]" : "text-[16px]")}>{label}</p>
+      {!compact && <p className="mt-1 text-[12px] font-medium text-[#8A94AD]">{hint}</p>}
       <div className={cn("relative", compact ? "mt-1.5" : "mt-2")}>
         <input
           dir="ltr"
@@ -204,8 +204,7 @@ function TripDateField({
             setOpen(true);
           }}
           className={cn(
-            "h-12 w-full border border-slate-200 bg-white px-3 pe-11 text-center text-base font-bold tracking-wide text-[#143834] outline-none transition focus:border-[#2f6b63] focus:ring-2 focus:ring-[#2f6b63]/20",
-            compact ? "rounded-full" : "rounded-xl bg-slate-50/80 focus:bg-white",
+            "h-[52px] w-full rounded-[14px] border-2 border-[#D5DAE3] bg-white px-3 pe-11 text-center text-[17px] font-bold tracking-wide text-[#000144] outline-none transition focus:border-[#00A247]",
           )}
         />
         <button
@@ -215,7 +214,7 @@ function TripDateField({
             setMonth(selected ?? minDay ?? new Date());
             setOpen(true);
           }}
-          className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#2f6b63] transition hover:bg-[#e8f4f1]"
+          className="absolute left-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[10px] text-[#000144] transition hover:bg-[#F3F5F8]"
         >
           <CalendarDays className="h-4 w-4" />
         </button>
@@ -228,12 +227,12 @@ function TripDateField({
         }}
       >
         <DialogContent
-          className="max-h-[90vh] w-[min(100vw-1.5rem,360px)] overflow-y-auto rounded-2xl p-4 sm:rounded-2xl"
+          className="max-h-[90vh] w-[min(100vw-1.5rem,360px)] overflow-y-auto rounded-[24px] p-4 font-rubik sm:rounded-[24px]"
           dir="rtl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle className="text-center text-base font-extrabold text-[#143834]">
+            <DialogTitle className="text-center text-[18px] font-black text-[#000144]">
               {label}
             </DialogTitle>
             <DialogDescription className="sr-only">בחירת תאריך בלוח שנה</DialogDescription>
@@ -262,7 +261,7 @@ function TripDateField({
   if (compact) return <div className="text-right">{field}</div>;
 
   return (
-    <div className="rounded-2xl border border-[#2f6b63]/15 bg-white px-4 py-3 text-right">{field}</div>
+    <div className="rounded-[20px] border-2 border-[#E3E7EE] bg-white px-4 py-3 text-right">{field}</div>
   );
 }
 
@@ -281,8 +280,8 @@ export function UsaStayDateFields({
 }) {
   const fromDate = parseDdMmYyyy(from);
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-[#f4f7f9] p-4">
-      <p className="mb-3 text-sm font-bold text-[#143834]">תקופת שהייה בארה״ב (אם רלוונטי)</p>
+    <div className="rounded-[20px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
+      <p className="mb-3 text-[16px] font-bold text-[#000144]">תקופת שהייה בארה״ב (אם רלוונטי)</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <TripDateField
           compact
@@ -348,7 +347,7 @@ export function TripDateRangePicker({
         />
       </div>
       {days != null && days > 0 && (
-        <p className="text-center text-sm font-bold text-[#2f6b63]" style={{ textAlign: "center" }}>
+        <p className="text-center text-[16px] font-bold text-[#000144]" style={{ textAlign: "center" }}>
           סה״כ: {days === 1 ? "יום אחד" : `${days} ימים`}
         </p>
       )}
@@ -367,7 +366,7 @@ export function PillYesNo({
 }) {
   return (
     <div
-      className="inline-flex overflow-hidden rounded-full border-2 border-[#2f6b63]/30 bg-white shadow-sm"
+      className="inline-flex overflow-hidden rounded-full border-2 border-[#D5DAE3] bg-white"
       role="group"
       aria-label={name}
     >
@@ -382,10 +381,10 @@ export function PillYesNo({
           type="button"
           onClick={() => onChange(opt.v)}
           className={cn(
-            "min-w-[72px] px-5 py-2.5 text-sm font-extrabold transition",
+            "min-h-[44px] min-w-[72px] px-5 py-2.5 text-[15px] font-extrabold transition",
             value === opt.v
-              ? "bg-[#2f6b63] text-white"
-              : "bg-transparent text-[#2f6b63] hover:bg-[#e8f4f1]",
+              ? "bg-[#000144] text-white"
+              : "bg-transparent text-[#000144] hover:bg-[#F3F5F8]",
           )}
         >
           {opt.label}
@@ -413,16 +412,16 @@ export function HealthQuestionCard({
   children?: ReactNode;
 }) {
   return (
-    <div className="rounded-[24px] border border-[#d7e8e3] bg-white p-4 shadow-[0_8px_24px_-20px_rgba(20,56,52,.35)] sm:p-5">
+    <div className="rounded-[24px] border-2 border-[#E3E7EE] bg-white p-4 sm:p-5">
       {/* Avoid justify-between — global RTL CSS reverses it and puts כן/לא on the right */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
         <div className="flex min-w-0 flex-1 gap-3 text-right">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2f6b63] text-sm font-bold text-white shadow-sm">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#000144] text-sm font-bold text-white">
             {number}
           </span>
           <div className="min-w-0">
-            <p className="text-[15px] font-extrabold leading-relaxed text-[#143834]">{title}</p>
-            {note && <p className="mt-2 text-[12px] leading-relaxed text-slate-500">{note}</p>}
+            <p className="text-[16px] font-extrabold leading-relaxed text-[#000144]">{title}</p>
+            {note && <p className="mt-2 text-[13px] font-medium leading-relaxed text-[#46557A]">{note}</p>}
             {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
           </div>
         </div>
@@ -473,15 +472,15 @@ export function CoverageCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl bg-white shadow-[0_4px_18px_rgba(20,60,110,0.08)] transition duration-200",
-        checked ? "ring-[1.5px] ring-[#1a6bb5]" : "ring-1 ring-[#d5e4f0]",
-        locked && "ring-[#1a6bb5]",
+        "overflow-hidden rounded-[20px] bg-white transition duration-200",
+        checked ? "ring-2 ring-[#000144]" : "ring-2 ring-[#E3E7EE]",
+        locked && "ring-[#000144]",
       )}
     >
       <div
         className={cn(
           "flex w-full items-stretch",
-          checked || locked ? "bg-[#eaf4fb]" : "bg-white",
+          checked || locked ? "bg-[#F3F5F8]" : "bg-white",
         )}
       >
         {/* RTL: first = right — selection circle */}
@@ -506,8 +505,8 @@ export function CoverageCard({
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full border-[2.5px] transition",
               checked || locked
-                ? "border-[#2f9e3a] bg-[#2f9e3a] text-white"
-                : "border-[#9bb8d4] bg-white text-transparent",
+                ? "border-[#00A247] bg-[#00A247] text-[#000144]"
+                : "border-[#D5DAE3] bg-white text-transparent",
             )}
           >
             <Check className="h-4 w-4" strokeWidth={3} />
@@ -520,7 +519,7 @@ export function CoverageCard({
           onClick={toggle}
           disabled={locked}
           className={cn(
-            "flex shrink-0 items-center px-1 text-[#1a6bb5]",
+            "flex shrink-0 items-center px-1 text-[#000144]",
             locked && "cursor-not-allowed",
           )}
           tabIndex={-1}
@@ -539,20 +538,20 @@ export function CoverageCard({
             locked && "cursor-not-allowed",
           )}
         >
-          <p className="text-[15px] font-bold leading-snug text-[#0d3b6e]">{title}</p>
+          <p className="text-[16px] font-extrabold leading-snug text-[#000144]">{title}</p>
           {description && (
-            <p className="mt-1 whitespace-pre-line text-[12px] leading-relaxed text-[#3a5f86]">
+            <p className="mt-1 whitespace-pre-line text-[13px] font-medium leading-relaxed text-[#33405F]">
               {description}
             </p>
           )}
           {locked && (
-            <p className="mt-1.5 text-[11px] font-bold text-[#1a6bb5]">
+            <p className="mt-1.5 text-[12px] font-bold text-[#000144]">
               חובה לפי הצהרת הבריאות — לא ניתן להסיר
             </p>
           )}
-          {footnote && !locked && <p className="mt-1.5 text-[11px] text-[#7a93ad]">{footnote}</p>}
+          {footnote && !locked && <p className="mt-1.5 text-[12px] font-medium text-[#46557A]">{footnote}</p>}
           {variant === "included" && checked && !locked && (
-            <p className="mt-1 text-[11px] font-semibold text-[#1a6bb5]">כלול ברובד הבסיס</p>
+            <p className="mt-1 text-[12px] font-bold text-[#00A247]">כלול ברובד הבסיס</p>
           )}
         </button>
 
@@ -563,13 +562,13 @@ export function CoverageCard({
             e.stopPropagation();
             setInfoOpen(true);
           }}
-          className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-1 border-e border-[#d5e4f0] bg-[#eef5fb] px-1.5 py-3 text-[#1a6bb5] transition hover:bg-[#e0eef8]"
+          className="flex w-[64px] shrink-0 flex-col items-center justify-center gap-1 border-e-2 border-[#E3E7EE] bg-white px-1.5 py-3 text-[#000144] transition hover:bg-[#F3F5F8]"
           aria-label={`מידע נוסף על ${title}`}
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-[#1a6bb5] text-[11px] font-bold">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#000144] text-[11px] font-bold">
             <Info className="h-3.5 w-3.5" strokeWidth={2.4} />
           </span>
-          <span className="text-center text-[9px] font-semibold leading-tight">
+          <span className="text-center text-[10px] font-bold leading-tight">
             מידע
             <br />
             נוסף
@@ -577,30 +576,30 @@ export function CoverageCard({
         </button>
       </div>
       {checked && children && (
-        <div className="border-t border-[#d5e4f0] bg-[#f5f9fc] px-4 py-3">{children}</div>
+        <div className="border-t-2 border-[#E3E7EE] bg-white px-4 py-3">{children}</div>
       )}
 
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-[#d5e4f0] p-0 sm:rounded-2xl" dir="rtl">
-          <DialogHeader className="space-y-3 border-b border-[#e8f1f8] bg-[#eaf4fb] px-5 py-4 text-right">
+        <DialogContent className="max-w-md overflow-hidden rounded-[24px] border-[#E3E7EE] p-0 font-rubik sm:rounded-[24px]" dir="rtl">
+          <DialogHeader className="space-y-3 border-b-2 border-[#E3E7EE] bg-[#F3F5F8] px-5 py-4 text-right">
             <div className="flex items-center gap-3">
-              <span className="text-[#1a6bb5]">{icon || <Umbrella className="h-7 w-7" strokeWidth={1.5} />}</span>
-              <DialogTitle className="text-right text-lg font-extrabold text-[#0d3b6e]">
+              <span className="text-[#00A247]">{icon || <Umbrella className="h-7 w-7" strokeWidth={1.5} />}</span>
+              <DialogTitle className="text-right text-[20px] font-black text-[#000144]">
                 {title}
               </DialogTitle>
             </div>
           </DialogHeader>
           <DialogDescription asChild>
-            <div className="space-y-3 px-5 py-4 text-right text-sm leading-relaxed text-[#3a5f86]">
+            <div className="space-y-3 px-5 py-4 text-right text-[15px] font-medium leading-relaxed text-[#33405F]">
               <p className="whitespace-pre-line">
                 {detailText || "פרטי הכיסוי יופיעו בהצעה לאחר חיתום בהראל."}
               </p>
               {locked && (
-                <p className="rounded-xl bg-[#eaf4fb] px-3 py-2 text-xs font-semibold text-[#0d3b6e]">
+                <p className="rounded-[14px] bg-[#F3F5F8] px-3 py-2 text-[13px] font-bold text-[#000144]">
                   כיסוי זה חובה לפי תשובות בהצהרת הבריאות ולא ניתן להסרה.
                 </p>
               )}
-              <p className="text-xs text-[#7a93ad]">
+              <p className="text-[12px] font-medium text-[#46557A]">
                 הפירוט להמחשה לפי הראל · הכיסוי הסופי בהתאם לתנאי הפוליסה ולחיתום.
               </p>
             </div>
@@ -642,10 +641,10 @@ export function ProposalIconStepper({
                   className={cn(
                     "relative flex h-11 w-11 items-center justify-center rounded-full border-2 transition sm:h-12 sm:w-12",
                     active
-                      ? "border-[#143834] bg-[#143834] text-white shadow-md"
+                      ? "border-[#000144] bg-[#000144] text-white"
                       : done
-                        ? "border-[#2f6b63] bg-[#2f6b63] text-white"
-                        : "border-[#2f6b63]/25 bg-white text-[#2f6b63]",
+                        ? "border-[#00A247] bg-[#00A247] text-[#000144]"
+                        : "border-[#D5DAE3] bg-white text-[#46557A]",
                   )}
                 >
                   {done ? (
@@ -654,15 +653,15 @@ export function ProposalIconStepper({
                     <Icon className="h-5 w-5" strokeWidth={1.75} />
                   )}
                   {done && (
-                    <span className="absolute -left-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#4ade80] text-white ring-2 ring-[#eef6fb]">
+                    <span className="absolute -left-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#000144] text-white ring-2 ring-[#F3F5F8]">
                       <Check className="h-2.5 w-2.5" strokeWidth={3} />
                     </span>
                   )}
                 </span>
                 <span
                   className={cn(
-                    "text-[10px] font-bold sm:text-[11px]",
-                    active || done ? "text-[#143834]" : "text-slate-400",
+                    "text-[11px] font-bold sm:text-[12px]",
+                    active || done ? "text-[#000144]" : "text-[#46557A]",
                   )}
                 >
                   {meta?.label || s.label}
@@ -672,7 +671,7 @@ export function ProposalIconStepper({
                 <span
                   className={cn(
                     "mb-5 h-0.5 w-3 shrink-0 sm:w-5",
-                    i < currentIndex ? "bg-[#2f6b63]" : "bg-[#2f6b63]/20",
+                    i < currentIndex ? "bg-[#00A247]" : "bg-[#D5DAE3]",
                   )}
                 />
               )}

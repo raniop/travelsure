@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Briefcase, Car, FileDown, FileText, Home, Users } from "lucide-react";
+import AgencyFooter from "@/components/AgencyFooter";
 import AgencyHeader from "@/components/AgencyHeader";
+import CookieBanner from "@/components/CookieBanner";
 import { useLanguage } from "@/contexts/LanguageContext";
-import logo from "@/assets/ophir-logo.png";
 
 const NAVY = "#000144";
 const GREEN = "#00A247";
@@ -440,35 +441,8 @@ const MockupV2 = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#000144] px-6 py-8 text-[#C9D3EA]">
-        <div className="mx-auto flex max-w-[1200px] !flex-row flex-wrap items-center justify-between gap-x-8 gap-y-2.5 text-base">
-          <span className="flex items-center gap-3">
-            <span className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-white">
-              <img src={logo} alt="" className="block h-[38px] w-auto" />
-            </span>
-            <span className="text-[20px] font-extrabold text-white">אופיר ושות׳ סוכנות לביטוח</span>
-          </span>
-          <span>מצדה 9, בני ברק</span>
-          <a href="mailto:ophir@ophirins.co.il" className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline">
-            ophir@ophirins.co.il
-          </a>
-          <nav aria-label="קישורים נוספים" className="flex flex-wrap gap-x-5">
-            {[
-              ["/claim", "הגשת תביעה"],
-              ["/forms", "טפסים"],
-              ["/about", "אודות"],
-              ["/contact", "צור קשר"],
-              ["/privacy-policy", "מדיניות פרטיות"],
-            ].map(([to, label]) => (
-              <Link key={to} to={to} className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline hover:text-white">
-                {label}
-              </Link>
-            ))}
-          </nav>
-          <span>© 2026</span>
-        </div>
-      </footer>
+      <AgencyFooter />
+      <CookieBanner />
     </div>
   );
 };

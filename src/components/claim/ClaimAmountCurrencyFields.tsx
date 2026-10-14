@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { suggestCurrencyForDestination } from "@/lib/claimCurrencies";
 import { ClaimCurrencyPicker } from "@/components/claim/ClaimCurrencyPicker";
+import { agencyField, agencyLabel } from "@/components/AgencyUi";
+
+const claimField = `${agencyField} h-auto md:text-[17px] focus-visible:ring-0 focus-visible:ring-offset-0`;
 
 type Props = {
   amount: string;
@@ -45,26 +48,26 @@ export function ClaimAmountCurrencyFields({
 
   if (locked) {
     return (
-      <div className="rounded-2xl border border-[#2f6b63]/15 bg-[#e8f4f1]/60 p-4">
-        <p className="text-sm font-bold text-[#143834]">סכום פיצוי קבוע לאיחור בכבודה</p>
-        <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#2f6b63]">
+      <div className="rounded-[20px] bg-[#F3F5F8] p-5">
+        <p className="text-sm font-bold text-[#000144]">סכום פיצוי קבוע לאיחור בכבודה</p>
+        <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#008C3D]">
           {amount} {currency}
         </p>
-        {lockedHint ? <p className="mt-2 text-xs text-slate-500">{lockedHint}</p> : null}
+        {lockedHint ? <p className="mt-2 text-xs text-[#46557A]">{lockedHint}</p> : null}
       </div>
     );
   }
 
   if (computed) {
     return (
-      <div className="rounded-2xl border border-[#2f6b63]/15 bg-[#e8f4f1]/50 p-4">
-        <p className="text-sm font-bold text-[#143834]">
+      <div className="rounded-[20px] bg-[#F3F5F8] p-5">
+        <p className="text-sm font-bold text-[#000144]">
           {amountLabel} <span className="text-rose-500">*</span>
         </p>
-        <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#2f6b63]" dir="ltr">
+        <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#008C3D]" dir="ltr">
           {amount ? `${amount} ${currency}` : "—"}
         </p>
-        <p className="mt-2 text-xs font-medium text-[#2f6b63]">
+        <p className="mt-2 text-xs font-medium text-[#008C3D]">
           {computedHint || "מחושב אוטומטית לפי פירוט ההוצאות"}
         </p>
         {amountError ? <p className="mt-1 text-xs text-rose-600">{amountError}</p> : null}
@@ -76,11 +79,11 @@ export function ClaimAmountCurrencyFields({
   return (
     <div className="grid gap-3 sm:grid-cols-[1.2fr_1fr]">
       <div>
-        <label className="mb-1.5 block text-sm font-semibold text-[#143834]">
+        <label className={`mb-1.5 block ${agencyLabel}`}>
           {amountLabel} <span className="text-rose-500">*</span>
         </label>
         <Input
-          className="bg-slate-50"
+          className={claimField}
           inputMode="decimal"
           value={amount}
           onChange={(e) => onAmountChange(e.target.value)}
@@ -99,7 +102,7 @@ export function ClaimAmountCurrencyFields({
           error={currencyError}
         />
         {destination.trim() && currency === suggestedCode ? (
-          <p className="mt-1 text-[11px] font-medium text-[#2f6b63]">הוצע לפי היעד: {destination}</p>
+          <p className="mt-1 text-[11px] font-medium text-[#008C3D]">הוצע לפי היעד: {destination}</p>
         ) : null}
       </div>
     </div>

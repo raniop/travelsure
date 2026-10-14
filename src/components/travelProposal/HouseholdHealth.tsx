@@ -67,8 +67,8 @@ function WhoPicker({
   error?: string;
 }) {
   return (
-    <div className="mt-3 space-y-2 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
-      <p className="text-xs font-extrabold text-[#143834]">על מי חלה התשובה?</p>
+    <div className="mt-3 space-y-2 rounded-[20px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
+      <p className="text-[14px] font-extrabold text-[#000144]">על מי חלה התשובה?</p>
       <div className="flex flex-wrap gap-2">
         {people.map(({ key, person }) => {
           const on = selected.includes(key);
@@ -78,10 +78,10 @@ function WhoPicker({
               type="button"
               aria-pressed={on}
               onClick={() => onToggle(key, !on)}
-              className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`inline-flex min-h-[40px] items-center rounded-full border-2 px-4 py-1.5 text-[14px] font-bold transition ${
                 on
-                  ? "border-[#2f6b63] bg-[#2f6b63] text-white"
-                  : "border-[#2f6b63]/25 bg-white text-[#2f6b63] hover:bg-[#e8f4f1]"
+                  ? "border-[#000144] bg-[#000144] text-white"
+                  : "border-[#D5DAE3] bg-white text-[#000144] hover:border-[#000144]/40"
               }`}
             >
               {personLabel(key, person)}
@@ -165,8 +165,8 @@ export function HouseholdHealth({
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-base font-extrabold text-[#143834]">הצהרת בריאות לכל המבוטחים</h3>
-          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+          <h3 className="text-[20px] font-black text-[#000144]">הצהרת בריאות לכל המבוטחים</h3>
+          <p className="mt-1 text-[13px] font-medium leading-relaxed text-[#46557A]">
             השאלות חלות על: {people.map(({ key, person }) => personLabel(key, person)).join(" · ")}
           </p>
         </div>
@@ -174,7 +174,7 @@ export function HouseholdHealth({
           type="button"
           variant="outline"
           size="sm"
-          className="rounded-full border-[#2f6b63]/30 text-[#2f6b63]"
+          className="h-10 rounded-full border-2 border-[#000144] bg-white px-4 text-[14px] font-bold text-[#000144] hover:bg-[#000144] hover:text-white"
           onClick={() => {
             onPatchGroup({ q1: "no", q2: "no", q3: "no", q4: "no", q5: "no" });
             for (const { key, person } of people) {
@@ -203,7 +203,7 @@ export function HouseholdHealth({
               error={errors.q1who}
             />
             {yesKeys((h) => h.q1).length > 0 && (
-              <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+              <p className="mt-3 rounded-[14px] bg-rose-50 px-3 py-2 text-[14px] font-bold text-rose-700">
                 {Q1_REJECT}
               </p>
             )}
@@ -219,8 +219,8 @@ export function HouseholdHealth({
         onChange={(v) => (v === "yes" ? setGroupYes("q2") : setGroupNo("q2"))}
         error={errors.q2who || errors.healthq2}
       >
-        {group.q2 === "yes" && <p className="mt-2 text-[11px] font-semibold text-[#1f4b46]">{Q2_IF_YES}</p>}
-        {group.q2 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q2_IF_NO}</p>}
+        {group.q2 === "yes" && <p className="mt-2 text-[13px] font-bold text-[#000144]">{Q2_IF_YES}</p>}
+        {group.q2 === "no" && <p className="mt-2 text-[13px] font-medium text-[#46557A]">{Q2_IF_NO}</p>}
         {group.q2 === "yes" && (
           <WhoPicker
             people={people}
@@ -233,15 +233,15 @@ export function HouseholdHealth({
           const h = person.health;
           const q21Yes = h.q21Conditions.length > 0;
           return (
-            <div key={key} className="mt-3 space-y-4 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
-              <p className="text-xs font-extrabold text-[#143834]">{personLabel(key, person)}</p>
+            <div key={key} className="mt-3 space-y-4 rounded-[20px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
+              <p className="text-[14px] font-extrabold text-[#000144]">{personLabel(key, person)}</p>
               <div className="space-y-2">
-                <p className="text-xs font-extrabold text-[#143834]">{Q21_TITLE}</p>
+                <p className="text-[14px] font-extrabold text-[#000144]">{Q21_TITLE}</p>
                 <div className="grid gap-2">
                   {Q21_OPTIONS.map((c) => (
                     <label
                       key={c.id}
-                      className="flex items-start gap-2.5 rounded-xl border border-white bg-white px-3 py-2.5 text-xs leading-relaxed text-slate-700"
+                      className="flex items-start gap-2.5 rounded-[14px] border-2 border-[#E3E7EE] bg-white px-3 py-2.5 text-[14px] font-medium leading-relaxed text-[#33405F]"
                     >
                       <Checkbox
                         checked={h.q21Conditions.includes(c.id)}
@@ -251,19 +251,19 @@ export function HouseholdHealth({
                             : h.q21Conditions.filter((x) => x !== c.id);
                           onPatchHealth(key, { q21Conditions: next });
                         }}
-                        className="mt-0.5"
+                        className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                       />
                       <span>{c.labelHe}</span>
                     </label>
                   ))}
                 </div>
                 {!q21Yes && (
-                  <p className="text-[11px] font-semibold text-amber-800">{Q21_NEGATIVE_EXT}</p>
+                  <p className="text-[13px] font-bold text-amber-800">{Q21_NEGATIVE_EXT}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-extrabold text-[#143834]">{Q22_TITLE}</p>
-                <p className="text-[11px] leading-relaxed text-slate-600">{Q22_BODY}</p>
+                <p className="text-[14px] font-extrabold text-[#000144]">{Q22_TITLE}</p>
+                <p className="text-[13px] font-medium leading-relaxed text-[#33405F]">{Q22_BODY}</p>
                 <div className="flex justify-end">
                   <PillYesNo
                     value={h.q22}
@@ -274,7 +274,7 @@ export function HouseholdHealth({
                 {errors[`${key}.q22`] && <p className="text-xs text-rose-600">{errors[`${key}.q22`]}</p>}
               </div>
               {(q21Yes || h.q22 === "yes") && (
-                <p className="rounded-xl bg-white px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+                <p className="rounded-[14px] bg-white px-3 py-2 text-[13px] font-medium leading-relaxed text-[#33405F]">
                   {Q2_POSITIVE_DOC}
                 </p>
               )}
@@ -291,8 +291,8 @@ export function HouseholdHealth({
         onChange={(v) => (v === "yes" ? setGroupYes("q3") : setGroupNo("q3"))}
         error={errors.q3who || errors.healthq3}
       >
-        {group.q3 === "yes" && <p className="mt-2 text-[11px] font-semibold text-[#1f4b46]">{Q3_IF_YES}</p>}
-        {group.q3 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q3_IF_NO}</p>}
+        {group.q3 === "yes" && <p className="mt-2 text-[13px] font-bold text-[#000144]">{Q3_IF_YES}</p>}
+        {group.q3 === "no" && <p className="mt-2 text-[13px] font-medium text-[#46557A]">{Q3_IF_NO}</p>}
         {group.q3 === "yes" && (
           <WhoPicker
             people={people}
@@ -302,10 +302,10 @@ export function HouseholdHealth({
           />
         )}
         {q3YesPeople.map(({ key, person }) => (
-          <div key={key} className="mt-3 space-y-2 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
-            <p className="text-xs font-extrabold text-[#143834]">{personLabel(key, person)}</p>
+          <div key={key} className="mt-3 space-y-2 rounded-[20px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
+            <p className="text-[14px] font-extrabold text-[#000144]">{personLabel(key, person)}</p>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <p className="min-w-0 flex-1 text-xs font-extrabold text-[#143834]">{Q31_TITLE}</p>
+              <p className="min-w-0 flex-1 text-[14px] font-extrabold text-[#000144]">{Q31_TITLE}</p>
               <div className="shrink-0 self-end sm:ms-auto sm:self-center">
                 <PillYesNo
                   value={person.health.q31}
@@ -316,10 +316,10 @@ export function HouseholdHealth({
             </div>
             {errors[`${key}.q31`] && <p className="text-xs text-rose-600">{errors[`${key}.q31`]}</p>}
             {person.health.q31 === "no" && (
-              <p className="text-[11px] leading-relaxed text-slate-600">{Q31_IF_NO}</p>
+              <p className="text-[13px] font-medium leading-relaxed text-[#33405F]">{Q31_IF_NO}</p>
             )}
             {person.health.q31 === "yes" && (
-              <p className="text-[11px] font-semibold text-amber-800">{Q31_IF_YES}</p>
+              <p className="text-[13px] font-bold text-amber-800">{Q31_IF_YES}</p>
             )}
           </div>
         ))}
@@ -342,22 +342,22 @@ export function HouseholdHealth({
         )}
         {q4YesPeople.map(({ key, person }) => (
           <div key={key} className="mt-3 space-y-2">
-            <p className="text-xs font-extrabold text-[#143834]">{personLabel(key, person)}</p>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{Q4_DETAILS_LABEL}</label>
+            <p className="text-[14px] font-extrabold text-[#000144]">{personLabel(key, person)}</p>
+            <label className="mb-1.5 block text-sm font-semibold text-[#46557A]">{Q4_DETAILS_LABEL}</label>
             <Textarea
-              className="min-h-[80px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
+              className="min-h-[80px] rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] text-right text-[16px] font-medium text-[#000144] placeholder:text-[#8A94AD] focus-visible:border-[#00A247] focus-visible:ring-0 focus-visible:ring-offset-0"
               value={person.health.q4Details}
               onChange={(e) => onPatchHealth(key, { q4Details: e.target.value })}
               placeholder={Q4_DETAILS_HINT}
             />
-            <p className="text-[11px] leading-relaxed text-slate-600">{Q4_IF_YES}</p>
+            <p className="text-[13px] font-medium leading-relaxed text-[#33405F]">{Q4_IF_YES}</p>
           </div>
         ))}
       </HealthQuestionCard>
 
       {females.length > 0 && (
-        <div className="space-y-3 rounded-[22px] border border-rose-100 bg-rose-50/20 p-4">
-          <p className="text-xs font-extrabold text-[#143834]">{PREGNANCY_SECTION_TITLE}</p>
+        <div className="space-y-3 rounded-[24px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
+          <p className="text-[14px] font-extrabold text-[#000144]">{PREGNANCY_SECTION_TITLE}</p>
           <HealthQuestionCard
             number={5}
             title={Q5_TITLE.replace(/^5\.\s*/, "")}
@@ -375,15 +375,15 @@ export function HouseholdHealth({
             )}
           </HealthQuestionCard>
           {q5YesPeople.map(({ key, person }) => (
-            <div key={key} className="space-y-3 rounded-2xl border border-rose-100 bg-white p-4">
-              <p className="text-xs font-extrabold text-[#143834]">{personLabel(key, person)}</p>
+            <div key={key} className="space-y-3 rounded-[20px] border-2 border-[#E3E7EE] bg-white p-4">
+              <p className="text-[14px] font-extrabold text-[#000144]">{personLabel(key, person)}</p>
               <div className="text-right">
-                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-slate-700">
+                <label className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-[#46557A]">
                   {Q51_TITLE}
                   <span className="text-rose-500">*</span>
                 </label>
                 <Input
-                  className="h-11 rounded-xl border-slate-200 bg-slate-50/80"
+                  className="h-auto min-h-[52px] rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] text-[17px] font-semibold text-[#000144] shadow-none md:text-[17px] placeholder:font-normal placeholder:text-[#8A94AD] focus-visible:border-[#00A247] focus-visible:ring-0 focus-visible:ring-offset-0"
                   inputMode="numeric"
                   value={person.health.q51Week}
                   onChange={(e) =>
@@ -402,14 +402,14 @@ export function HouseholdHealth({
                 error={errors[`${key}.q52`]}
               >
                 {person.health.q52HighRisk === "yes" && (
-                  <p className="mt-3 rounded-xl bg-rose-100/80 px-3 py-2 text-xs font-semibold text-rose-700">
+                  <p className="mt-3 rounded-[14px] bg-rose-100/80 px-3 py-2 text-[14px] font-bold text-rose-700">
                     {Q52_REJECT}
                   </p>
                 )}
                 {person.health.q52HighRisk === "no" && (
-                  <p className="mt-3 text-[11px] font-semibold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
+                  <p className="mt-3 text-[13px] font-bold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
                 )}
-                <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{PREGNANCY_AGE_NOTE}</p>
+                <p className="mt-2 text-[13px] font-medium leading-relaxed text-[#46557A]">{PREGNANCY_AGE_NOTE}</p>
               </HealthQuestionCard>
             </div>
           ))}

@@ -1,104 +1,61 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { AnimatedSection } from "@/hooks/useScrollAnimation";
-import Header from "@/components/Header";
+import { ChevronDown, Phone } from "lucide-react";
+import AgencyPage from "@/components/AgencyPage";
+import { agencyBody, agencyBtnOutline, agencyBtnPrimary, agencyH2, AgencySection, ArrowIcon } from "@/components/AgencyUi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+const faqNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 const FAQ = () => {
-  const { t, isRTL } = useLanguage();
-  
+  const { t } = useLanguage();
+
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-  
-  const faqs = [
-    { question: t("faq.q1"), answer: t("faq.a1") },
-    { question: t("faq.q2"), answer: t("faq.a2") },
-    { question: t("faq.q3"), answer: t("faq.a3") },
-    { question: t("faq.q4"), answer: t("faq.a4") },
-    { question: t("faq.q5"), answer: t("faq.a5") },
-    { question: t("faq.q6"), answer: t("faq.a6") },
-    { question: t("faq.q7"), answer: t("faq.a7") },
-    { question: t("faq.q8"), answer: t("faq.a8") },
-    { question: t("faq.q9"), answer: t("faq.a9") },
-    { question: t("faq.q10"), answer: t("faq.a10") },
-  ];
 
   return (
-    <div className="min-h-screen font-heebo" dir="rtl">
-      <Header />
-      <div className="h-16 md:h-20" />
-
-      <section className="py-16 md:py-24" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 50%, #3a9a9a 100%)' }}>
-        <div className="container-wide text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">{t("faq.title")}</h1>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto">{t("faq.subtitle")}</p>
+    <AgencyPage title={t("faq.title")} subtitle={t("faq.subtitle")}>
+      <AgencySection>
+        <div className="mx-auto flex w-full max-w-[860px] flex-col gap-3">
+          {faqNumbers.map((n) => (
+            <details key={n} className="group rounded-[20px] bg-[#F3F5F8] px-6 py-1">
+              <summary className="flex min-h-[64px] cursor-pointer list-none !flex-row items-center justify-between gap-4 py-3 text-[20px] font-bold leading-[1.3] md:text-[22px] [&::-webkit-details-marker]:hidden">
+                <span>{t(`faq.q${n}`)}</span>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="h-6 w-6 flex-shrink-0 transition-transform group-open:rotate-180"
+                  strokeWidth={2.2}
+                />
+              </summary>
+              <p className="mb-5 mt-0 leading-[1.6] text-[#33405F]">{t(`faq.a${n}`)}</p>
+            </details>
+          ))}
         </div>
-      </section>
+      </AgencySection>
 
-      <section className="section-padding bg-background">
-        <div className="container-wide">
-          <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
-              {faqs.map((faq, index) => (
-                <AnimatedSection key={index} delay={index * 50} animation="fade-up">
-                  <AccordionItem 
-                    value={`item-${index}`}
-                    className="bg-card rounded-xl border border-border px-6 data-[state=open]:border-secondary/50 data-[state=open]:shadow-lg transition-all"
-                  >
-                    <AccordionTrigger className={`${isRTL ? "text-right" : "text-left"} text-lg font-semibold hover:no-underline py-5`}>
-                      {faq.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-5">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                </AnimatedSection>
-              ))}
-            </Accordion>
+      <section aria-labelledby="faq-more" className="px-6 pb-[72px]">
+        <div className="mx-auto box-border flex max-w-[1200px] !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-8 md:p-12">
+          <div className="flex max-w-[620px] flex-col gap-3">
+            <h2 id="faq-more" className={agencyH2}>
+              {t("faq.notFound")}
+            </h2>
+            <p className={`${agencyBody} text-[20px]`}>{t("faq.contactUs")}</p>
+          </div>
+          <div className="flex flex-wrap gap-3.5">
+            <Link to="/purchase" className={agencyBtnPrimary}>
+              <span>{t("nav.purchase")}</span>
+              <ArrowIcon />
+            </Link>
+            <a href="tel:+972732721111" className={agencyBtnOutline}>
+              <Phone aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
+              <span dir="ltr">073-2721111</span>
+            </a>
           </div>
         </div>
       </section>
-
-      <section className="py-16 bg-muted/50">
-        <div className="container-wide text-center">
-          <AnimatedSection>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{t("faq.notFound")}</h2>
-            <p className="text-muted-foreground mb-8">{t("faq.contactUs")}</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/purchase">
-                <Button variant="hero" size="xl">
-                  {t("nav.purchase")}
-                </Button>
-              </Link>
-              <a href="tel:+972732721111">
-                <Button variant="cta" size="xl" className="gap-2">
-                  <Phone className="w-5 h-5" />
-                  073-2721111
-                </Button>
-              </a>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      <footer className="text-white py-8" style={{ background: 'linear-gradient(135deg, #1a5a5a 0%, #2a7a7a 100%)' }}>
-        <div className="container-wide text-center">
-          <p className="text-white/70 text-sm">
-            © {new Date().getFullYear()} TravelSure - {t("footer.company")}. {t("footer.rights")}
-          </p>
-        </div>
-      </footer>
-    </div>
+    </AgencyPage>
   );
 };
 

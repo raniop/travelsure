@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { agencyBtnPrimary, agencyField, agencyLabel } from "@/components/AgencyUi";
 
 const contactSchema = z.object({
   name: z.string().trim().min(2, "שם חייב להכיל לפחות 2 תווים").max(100, "שם ארוך מדי"),
@@ -13,6 +11,9 @@ const contactSchema = z.object({
   phone: z.string().trim().max(20, "מספר טלפון ארוך מדי").optional(),
   message: z.string().trim().min(10, "ההודעה חייבת להכיל לפחות 10 תווים").max(1000, "ההודעה ארוכה מדי"),
 });
+
+const errorFieldClass = "!border-[#B42318]";
+const errorTextClass = "m-0 text-[15px] font-semibold text-[#B42318]";
 
 const ContactForm = () => {
   const { toast } = useToast();
@@ -87,7 +88,7 @@ const ContactForm = () => {
 
       // Reset form
       setFormData({ name: "", email: "", phone: "", message: "" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sending contact form:", error);
       toast({
         title: "שגיאה בשליחת ההודעה",
@@ -99,82 +100,95 @@ const ContactForm = () => {
     }
   };
 
+  const fieldProps = (name: keyof typeof formData) => ({
+    id: `contact-${name}`,
+    name,
+    value: formData[name],
+    onChange: handleChange,
+    disabled: isLoading,
+    "aria-invalid": errors[name] ? true : undefined,
+    "aria-describedby": errors[name] ? `contact-${name}-error` : undefined,
+  });
+
+  const fieldError = (name: keyof typeof formData) =>
+    errors[name] ? (
+      <p id={`contact-${name}-error`} className={errorTextClass}>
+        {errors[name]}
+      </p>
+    ) : null;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" dir="rtl">
-      <div>
-        <Input
-          name="name"
-          placeholder="שם מלא *"
-          value={formData.name}
-          onChange={handleChange}
-          className={`bg-background text-right ${errors.name ? "border-destructive" : ""}`}
-          style={{ direction: "rtl", textAlign: "right" }}
-          disabled={isLoading}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" dir="rtl">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="contact-name" className={agencyLabel}>
+          שם מלא *
+        </label>
+        <input
+          {...fieldProps("name")}
+          type="text"
+          autoComplete="name"
+          className={`${agencyField} text-right ${errors.name ? errorFieldClass : ""}`}
         />
-        {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
+        {fieldError("name")}
       </div>
 
-      <div>
-        <Input
-          name="email"
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="contact-email" className={agencyLabel}>
+          אימייל *
+        </label>
+        <input
+          {...fieldProps("email")}
           type="email"
-          placeholder="אימייל *"
-          value={formData.email}
-          onChange={handleChange}
-          className={`bg-background text-right ${errors.email ? "border-destructive" : ""}`}
-          style={{ direction: "rtl", textAlign: "right" }}
-          disabled={isLoading}
+          autoComplete="email"
+          dir="ltr"
+          className={`${agencyField} text-right ${errors.email ? errorFieldClass : ""}`}
         />
-        {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
+        {fieldError("email")}
       </div>
 
-      <div>
-        <Input
-          name="phone"
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="contact-phone" className={agencyLabel}>
+          טלפון
+        </label>
+        <input
+          {...fieldProps("phone")}
           type="tel"
-          placeholder="טלפון"
-          value={formData.phone}
-          onChange={handleChange}
-          className={`bg-background text-right ${errors.phone ? "border-destructive" : ""}`}
-          style={{ direction: "rtl", textAlign: "right" }}
-          disabled={isLoading}
+          autoComplete="tel"
+          dir="ltr"
+          className={`${agencyField} text-right ${errors.phone ? errorFieldClass : ""}`}
         />
-        {errors.phone && <p className="text-destructive text-sm mt-1">{errors.phone}</p>}
+        {fieldError("phone")}
       </div>
 
-      <div>
-        <Textarea
-          name="message"
-          placeholder="ההודעה שלך *"
-          value={formData.message}
-          onChange={handleChange}
-          className={`bg-background min-h-[120px] text-right ${errors.message ? "border-destructive" : ""}`}
-          style={{ direction: "rtl", textAlign: "right" }}
-          disabled={isLoading}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="contact-message" className={agencyLabel}>
+          ההודעה שלך *
+        </label>
+        <textarea
+          {...fieldProps("message")}
+          rows={5}
+          className={`${agencyField} min-h-[140px] resize-y py-3 text-right ${errors.message ? errorFieldClass : ""}`}
         />
-        {errors.message && <p className="text-destructive text-sm mt-1">{errors.message}</p>}
+        {fieldError("message")}
       </div>
 
-      <Button
+      <button
         type="submit"
-        variant="cta"
-        size="lg"
-        className="w-full"
-        style={{ background: "#4ade80", color: "#1a5a5a" }}
         disabled={isLoading}
+        className={`${agencyBtnPrimary} w-full cursor-pointer border-0 font-[inherit] disabled:cursor-not-allowed disabled:opacity-70`}
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
             שולח...
           </>
         ) : (
           <>
-            <Send className="w-5 h-5" />
+            <Send aria-hidden="true" className="h-5 w-5" />
             שלח הודעה
           </>
         )}
-      </Button>
+      </button>
     </form>
   );
 };

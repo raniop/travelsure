@@ -1,94 +1,75 @@
 import { useEffect } from "react";
-import { Phone, Mail, MessageCircle, Clock, Users } from "lucide-react";
-import { AnimatedSection } from "@/hooks/useScrollAnimation";
+import { Clock, Mail, MessageCircle, Phone, Users } from "lucide-react";
+import AgencyPage from "@/components/AgencyPage";
+import { agencyBody, agencyCard, agencyCardWhite, agencyH3, AgencySection } from "@/components/AgencyUi";
 import ContactForm from "@/components/ContactForm";
-import Header from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+const directLink =
+  "flex min-h-[48px] items-center gap-3 text-[18px] font-bold text-[#000144] no-underline hover:underline";
+
 const Contact = () => {
-  const { t, isRTL } = useLanguage();
-  
+  const { t } = useLanguage();
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  const hours = [
+    { icon: Clock, title: t("contact.inIsrael"), lines: [t("contact.inIsraelHours"), t("contact.inIsraelFriday")] },
+    { icon: Users, title: t("contact.abroad"), lines: [t("contact.abroadHours"), t("contact.abroadLang")] },
+  ];
+
   return (
-    <div className="min-h-screen font-heebo" dir="rtl">
-      <Header />
-      <div className="h-16 md:h-20" />
-      
-      <section className="section-padding bg-background">
-        <div className="container-wide">
-          <div className="max-w-5xl mx-auto">
-            <AnimatedSection className="text-center mb-12 md:mb-16">
-              <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("contact.label")}</span>
-              <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("contact.title")}</h1>
-              <p className="text-muted-foreground text-lg">
-                {t("contact.description")}
-              </p>
-            </AnimatedSection>
+    <AgencyPage title={t("contact.title")} subtitle={t("contact.description")}>
+      <AgencySection>
+        <div className="grid items-start gap-8 lg:grid-cols-2">
+          {/* Contact form */}
+          <div className={`${agencyCard} flex flex-col gap-6 md:p-9`}>
+            <h2 className={agencyH3}>{t("contact.formTitle")}</h2>
+            <ContactForm />
+          </div>
 
-            <div className="grid lg:grid-cols-2 gap-12">
-              {/* Contact Form */}
-              <AnimatedSection animation="fade-right">
-                <div className="bg-card rounded-2xl p-8 border border-border">
-                  <h3 className="text-2xl font-bold text-foreground mb-6">{t("contact.formTitle")}</h3>
-                  <ContactForm />
-                </div>
-              </AnimatedSection>
-
-              {/* Contact Info */}
-              <AnimatedSection animation="fade-left" delay={200}>
-                <div className="space-y-6">
-                  <div className="bg-muted rounded-2xl p-8">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="text-center">
-                        <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-                          <Clock className="w-6 h-6 text-secondary" />
-                        </div>
-                        <h4 className="font-bold text-foreground mb-2">{t("contact.inIsrael")}</h4>
-                        <p className="text-muted-foreground text-sm">
-                          {t("contact.inIsraelHours")}<br />
-                          {t("contact.inIsraelFriday")}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
-                          <Users className="w-6 h-6 text-secondary" />
-                        </div>
-                        <h4 className="font-bold text-foreground mb-2">{t("contact.abroad")}</h4>
-                        <p className="text-muted-foreground text-sm">
-                          {t("contact.abroadHours")}<br />
-                          {t("contact.abroadLang")}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-card rounded-2xl p-6 border border-border">
-                    <p className="text-muted-foreground mb-4">{t("contact.directContact")}</p>
-                    <div className="space-y-3">
-                      <a href="tel:+972732721111" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
-                        <Phone className="w-5 h-5 text-secondary" />
-                        073-2721111
-                      </a>
-                      <a href="https://wa.me/+972523333603" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
-                        <MessageCircle className="w-5 h-5 text-secondary" />
-                        052-3333603 {t("contact.whatsapp")}
-                      </a>
-                      <a href="mailto:ophir@ophirins.co.il" className="flex items-center gap-3 text-foreground hover:text-secondary transition-colors">
-                        <Mail className="w-5 h-5 text-secondary" />
-                        ophir@ophirins.co.il
-                      </a>
-                    </div>
+          {/* Contact info */}
+          <div className="flex flex-col gap-5">
+            <h2 className={agencyH3}>{t("contact.label")}</h2>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-5">
+              {hours.map(({ icon: Icon, title, lines }) => (
+                <div key={title} className={`${agencyCard} flex min-h-[200px] !flex-col justify-between gap-6`}>
+                  <Icon aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+                  <div className="flex flex-col gap-1">
+                    <h3 className="m-0 text-[28px] font-black leading-[1.05]">{title}</h3>
+                    {lines.map((line) => (
+                      <p key={line} className={`${agencyBody} text-[17px]`}>
+                        {line}
+                      </p>
+                    ))}
                   </div>
                 </div>
-              </AnimatedSection>
+              ))}
+            </div>
+
+            <div className={`${agencyCardWhite} flex flex-col gap-2`}>
+              <p className={agencyBody}>{t("contact.directContact")}</p>
+              <a href="tel:+972732721111" className={directLink}>
+                <Phone aria-hidden="true" className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
+                <span dir="ltr">073-2721111</span>
+              </a>
+              <a href="https://wa.me/+972523333603" className={directLink}>
+                <MessageCircle aria-hidden="true" className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
+                <span>
+                  <span dir="ltr">052-3333603</span> {t("contact.whatsapp")}
+                </span>
+              </a>
+              <a href="mailto:ophir@ophirins.co.il" className={`${directLink} break-all`}>
+                <Mail aria-hidden="true" className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
+                <span>ophir@ophirins.co.il</span>
+              </a>
             </div>
           </div>
         </div>
-      </section>
-    </div>
+      </AgencySection>
+    </AgencyPage>
   );
 };
 

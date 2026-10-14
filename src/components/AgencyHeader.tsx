@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import logo from "@/assets/ophir-logo.png";
 
-// Where the agency landing page lives (switch to "/" once it becomes the homepage)
-export const AGENCY_LANDING_PATH = "/mockup-v2";
+// Where the agency landing page lives
+export const AGENCY_LANDING_PATH = "/";
 
 const sections = [
   ["get", "מה מקבלים"],

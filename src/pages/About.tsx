@@ -1,170 +1,123 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Building2, Users, Award, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AnimatedSection } from "@/hooks/useScrollAnimation";
-import Header from "@/components/Header";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Award, Building2, Mail, MapPin, Phone, Printer, Shield, Users } from "lucide-react";
+import AgencyPage from "@/components/AgencyPage";
+import { agencyBody, agencyBtnPrimary, agencyCard, agencyH2, agencyH3, AgencySection, ArrowIcon } from "@/components/AgencyUi";
+
+const highlights = [
+  { icon: Building2, title: "מאז 1977", description: "47+ שנות ניסיון" },
+  { icon: Users, title: "10 עובדים", description: "צוות מקצועי ומנוסה" },
+  { icon: Award, title: "מוניטין רב", description: "אמינות ומקצועיות" },
+  { icon: Shield, title: "100%", description: "מחויבות ללקוח" },
+];
+
+const paragraphs = [
+  "סוכנות אופיר ושות׳ הוקמה בשנת 1977 ומנוהלת ע״י מר אלי אופיר ומר הדר גלעד. בנוסף להם עובדים בסוכנות צוות מקצועי ומנוסה, ביניהם אנשי שיווק ומכירות הפועלים בכל רחבי הארץ.",
+  "הסוכנות רכשה לה מוניטין רב בקרב חברות הביטוח והלקוחות, הן מבחינה מקצועית והן מבחינת המהימנות והמוסריות. הסוכנות פועלת כסוכנות חיתום בעלת סמכויות רחבות בתחום ההפקה ובתחום התביעות כאחד.",
+  "היקף פעילות החברה גדל משנה לשנה, ועמו גדל גם מספר הלקוחות. סוכנות אופיר ושות׳ משרתת בנאמנות ובאמינות לקוחות מכל רחבי הארץ בכל תחומי ענפי הביטוח, החל בביטוח דירה, רכב, עסקים, ביטוחי נסיעות לחו״ל, ביטוח עובדים זרים ותיירים, ביטוח ימי וכלה בביטוחי חיים, בריאות וביטוחים פנסיוניים שונים.",
+  "לסוכנות אופיר ושות׳ התמחות מיוחדת בביטוחי נסיעות לחו״ל ובתחום זה היא משמשת הזרוע השיווקית הבלעדית של חברת הראל בקרב כ-450 סוכנויות נסיעות המפוזרות בכל רחבי הארץ, מקרית שמונה שבצפון ועד אילת שבדרום.",
+  "סוכנות אופיר ושות׳ משווקת את דרכוני הביטוח השונים לחו״ל המותאמים אישית לכל מבוטח, בהתאם לאופי הנסיעה שלו ולמצב בריאותו. בשנים האחרונות החלה החברה לבטח עובדים זרים וכן תיירים הנכנסים לישראל. ביטוחים אלו נעשים בשיתוף עם הראל חברה לביטוח.",
+];
+
+const contactIcon = "mt-0.5 h-6 w-6 flex-shrink-0";
+const contactLabel = "m-0 text-[17px] font-bold text-[#000144]";
+const contactValue = "m-0 text-[17px] font-medium text-[#33405F]";
 
 const About = () => {
-  const { isRTL } = useLanguage();
-  
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, []);
 
-  const highlights = [
-    { icon: Building2, title: "מאז 1977", description: "47+ שנות ניסיון" },
-    { icon: Users, title: "10 עובדים", description: "צוות מקצועי ומנוסה" },
-    { icon: Award, title: "מוניטין רב", description: "אמינות ומקצועיות" },
-    { icon: Shield, title: "100%", description: "מחויבות ללקוח" }
-  ];
-
   return (
-    <div className="min-h-screen font-heebo" dir="rtl">
-      <Header />
-      <div className="h-16 md:h-20" />
-      
-      {/* Hero Section */}
-      <section className="section-padding" style={{ background: 'linear-gradient(135deg, #134e4a 0%, #1a6b5f 50%, #22877a 100%)' }}>
-        <div className="container-wide">
-          <AnimatedSection animation="fade-up">
-            <div className="text-center max-w-4xl mx-auto">
-              <span className="font-semibold text-sm tracking-wider uppercase mb-4 block" style={{ color: '#86efac' }}>אודותינו</span>
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-6">
-                סוכנות אופיר ושות׳
-                <span className="block mt-2" style={{ color: '#86efac' }}>סוכנות לביטוח</span>
-              </h1>
+    <AgencyPage title="סוכנות אופיר ושות׳" subtitle="סוכנות לביטוח">
+      {/* Highlights */}
+      <AgencySection className="!pb-0">
+        <h2 className="sr-only">אודותינו</h2>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] gap-5">
+          {highlights.map(({ icon: Icon, title, description }) => (
+            <div key={title} className={`${agencyCard} flex min-h-[200px] !flex-col justify-between gap-6`}>
+              <Icon aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+              <div className="flex flex-col gap-1">
+                <span className="text-[32px] font-black leading-[1.05]">{title}</span>
+                <span className="text-[18px] font-medium text-[#33405F]">{description}</span>
+              </div>
             </div>
-          </AnimatedSection>
+          ))}
+        </div>
+      </AgencySection>
 
-          {/* Highlights */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-            {highlights.map((item, index) => (
-              <AnimatedSection 
-                key={index}
-                delay={index * 100}
-                animation="scale-up"
-              >
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/10">
-                  <item.icon className="w-8 h-8 mx-auto mb-3" style={{ color: '#86efac' }} />
-                  <div className="text-xl font-bold text-white mb-1">{item.title}</div>
-                  <div className="text-white/70 text-sm">{item.description}</div>
-                </div>
-              </AnimatedSection>
+      {/* Story + contact details */}
+      <AgencySection>
+        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="flex max-w-[760px] flex-col gap-6">
+            <h2 className={agencyH2}>הסיפור שלנו</h2>
+            {paragraphs.map((text) => (
+              <p key={text.slice(0, 24)} className={`${agencyBody} leading-[1.7]`}>
+                {text}
+              </p>
             ))}
+            <p className="m-0 text-[20px] font-bold leading-[1.6] text-[#000144]">
+              אנו מזמינים אתכם להיכנס לאתר ולהיות חלק ממשפחה אחת גדולה.
+              <br />
+              נשמח לעמוד לשירותכם בכל עת.
+            </p>
+            <p className="m-0 text-[24px] font-black text-[#000144]">אופיר ושות׳ סוכנות לביטוח</p>
           </div>
-        </div>
-      </section>
 
-      {/* Main Content */}
-      <section className="section-padding bg-background">
-        <div className="container-wide">
-          <div className="grid lg:grid-cols-3 gap-12">
-            {/* About Text */}
-            <div className="lg:col-span-2">
-              <AnimatedSection animation="fade-right">
-                <div className="prose prose-lg max-w-none">
-                  <p className="text-foreground/80 text-lg leading-relaxed mb-6">
-                    סוכנות אופיר ושות׳ הוקמה בשנת 1977 ומנוהלת ע״י מר אלי אופיר ומר הדר גלעד.
-                    בנוסף להם עובדים בסוכנות צוות מקצועי ומנוסה, ביניהם אנשי שיווק ומכירות הפועלים בכל רחבי הארץ.
-                  </p>
-                  <p className="text-foreground/80 text-lg leading-relaxed mb-6">
-                    הסוכנות רכשה לה מוניטין רב בקרב חברות הביטוח והלקוחות, הן מבחינה מקצועית והן מבחינת המהימנות והמוסריות.
-                    הסוכנות פועלת כסוכנות חיתום בעלת סמכויות רחבות בתחום ההפקה ובתחום התביעות כאחד.
-                  </p>
-                  <p className="text-foreground/80 text-lg leading-relaxed mb-6">
-                    היקף פעילות החברה גדל משנה לשנה, ועמו גדל גם מספר הלקוחות. סוכנות אופיר ושות׳ משרתת בנאמנות ובאמינות לקוחות מכל רחבי הארץ בכל תחומי ענפי הביטוח, החל בביטוח דירה, רכב, עסקים, ביטוחי נסיעות לחו״ל, ביטוח עובדים זרים ותיירים, ביטוח ימי וכלה בביטוחי חיים, בריאות וביטוחים פנסיוניים שונים.
-                  </p>
-                  <p className="text-foreground/80 text-lg leading-relaxed mb-6">
-                    לסוכנות אופיר ושות׳ התמחות מיוחדת בביטוחי נסיעות לחו״ל ובתחום זה היא משמשת הזרוע השיווקית הבלעדית של חברת הראל בקרב כ-450 סוכנויות נסיעות המפוזרות בכל רחבי הארץ, מקרית שמונה שבצפון ועד אילת שבדרום.
-                  </p>
-                  <p className="text-foreground/80 text-lg leading-relaxed mb-6">
-                    סוכנות אופיר ושות׳ משווקת את דרכוני הביטוח השונים לחו״ל המותאמים אישית לכל מבוטח, בהתאם לאופי הנסיעה שלו ולמצב בריאותו. בשנים האחרונות החלה החברה לבטח עובדים זרים וכן תיירים הנכנסים לישראל. ביטוחים אלו נעשים בשיתוף עם הראל חברה לביטוח.
-                  </p>
-                  <p className="text-foreground/80 text-lg leading-relaxed mb-8 font-medium" style={{ color: '#134e4a' }}>
-                    אנו מזמינים אתכם להיכנס לאתר ולהיות חלק ממשפחה אחת גדולה.
-                    נשמח לעמוד לשירותכם בכל עת.
-                  </p>
-                  <p className="text-xl font-bold" style={{ color: '#134e4a' }}>
-                    אופיר ושות׳ סוכנות לביטוח
+          <aside aria-labelledby="about-contact" className={`${agencyCard} flex flex-col gap-6 lg:sticky lg:top-6`}>
+            <h2 id="about-contact" className={agencyH3}>
+              פרטי התקשרות
+            </h2>
+            <ul className="m-0 flex list-none flex-col gap-5 p-0">
+              <li className="flex items-start gap-3">
+                <MapPin aria-hidden="true" className={contactIcon} strokeWidth={1.8} />
+                <div>
+                  <p className={contactLabel}>כתובתנו:</p>
+                  <p className={contactValue}>
+                    רח׳ מצדה 9 (מגדל בסר 3, קומה 24, ת.ד. 161)
+                    <br />
+                    בני-ברק
+                    <br />
+                    מיקוד: 5120109
                   </p>
                 </div>
-              </AnimatedSection>
-            </div>
-
-            {/* Contact Card */}
-            <div className="lg:col-span-1">
-              <AnimatedSection animation="fade-left">
-                <div className="bg-card rounded-2xl p-6 md:p-8 shadow-lg border border-border sticky top-24">
-                  <h3 className="text-xl font-bold text-foreground mb-6">פרטי התקשרות</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: '#134e4a' }} />
-                      <div>
-                        <p className="text-foreground font-medium">כתובתנו:</p>
-                        <p className="text-foreground/70 text-sm">
-                          רח׳ מצדה 9 (מגדל בסר 3, קומה 24, ת.ד. 161)
-                          <br />
-                          בני-ברק
-                          <br />
-                          מיקוד: 5120109
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 flex-shrink-0" style={{ color: '#134e4a' }} />
-                      <div>
-                        <p className="text-foreground font-medium">טלפון:</p>
-                        <a href="tel:073-2721111" className="text-foreground/70 text-sm hover:underline">
-                          073-2721111
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 flex-shrink-0" style={{ color: '#134e4a' }} />
-                      <div>
-                        <p className="text-foreground font-medium">פקס:</p>
-                        <span className="text-foreground/70 text-sm">03-5480688</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 flex-shrink-0" style={{ color: '#134e4a' }} />
-                      <div>
-                        <p className="text-foreground font-medium">מייל:</p>
-                        <a href="mailto:ophir@ophirins.co.il" className="text-foreground/70 text-sm hover:underline">
-                          ophir@ophirins.co.il
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-8">
-                    <Link to="/contact">
-                      <Button variant="hero" size="lg" className="w-full">
-                        <Phone className="w-5 h-5" />
-                        צרו קשר
-                      </Button>
-                    </Link>
-                  </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <Phone aria-hidden="true" className={contactIcon} strokeWidth={1.8} />
+                <div>
+                  <p className={contactLabel}>טלפון:</p>
+                  <a href="tel:073-2721111" className={`${contactValue} inline-flex min-h-[44px] items-center underline hover:text-[#000144]`}>
+                    <span dir="ltr">073-2721111</span>
+                  </a>
                 </div>
-              </AnimatedSection>
-            </div>
-          </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <Printer aria-hidden="true" className={contactIcon} strokeWidth={1.8} />
+                <div>
+                  <p className={contactLabel}>פקס:</p>
+                  <p className={contactValue}>
+                    <span dir="ltr">03-5480688</span>
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <Mail aria-hidden="true" className={contactIcon} strokeWidth={1.8} />
+                <div className="min-w-0">
+                  <p className={contactLabel}>מייל:</p>
+                  <a href="mailto:ophir@ophirins.co.il" className={`${contactValue} inline-flex min-h-[44px] items-center break-all underline hover:text-[#000144]`}>
+                    ophir@ophirins.co.il
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <Link to="/contact" className={`${agencyBtnPrimary} w-full`}>
+              <span>צרו קשר</span>
+              <ArrowIcon />
+            </Link>
+          </aside>
         </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="text-white py-8" style={{ background: 'linear-gradient(135deg, #134e4a 0%, #1a6b5f 100%)' }}>
-        <div className="container-wide text-center text-sm text-white/50">
-          <p>© {new Date().getFullYear()} אופיר ושות׳ סוכנות לביטוח. כל הזכויות שמורות.</p>
-        </div>
-      </footer>
-    </div>
+      </AgencySection>
+    </AgencyPage>
   );
 };
 

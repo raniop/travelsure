@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { CLAIM_CURRENCIES, filterCurrencies } from "@/lib/claimCurrencies";
+import { agencyField, agencyLabel } from "@/components/AgencyUi";
 
 type Props = {
   value: string;
@@ -41,7 +42,7 @@ export function ClaimCurrencyPicker({
   return (
     <div ref={wrapRef} className={`relative ${compact ? "min-w-[5.5rem]" : ""}`}>
       {!compact ? (
-        <label className="mb-1.5 block text-sm font-semibold text-[#143834]">
+        <label className={`mb-1.5 block ${agencyLabel}`}>
           מטבע <span className="text-rose-500">*</span>
         </label>
       ) : null}
@@ -49,8 +50,8 @@ export function ClaimCurrencyPicker({
         type="button"
         aria-label={ariaLabel}
         disabled={disabled}
-        className={`flex w-full items-center justify-between rounded-md border border-input bg-slate-50 px-2.5 text-sm disabled:opacity-50 ${
-          compact ? "h-9" : "h-10 px-3"
+        className={`flex w-full items-center justify-between rounded-[14px] border-2 border-[#D5DAE3] bg-white px-2.5 text-[17px] font-semibold disabled:opacity-50 ${
+          compact ? "min-h-[52px]" : "min-h-[52px] px-[14px]"
         }`}
         onClick={() => {
           if (disabled) return;
@@ -58,23 +59,23 @@ export function ClaimCurrencyPicker({
           setQuery("");
         }}
       >
-        <span className={selected ? "font-semibold text-[#143834]" : "text-slate-400"}>
+        <span className={selected ? "font-semibold text-[#000144]" : "text-[#46557A]"}>
           {selected ? (compact ? selected.code : `${selected.code} · ${selected.nameHe}`) : "מטבע"}
         </span>
-        <span className="text-xs text-slate-400">▼</span>
+        <span className="text-xs text-[#46557A]">▼</span>
       </button>
       {error ? <p className="mt-1 text-xs text-rose-600">{error}</p> : null}
 
       {open ? (
         <div
-          className={`absolute z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg ${
+          className={`absolute z-30 mt-1 overflow-hidden rounded-[14px] border-2 border-[#D5DAE3] bg-white shadow-lg ${
             compact ? "left-0 w-[min(18rem,70vw)]" : "w-full"
           }`}
         >
-          <div className="border-b border-slate-100 p-2">
+          <div className="border-b border-[#E3E7EE] p-2">
             <Input
               autoFocus
-              className="h-9 bg-slate-50"
+              className={`${agencyField} min-h-[44px] focus-visible:ring-0 focus-visible:ring-offset-0`}
               placeholder="חיפוש מטבע / מדינה..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -86,8 +87,8 @@ export function ClaimCurrencyPicker({
                 <li key={c.code}>
                   <button
                     type="button"
-                    className={`flex w-full items-center justify-between px-3 py-2 text-right text-sm hover:bg-[#e8f4f1] ${
-                      c.code === value ? "bg-[#e8f4f1] font-bold text-[#143834]" : "text-slate-700"
+                    className={`flex w-full items-center justify-between px-3 py-2 text-right text-sm hover:bg-[#F3F5F8] ${
+                      c.code === value ? "bg-[#F3F5F8] font-bold text-[#000144]" : "text-[#33405F]"
                     }`}
                     onClick={() => {
                       onChange(c.code);
@@ -96,12 +97,12 @@ export function ClaimCurrencyPicker({
                     }}
                   >
                     <span>{c.nameHe}</span>
-                    <span className="font-mono text-xs text-slate-500">{c.code}</span>
+                    <span className="font-mono text-xs text-[#46557A]">{c.code}</span>
                   </button>
                 </li>
               ))
             ) : (
-              <li className="px-3 py-3 text-xs text-slate-500">לא נמצא מטבע תואם</li>
+              <li className="px-3 py-3 text-xs text-[#46557A]">לא נמצא מטבע תואם</li>
             )}
           </ul>
         </div>

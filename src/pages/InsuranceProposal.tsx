@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/logo.avif";
+import AgencyHeader from "@/components/AgencyHeader";
+import AgencyFooter from "@/components/AgencyFooter";
 import {
   createInitialTravelProposalForm,
   displayName,
@@ -123,12 +124,12 @@ const Field = ({
   hint?: string;
 }) => (
   <div className="text-right">
-    <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-slate-700">
+    <label className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-[#46557A]">
       {label}
       {required && <span className="text-rose-500">*</span>}
     </label>
     {children}
-    {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
+    {hint && <p className="mt-1 text-[12px] font-medium text-[#8A94AD]">{hint}</p>}
     {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
   </div>
 );
@@ -144,7 +145,7 @@ const YesNoToggle = ({
 }) => <PillYesNo value={value} onChange={onChange} name={name} />;
 
 const inputClass =
-  "h-12 rounded-2xl border-slate-200 bg-slate-50/80 text-right shadow-none transition focus-visible:bg-white focus-visible:ring-[#2f6b63]";
+  "h-auto min-h-[52px] rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] text-right text-[17px] font-semibold text-[#000144] shadow-none md:text-[17px] placeholder:font-normal placeholder:text-[#8A94AD] focus-visible:border-[#00A247] focus-visible:ring-0 focus-visible:ring-offset-0";
 
 const InsuranceProposal = () => {
   const { toast } = useToast();
@@ -604,20 +605,20 @@ const InsuranceProposal = () => {
     return (
       <div
         key={key}
-        className="rounded-3xl border border-[#2f6b63]/10 bg-gradient-to-l from-white to-[#f7fbfa] p-5"
+        className="rounded-[24px] border-2 border-[#E3E7EE] bg-white p-4 sm:p-5"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#e8f4f1] text-[#2f6b63]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[#000144] text-white">
               <UserRound className="h-4 w-4" />
             </span>
-            <h3 className="text-sm font-extrabold text-[#143834]">{PERSON_LABELS_HE[key]}</h3>
+            <h3 className="text-[18px] font-black text-[#000144]">{PERSON_LABELS_HE[key]}</h3>
           </div>
           {key !== "primary" && (
             <button
               type="button"
               onClick={() => removeDependent(key)}
-              className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-semibold text-rose-500 hover:bg-rose-50"
+              className="inline-flex min-h-[36px] items-center gap-1 rounded-[12px] px-2.5 py-1 text-[14px] font-bold text-rose-600 hover:bg-rose-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
               הסר
@@ -650,10 +651,10 @@ const InsuranceProposal = () => {
                       patchPerson(key, { gender: o.v });
                     }
                   }}
-                  className={`h-11 flex-1 rounded-2xl border text-sm font-semibold ${
+                  className={`min-h-[52px] flex-1 rounded-[14px] border-2 text-[16px] font-bold ${
                     person.gender === o.v
-                      ? "border-[#2f6b63] bg-[#2f6b63] text-white"
-                      : "border-slate-200 bg-white"
+                      ? "border-[#000144] bg-[#000144] text-white"
+                      : "border-[#D5DAE3] bg-white text-[#33405F] hover:border-[#000144]/40"
                   }`}
                 >
                   {o.l}
@@ -671,7 +672,7 @@ const InsuranceProposal = () => {
                 onChange={(e) => onPersonIdChange(key, e.target.value)}
               />
               {personLookupKey === key && (
-                <Loader2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#2f6b63]" />
+                <Loader2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#00A247]" />
               )}
             </div>
           </Field>
@@ -729,16 +730,16 @@ const InsuranceProposal = () => {
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 className="text-base font-extrabold text-[#143834]">
+            <h3 className="text-[20px] font-black text-[#000144]">
               הצהרת בריאות — {PERSON_LABELS_HE[key]}
             </h3>
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{HEALTH_INTRO}</p>
+            <p className="mt-1 text-[13px] font-medium leading-relaxed text-[#46557A]">{HEALTH_INTRO}</p>
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-full border-[#2f6b63]/30 text-[#2f6b63]"
+            className="h-10 rounded-full border-2 border-[#000144] bg-white px-4 text-[14px] font-bold text-[#000144] hover:bg-[#000144] hover:text-white"
             onClick={() => patchPerson(key, markAllHealthNo(person))}
           >
             סמן הכל לא
@@ -754,7 +755,7 @@ const InsuranceProposal = () => {
           error={errors[`${key}.q1`]}
         >
           {h.q1 === "yes" && (
-            <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+            <p className="mt-3 rounded-[14px] bg-rose-50 px-3 py-2 text-[14px] font-bold text-rose-700">
               {Q1_REJECT}
             </p>
           )}
@@ -768,17 +769,17 @@ const InsuranceProposal = () => {
           onChange={(v) => patchPersonHealth(key, { q2: v })}
           error={errors[`${key}.q2`]}
         >
-          {h.q2 === "yes" && <p className="mt-2 text-[11px] font-semibold text-[#1f4b46]">{Q2_IF_YES}</p>}
-          {h.q2 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q2_IF_NO}</p>}
+          {h.q2 === "yes" && <p className="mt-2 text-[13px] font-bold text-[#000144]">{Q2_IF_YES}</p>}
+          {h.q2 === "no" && <p className="mt-2 text-[13px] font-medium text-[#46557A]">{Q2_IF_NO}</p>}
           {h.q2 === "yes" && (
-            <div className="mt-3 space-y-4 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
+            <div className="mt-3 space-y-4 rounded-[20px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
               <div className="space-y-2">
-                <p className="text-xs font-extrabold text-[#143834]">{Q21_TITLE}</p>
+                <p className="text-[14px] font-extrabold text-[#000144]">{Q21_TITLE}</p>
                 <div className="grid gap-2">
                   {Q21_OPTIONS.map((c) => (
                     <label
                       key={c.id}
-                      className="flex items-start gap-2.5 rounded-xl border border-white bg-white px-3 py-2.5 text-xs leading-relaxed text-slate-700"
+                      className="flex items-start gap-2.5 rounded-[14px] border-2 border-[#E3E7EE] bg-white px-3 py-2.5 text-[14px] font-medium leading-relaxed text-[#33405F]"
                     >
                       <Checkbox
                         checked={h.q21Conditions.includes(c.id)}
@@ -788,19 +789,19 @@ const InsuranceProposal = () => {
                             : h.q21Conditions.filter((x) => x !== c.id);
                           patchPersonHealth(key, { q21Conditions: next });
                         }}
-                        className="mt-0.5"
+                        className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                       />
                       <span>{c.labelHe}</span>
                     </label>
                   ))}
                 </div>
                 {!q21Yes && (
-                  <p className="text-[11px] font-semibold text-amber-800">{Q21_NEGATIVE_EXT}</p>
+                  <p className="text-[13px] font-bold text-amber-800">{Q21_NEGATIVE_EXT}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <p className="text-xs font-extrabold text-[#143834]">{Q22_TITLE}</p>
-                <p className="text-[11px] leading-relaxed text-slate-600">{Q22_BODY}</p>
+                <p className="text-[14px] font-extrabold text-[#000144]">{Q22_TITLE}</p>
+                <p className="text-[13px] font-medium leading-relaxed text-[#33405F]">{Q22_BODY}</p>
                 <div className="flex justify-end">
                   <PillYesNo
                     value={h.q22}
@@ -813,7 +814,7 @@ const InsuranceProposal = () => {
                 )}
               </div>
               {q2FollowUpPositive && (
-                <p className="rounded-xl bg-white px-3 py-2 text-[11px] leading-relaxed text-slate-600">
+                <p className="rounded-[14px] bg-white px-3 py-2 text-[13px] font-medium leading-relaxed text-[#33405F]">
                   {Q2_POSITIVE_DOC}
                 </p>
               )}
@@ -829,12 +830,12 @@ const InsuranceProposal = () => {
           onChange={(v) => patchPersonHealth(key, { q3: v })}
           error={errors[`${key}.q3`]}
         >
-          {h.q3 === "yes" && <p className="mt-2 text-[11px] font-semibold text-[#1f4b46]">{Q3_IF_YES}</p>}
-          {h.q3 === "no" && <p className="mt-2 text-[11px] text-slate-500">{Q3_IF_NO}</p>}
+          {h.q3 === "yes" && <p className="mt-2 text-[13px] font-bold text-[#000144]">{Q3_IF_YES}</p>}
+          {h.q3 === "no" && <p className="mt-2 text-[13px] font-medium text-[#46557A]">{Q3_IF_NO}</p>}
           {h.q3 === "yes" && (
-            <div className="mt-3 space-y-2 rounded-2xl border border-[#d7e8e3] bg-[#f7fbfa] p-4">
+            <div className="mt-3 space-y-2 rounded-[20px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                <p className="min-w-0 flex-1 text-xs font-extrabold text-[#143834]">{Q31_TITLE}</p>
+                <p className="min-w-0 flex-1 text-[14px] font-extrabold text-[#000144]">{Q31_TITLE}</p>
                 <div className="shrink-0 self-end sm:ms-auto sm:self-center">
                   <PillYesNo
                     value={h.q31}
@@ -847,10 +848,10 @@ const InsuranceProposal = () => {
                 <p className="text-xs text-rose-600">{errors[`${key}.q31`]}</p>
               )}
               {h.q31 === "no" && (
-                <p className="text-[11px] leading-relaxed text-slate-600">{Q31_IF_NO}</p>
+                <p className="text-[13px] font-medium leading-relaxed text-[#33405F]">{Q31_IF_NO}</p>
               )}
               {h.q31 === "yes" && (
-                <p className="text-[11px] font-semibold text-amber-800">{Q31_IF_YES}</p>
+                <p className="text-[13px] font-bold text-amber-800">{Q31_IF_YES}</p>
               )}
             </div>
           )}
@@ -867,20 +868,20 @@ const InsuranceProposal = () => {
             <div className="mt-3 space-y-2">
               <Field label={Q4_DETAILS_LABEL} hint={Q4_DETAILS_HINT}>
                 <Textarea
-                  className="min-h-[80px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
+                  className="min-h-[80px] rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] text-right text-[16px] font-medium text-[#000144] placeholder:text-[#8A94AD] focus-visible:border-[#00A247] focus-visible:ring-0 focus-visible:ring-offset-0"
                   value={h.q4Details}
                   onChange={(e) => patchPersonHealth(key, { q4Details: e.target.value })}
                   placeholder={Q4_DETAILS_HINT}
                 />
               </Field>
-              <p className="text-[11px] leading-relaxed text-slate-600">{Q4_IF_YES}</p>
+              <p className="text-[13px] font-medium leading-relaxed text-[#33405F]">{Q4_IF_YES}</p>
             </div>
           )}
         </HealthQuestionCard>
 
         {person.gender === "female" && (
-          <div className="space-y-3 rounded-[22px] border border-rose-100 bg-rose-50/20 p-4">
-            <p className="text-xs font-extrabold text-[#143834]">{PREGNANCY_SECTION_TITLE}</p>
+          <div className="space-y-3 rounded-[24px] border-2 border-[#E3E7EE] bg-[#F3F5F8] p-4">
+            <p className="text-[14px] font-extrabold text-[#000144]">{PREGNANCY_SECTION_TITLE}</p>
             <HealthQuestionCard
               number={5}
               title={Q5_TITLE.replace(/^5\.\s*/, "")}
@@ -910,14 +911,14 @@ const InsuranceProposal = () => {
                   error={errors[`${key}.q52`]}
                 >
                   {h.q52HighRisk === "yes" && (
-                    <p className="mt-3 rounded-xl bg-rose-100/80 px-3 py-2 text-xs font-semibold text-rose-700">
+                    <p className="mt-3 rounded-[14px] bg-rose-100/80 px-3 py-2 text-[14px] font-bold text-rose-700">
                       {Q52_REJECT}
                     </p>
                   )}
                   {h.q52HighRisk === "no" && (
-                    <p className="mt-3 text-[11px] font-semibold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
+                    <p className="mt-3 text-[13px] font-bold text-amber-800">{PREGNANCY_EXT_NOTE}</p>
                   )}
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{PREGNANCY_AGE_NOTE}</p>
+                  <p className="mt-2 text-[13px] font-medium leading-relaxed text-[#46557A]">{PREGNANCY_AGE_NOTE}</p>
                 </HealthQuestionCard>
               </>
             )}
@@ -997,31 +998,31 @@ const InsuranceProposal = () => {
       <div className="space-y-5">
         <div className="tp-center space-y-3 text-center" style={{ textAlign: "center" }}>
           {people.length > 1 && (
-            <span className="inline-flex rounded-full bg-[#0d3b6e] px-3 py-1 text-[11px] font-bold text-white">
+            <span className="inline-flex rounded-full bg-[#000144] px-4 py-1.5 text-[13px] font-bold text-white">
               {PERSON_LABELS_HE[key]}
             </span>
           )}
-          <h3 className="text-2xl font-extrabold text-[#0d3b6e]" style={{ textAlign: "center" }}>
+          <h3 className="text-[28px] font-black text-[#000144]" style={{ textAlign: "center" }}>
             פירוט הכיסויים
           </h3>
-          <div className="mx-auto flex max-w-xl items-center justify-center gap-2 rounded-full bg-[#d6ebf8] px-4 py-2 text-sm font-semibold text-[#0d3b6e]">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1a6bb5] text-[11px] font-bold text-white">
+          <div className="mx-auto flex max-w-xl items-center justify-center gap-2 rounded-full bg-[#E6F6EC] px-4 py-2 text-[15px] font-bold text-[#000144]">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#00A247] text-[11px] font-bold text-[#000144]">
               i
             </span>
             הביטוח כבר כולל את הכיסוי הבסיסי
           </div>
-          <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#3a5f86]" style={{ textAlign: "center" }}>
+          <p className="mx-auto max-w-xl text-[16px] font-medium leading-relaxed text-[#33405F]" style={{ textAlign: "center" }}>
             באפשרותך לסמן את חבילת הכיסויים הנפוצים שלנו או להרכיב חבילת כיסויים, לפי בחירתך
           </p>
-          <p className="text-xs text-slate-500" style={{ textAlign: "center" }}>
+          <p className="text-[13px] font-medium text-[#46557A]" style={{ textAlign: "center" }}>
             הצעה לחיתום בהראל — ללא תמחור עלות כיסוי
           </p>
         </div>
 
         {/* Popular package — Harel style */}
-        <div className="overflow-hidden rounded-2xl border border-[#1a6bb5]/35 bg-white shadow-[0_4px_18px_rgba(20,60,110,0.08)]">
-          <div className="bg-[#eaf4fb] px-4 py-3 text-center">
-            <p className="text-sm font-extrabold text-[#0d3b6e]" style={{ textAlign: "center" }}>
+        <div className="overflow-hidden rounded-[24px] border-2 border-[#E3E7EE] bg-white">
+          <div className="bg-[#F3F5F8] px-4 py-3 text-center">
+            <p className="text-[16px] font-extrabold text-[#000144]" style={{ textAlign: "center" }}>
               מתלבטים מאיפה להתחיל? תתחילו עם הבחירה הנפוצה
             </p>
           </div>
@@ -1033,17 +1034,17 @@ const InsuranceProposal = () => {
               { icon: COVERAGE_ICONS.thirdParty, label: "חבות כלפי צד ג׳" },
               { icon: COVERAGE_ICONS.accident, label: "תאונות אישיות", sub: "(ניתן לרכוש עד גיל 75)" },
             ].map((item) => (
-              <div key={item.label} className="flex flex-col items-center gap-1.5 text-center text-[#1a6bb5]">
-                <div className="text-[#1a6bb5]">{item.icon}</div>
-                <p className="text-[11px] font-bold leading-tight text-[#0d3b6e]">{item.label}</p>
-                {item.sub && <p className="text-[9px] text-[#7a93ad]">{item.sub}</p>}
+              <div key={item.label} className="flex flex-col items-center gap-1.5 text-center text-[#000144]">
+                <div className="text-[#00A247]">{item.icon}</div>
+                <p className="text-[12px] font-bold leading-tight text-[#000144]">{item.label}</p>
+                {item.sub && <p className="text-[10px] font-medium text-[#46557A]">{item.sub}</p>}
               </div>
             ))}
           </div>
           <div className="px-4 pb-4">
             <Button
               type="button"
-              className="h-12 w-full rounded-xl bg-[#1a6bb5] text-base font-bold text-white hover:bg-[#155a9a]"
+              className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]"
               onClick={() => applyPopularPackage(people.length > 1 ? undefined : key)}
             >
               {people.length > 1 ? "עדכון החבילה לכלל הנוסעים" : "עדכון החבילה"}
@@ -1051,7 +1052,7 @@ const InsuranceProposal = () => {
           </div>
         </div>
 
-        <p className="text-base font-extrabold text-[#0d3b6e]">כיסויים נפוצים</p>
+        <p className="text-[20px] font-black text-[#000144]">כיסויים נפוצים</p>
         <div className="space-y-3">
           <PlanCheck
             label="חבות כלפי צד ג׳"
@@ -1099,7 +1100,7 @@ const InsuranceProposal = () => {
             footnote={plan.baggageValuables ? "סמנו איזה פריט לכלול" : undefined}
           >
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו פריט יקר ערך עד $2,000</p>
+              <p className="text-[13px] font-bold text-[#46557A]">בחרו פריט יקר ערך עד $2,000</p>
               <div className="grid gap-2">
                 {VALUABLE_OPTIONS.map((v) => {
                   const on = plan.valuableItems.includes(v.id);
@@ -1113,18 +1114,18 @@ const InsuranceProposal = () => {
                           : [...plan.valuableItems, v.id];
                         patchPersonPlan(key, { valuableItems: next });
                       }}
-                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-right text-xs transition ${
+                      className={`flex min-h-[48px] w-full items-center gap-3 rounded-[14px] border-2 px-3 py-2.5 text-right text-[14px] transition ${
                         on
-                          ? "border-[#1a6bb5]/40 bg-white text-[#0d3b6e]"
-                          : "border-transparent bg-white/70 text-slate-700 hover:border-[#1a6bb5]/25"
+                          ? "border-[#000144] bg-white text-[#000144]"
+                          : "border-[#E3E7EE] bg-white text-[#33405F] hover:border-[#000144]/40"
                       }`}
                     >
                       <span className="min-w-0 flex-1 font-semibold">{v.labelHe}</span>
                       <span
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
                           on
-                            ? "border-[#2f9e3a] bg-[#2f9e3a] text-white"
-                            : "border-slate-300 bg-white text-transparent"
+                            ? "border-[#00A247] bg-[#00A247] text-[#000144]"
+                            : "border-[#D5DAE3] bg-white text-transparent"
                         }`}
                       >
                         <Check className="h-3.5 w-3.5" strokeWidth={3} />
@@ -1154,7 +1155,7 @@ const InsuranceProposal = () => {
         </div>
 
         <div>
-          <p className="text-base font-extrabold text-[#0d3b6e]">כיסויים בשביל הבריאות שלך</p>
+          <p className="text-[20px] font-black text-[#000144]">כיסויים בשביל הבריאות שלך</p>
         </div>
         <div className="space-y-3">
           <PlanCheck
@@ -1272,8 +1273,8 @@ const InsuranceProposal = () => {
         </div>
 
         <div>
-          <p className="text-base font-extrabold text-[#0d3b6e]">כיסויים להחזר כספי</p>
-          <p className="mt-0.5 text-xs text-[#7a93ad]">
+          <p className="text-[20px] font-black text-[#000144]">כיסויים להחזר כספי</p>
+          <p className="mt-0.5 text-[13px] font-medium text-[#46557A]">
             (במקרה של מצבים רפואיים, תאונות, אובדן נייד ועוד)
           </p>
         </div>
@@ -1331,17 +1332,17 @@ const InsuranceProposal = () => {
             icon={COVERAGE_ICONS.car}
           >
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי</p>
+              <p className="text-[13px] font-bold text-[#46557A]">בחרו תקרת כיסוי</p>
               <div className="flex gap-2">
                 {(["1500", "6000"] as const).map((lim) => (
                   <button
                     key={lim}
                     type="button"
                     onClick={() => patchPersonPlan(key, { rentalCarLimit: lim })}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                    className={`min-h-[44px] rounded-[14px] border-2 px-4 py-1.5 text-[14px] font-bold ${
                       plan.rentalCarLimit === lim
-                        ? "border-[#1a6bb5] bg-[#1a6bb5] text-white"
-                        : "border-slate-200 bg-white text-[#0d3b6e]"
+                        ? "border-[#000144] bg-[#000144] text-white"
+                        : "border-[#D5DAE3] bg-white text-[#000144] hover:border-[#000144]/40"
                     }`}
                   >
                     עד ${lim}
@@ -1380,17 +1381,17 @@ const InsuranceProposal = () => {
             icon={COVERAGE_ICONS.bike}
           >
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-[#3a5f86]">בחרו תקרת כיסוי</p>
+              <p className="text-[13px] font-bold text-[#46557A]">בחרו תקרת כיסוי</p>
               <div className="flex flex-wrap gap-2">
                 {(["2500", "4500", "6000"] as const).map((lim) => (
                   <button
                     key={lim}
                     type="button"
                     onClick={() => patchPersonPlan(key, { bicycleLimit: lim })}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold ${
+                    className={`min-h-[44px] rounded-[14px] border-2 px-4 py-1.5 text-[14px] font-bold ${
                       plan.bicycleLimit === lim
-                        ? "border-[#1a6bb5] bg-[#1a6bb5] text-white"
-                        : "border-slate-200 bg-white text-[#0d3b6e]"
+                        ? "border-[#000144] bg-[#000144] text-white"
+                        : "border-[#D5DAE3] bg-white text-[#000144] hover:border-[#000144]/40"
                     }`}
                   >
                     עד ${lim}
@@ -1434,14 +1435,9 @@ const InsuranceProposal = () => {
   const showNav = step !== "intro" && step !== "success" && step !== "sending" && step !== "identity";
 
   return (
-    <div className="proposal-page relative min-h-screen overflow-hidden font-heebo" dir="rtl">
+    <div className="proposal-page flex min-h-screen flex-col bg-[#F3F5F8] font-rubik text-[#000144]" dir="rtl">
       <style>{`
-        .proposal-page {
-          background:
-            radial-gradient(900px 360px at 50% -5%, rgba(47,107,99,.10), transparent 55%),
-            linear-gradient(180deg, #eef6fb 0%, #f3faf8 42%, #eef5f2 100%);
-        }
-        /* Override global [dir=rtl] h1/h2 { text-align: right } for centered hero */
+        /* Override global [dir=rtl] h1/h2 { text-align: right } for centered blocks */
         .proposal-page .tp-center,
         .proposal-page .tp-center h1,
         .proposal-page .tp-center h2,
@@ -1453,63 +1449,46 @@ const InsuranceProposal = () => {
         .proposal-page .tp-steps .tp-step-text {
           text-align: right !important;
         }
-        @keyframes tp-rise {
-          from { opacity: 0; transform: translateY(14px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .tp-rise { animation: tp-rise .45s ease-out both; }
-        .tp-rise-d1 { animation-delay: .06s; }
-        .tp-rise-d2 { animation-delay: .12s; }
-        @keyframes tp-shine {
-          0%, 55% { left: -40%; }
-          100% { left: 120%; }
-        }
-        .tp-cta { position: relative; overflow: hidden; }
-        .tp-cta::before {
-          content: "";
-          position: absolute;
-          inset: 0 auto 0 -40%;
-          width: 35%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
-          transform: skewX(-20deg);
-          animation: tp-shine 2.8s ease-in-out infinite;
-        }
       `}</style>
 
-      <div className={`relative z-10 mx-auto max-w-3xl px-4 py-8 sm:py-10 ${showNav ? "pb-28" : ""}`}>
-        <header className="tp-rise tp-center mb-7 flex w-full flex-col items-center justify-center">
-          <img src={logo} alt="TravelSure" className="mx-auto h-[88px] w-auto drop-shadow-sm sm:h-28" />
-          <h1 className="mt-4 w-full text-center text-3xl font-extrabold text-[#143834] sm:text-4xl">
+      <section className="relative overflow-hidden bg-[#000144] text-white">
+        <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
+        <div className="relative mx-auto max-w-[1200px] px-4 pt-5 sm:px-6">
+          <AgencyHeader />
+        </div>
+        <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3 px-4 pb-8 pt-8 sm:px-6">
+          <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-black leading-[1.02] tracking-[-0.01em]">
             הצעה לביטוח נסיעות לחו״ל
           </h1>
-          <p className="mx-auto mt-2 max-w-lg text-center text-sm text-slate-600 sm:text-base">
+          <p className="m-0 max-w-[640px] text-[18px] font-medium text-[#E3EAFF]">
             תהליך דיגיטלי קצר · ממלאים פעם אחת ומקבלים את טופס הראל הרשמי מוכן
           </p>
-          <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-2 text-xs font-semibold text-[#1f4b46]">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#2f6b63]" />
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-[15px] font-bold text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#00A247] px-4 py-1.5">
+              <ShieldCheck className="h-4 w-4 text-[#00A247]" />
               הראל · פירסט קלאס
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2f6b63]/15 bg-white/80 px-3 py-1.5">
-              <Plane className="h-3.5 w-3.5 text-[#2f6b63]" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#00A247] px-4 py-1.5">
+              <Plane className="h-4 w-4 text-[#00A247]" />
               נסיעות לחו״ל
             </span>
           </div>
-        </header>
+        </div>
+      </section>
 
+      <main className="mx-auto box-border w-full max-w-3xl flex-1 px-4 py-8 sm:py-10">
         {step !== "intro" && step !== "success" && step !== "sending" && (
-          <div className="tp-rise tp-rise-d1 mb-6">
+          <div className="mb-6">
             <ProposalIconStepper steps={progressSteps} currentIndex={progressIndex} />
           </div>
         )}
 
-        <div className="tp-rise tp-rise-d2 overflow-hidden rounded-[28px] border border-white/80 bg-white/90 shadow-[0_30px_80px_-40px_rgba(20,56,52,0.55)] backdrop-blur-xl">
-          <div className="h-1.5 bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#4ade80]" />
+        <div className="overflow-hidden rounded-[28px] border-2 border-[#E3E7EE] bg-white">
           <div className="p-5 sm:p-7">
             {step === "intro" && (
               <div className="mx-auto max-w-md space-y-5">
-                <h2 className="tp-center text-center text-xl font-bold text-[#143834]">איך זה עובד?</h2>
-                <ol className="tp-steps mx-auto w-full max-w-[22rem] space-y-3.5 text-sm text-slate-600" dir="rtl">
+                <h2 className="tp-center text-center text-[26px] font-black text-[#000144]">איך זה עובד?</h2>
+                <ol className="tp-steps mx-auto w-full max-w-[22rem] space-y-3.5 text-[16px] font-medium text-[#33405F]" dir="rtl">
                   {[
                     "מזינים תעודת זהות — ואנחנו ממלאים אוטומטית מהמערכת",
                     "משלימים פרטי נסיעה, מבוטחים והצהרת בריאות",
@@ -1521,7 +1500,7 @@ const InsuranceProposal = () => {
                       className="grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-3"
                     >
                       <span
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e8f4f1] text-[13px] font-bold leading-none text-[#1f4b46]"
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#000144] text-[13px] font-bold leading-none text-white"
                         aria-hidden
                       >
                         <span
@@ -1538,7 +1517,7 @@ const InsuranceProposal = () => {
                 <Button
                   type="button"
                   onClick={() => setStep("identity")}
-                  className="tp-cta h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white"
+                  className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]"
                 >
                   מתחילים
                   <ArrowLeft className="h-5 w-5" />
@@ -1549,8 +1528,8 @@ const InsuranceProposal = () => {
             {step === "identity" && (
               <div className="mx-auto max-w-md space-y-5">
                 <div className="text-center sm:text-right">
-                  <h2 className="text-2xl font-extrabold text-[#143834]">זיהוי לפי תעודת זהות</h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <h2 className="text-[28px] font-black leading-[1.1] text-[#000144]">זיהוי לפי תעודת זהות</h2>
+                  <p className="mt-1 text-[16px] font-medium text-[#46557A]">
                     נבדוק במערכת אם כבר יש לנו את הפרטים שלך — ונמלא אותם אוטומטית
                   </p>
                 </div>
@@ -1572,7 +1551,7 @@ const InsuranceProposal = () => {
                 </Field>
                 <Button
                   type="button"
-                  className="tp-cta h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white"
+                  className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]"
                   disabled={isLookingUp || lookupId.length < 5}
                   onClick={() => void handleIdentityLookup()}
                 >
@@ -1590,7 +1569,7 @@ const InsuranceProposal = () => {
                 </Button>
                 <button
                   type="button"
-                  className="w-full text-center text-xs font-semibold text-slate-400 hover:text-[#2f6b63]"
+                  className="min-h-[44px] w-full text-center text-[15px] font-bold text-[#46557A] underline-offset-4 hover:text-[#000144] hover:underline"
                   onClick={continueWithoutCrm}
                 >
                   המשך למילוי ידני
@@ -1601,10 +1580,10 @@ const InsuranceProposal = () => {
             {step === "trip" && (
               <div className="space-y-6">
                 {crmFound && (
-                  <div className="flex items-start gap-3 rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-l from-[#e8f4f1] to-white p-4">
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#2f6b63]" />
-                    <div className="text-sm text-slate-600">
-                      <p className="font-bold text-[#143834]">
+                  <div className="flex items-start gap-3 rounded-[20px] bg-[#E6F6EC] p-4">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#00A247]" />
+                    <div className="text-[15px] font-medium text-[#33405F]">
+                      <p className="font-bold text-[#000144]">
                         {crmName ? `שלום ${crmName}` : "מצאנו אותך"}
                       </p>
                       <p className="mt-0.5 text-xs">מילאנו פרטים מהמערכת — אפשר לערוך בכל שלב</p>
@@ -1620,8 +1599,8 @@ const InsuranceProposal = () => {
 
                 <div className="space-y-3">
                   <div className="tp-center text-center">
-                    <h3 className="text-center text-lg font-extrabold text-[#143834]">מתי נוסעים?</h3>
-                    <p className="mt-1 text-center text-xs text-slate-500">
+                    <h3 className="text-center text-[24px] font-black text-[#000144]">מתי נוסעים?</h3>
+                    <p className="mt-1 text-center text-[14px] font-medium text-[#46557A]">
                       לחצו על השדה לבחירה בלוח שנה — או הזינו ידנית
                     </p>
                   </div>
@@ -1677,14 +1656,14 @@ const InsuranceProposal = () => {
             {step === "insureds" && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">פרטי המועמדים לביטוח</h2>
-                  <p className="mt-1 text-xs text-slate-500">מבוטח ראשי — ואם צריך, מוסיפים בן/ת זוג או ילדים</p>
+                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">פרטי המועמדים לביטוח</h2>
+                  <p className="mt-1 text-[14px] font-medium text-[#46557A]">מבוטח ראשי — ואם צריך, מוסיפים בן/ת זוג או ילדים</p>
                 </div>
-                <label className="flex items-start gap-2 rounded-2xl border border-[#2f6b63]/10 bg-[#f7fbfa] p-4 text-sm text-slate-700">
+                <label className="flex items-start gap-2 rounded-[20px] bg-[#F3F5F8] p-4 text-[15px] font-medium text-[#33405F]">
                   <Checkbox
                     checked={form.israeliResidents}
                     onCheckedChange={(c) => setField("israeliResidents", !!c)}
-                    className="mt-0.5"
+                    className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                   />
                   <span>
                     הביטוח מיועד לתושבי ישראל בלבד. הנני מצהיר כי המבוטחים הם תושבי ישראל
@@ -1702,7 +1681,7 @@ const InsuranceProposal = () => {
                   <button
                     type="button"
                     onClick={addDependent}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#2f6b63]/35 bg-white/70 px-4 py-3.5 text-sm font-bold text-[#2f6b63] transition hover:border-[#2f6b63] hover:bg-[#e8f4f1]/50"
+                    className="flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[18px] border-2 border-dashed border-[#000144]/40 bg-white px-4 py-3.5 text-[17px] font-extrabold text-[#000144] transition hover:border-[#000144] hover:bg-[#F3F5F8]"
                   >
                     <Plus className="h-4 w-4" />
                     הוסף {PERSON_LABELS_HE[nextDependentKey]}
@@ -1713,12 +1692,12 @@ const InsuranceProposal = () => {
 
             {step === "health" && (
               <div className="space-y-4">
-                <div className="rounded-[24px] border border-[#d7e8e3] bg-gradient-to-l from-[#e8f4f1]/80 to-white p-4 sm:p-5">
-                  <p className="text-xs font-bold text-[#2f6b63]">מה מכוסה בביטוח?</p>
-                  <h2 className="mt-1 text-lg font-extrabold leading-snug text-[#143834] sm:text-xl">
+                <div className="rounded-[24px] bg-[#000144] p-5 text-white sm:p-6">
+                  <p className="text-[14px] font-bold text-[#00A247]">מה מכוסה בביטוח?</p>
+                  <h2 className="mt-1 text-[20px] font-black leading-snug text-white sm:text-[24px]">
                     בניגוד לחברת תעופה, אנחנו חברת ביטוח. אז אנחנו חייבים לשאול גם שאלות כאלה בנסיעה לחו״ל
                   </h2>
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{HEALTH_DISCLAIMER}</p>
+                  <p className="mt-2 text-[13px] font-medium leading-relaxed text-[#C9D3EA]">{HEALTH_DISCLAIMER}</p>
                 </div>
                 {people.length > 1 ? (
                   <HouseholdHealth
@@ -1735,7 +1714,7 @@ const InsuranceProposal = () => {
                   renderHealthFor(activeHealthPerson)
                 )}
                 <Field label="צירוף מסמכים רפואיים (אופציונלי)">
-                  <label className="flex cursor-pointer items-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-3 text-sm text-slate-600">
+                  <label className="flex min-h-[52px] cursor-pointer items-center gap-2 rounded-[14px] border-2 border-dashed border-[#D5DAE3] bg-[#F3F5F8] px-4 py-3 text-[16px] font-bold text-[#000144] hover:border-[#000144]/40">
                     <FileUp className="h-4 w-4" />
                     העלאת קבצים
                     <input
@@ -1753,7 +1732,7 @@ const InsuranceProposal = () => {
                       {files.map((f, i) => (
                         <li
                           key={`${f.name}-${i}`}
-                          className="flex items-center justify-between rounded-xl bg-slate-50 px-2 py-1 text-xs"
+                          className="flex items-center justify-between rounded-[12px] border-2 border-[#E3E7EE] bg-white px-3 py-2 text-[14px] font-medium text-[#33405F]"
                         >
                           <span className="truncate">{f.name}</span>
                           <button
@@ -1779,10 +1758,10 @@ const InsuranceProposal = () => {
                         key={key}
                         type="button"
                         onClick={() => setActivePlanPerson(key)}
-                        className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+                        className={`min-h-[44px] rounded-full px-5 py-2 text-[14px] font-bold transition ${
                           activePlanPerson === key
-                            ? "bg-[#143834] text-white shadow-sm"
-                            : "border border-[#2f6b63]/20 bg-white text-[#2f6b63] hover:bg-[#e8f4f1]"
+                            ? "border-2 border-[#000144] bg-[#000144] text-white"
+                            : "border-2 border-[#D5DAE3] bg-white text-[#000144] hover:border-[#000144]/40"
                         }`}
                       >
                         {PERSON_LABELS_HE[key]}
@@ -1797,10 +1776,10 @@ const InsuranceProposal = () => {
             {step === "review" && (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#143834]">סיכום ושליחה</h2>
-                  <p className="mt-1 text-xs text-slate-500">בדקו שהכל נכון לפני השליחה</p>
+                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">סיכום ושליחה</h2>
+                  <p className="mt-1 text-[14px] font-medium text-[#46557A]">בדקו שהכל נכון לפני השליחה</p>
                 </div>
-                <div className="space-y-2 rounded-2xl border border-[#2f6b63]/10 bg-[#f7fbfa] p-4 text-sm text-slate-700">
+                <div className="space-y-2 rounded-[20px] bg-[#F3F5F8] p-5 text-[16px] text-[#33405F]">
                   {people.map(({ key, person }) => (
                     <p key={key}>
                       <strong>{PERSON_LABELS_HE[key]}:</strong> {displayName(person) || "—"}
@@ -1818,7 +1797,7 @@ const InsuranceProposal = () => {
                 </div>
 
                 <div>
-                  <label className="flex items-start gap-2 text-sm text-slate-700">
+                  <label className="flex items-start gap-2 text-[15px] font-medium text-[#33405F]">
                     <Checkbox
                       checked={form.declarationsAccepted}
                       onCheckedChange={(c) => {
@@ -1831,7 +1810,7 @@ const InsuranceProposal = () => {
                           });
                         }
                       }}
-                      className="mt-0.5"
+                      className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                     />
                     <span>קראתי ואני מאשר/ת את הצהרות המועמדים לביטוח ומסירת הפרטים לאופיר ושות׳</span>
                   </label>
@@ -1842,14 +1821,14 @@ const InsuranceProposal = () => {
 
                 <Field label="הערות לסוכנות">
                   <Textarea
-                    className="min-h-[70px] rounded-2xl border-slate-200 bg-slate-50/80 text-right"
+                    className="min-h-[70px] rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] text-right text-[16px] font-medium text-[#000144] placeholder:text-[#8A94AD] focus-visible:border-[#00A247] focus-visible:ring-0 focus-visible:ring-offset-0"
                     value={form.notes}
                     onChange={(e) => setField("notes", e.target.value)}
                   />
                 </Field>
 
                 <Button
-                  className="tp-cta h-12 w-full rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-base font-bold text-white"
+                  className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]"
                   onClick={handleSubmit}
                   disabled={isSending}
                 >
@@ -1870,35 +1849,35 @@ const InsuranceProposal = () => {
 
             {step === "sending" && (
               <div className="py-10 text-center">
-                <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#2f6b63]" />
-                <p className="mt-4 text-sm text-slate-600">ממלא את טופס הראל ושולח לסוכנות…</p>
+                <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#00A247]" />
+                <p className="mt-4 text-[17px] font-bold text-[#000144]">ממלא את טופס הראל ושולח לסוכנות…</p>
               </div>
             )}
 
             {step === "success" && (
               <div className="tp-center px-2 py-8 sm:px-6 sm:py-10" style={{ textAlign: "center" }}>
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8f4f1] text-[#2f6b63]">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#00A247] text-[#000144]">
                   <Check className="h-8 w-8" />
                 </div>
-                <h2 className="text-2xl font-extrabold text-[#143834]">ההצעה נשלחה בהצלחה</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+                <h2 className="text-[28px] font-black leading-[1.1] text-[#000144]">ההצעה נשלחה בהצלחה</h2>
+                <p className="mx-auto mt-2 max-w-md text-[17px] font-medium leading-relaxed text-[#33405F]">
                   טופס ההצעה הממולא התקבל אצל אופיר ושות׳. שמרו את מספר הפנייה למעקב מולנו.
                 </p>
                 {proposalNumber ? (
-                  <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-[#2f6b63]/15 bg-gradient-to-b from-[#e8f4f1] to-white px-5 py-5">
-                    <p className="text-xs font-bold tracking-wide text-[#2f6b63]">מספר פנייה באופיר</p>
+                  <div className="mx-auto mt-6 max-w-sm rounded-[24px] border-2 border-[#E3E7EE] bg-[#F3F5F8] px-5 py-5">
+                    <p className="text-[14px] font-bold tracking-wide text-[#46557A]">מספר פנייה באופיר</p>
                     <p
-                      className="mt-2 font-mono text-2xl font-extrabold tracking-wider text-[#143834]"
+                      className="mt-2 font-mono text-[28px] font-extrabold tracking-wider text-[#000144]"
                       dir="ltr"
                     >
                       {proposalNumber}
                     </p>
-                    <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                    <p className="mt-3 text-[13px] font-medium leading-relaxed text-[#46557A]">
                       מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר פוליסה בהראל.
                     </p>
                   </div>
                 ) : null}
-                <p className="mx-auto mt-5 max-w-md text-sm text-slate-500">
+                <p className="mx-auto mt-5 max-w-md text-[16px] font-medium text-[#46557A]">
                   ניצור קשר להמשך הטיפול מול הראל.
                 </p>
               </div>
@@ -1906,20 +1885,25 @@ const InsuranceProposal = () => {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-[11px] text-slate-400">
+        <p className="mt-6 text-center text-[13px] font-medium text-[#46557A]">
           בכפוף להצעת הביטוח ולהצהרת הבריאות של הראל · TravelSure / אופיר ושות׳ סוכנות לביטוח
         </p>
+      </main>
+
+      {/* Extra bottom space so the fixed step nav doesn't cover the footer */}
+      <div className={showNav ? "pb-[82px]" : ""}>
+        <AgencyFooter />
       </div>
 
       {showNav && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/60 bg-white/90 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t-2 border-[#E3E7EE] bg-white font-rubik">
           <div className="mx-auto flex max-w-3xl gap-3 px-4 py-3">
             {step !== "review" ? (
               <>
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 flex-1 rounded-2xl"
+                  className="h-14 flex-1 text-[17px] rounded-[18px] border-[3px] border-[#000144] bg-white font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white"
                   onClick={goBack}
                 >
                   <ArrowRight className="ml-1 h-4 w-4" />
@@ -1927,7 +1911,7 @@ const InsuranceProposal = () => {
                 </Button>
                 <Button
                   type="button"
-                  className="tp-cta h-11 flex-[1.4] rounded-2xl bg-gradient-to-l from-[#1f4b46] via-[#2f6b63] to-[#3f8677] text-white"
+                  className="h-14 flex-[1.4] rounded-[18px] bg-[#00A247] text-[18px] font-extrabold text-[#000144] hover:bg-[#008C3D]"
                   onClick={goNext}
                 >
                   המשך
@@ -1935,7 +1919,7 @@ const InsuranceProposal = () => {
                 </Button>
               </>
             ) : (
-              <Button type="button" variant="outline" className="h-11 flex-1 rounded-2xl" onClick={goBack}>
+              <Button type="button" variant="outline" className="h-14 flex-1 text-[17px] rounded-[18px] border-[3px] border-[#000144] bg-white font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white" onClick={goBack}>
                 <ArrowRight className="ml-1 h-4 w-4" />
                 חזרה לעריכה
               </Button>

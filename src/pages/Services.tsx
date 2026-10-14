@@ -1,89 +1,61 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plane, Car, Home, Building2, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AnimatedSection } from "@/hooks/useScrollAnimation";
-import Header from "@/components/Header";
+import { Plane, Car, Home, Building2 } from "lucide-react";
+import AgencyPage from "@/components/AgencyPage";
+import { AgencyContactStrip, AgencySection, ArrowIcon, agencyBtnPrimary, agencyCard, agencyH2 } from "@/components/AgencyUi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Services = () => {
-  const { t, isRTL } = useLanguage();
-  
+  const { t } = useLanguage();
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   const services = [
-    {
-      icon: Plane,
-      title: t("services.travel.title"),
-      description: t("services.travel.desc")
-    },
-    {
-      icon: Car,
-      title: t("services.car.title"),
-      description: t("services.car.desc")
-    },
-    {
-      icon: Home,
-      title: t("services.home.title"),
-      description: t("services.home.desc")
-    },
-    {
-      icon: Building2,
-      title: t("services.business.title"),
-      description: t("services.business.desc")
-    }
+    { icon: Plane, title: t("services.travel.title"), description: t("services.travel.desc"), to: "/services/travel" },
+    { icon: Car, title: t("services.car.title"), description: t("services.car.desc"), to: "/services/car" },
+    { icon: Home, title: t("services.home.title"), description: t("services.home.desc"), to: "/services/home" },
+    { icon: Building2, title: t("services.business.title"), description: t("services.business.desc"), to: "/services/business" },
   ];
 
   return (
-    <div className="min-h-screen font-heebo" dir="rtl">
-      <Header />
-      <div className="h-16 md:h-20" />
-      
-      <section className="section-padding bg-background">
-        <div className="container-wide">
-          <AnimatedSection className="text-center mb-12 md:mb-16">
-            <span className="text-secondary font-semibold text-sm tracking-wider uppercase mb-4 block">{t("services.label")}</span>
-            <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">{t("services.title")}</h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              {t("services.description")}
-            </p>
-          </AnimatedSection>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <AnimatedSection 
-                key={index}
-                delay={index * 100}
-                animation="scale-up"
-              >
-                <div className="group p-8 rounded-2xl bg-card border border-border hover:border-secondary/50 hover:shadow-xl transition-all duration-300 h-full">
-                  <div className="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:scale-110 transition-all duration-300">
-                    <service.icon className="w-8 h-8 text-secondary group-hover:text-secondary-foreground transition-colors" />
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground mb-3">{service.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-4">{service.description}</p>
-                  <Link to="/contact" className="text-secondary font-semibold hover:underline inline-flex items-center gap-1">
-                    {t("services.learnMore")}
-                    <ArrowLeft className="w-4 h-4" />
-                  </Link>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-
-          <AnimatedSection className="text-center mt-12" delay={500}>
-            <Link to="/purchase">
-              <Button variant="hero" size="xl">
-                <ArrowLeft className="w-5 h-5" />
-                {t("hero.cta")}
-              </Button>
-            </Link>
-          </AnimatedSection>
+    <AgencyPage
+      title={t("services.title")}
+      subtitle={t("services.description")}
+      bandContent={
+        <Link to="/purchase" className={agencyBtnPrimary}>
+          <span>{t("hero.cta")}</span>
+          <ArrowIcon />
+        </Link>
+      }
+    >
+      <AgencySection>
+        <h2 className={agencyH2}>{t("services.label")}</h2>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-5">
+          {services.map(({ icon: Icon, title, description, to }) => (
+            <div key={title} className={`${agencyCard} flex min-h-[260px] !flex-col justify-between gap-6`}>
+              <Icon aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+              <div className="flex flex-col gap-2">
+                <h3 className="m-0 text-[28px] font-black leading-[1.05]">{title}</h3>
+                <p className="m-0 text-[17px] font-medium text-[#33405F]">{description}</p>
+                <Link
+                  to={to}
+                  className="group mt-1 inline-flex min-h-[44px] items-center gap-2 self-start text-[18px] font-extrabold text-[#000144] underline-offset-4 hover:underline"
+                >
+                  <span>{t("services.learnMore")}</span>
+                  <span className="transition-transform group-hover:-translate-x-1">
+                    <ArrowIcon size={18} />
+                  </span>
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
-      </section>
-    </div>
+      </AgencySection>
+
+      <AgencyContactStrip />
+    </AgencyPage>
   );
 };
 

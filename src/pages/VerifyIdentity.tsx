@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import Header from "@/components/Header";
+import AgencyPage from "@/components/AgencyPage";
+import { agencyBtnPrimary, agencyCardWhite, agencyField, agencyLabel } from "@/components/AgencyUi";
 import CookieBanner from "@/components/CookieBanner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isValidIsraeliId } from "@/components/buyinsnew/utils";
@@ -267,25 +268,17 @@ const VerifyIdentity = () => {
   };
 
   return (
-    <div className="min-h-screen font-heebo bg-gradient-to-b from-sky-100 to-blue-50 relative overflow-hidden" dir="rtl">
-      <Header />
-      
-      <main className="relative z-10 pt-24 pb-12 md:pt-32 md:pb-16">
-        <div className="container-wide">
-          <div className="max-w-md mx-auto">
+    <>
+      <AgencyPage title="הזדהות למבוטחים קיימים" subtitle="אנא הזן את פרטיך לאימות" surface="gray">
+        <div className="px-4 py-10 sm:px-6 md:py-14">
+          <div className="mx-auto max-w-[480px]">
             {/* Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-blue-100">
+            <div className={`${agencyCardWhite} p-5 sm:p-8`}>
               {/* Header */}
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-white" />
+              <div className="mb-6 flex">
+                <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#000144]">
+                  <Shield className="h-7 w-7 text-[#00A247]" aria-hidden="true" />
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
-                  הזדהות למבוטחים קיימים
-                </h1>
-                <p className="text-slate-600 text-sm md:text-base">
-                  אנא הזן את פרטיך לאימות
-                </p>
               </div>
 
               {/* Step 1: ID and Phone */}
@@ -293,11 +286,11 @@ const VerifyIdentity = () => {
                 <div className="space-y-6">
                   {/* ID Input */}
                   <div>
-                    <Label htmlFor="id" className="text-slate-700 font-medium mb-2 block">
-                      תעודת זהות <span className="text-red-500">*</span>
+                    <Label htmlFor="id" className={`${agencyLabel} mb-2 block`}>
+                      תעודת זהות <span className="text-red-600">*</span>
                     </Label>
                     <div className="relative">
-                      <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <CreditCard className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#46557A]" aria-hidden="true" />
                       <Input
                         id="id"
                         type="text"
@@ -306,13 +299,13 @@ const VerifyIdentity = () => {
                         onChange={(e) => handleIdChange(e.target.value)}
                         placeholder="123456789"
                         maxLength={9}
-                        className={`pr-10 h-12 text-lg ${errors.id ? "border-red-500" : ""}`}
+                        className={`${agencyField} pr-11 text-left md:text-[17px] focus-visible:ring-2 focus-visible:ring-[#00A247]/25 focus-visible:ring-offset-0 ${errors.id ? "border-red-600 focus:border-red-600" : ""}`}
                         dir="ltr"
                       />
                     </div>
                     {errors.id && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
+                      <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-red-600">
+                        <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
                         {errors.id}
                       </p>
                     )}
@@ -320,11 +313,11 @@ const VerifyIdentity = () => {
 
                   {/* Phone Input */}
                   <div>
-                    <Label htmlFor="phone" className="text-slate-700 font-medium mb-2 block">
-                      מספר טלפון <span className="text-red-500">*</span>
+                    <Label htmlFor="phone" className={`${agencyLabel} mb-2 block`}>
+                      מספר טלפון <span className="text-red-600">*</span>
                     </Label>
                     <div className="relative">
-                      <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <Phone className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#46557A]" aria-hidden="true" />
                       <Input
                         id="phone"
                         type="text"
@@ -333,13 +326,13 @@ const VerifyIdentity = () => {
                         onChange={(e) => handlePhoneChange(e.target.value)}
                         placeholder="0501234567"
                         maxLength={10}
-                        className={`pr-10 h-12 text-lg ${errors.phone ? "border-red-500" : ""}`}
+                        className={`${agencyField} pr-11 text-left md:text-[17px] focus-visible:ring-2 focus-visible:ring-[#00A247]/25 focus-visible:ring-offset-0 ${errors.phone ? "border-red-600 focus:border-red-600" : ""}`}
                         dir="ltr"
                       />
                     </div>
                     {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
+                      <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-red-600">
+                        <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
                         {errors.phone}
                       </p>
                     )}
@@ -350,7 +343,7 @@ const VerifyIdentity = () => {
                     onClick={handleSendOTP}
                     disabled={loading}
                     size="lg"
-                    className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    className={`${agencyBtnPrimary} w-full [&_svg]:size-5`}
                   >
                     {loading ? (
                       <>
@@ -371,10 +364,10 @@ const VerifyIdentity = () => {
               {step === "otp" && (
                 <div className="space-y-6">
                   <div className="text-center">
-                    <p className="text-slate-700 mb-2">
+                    <p className="m-0 mb-1 text-[17px] font-medium text-[#33405F]">
                       קוד אימות נשלח למספר:
                     </p>
-                    <p className="text-lg font-bold text-blue-600">
+                    <p className="m-0 text-[22px] font-black text-[#000144]" dir="ltr">
                       {phone.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
                     </p>
                   </div>
@@ -382,12 +375,13 @@ const VerifyIdentity = () => {
 
                   {/* OTP Input */}
                   <div>
-                    <Label className="text-slate-700 font-medium mb-4 block text-center">
-                      הזן את קוד האימות <span className="text-red-500">*</span>
+                    <Label className={`${agencyLabel} mb-3 block text-center`}>
+                      הזן את קוד האימות <span className="text-red-600">*</span>
                     </Label>
-                    <div className="flex justify-center">
+                    <div className="flex justify-center" dir="ltr">
                       <InputOTP
                         maxLength={6}
+                        aria-label="הזן את קוד האימות"
                         value={otp}
                         onChange={(value) => {
                           setOtp(value);
@@ -400,19 +394,19 @@ const VerifyIdentity = () => {
                           }
                         }}
                       >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
+                        <InputOTPGroup className="gap-1.5 sm:gap-2">
+                          <InputOTPSlot index={0} className="h-12 w-10 rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[22px] font-black text-[#000144] ring-[#00A247] first:rounded-l-[14px] first:border-l-2 last:rounded-r-[14px] sm:h-14 sm:w-12" />
+                          <InputOTPSlot index={1} className="h-12 w-10 rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[22px] font-black text-[#000144] ring-[#00A247] first:rounded-l-[14px] first:border-l-2 last:rounded-r-[14px] sm:h-14 sm:w-12" />
+                          <InputOTPSlot index={2} className="h-12 w-10 rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[22px] font-black text-[#000144] ring-[#00A247] first:rounded-l-[14px] first:border-l-2 last:rounded-r-[14px] sm:h-14 sm:w-12" />
+                          <InputOTPSlot index={3} className="h-12 w-10 rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[22px] font-black text-[#000144] ring-[#00A247] first:rounded-l-[14px] first:border-l-2 last:rounded-r-[14px] sm:h-14 sm:w-12" />
+                          <InputOTPSlot index={4} className="h-12 w-10 rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[22px] font-black text-[#000144] ring-[#00A247] first:rounded-l-[14px] first:border-l-2 last:rounded-r-[14px] sm:h-14 sm:w-12" />
+                          <InputOTPSlot index={5} className="h-12 w-10 rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[22px] font-black text-[#000144] ring-[#00A247] first:rounded-l-[14px] first:border-l-2 last:rounded-r-[14px] sm:h-14 sm:w-12" />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
                     {errors.otp && (
-                      <p className="text-red-500 text-sm mt-2 text-center flex items-center justify-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
+                      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-sm font-semibold text-red-600">
+                        <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
                         {errors.otp}
                       </p>
                     )}
@@ -423,7 +417,7 @@ const VerifyIdentity = () => {
                     onClick={handleVerifyOTP}
                     disabled={otp.length !== 6 || loading}
                     size="lg"
-                    className="w-full h-12 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                    className={`${agencyBtnPrimary} w-full [&_svg]:size-5`}
                   >
                     {loading ? (
                       <>
@@ -443,7 +437,7 @@ const VerifyIdentity = () => {
                     <button
                       onClick={handleResendOTP}
                       disabled={countdown > 0}
-                      className="text-sm text-blue-600 hover:text-blue-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+                      className="inline-flex min-h-[44px] items-center px-3 text-base font-bold text-[#000144] underline underline-offset-4 hover:text-[#0C1060] disabled:cursor-not-allowed disabled:text-[#46557A] disabled:no-underline"
                     >
                       {countdown > 0
                         ? `שלח קוד מחדש בעוד ${countdown} שניות`
@@ -459,7 +453,7 @@ const VerifyIdentity = () => {
                         setOtp("");
                         setErrors({});
                       }}
-                      className="text-sm text-slate-600 hover:text-slate-800"
+                      className="inline-flex min-h-[44px] items-center px-3 text-base font-semibold text-[#46557A] hover:text-[#000144]"
                     >
                       חזור להזנת פרטים
                     </button>
@@ -470,11 +464,11 @@ const VerifyIdentity = () => {
               {/* Step 3: Verifying */}
               {step === "verifying" && (
                 <div className="text-center py-8">
-                  <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-slate-700 text-lg font-medium">
+                  <Loader2 className="w-12 h-12 animate-spin text-[#00A247] mx-auto mb-4" aria-hidden="true" />
+                  <p className="m-0 text-[20px] font-black text-[#000144]">
                     מאמת את הפרטים...
                   </p>
-                  <p className="text-slate-500 text-sm mt-2">
+                  <p className="m-0 mt-2 text-base font-medium text-[#33405F]">
                     אנא המתן
                   </p>
                 </div>
@@ -482,10 +476,10 @@ const VerifyIdentity = () => {
             </div>
           </div>
         </div>
-      </main>
+      </AgencyPage>
 
       <CookieBanner />
-    </div>
+    </>
   );
 };
 
