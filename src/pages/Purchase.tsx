@@ -47,7 +47,7 @@ const Purchase = () => {
 
   return (
     <div className="flex h-screen flex-col bg-[#F3F5F8] font-rubik text-[#000144]" dir="rtl">
-      <section className="relative shrink-0 overflow-hidden bg-[#000144] text-white">
+      <section className="relative z-20 shrink-0 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
         <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
           <AgencyHeader />

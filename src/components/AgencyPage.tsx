@@ -23,7 +23,7 @@ const AgencyPage = ({ title, subtitle, bandContent, surface = "white", children 
       surface === "gray" ? "bg-[#F3F5F8]" : "bg-white"
     }`}
   >
-    <section className="relative overflow-hidden bg-[#000144] text-white">
+    <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
       <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[380px] w-[380px] rounded-full bg-[#0C1060]" />
       <div aria-hidden="true" className="absolute left-[260px] top-[70px] hidden h-[44px] w-[180px] rounded-full bg-white/[0.06] md:block" />
       <div className="relative mx-auto max-w-[1200px] px-6 pt-5">

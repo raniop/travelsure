@@ -146,7 +146,7 @@ const MockupV2 = () => {
       className="min-h-screen bg-white font-rubik text-[18px] leading-[1.45] text-[#000144] [container-type:inline-size]"
     >
       {/* Hero */}
-      <section id="top" className="relative overflow-hidden bg-[#000144] text-white">
+      <section id="top" className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-10cqw] top-[-12cqw] h-[36cqw] w-[36cqw] rounded-full bg-[#0C1060]" />
         <div aria-hidden="true" className="absolute left-[22cqw] top-[9cqw] h-[4cqw] w-[15cqw] rounded-full bg-white/[0.07]" />
         <div aria-hidden="true" className="absolute left-[30cqw] top-[13.5cqw] h-[3cqw] w-[9cqw] rounded-full bg-white/[0.05]" />

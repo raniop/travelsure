@@ -427,7 +427,7 @@ const Foreigners = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F3F5F8] font-rubik text-[#000144]" dir="rtl">
-      <section className="relative overflow-hidden bg-[#000144] text-white">
+      <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
         <div className="relative mx-auto max-w-[1200px] px-4 pt-5 sm:px-6">
           <AgencyHeader />

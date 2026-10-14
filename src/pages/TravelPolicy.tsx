@@ -15,7 +15,7 @@ const TravelPolicy = () => {
   return (
     <div className="flex min-h-screen flex-col bg-white font-rubik text-[18px] leading-[1.45] text-[#000144]" dir="rtl">
       {/* Navy band: shared header + hero */}
-      <section className="relative overflow-hidden bg-[#000144] text-white">
+      <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[380px] w-[380px] rounded-full bg-[#0C1060]" />
         <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
           <AgencyHeader />

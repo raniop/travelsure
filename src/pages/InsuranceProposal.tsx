@@ -1451,7 +1451,7 @@ const InsuranceProposal = () => {
         }
       `}</style>
 
-      <section className="relative overflow-hidden bg-[#000144] text-white">
+      <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
         <div className="relative mx-auto max-w-[1200px] px-4 pt-5 sm:px-6">
           <AgencyHeader />
