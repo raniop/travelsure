@@ -44,10 +44,6 @@ const FORM_CATEGORIES: FormCategory[] = [
         url: "https://media.harel-group.co.il/media/k2jji3iq/תנאי-פוליסת-ביטוח-נסיעות-לחול-first-class.pdf",
       },
       {
-        title: "פוליסת שיר לנוסע - שירביט מבית הראל",
-        url: "https://media.harel-group.co.il/media/cldop4fu/פוליסת-ביטוח-נסיעות-לחו-ל-שיר-לנוסע-שירביט-מבית-הראל-חברה-לביטוח.pdf",
-      },
-      {
         title: "תנאי פוליסה באנגלית - First Class",
         url: "https://media.harel-group.co.il/media/2hum5gui/תנאי-פוליסת-ביטוח-נסיעות-לחול-אנגלית-first-class.pdf",
       },
