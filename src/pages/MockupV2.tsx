@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/ophir-logo.png";
 
 const NAVY = "#000144";
@@ -85,7 +86,8 @@ const stamps = [
   { top: "סוכנויות נסיעות", big: "כ-450", rotate: -4, bigFirst: true, bigSize: "text-[44px] leading-none" },
 ];
 
-const faqs = ["מה הביטוח מכסה?", "יש כיסוי למצב רפואי קיים?", "איך מגישים תביעה?"];
+// Keys into the shared FAQ translations (same answers as /faq)
+const faqKeys = [1, 3, 6, 5, 9, 10];
 
 const h2Class = "m-0 text-[clamp(34px,4.4cqw,60px)] font-black leading-[1.02] tracking-[-0.01em]";
 const fieldClass =
@@ -93,6 +95,7 @@ const fieldClass =
 const labelClass = "text-sm font-semibold text-[#46557A]";
 
 const MockupV2 = () => {
+  const { t } = useLanguage();
   const [dest, setDest] = useState("");
   const destLabel = dest && dest !== "יעד אחר" ? dest : "לאן טסים?";
 
@@ -311,15 +314,18 @@ const MockupV2 = () => {
         <div className="mx-auto flex max-w-[860px] flex-col gap-6">
           <h2 className={h2Class}>שאלות</h2>
           <div className="flex flex-col gap-3">
-            {faqs.map((q) => (
-              <details key={q} className="rounded-[20px] bg-[#F3F5F8] px-6 py-1">
+            {faqKeys.map((n) => (
+              <details key={n} className="rounded-[20px] bg-[#F3F5F8] px-6 py-1">
                 <summary className="flex min-h-[64px] cursor-pointer list-none items-center text-[22px] font-bold [&::-webkit-details-marker]:hidden">
-                  {q}
+                  {t(`faq.q${n}`)}
                 </summary>
-                <p className="mb-5 mt-0 text-[#33405F]">[התשובה מהאתר הקיים]</p>
+                <p className="mb-5 mt-0 text-[#33405F]">{t(`faq.a${n}`)}</p>
               </details>
             ))}
           </div>
+          <Link to="/faq" className="self-start text-[18px] font-bold text-[#000144] underline hover:text-[#00A247]">
+            לכל השאלות
+          </Link>
         </div>
       </section>
 
