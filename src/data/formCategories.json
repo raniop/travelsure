@@ -44,6 +44,26 @@
     ]
   },
   {
+    "id": "annual",
+    "title": "ביטוח שנתי",
+    "subtitle": "מסמכים לפוליסת דרכון First Class שנתית לנוסעים המרבים בנסיעות",
+    "icon": "annual",
+    "forms": [
+      {
+        "title": "דרכון First Class שנתי - מידע על הפוליסה",
+        "url": "https://travelsure.co.il/docs/annual/first-class-annual-info.pdf"
+      },
+      {
+        "title": "טופס הצעה - פוליסה שנתית מורחבת לאנשי עסקים - First Class",
+        "url": "https://travelsure.co.il/docs/annual/first-class-annual-extended-business-proposal.pdf"
+      },
+      {
+        "title": "טופס הצעה - פוליסה שנתית לאנשי עסקים - First Class",
+        "url": "https://travelsure.co.il/docs/annual/first-class-annual-business-proposal.pdf"
+      }
+    ]
+  },
+  {
     "id": "foreign-workers",
     "title": "עובדים זרים",
     "subtitle": "מסמכי Safe Stay Plus לעובדים זרים",

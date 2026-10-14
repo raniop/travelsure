@@ -21,7 +21,7 @@ type FormCategory = {
   id: string;
   title: string;
   subtitle: string;
-  icon: "travel" | "workers" | "tourists";
+  icon: "travel" | "annual" | "workers" | "tourists";
   forms: DownloadFormItem[];
 };
 
