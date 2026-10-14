@@ -50,29 +50,12 @@
   .brand-name { display: flex; flex-direction: column; line-height: 1.1; }
   .brand-name b { font-size: 20px; font-weight: 800; }
   .brand-name span { font-size: 14px; font-weight: 600; color: var(--label); }
-  .nav { display: none; flex: 1; justify-content: center; gap: 20px; }
-  .nav a, .mobile-nav a { display: flex; align-items: center; min-height: 44px; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap; }
-  .nav a:hover { color: var(--green-dark); }
-  .nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
-  .actions { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; }
-  .btn-cta { display: none; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 14px; background: var(--green); color: var(--navy); font-size: 17px; font-weight: 700; text-decoration: none; white-space: nowrap; }
-  .btn-claim { display: none; align-items: center; justify-content: center; min-height: 46px; padding: 0 16px; border: 2px solid var(--navy); border-radius: 14px; font-size: 16px; font-weight: 700; text-decoration: none; white-space: nowrap; }
-  .burger { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; cursor: pointer; }
-  .mobile-nav { border-top: 2px solid var(--line); padding: 8px 16px 16px; }
-  .mobile-nav[hidden] { display: none; }
-  .mobile-nav a { font-size: 17px; }
-  @media (min-width: 640px) { .btn-claim { display: inline-flex; } }
   @media (min-width: 1024px) {
     .header-row { gap: 24px; padding: 10px 20px 10px 10px; }
     .brand img { height: 48px; }
     .brand-name b { font-size: 22px; }
-    .nav { display: flex; }
-    .btn-cta { display: inline-flex; }
-    .btn-claim { display: none; }
-    .burger, .mobile-nav { display: none !important; }
     .band-body { padding-top: 56px; padding-bottom: 64px; }
   }
-  @media (min-width: 1280px) { .btn-claim { display: inline-flex; } .nav { gap: 24px; } .nav a { font-size: 17px; } }
 
   /* Search */
   .search { position: relative; max-width: 760px; margin-top: 16px; }
@@ -155,33 +138,7 @@
           <img src="/ophir-forms/logo.png" alt="">
           <span class="brand-name"><b>אופיר ושות׳</b><span>סוכנות לביטוח</span></span>
         </a>
-        <nav class="nav" aria-label="ניווט ראשי">
-          <a href="https://travelsure.co.il/">בית</a>
-          <a href="https://travelsure.co.il/services">שירותים</a>
-          <a href="https://travelsure.co.il/claim">הגשת תביעה</a>
-          <a href="/forms" aria-current="page">טפסים</a>
-          <a href="https://travelsure.co.il/about">אודות</a>
-          <a href="https://travelsure.co.il/faq">שאלות נפוצות</a>
-          <a href="https://travelsure.co.il/contact">צור קשר</a>
-        </nav>
-        <div class="actions">
-          <a class="btn-claim" href="https://travelsure.co.il/claim">הגשת תביעה</a>
-          <a class="btn-cta" href="https://travelsure.co.il/purchase">לרכישה</a>
-          <button class="burger" type="button" aria-label="פתח תפריט" aria-expanded="false" aria-controls="mobile-nav">
-            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
-          </button>
-        </div>
       </div>
-      <nav id="mobile-nav" class="mobile-nav" aria-label="ניווט ראשי" hidden>
-        <a href="https://travelsure.co.il/">בית</a>
-        <a href="https://travelsure.co.il/services">שירותים</a>
-        <a href="https://travelsure.co.il/claim">הגשת תביעה</a>
-        <a href="/forms" aria-current="page">טפסים</a>
-        <a href="https://travelsure.co.il/about">אודות</a>
-        <a href="https://travelsure.co.il/faq">שאלות נפוצות</a>
-        <a href="https://travelsure.co.il/contact">צור קשר</a>
-        <a href="https://travelsure.co.il/purchase">לרכישה</a>
-      </nav>
     </header>
   </div>
   <div class="wrap band-body">
@@ -369,15 +326,6 @@
   }
 
   document.getElementById("q").addEventListener("input", function (e) { state.query = e.target.value; render(); });
-
-  var burger = document.querySelector(".burger");
-  var mobileNav = document.getElementById("mobile-nav");
-  burger.addEventListener("click", function () {
-    var open = mobileNav.hidden;
-    mobileNav.hidden = !open;
-    burger.setAttribute("aria-expanded", String(open));
-    burger.setAttribute("aria-label", open ? "סגירת התפריט" : "פתח תפריט");
-  });
 
   render();
 })();
