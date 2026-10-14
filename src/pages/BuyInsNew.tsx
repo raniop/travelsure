@@ -1244,7 +1244,8 @@ export default function BuyInsNew() {
       // אם קריאה ישירה נכשלה (CORS), ננסה דרך proxy מקומי על IIS
       // ניסיון 2: ASHX handler (פתרון מקומי - רק על השרת שלך)
       try {
-        const ashxUrl = `/api-shatap.ashx?id=${encodeURIComponent(effectiveShatapId)}`;
+        // Absolute so it also works when this page is served from Lovable (the handler lives on IIS)
+        const ashxUrl = `https://ophir.travelsure.co.il/api-shatap.ashx?id=${encodeURIComponent(effectiveShatapId)}`;
         const res = await fetch(ashxUrl, {
           method: 'GET',
           cache: "no-store",

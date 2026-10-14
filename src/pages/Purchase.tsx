@@ -4,19 +4,21 @@ import Header from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Loader2 } from "lucide-react";
 
-const PURCHASE_URL = "https://ophir.travelsure.co.il/buyinsnew?aff=709";
+// Served by this same app, so a Lovable publish updates the purchase form too
+const PURCHASE_PATH = "/buyinsnew";
+const DEFAULT_AFF = "709";
 
 // Trip details from the landing-page form that the purchase flow understands
 const FORWARDED_PARAMS = ["from", "to", "pax"];
 
 const buildPurchaseUrl = (search: string) => {
-  const url = new URL(PURCHASE_URL);
   const incoming = new URLSearchParams(search);
+  const params = new URLSearchParams({ aff: DEFAULT_AFF });
   FORWARDED_PARAMS.forEach((key) => {
     const value = incoming.get(key);
-    if (value) url.searchParams.set(key, value);
+    if (value) params.set(key, value);
   });
-  return url.toString();
+  return `${PURCHASE_PATH}?${params}`;
 };
 
 const Purchase = () => {
