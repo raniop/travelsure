@@ -1,170 +1,345 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Headphones, Plane, ShieldCheck, UserRound } from "lucide-react";
+import logo from "@/assets/ophir-logo.png";
+
+const NAVY = "#000144";
+const GREEN = "#00A247";
+
+const destinations = ["אירופה", "ארה״ב", "תאילנד", "יוון", "דובאי", "יעד אחר"];
+
+const ArrowIcon = ({ size = 22 }: { size?: number }) => (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 12H5" />
+    <path d="M11 6l-6 6 6 6" />
+  </svg>
+);
+
+const PhoneIcon = ({ size = 48, stroke = NAVY }: { size?: number; stroke?: string }) => (
+  <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+);
+
+const iconProps = {
+  "aria-hidden": true,
+  width: 48,
+  height: 48,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: NAVY,
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
 
 const benefits = [
-  { icon: ShieldCheck, title: "עד 5 מיליון $", text: "כיסוי רפואי גבוה לנסיעה" },
-  { icon: Headphones, title: "24/7", text: "מוקד חירום זמין תמיד" },
-  { icon: UserRound, title: "סוכן אישי", text: "ליווי אנושי לאורך הדרך" },
-  { icon: Plane, title: "מותאם לכם", text: "הרחבות לפי סוג הנסיעה" },
+  {
+    title: "עד 5 מיליון $",
+    text: "כיסוי בחו״ל",
+    icon: (
+      <svg {...iconProps}>
+        <path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6l8-3z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  { title: "24/7", text: "מוקד בעברית ובאנגלית", icon: <PhoneIcon /> },
+  {
+    title: "סוכן אישי",
+    text: "מלווה אתכם גם בתביעה",
+    icon: (
+      <svg {...iconProps}>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+      </svg>
+    ),
+  },
+  {
+    title: "מותאם לכם",
+    text: "לפי סוג הנסיעה והבריאות",
+    icon: (
+      <svg {...iconProps}>
+        <path d="M4 6h8" />
+        <path d="M16 6h4" />
+        <circle cx="14" cy="6" r="2" />
+        <path d="M4 12h2" />
+        <path d="M10 12h10" />
+        <circle cx="8" cy="12" r="2" />
+        <path d="M4 18h10" />
+        <path d="M18 18h2" />
+        <circle cx="16" cy="18" r="2" />
+      </svg>
+    ),
+  },
 ];
 
-const faqs = ["מה הכיסוי כולל?", "איך מגישים תביעה?", "איך קונים ביטוח לנסיעה?"];
+const steps = [
+  ["1", "ממלאים", "פרטי נסיעה"],
+  ["2", "משלמים", "אונליין"],
+  ["3", "הפוליסה", "אצלכם"],
+];
+
+const stamps = [
+  { top: "מבטחים מאז", big: "1977", rotate: -7, bigFirst: false, bigSize: "text-[44px] leading-none" },
+  { top: "פוליסה של", big: "הראל", rotate: 5, bigFirst: false, bigSize: "text-[40px] leading-[1.05]" },
+  { top: "סוכנויות נסיעות", big: "כ-450", rotate: -4, bigFirst: true, bigSize: "text-[44px] leading-none" },
+];
+
+const faqs = ["מה הביטוח מכסה?", "יש כיסוי למצב רפואי קיים?", "איך מגישים תביעה?"];
+
+const h2Class = "m-0 text-[clamp(34px,4.4cqw,60px)] font-black leading-[1.02] tracking-[-0.01em]";
+const fieldClass =
+  "min-h-[52px] w-full box-border rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] font-[inherit] text-[17px] font-semibold text-[#000144]";
+const labelClass = "text-sm font-semibold text-[#46557A]";
 
 const MockupV2 = () => {
+  const [dest, setDest] = useState("");
+  const destLabel = dest && dest !== "יעד אחר" ? dest : "לאן טסים?";
+
   return (
-    <div className="min-h-screen bg-white font-heebo text-[#0b1b4b]" dir="rtl">
-      <header className="bg-[#071433] text-white">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-2 font-black">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#22c55e] text-sm text-[#071433]">T</span>
-            אופיר ושות'
-          </div>
-          <nav className="hidden items-center gap-6 text-sm md:flex">
-            <a href="#hero">ראשי</a>
-            <a href="#benefits">מה מקבלים</a>
-            <a href="#steps">איך זה עובד</a>
-            <a href="#faq">שאלות</a>
-          </nav>
-          <Link to="/purchase" className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-bold text-[#071433]">
-            לרכישה
-          </Link>
-        </div>
-      </header>
+    <div
+      dir="rtl"
+      className="min-h-screen bg-white font-rubik text-[18px] leading-[1.45] text-[#000144] [container-type:inline-size]"
+    >
+      {/* Hero */}
+      <section id="top" className="relative overflow-hidden bg-[#000144] text-white">
+        <div aria-hidden="true" className="absolute left-[-10cqw] top-[-12cqw] h-[36cqw] w-[36cqw] rounded-full bg-[#0C1060]" />
+        <div aria-hidden="true" className="absolute left-[22cqw] top-[9cqw] h-[4cqw] w-[15cqw] rounded-full bg-white/[0.07]" />
+        <div aria-hidden="true" className="absolute left-[30cqw] top-[13.5cqw] h-[3cqw] w-[9cqw] rounded-full bg-white/[0.05]" />
 
-      <section id="hero" className="bg-[#071433] text-white">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-12 md:grid-cols-[1.1fr_.9fr] md:py-16">
-          <div className="text-right">
-            <h1 className="text-4xl font-black leading-tight md:text-6xl">
-              טסים לחו״ל?
-              <span className="mt-2 block text-[#22c55e]">ביטוח בכמה דקות.</span>
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-white/75 md:text-base">
-              פוליסה של הראל, סוכן 24/7 בעברית, ומחיר ברור לפני שמתחילים.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              {["הראל", "24/7", "ללא ניירת"].map((chip) => (
-                <span key={chip} className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/80">
-                  {chip}
-                </span>
+        <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
+          <header className="flex flex-wrap items-center gap-x-7 gap-y-1.5 rounded-[20px] bg-white py-2.5 pl-2.5 pr-5 text-[#000144]">
+            <a href="#top" aria-label="אופיר ושות׳ סוכנות לביטוח, לדף הבית" className="flex min-h-[52px] items-center gap-3 text-[#000144] no-underline">
+              <img src={logo} alt="" className="block h-12 w-auto" />
+              <span className="flex flex-col leading-[1.1]">
+                <span className="text-[23px] font-extrabold">אופיר ושות׳</span>
+                <span className="text-sm font-semibold text-[#46557A]">סוכנות לביטוח</span>
+              </span>
+            </a>
+            <nav aria-label="ניווט ראשי" className="flex flex-[1_1_280px] flex-wrap justify-center gap-x-7">
+              {[
+                ["#get", "מה מקבלים"],
+                ["#how", "איך זה עובד"],
+                ["#faq", "שאלות"],
+              ].map(([href, label]) => (
+                <a key={href} href={href} className="flex min-h-[44px] items-center text-[17px] font-semibold text-[#000144] no-underline hover:text-[#00A247]">
+                  {label}
+                </a>
               ))}
+            </nav>
+            <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2">
+              <a href="tel:0732721111" dir="ltr" className="flex min-h-[44px] items-center text-[17px] font-bold text-[#000144] no-underline">
+                073-2721111
+              </a>
+              <Link to="/purchase" className="inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#000144] px-[22px] text-[17px] font-bold text-white no-underline">
+                להצעת מחיר
+              </Link>
+            </div>
+          </header>
+        </div>
+
+        <div className="relative mx-auto flex max-w-[1200px] flex-col gap-8 px-6 pb-[88px] pt-16">
+          <div className="flex flex-col gap-3.5">
+            <h1 className="m-0 text-[clamp(46px,7.4cqw,108px)] font-black leading-[0.98] tracking-[-0.02em]">
+              טסים לחו״ל?
+              <br />
+              <span className="text-[#00A247]">ביטוח בכמה דקות.</span>
+            </h1>
+            <p className="m-0 text-[clamp(18px,1.8cqw,24px)] font-medium text-[#E3EAFF]">פוליסה של הראל · מוקד 24/7 בעברית</p>
+          </div>
+
+          {/* Boarding-pass card */}
+          <div className="flex flex-wrap overflow-hidden rounded-[28px] bg-white text-[#000144] shadow-[0_30px_60px_rgba(7,20,51,0.35)]">
+            <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-6 px-8 py-7">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-3.5">
+                <div className="flex flex-col">
+                  <span className={labelClass}>מ־</span>
+                  <span className="text-[34px] font-extrabold leading-[1.1]">תל אביב</span>
+                </div>
+                <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1)" }}>
+                  <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+                </svg>
+                <div className="flex flex-col">
+                  <span className={labelClass}>אל</span>
+                  <span className="text-[34px] font-extrabold leading-[1.1] text-[#00A247]">{destLabel}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))] gap-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="t-from" className={labelClass}>יציאה</label>
+                  <input id="t-from" type="date" className={fieldClass} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="t-to" className={labelClass}>חזרה</label>
+                  <input id="t-to" type="date" className={fieldClass} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="t-pax" className={labelClass}>נוסעים</label>
+                  <input id="t-pax" type="number" min={1} defaultValue={2} className={fieldClass} />
+                </div>
+              </div>
+            </div>
+            <div className="box-border flex flex-[1_1_250px] flex-col justify-center gap-4 bg-[#F3F5F8] p-7 [border-inline-start:3px_dashed_#C5CCD8]">
+              <Link to="/purchase" className="flex min-h-[64px] items-center justify-center gap-2.5 rounded-[18px] bg-[#00A247] text-[22px] font-extrabold text-[#000144] no-underline">
+                <span>להצעת מחיר</span>
+                <ArrowIcon />
+              </Link>
+              <div
+                aria-hidden="true"
+                className="h-[30px]"
+                style={{
+                  background:
+                    "repeating-linear-gradient(90deg, #000144 0 3px, transparent 3px 7px, #000144 7px 8px, transparent 8px 13px, #000144 13px 17px, transparent 17px 20px)",
+                }}
+              />
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white p-5 text-[#0b1b4b] shadow-2xl">
-            <div className="mb-4 flex items-center justify-between text-xs text-slate-500">
-              <span>הל אביב</span>
-              <span>לאן טסים?</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <label className="rounded-2xl border border-slate-200 p-3 text-right">
-                <span className="block text-xs text-slate-400">תאריך חזרה</span>
-                <span className="font-bold">בחרו תאריך</span>
-              </label>
-              <label className="rounded-2xl border border-slate-200 p-3 text-right">
-                <span className="block text-xs text-slate-400">תאריך יציאה</span>
-                <span className="font-bold">בחרו תאריך</span>
-              </label>
-            </div>
-            <div className="mt-3 rounded-2xl border border-slate-200 p-3 text-right text-sm">
-              <span className="block text-xs text-slate-400">נוסעים</span>
-              <span className="font-bold">2</span>
-            </div>
-            <Link
-              to="/purchase"
-              className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-[#22c55e] text-sm font-black text-[#071433]"
-            >
-              קבלו הצעה
-            </Link>
+          <div className="flex flex-wrap items-center">
+            {destinations.map((label) => {
+              const on = dest === label;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setDest(label)}
+                  className={`mb-2.5 ml-2.5 min-h-[46px] cursor-pointer rounded-full border-2 px-[22px] font-[inherit] text-[17px] font-bold ${
+                    on ? "border-[#00A247] bg-[#00A247] text-[#000144]" : "border-white/60 bg-white/[0.14] text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-4xl grid-cols-3 gap-4 px-4 py-10 text-center">
-        {[
-          ["1977", "שנת הקמה"],
-          ["הראל", "חברת הביטוח"],
-          ["כ-450", "סוכנים"],
-        ].map(([value, label]) => (
-          <div key={label} className="mx-auto grid h-28 w-28 place-items-center rounded-full border border-slate-200">
-            <div>
-              <div className="text-xl font-black">{value}</div>
-              <div className="text-xs text-slate-500">{label}</div>
+      {/* Trust stamps */}
+      <section aria-label="למה אפשר לסמוך עלינו" className="px-6 pb-2 pt-14">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap justify-center gap-x-16 gap-y-7">
+          {stamps.map((s) => (
+            <div
+              key={s.big}
+              className="box-border flex h-[164px] w-[164px] flex-col items-center justify-center rounded-full border-4 border-dashed border-[#000144] text-center text-[#000144]"
+              style={{ transform: `rotate(${s.rotate}deg)` }}
+            >
+              {s.bigFirst ? (
+                <>
+                  <span className={`${s.bigSize} font-black`}>{s.big}</span>
+                  <span className="text-base font-bold">{s.top}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-base font-bold">{s.top}</span>
+                  <span className={`${s.bigSize} font-black`}>{s.big}</span>
+                </>
+              )}
             </div>
-          </div>
-        ))}
-      </section>
-
-      <section id="benefits" className="mx-auto max-w-6xl px-4 pb-12">
-        <h2 className="mb-6 text-right text-3xl font-black">מה מקבלים</h2>
-        <div className="grid gap-4 md:grid-cols-4">
-          {benefits.map((item) => (
-            <article key={item.title} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-right">
-              <item.icon className="mb-4 h-6 w-6 text-[#0b1b4b]" />
-              <h3 className="font-black">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{item.text}</p>
-            </article>
           ))}
         </div>
       </section>
 
-      <section id="steps" className="bg-[#071433] text-white">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="text-right text-3xl font-black">שלושה צעדים, וטסים</h2>
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {[
-              ["1", "מלאו נסיעה", "יעד, תאריכים ומספר נוסעים"],
-              ["2", "קבלו מחיר", "הצעה ברורה בלי הפתעות"],
-              ["3", "הפוליסה אצלכם", "מסמכים וליווי מיידי"],
-            ].map(([n, title, text]) => (
-              <div key={n} className="text-right">
-                <div className="text-5xl font-black text-[#22c55e]">{n}</div>
-                <h3 className="mt-2 text-xl font-black">{title}</h3>
-                <p className="mt-1 text-sm text-white/70">{text}</p>
+      {/* Benefits */}
+      <section id="get" className="px-6 pb-[88px] pt-[72px]">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-9">
+          <h2 className={h2Class}>מה מקבלים</h2>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-5">
+            {benefits.map((b) => (
+              <div key={b.title} className="box-border flex min-h-[220px] flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7">
+                {b.icon}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[32px] font-black leading-[1.05]">{b.title}</span>
+                  <span className="text-[18px] font-medium text-[#33405F]">{b.text}</span>
+                </div>
               </div>
             ))}
-          </div>
-          <div className="mt-8 text-left">
-            <Link to="/purchase" className="inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-black text-[#071433]">
-              מתחילים
-            </Link>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl items-center gap-6 px-4 py-14 md:grid-cols-2">
-        <div className="text-right">
-          <h2 className="text-3xl font-black leading-tight">
+      {/* How it works */}
+      <section id="how" className="bg-[#000144] px-6 py-[88px] text-white">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-11">
+          <h2 className={h2Class}>שלושה צעדים, וטסים</h2>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-x-10 gap-y-7">
+            {steps.map(([n, a, b]) => (
+              <div key={n} className="flex items-center gap-5">
+                <span className="text-[112px] font-black leading-[0.9] text-[#00A247]">{n}</span>
+                <span className="text-[28px] font-extrabold leading-[1.15]">
+                  {a}
+                  <br />
+                  {b}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex">
+            <a href="#top" className="inline-flex min-h-[60px] items-center justify-center gap-2.5 rounded-[18px] bg-[#00A247] px-9 text-[21px] font-extrabold text-[#000144] no-underline">
+              <span>מתחילים</span>
+              <ArrowIcon size={20} />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section aria-label="יצירת קשר" className="px-6 pb-10 pt-[88px]">
+        <div className="mx-auto box-border flex max-w-[1200px] flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-12">
+          <h2 className={h2Class}>
             מעדיפים לדבר
             <br />
             עם בן אדם?
           </h2>
+          <div className="flex flex-wrap gap-3.5">
+            <a href="https://wa.me/972523333603" className="inline-flex min-h-[60px] items-center justify-center gap-2.5 rounded-[18px] bg-[#000144] px-[30px] text-[20px] font-extrabold text-white no-underline">
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+              <span>וואטסאפ</span>
+            </a>
+            <a href="tel:0732721111" className="box-border inline-flex min-h-[60px] items-center justify-center gap-2.5 rounded-[18px] border-[3px] border-[#000144] px-[30px] text-[20px] font-extrabold text-[#000144] no-underline">
+              <span dir="ltr">073-2721111</span>
+            </a>
+          </div>
         </div>
-        <div className="flex justify-end gap-3">
-          <a href="tel:0732721111" className="rounded-full bg-[#071433] px-5 py-3 text-sm font-bold text-white">
-            073-272-1111
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="px-6 pb-[88px] pt-14">
+        <div className="mx-auto flex max-w-[860px] flex-col gap-6">
+          <h2 className={h2Class}>שאלות</h2>
+          <div className="flex flex-col gap-3">
+            {faqs.map((q) => (
+              <details key={q} className="rounded-[20px] bg-[#F3F5F8] px-6 py-1">
+                <summary className="flex min-h-[64px] cursor-pointer list-none items-center text-[22px] font-bold [&::-webkit-details-marker]:hidden">
+                  {q}
+                </summary>
+                <p className="mb-5 mt-0 text-[#33405F]">[התשובה מהאתר הקיים]</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-[#000144] px-6 py-8 text-[#C9D3EA]">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-8 gap-y-2.5 text-base">
+          <span className="flex items-center gap-3">
+            <span className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-white">
+              <img src={logo} alt="" className="block h-[38px] w-auto" />
+            </span>
+            <span className="text-[20px] font-extrabold text-white">אופיר ושות׳ סוכנות לביטוח</span>
+          </span>
+          <span>מצדה 9, בני ברק</span>
+          <a href="mailto:ophir@ophirins.co.il" className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline">
+            ophir@ophirins.co.il
           </a>
-          <Link to="/contact" className="rounded-full border border-slate-300 px-5 py-3 text-sm font-bold">
-            השאירו פרטים
+          <Link to="/privacy-policy" className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline">
+            מדיניות פרטיות
           </Link>
-        </div>
-      </section>
-
-      <section id="faq" className="mx-auto max-w-3xl px-4 pb-16">
-        <h2 className="mb-4 text-center text-3xl font-black">שאלות</h2>
-        <div className="space-y-3">
-          {faqs.map((q) => (
-            <div key={q} className="rounded-2xl bg-slate-100 px-5 py-4 text-right text-sm font-semibold">
-              {q}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <footer className="bg-[#071433] text-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-white/70 md:flex-row">
-          <span>© 2026 אופיר ושות'</span>
-          <span>ophir@ophirins.co.il</span>
-          <span>ביטוח נסיעות. פשוט.</span>
+          <span>© 2026</span>
         </div>
       </footer>
     </div>
