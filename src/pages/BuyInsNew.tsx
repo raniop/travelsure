@@ -986,8 +986,11 @@ export default function BuyInsNew() {
     | { type: "error"; text: string }
   >({ type: "idle", text: "" });
 
-  const [customers, setCustomers] = useState<CustomerForm[]>([
-    {
+  // ?pax=N (from the landing-page form) opens N traveler cards up front
+  const [customers, setCustomers] = useState<CustomerForm[]>(() => {
+    const pax = parseInt(getQueryParam(new URLSearchParams(window.location.search), ["pax"]), 10);
+    const count = Number.isFinite(pax) ? Math.min(Math.max(pax, 1), 10) : 1;
+    return Array.from({ length: count }, () => ({
       id: "",
       gender: "",
       firstNameHe: "",
@@ -997,8 +1000,8 @@ export default function BuyInsNew() {
       birthDate: "",
       email: "",
       phone: "",
-    },
-  ]);
+    }));
+  });
 
   const isAff1731 = (() => {
     const params = new URLSearchParams(window.location.search);

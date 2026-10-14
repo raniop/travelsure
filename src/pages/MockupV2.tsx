@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Briefcase, Car, FileDown, FileText, Home, Users } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/ophir-logo.png";
 
@@ -7,6 +8,20 @@ const NAVY = "#000144";
 const GREEN = "#00A247";
 
 const destinations = ["אירופה", "ארה״ב", "תאילנד", "יוון", "דובאי", "יעד אחר"];
+
+// Same cap as the purchase form (BuyInsNew)
+const MAX_TRAVELERS = 10;
+
+const localIsoDate = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const otherInsurance = [
+  { to: "/services/car", icon: Car, key: "car" },
+  { to: "/services/home", icon: Home, key: "home" },
+  { to: "/services/business", icon: Briefcase, key: "business" },
+];
 
 const ArrowIcon = ({ size = 22 }: { size?: number }) => (
   <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -96,8 +111,32 @@ const labelClass = "text-sm font-semibold text-[#46557A]";
 
 const MockupV2 = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [dest, setDest] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [pax, setPax] = useState("2");
+  const [formError, setFormError] = useState("");
   const destLabel = dest && dest !== "יעד אחר" ? dest : "לאן טסים?";
+  const today = localIsoDate();
+
+  // Hand the trip details to the purchase flow, which forwards them to Harel
+  const goToPurchase = () => {
+    if (Boolean(fromDate) !== Boolean(toDate)) {
+      setFormError("בחרו גם תאריך יציאה וגם תאריך חזרה");
+      return;
+    }
+    if (fromDate && toDate < fromDate) {
+      setFormError("תאריך החזרה צריך להיות אחרי היציאה");
+      return;
+    }
+    const params = new URLSearchParams();
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    const travelers = Math.min(Math.max(parseInt(pax, 10) || 1, 1), MAX_TRAVELERS);
+    params.set("pax", String(travelers));
+    navigate(`/purchase?${params}`);
+  };
 
   return (
     <div
@@ -123,6 +162,7 @@ const MockupV2 = () => {
               {[
                 ["#get", "מה מקבלים"],
                 ["#how", "איך זה עובד"],
+                ["#services", "ביטוחים נוספים"],
                 ["#faq", "שאלות"],
               ].map(([href, label]) => (
                 <a key={href} href={href} className="flex min-h-[44px] items-center text-[17px] font-semibold text-[#000144] no-underline hover:text-[#00A247]">
@@ -134,9 +174,12 @@ const MockupV2 = () => {
               <a href="tel:0732721111" dir="ltr" className="flex min-h-[44px] items-center text-[17px] font-bold text-[#000144] no-underline">
                 073-2721111
               </a>
-              <Link to="/purchase" className="inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#000144] px-[22px] text-[17px] font-bold text-white no-underline">
-                להצעת מחיר
+              <Link to="/claim" className="box-border inline-flex min-h-[46px] items-center justify-center rounded-[14px] border-2 border-[#000144] px-[18px] text-[17px] font-bold text-[#000144] no-underline">
+                הגשת תביעה
               </Link>
+              <a href="#top" className="inline-flex min-h-[46px] items-center justify-center rounded-[14px] bg-[#00A247] px-[22px] text-[17px] font-bold text-[#000144] no-underline">
+                להצעת מחיר
+              </a>
             </div>
           </header>
         </div>
@@ -167,26 +210,81 @@ const MockupV2 = () => {
                   <span className="text-[34px] font-extrabold leading-[1.1] text-[#00A247]">{destLabel}</span>
                 </div>
               </div>
+              <div role="group" aria-label="בחירת יעד" className="-mt-2 flex flex-wrap gap-2">
+                {destinations.map((label) => {
+                  const on = dest === label;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setDest(label)}
+                      className={`min-h-[44px] cursor-pointer rounded-full border-2 px-[18px] font-[inherit] text-[16px] font-bold ${
+                        on ? "border-[#00A247] bg-[#00A247] text-[#000144]" : "border-[#D5DAE3] bg-white text-[#000144] hover:border-[#000144]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))] gap-3.5">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="t-from" className={labelClass}>יציאה</label>
-                  <input id="t-from" type="date" className={fieldClass} />
+                  <input
+                    id="t-from"
+                    type="date"
+                    min={today}
+                    value={fromDate}
+                    onChange={(e) => {
+                      setFromDate(e.target.value);
+                      setFormError("");
+                    }}
+                    className={fieldClass}
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="t-to" className={labelClass}>חזרה</label>
-                  <input id="t-to" type="date" className={fieldClass} />
+                  <input
+                    id="t-to"
+                    type="date"
+                    min={fromDate || today}
+                    value={toDate}
+                    onChange={(e) => {
+                      setToDate(e.target.value);
+                      setFormError("");
+                    }}
+                    className={fieldClass}
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="t-pax" className={labelClass}>נוסעים</label>
-                  <input id="t-pax" type="number" min={1} defaultValue={2} className={fieldClass} />
+                  <input
+                    id="t-pax"
+                    type="number"
+                    min={1}
+                    max={MAX_TRAVELERS}
+                    value={pax}
+                    onChange={(e) => setPax(e.target.value)}
+                    className={fieldClass}
+                  />
                 </div>
               </div>
             </div>
             <div className="box-border flex flex-[1_1_250px] flex-col justify-center gap-4 bg-[#F3F5F8] p-7 [border-inline-start:3px_dashed_#C5CCD8]">
-              <Link to="/purchase" className="flex min-h-[64px] items-center justify-center gap-2.5 rounded-[18px] bg-[#00A247] text-[22px] font-extrabold text-[#000144] no-underline">
+              <button
+                type="button"
+                onClick={goToPurchase}
+                className="flex min-h-[64px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-0 bg-[#00A247] font-[inherit] text-[22px] font-extrabold text-[#000144]"
+              >
                 <span>להצעת מחיר</span>
                 <ArrowIcon />
-              </Link>
+              </button>
+              {formError && (
+                <p role="alert" className="m-0 text-center text-base font-semibold text-[#B42318]">
+                  {formError}
+                </p>
+              )}
               <div
                 aria-hidden="true"
                 className="h-[30px]"
@@ -198,24 +296,6 @@ const MockupV2 = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center">
-            {destinations.map((label) => {
-              const on = dest === label;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setDest(label)}
-                  className={`mb-2.5 ml-2.5 min-h-[46px] cursor-pointer rounded-full border-2 px-[22px] font-[inherit] text-[17px] font-bold ${
-                    on ? "border-[#00A247] bg-[#00A247] text-[#000144]" : "border-white/60 bg-white/[0.14] text-white"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
         </div>
       </section>
 
@@ -287,6 +367,67 @@ const MockupV2 = () => {
         </div>
       </section>
 
+      {/* Existing customers + other insurance lines */}
+      <section id="services" className="px-6 pt-[88px]">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-9">
+          <div className="box-border flex flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] border-[3px] border-[#000144] p-12">
+            <div className="flex max-w-[620px] flex-col gap-3">
+              <h2 className={h2Class}>כבר מבוטחים אצלנו?</h2>
+              <p className="m-0 text-[20px] font-medium text-[#33405F]">
+                מגישים תביעה אונליין ומעלים את המסמכים ישר מהטלפון. הסוכן שלכם מלווה אתכם עד הסוף.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3.5">
+              <Link to="/claim" className="inline-flex min-h-[60px] items-center justify-center gap-2.5 rounded-[18px] bg-[#00A247] px-[30px] text-[20px] font-extrabold text-[#000144] no-underline">
+                <FileText aria-hidden="true" className="h-[22px] w-[22px]" strokeWidth={2.2} />
+                <span>להגשת תביעה</span>
+              </Link>
+              <Link to="/forms" className="box-border inline-flex min-h-[60px] items-center justify-center gap-2.5 rounded-[18px] border-[3px] border-[#000144] px-[30px] text-[20px] font-extrabold text-[#000144] no-underline">
+                <FileDown aria-hidden="true" className="h-[22px] w-[22px]" strokeWidth={2.2} />
+                <span>טפסים להורדה</span>
+              </Link>
+            </div>
+          </div>
+
+          <h2 className={`${h2Class} mt-12`}>ביטוחים נוספים בסוכנות</h2>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-5">
+            {otherInsurance.map(({ to, icon: Icon, key }) => (
+              <Link
+                key={key}
+                to={to}
+                className="group box-border flex min-h-[200px] flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+              >
+                <Icon aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+                <div className="flex flex-col gap-1">
+                  <span className="flex items-center gap-2 text-[28px] font-black leading-[1.05]">
+                    {t(`services.${key}.title`)}
+                    <span className="transition-transform group-hover:-translate-x-1">
+                      <ArrowIcon size={20} />
+                    </span>
+                  </span>
+                  <span className="text-[17px] font-medium text-[#33405F]">{t(`services.${key}.desc`)}</span>
+                </div>
+              </Link>
+            ))}
+            <Link
+              to="/foreigners"
+              className="group box-border flex min-h-[200px] flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+            >
+              <Users aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+              <div className="flex flex-col gap-1">
+                <span className="flex items-center gap-2 text-[28px] font-black leading-[1.05]">
+                  עובדים זרים
+                  <span className="transition-transform group-hover:-translate-x-1">
+                    <ArrowIcon size={20} />
+                  </span>
+                </span>
+                <span className="text-[17px] font-medium text-[#33405F]">ביטוח רפואי, עם טופס בקשה אונליין</span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Contact */}
       <section aria-label="יצירת קשר" className="px-6 pb-10 pt-[88px]">
         <div className="mx-auto box-border flex max-w-[1200px] flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-12">
@@ -342,9 +483,19 @@ const MockupV2 = () => {
           <a href="mailto:ophir@ophirins.co.il" className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline">
             ophir@ophirins.co.il
           </a>
-          <Link to="/privacy-policy" className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline">
-            מדיניות פרטיות
-          </Link>
+          <nav aria-label="קישורים נוספים" className="flex flex-wrap gap-x-5">
+            {[
+              ["/claim", "הגשת תביעה"],
+              ["/forms", "טפסים"],
+              ["/about", "אודות"],
+              ["/contact", "צור קשר"],
+              ["/privacy-policy", "מדיניות פרטיות"],
+            ].map(([to, label]) => (
+              <Link key={to} to={to} className="inline-flex min-h-[44px] items-center text-[#C9D3EA] underline hover:text-white">
+                {label}
+              </Link>
+            ))}
+          </nav>
           <span>© 2026</span>
         </div>
       </footer>

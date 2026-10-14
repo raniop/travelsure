@@ -1,13 +1,29 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Loader2 } from "lucide-react";
 
 const PURCHASE_URL = "https://ophir.travelsure.co.il/buyinsnew?aff=709";
 
+// Trip details from the landing-page form that the purchase flow understands
+const FORWARDED_PARAMS = ["from", "to", "pax"];
+
+const buildPurchaseUrl = (search: string) => {
+  const url = new URL(PURCHASE_URL);
+  const incoming = new URLSearchParams(search);
+  FORWARDED_PARAMS.forEach((key) => {
+    const value = incoming.get(key);
+    if (value) url.searchParams.set(key, value);
+  });
+  return url.toString();
+};
+
 const Purchase = () => {
   const { t, isRTL } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
+  const purchaseUrl = useMemo(() => buildPurchaseUrl(location.search), [location.search]);
 
   return (
     <div className="min-h-screen font-heebo flex flex-col" dir="rtl">
@@ -24,7 +40,7 @@ const Purchase = () => {
         )}
 
         <iframe
-          src={PURCHASE_URL}
+          src={purchaseUrl}
           title={t("purchase.title")}
           className="absolute inset-0 w-full h-full border-0"
           allow="payment; clipboard-write"
