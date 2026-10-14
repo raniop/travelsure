@@ -330,7 +330,8 @@
 .agency-theme * {
   font-family: "Rubik", system-ui, sans-serif !important;
 }
-.agency-theme [data-customer-index] {
+/* div only: the ID <input> carries data-customer-index too */
+.agency-theme div[data-customer-index] {
   border-radius: 24px;
   border: 2px solid #E3E7EE;
   background: #FFFFFF;
