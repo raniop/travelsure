@@ -1,178 +1,172 @@
-import { ArrowLeft, BriefcaseBusiness, CheckCircle2, CircleGauge, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
-import Header from "@/components/Header";
+import { Link } from "react-router-dom";
+import { Headphones, Plane, ShieldCheck, UserRound } from "lucide-react";
 
-const valueProps = [
-  {
-    icon: ShieldCheck,
-    title: "הגנה מדויקת באמת",
-    text: "התאמה חכמה בין צרכי הלקוח לפוליסה, עם שקיפות מלאה לאורך כל הדרך.",
-  },
-  {
-    icon: HeartHandshake,
-    title: "שירות אנושי וזמין",
-    text: "זמינות גבוהה בוואטסאפ, טלפון ומייל עם ליווי אישי מרגע ההצעה ועד מקרה תביעה.",
-  },
-  {
-    icon: CircleGauge,
-    title: "תהליך מהיר ודיגיטלי",
-    text: "פחות טפסים, פחות עומס, יותר יעילות - בלי לוותר על איכות מקצועית.",
-  },
+const benefits = [
+  { icon: ShieldCheck, title: "עד 5 מיליון $", text: "כיסוי רפואי גבוה לנסיעה" },
+  { icon: Headphones, title: "24/7", text: "מוקד חירום זמין תמיד" },
+  { icon: UserRound, title: "סוכן אישי", text: "ליווי אנושי לאורך הדרך" },
+  { icon: Plane, title: "מותאם לכם", text: "הרחבות לפי סוג הנסיעה" },
 ];
 
-const serviceCards = [
-  { title: 'ביטוח נסיעות לחו"ל', subtitle: "כיסוי רפואי, כבודה, ביטול וקיצור נסיעה", tag: "פופולרי" },
-  { title: "עובדים זרים", subtitle: "Safe Stay Plus עם תהליך מסודר למעסיקים", tag: "עסקי" },
-  { title: "ביטוח תיירים", subtitle: "Tour & Care עם מסמכים וקישורים ישירים", tag: "דיגיטלי" },
-  { title: "ביטוחי רכב ודירה", subtitle: "מעטפת למשפחה ולעסק במקום אחד", tag: "משלים" },
-];
+const faqs = ["מה הכיסוי כולל?", "איך מגישים תביעה?", "איך קונים ביטוח לנסיעה?"];
 
 const MockupV2 = () => {
   return (
-    <div className="min-h-screen font-heebo bg-slate-50 text-slate-900" dir="rtl">
-      <Header />
-      <div className="h-16 md:h-20" />
-
-      <main className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-28 right-[-110px] h-80 w-80 rounded-full bg-violet-200/65 blur-3xl" />
-          <div className="absolute top-[26%] left-[-120px] h-96 w-96 rounded-full bg-blue-200/55 blur-3xl" />
-          <div className="absolute bottom-[-140px] right-[28%] h-72 w-72 rounded-full bg-fuchsia-100/55 blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_55%_0%,rgba(99,102,241,0.14),transparent_45%)]" />
+    <div className="min-h-screen bg-white font-heebo text-[#0b1b4b]" dir="rtl">
+      <header className="bg-[#071433] text-white">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          <div className="flex items-center gap-2 font-black">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#22c55e] text-sm text-[#071433]">T</span>
+            אופיר ושות'
+          </div>
+          <nav className="hidden items-center gap-6 text-sm md:flex">
+            <a href="#hero">ראשי</a>
+            <a href="#benefits">מה מקבלים</a>
+            <a href="#steps">איך זה עובד</a>
+            <a href="#faq">שאלות</a>
+          </nav>
+          <Link to="/purchase" className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-bold text-[#071433]">
+            לרכישה
+          </Link>
         </div>
+      </header>
 
-        <section className="container-wide relative py-10 md:py-14">
-          <div className="rounded-[32px] border border-white/70 bg-white/80 backdrop-blur-xl p-6 md:p-10 shadow-[0_30px_80px_-35px_rgba(76,29,149,0.25)]">
-            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-8 items-center">
-              <div className="text-right">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-l from-violet-100 to-blue-100 px-3.5 py-1.5 text-xs font-semibold text-violet-700 shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  מוקאפ פרימיום מעודכן
+      <section id="hero" className="bg-[#071433] text-white">
+        <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-12 md:grid-cols-[1.1fr_.9fr] md:py-16">
+          <div className="text-right">
+            <h1 className="text-4xl font-black leading-tight md:text-6xl">
+              טסים לחו״ל?
+              <span className="mt-2 block text-[#22c55e]">ביטוח בכמה דקות.</span>
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-white/75 md:text-base">
+              פוליסה של הראל, סוכן 24/7 בעברית, ומחיר ברור לפני שמתחילים.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              {["הראל", "24/7", "ללא ניירת"].map((chip) => (
+                <span key={chip} className="rounded-full border border-white/20 px-3 py-1 text-xs text-white/80">
+                  {chip}
                 </span>
-                <h1 className="mt-4 text-3xl md:text-6xl font-black leading-tight tracking-tight text-slate-900">
-                  ביטוח נסיעות
-                  <br />
-                  עם חוויית AI אישית
-                </h1>
-                <p className="mt-4 max-w-2xl text-sm md:text-base leading-7 text-slate-600">
-                  קונספט עיצובי בהיר ונקי עם היררכיה חזקה, שפה מודרנית ותחושת פרימיום ידידותית.
-                  מתאים למותג ביטוח שרוצה אמון, בהירות ומהירות.
-                </p>
-
-                <div className="mt-6 flex flex-wrap justify-end gap-3">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-l from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_14px_30px_-14px_rgba(109,40,217,0.55)] transition hover:from-violet-500 hover:to-indigo-500"
-                  >
-                    התחלת רכישה
-                    <ArrowLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-5 py-2.5 text-sm font-bold text-violet-700 shadow-sm transition hover:bg-violet-50"
-                  >
-                    טפסים ושירות עצמי
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-indigo-50 to-sky-50 p-5 shadow-[0_20px_45px_-25px_rgba(99,102,241,0.35)]">
-                <div className="text-right">
-                  <p className="text-xs text-violet-600">ערכי מותג מובילים</p>
-                  <h3 className="mt-1 text-xl font-extrabold text-slate-900">אמינות. פשטות. דיוק.</h3>
-                </div>
-                <ul className="mt-4 space-y-3">
-                  {["תוכן ברור עם היררכיה חזקה", "קריאות גבוהה גם במובייל", "עיצוב ממיר עם CTA בולט"].map((item) => (
-                    <li key={item} className="flex items-center justify-end gap-2 text-sm text-slate-700">
-                      <span>{item}</span>
-                      <CheckCircle2 className="h-4 w-4 text-violet-600" />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="container-wide pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-            {valueProps.map((card) => (
-              <article
-                key={card.title}
-                className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_40px_-30px_rgba(99,102,241,0.3)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="h-11 w-11 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center">
-                    <card.icon className="h-5 w-5" />
-                  </div>
-                  <div className="text-right">
-                    <h3 className="text-base font-extrabold text-slate-900">{card.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{card.text}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="container-wide pb-10">
-          <div className="rounded-[26px] border border-slate-200 bg-white p-5 md:p-7 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.4)]">
-            <div className="flex items-center justify-between gap-3">
-              <div className="h-11 w-11 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                <BriefcaseBusiness className="h-5 w-5" />
-              </div>
-              <div className="text-right">
-                <h2 className="text-2xl font-black text-slate-900">שירותים וקטגוריות</h2>
-                <p className="mt-1 text-sm text-slate-600">כרטיסי תוכן ברורים עם זיהוי מהיר לכל שירות</p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {serviceCards.map((service) => (
-                <article
-                  key={service.title}
-                  className="rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 transition hover:shadow-md"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full bg-violet-50 text-violet-700 px-2.5 py-1 text-[11px] font-semibold">
-                      {service.tag}
-                    </span>
-                    <h3 className="text-sm font-extrabold text-slate-900 text-right">{service.title}</h3>
-                  </div>
-                  <p className="mt-3 text-sm text-slate-600 text-right leading-6">{service.subtitle}</p>
-                </article>
               ))}
             </div>
           </div>
-        </section>
 
-        <section className="container-wide pb-8">
-          <div className="rounded-3xl border border-violet-100 bg-gradient-to-l from-indigo-100 via-violet-100 to-fuchsia-100 p-6 md:p-8 shadow-[0_24px_55px_-32px_rgba(109,40,217,0.28)]">
-            <div className="grid grid-cols-1 md:grid-cols-[.9fr_1.1fr] gap-6 items-center">
-              <button
-                type="button"
-                className="w-full md:w-auto rounded-full bg-gradient-to-l from-violet-600 to-indigo-600 px-5 py-3 text-sm font-black text-white shadow-[0_14px_30px_-14px_rgba(109,40,217,0.55)] transition hover:from-violet-500 hover:to-indigo-500"
-              >
-                בואו נבנה גרסה חיה
-              </button>
-              <div className="text-right">
-                <h3 className="text-2xl font-black text-slate-900">אזור CTA חדש וחד</h3>
-                <p className="mt-2 text-sm md:text-base text-slate-700">
-                  אזור קריאה לפעולה עם נוכחות גבוהה, טקסט תמציתי ומיקוד בהמרה.
-                </p>
-              </div>
+          <div className="rounded-3xl bg-white p-5 text-[#0b1b4b] shadow-2xl">
+            <div className="mb-4 flex items-center justify-between text-xs text-slate-500">
+              <span>הל אביב</span>
+              <span>לאן טסים?</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <label className="rounded-2xl border border-slate-200 p-3 text-right">
+                <span className="block text-xs text-slate-400">תאריך חזרה</span>
+                <span className="font-bold">בחרו תאריך</span>
+              </label>
+              <label className="rounded-2xl border border-slate-200 p-3 text-right">
+                <span className="block text-xs text-slate-400">תאריך יציאה</span>
+                <span className="font-bold">בחרו תאריך</span>
+              </label>
+            </div>
+            <div className="mt-3 rounded-2xl border border-slate-200 p-3 text-right text-sm">
+              <span className="block text-xs text-slate-400">נוסעים</span>
+              <span className="font-bold">2</span>
+            </div>
+            <Link
+              to="/purchase"
+              className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-[#22c55e] text-sm font-black text-[#071433]"
+            >
+              קבלו הצעה
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-4xl grid-cols-3 gap-4 px-4 py-10 text-center">
+        {[
+          ["1977", "שנת הקמה"],
+          ["הראל", "חברת הביטוח"],
+          ["כ-450", "סוכנים"],
+        ].map(([value, label]) => (
+          <div key={label} className="mx-auto grid h-28 w-28 place-items-center rounded-full border border-slate-200">
+            <div>
+              <div className="text-xl font-black">{value}</div>
+              <div className="text-xs text-slate-500">{label}</div>
             </div>
           </div>
-        </section>
+        ))}
+      </section>
 
-        <footer className="container-wide pb-10">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-6 text-right">
-            <h4 className="text-base font-black text-[#0b4e86]">Footer Style Direction</h4>
-            <p className="mt-2 text-sm text-slate-600 leading-6">
-              פוטר מינימליסטי עם טקסט קריא, קישורים מסודרים ושמירה על תחושת פרימיום נקייה.
-            </p>
+      <section id="benefits" className="mx-auto max-w-6xl px-4 pb-12">
+        <h2 className="mb-6 text-right text-3xl font-black">מה מקבלים</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          {benefits.map((item) => (
+            <article key={item.title} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-right">
+              <item.icon className="mb-4 h-6 w-6 text-[#0b1b4b]" />
+              <h3 className="font-black">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500">{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="steps" className="bg-[#071433] text-white">
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          <h2 className="text-right text-3xl font-black">שלושה צעדים, וטסים</h2>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {[
+              ["1", "מלאו נסיעה", "יעד, תאריכים ומספר נוסעים"],
+              ["2", "קבלו מחיר", "הצעה ברורה בלי הפתעות"],
+              ["3", "הפוליסה אצלכם", "מסמכים וליווי מיידי"],
+            ].map(([n, title, text]) => (
+              <div key={n} className="text-right">
+                <div className="text-5xl font-black text-[#22c55e]">{n}</div>
+                <h3 className="mt-2 text-xl font-black">{title}</h3>
+                <p className="mt-1 text-sm text-white/70">{text}</p>
+              </div>
+            ))}
           </div>
-        </footer>
-      </main>
+          <div className="mt-8 text-left">
+            <Link to="/purchase" className="inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-black text-[#071433]">
+              מתחילים
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-6xl items-center gap-6 px-4 py-14 md:grid-cols-2">
+        <div className="text-right">
+          <h2 className="text-3xl font-black leading-tight">
+            מעדיפים לדבר
+            <br />
+            עם בן אדם?
+          </h2>
+        </div>
+        <div className="flex justify-end gap-3">
+          <a href="tel:0732721111" className="rounded-full bg-[#071433] px-5 py-3 text-sm font-bold text-white">
+            073-272-1111
+          </a>
+          <Link to="/contact" className="rounded-full border border-slate-300 px-5 py-3 text-sm font-bold">
+            השאירו פרטים
+          </Link>
+        </div>
+      </section>
+
+      <section id="faq" className="mx-auto max-w-3xl px-4 pb-16">
+        <h2 className="mb-4 text-center text-3xl font-black">שאלות</h2>
+        <div className="space-y-3">
+          {faqs.map((q) => (
+            <div key={q} className="rounded-2xl bg-slate-100 px-5 py-4 text-right text-sm font-semibold">
+              {q}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="bg-[#071433] text-white">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-white/70 md:flex-row">
+          <span>© 2026 אופיר ושות'</span>
+          <span>ophir@ophirins.co.il</span>
+          <span>ביטוח נסיעות. פשוט.</span>
+        </div>
+      </footer>
     </div>
   );
 };
