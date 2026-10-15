@@ -38,6 +38,7 @@ import {
   queryDateToIso,
   sanitizeNameInput,
   buildHarelUrl,
+  resolveUnknownPriorConditions,
 } from "@/lib/purchase/harel";
 
 /** ========= UI Bits ========= */
@@ -338,6 +339,7 @@ export default function BuyInsNew() {
   const [idValidationErrors, setIdValidationErrors] = useState<Record<number, string>>({});
   const [nameSanitizedNotice, setNameSanitizedNotice] = useState<Record<number, boolean>>({});
   const [priorConditionById, setPriorConditionById] = useState<Record<string, PriorConditionInfo>>({});
+  const [priorConditionResolving, setPriorConditionResolving] = useState(false);
   const [specialDiscountById, setSpecialDiscountById] = useState<Record<string, SpecialDiscountInfo>>({});
   const [travelDates, setTravelDates] = useState<{ from: string; to: string }>({ from: "", to: "" });
   const [travelDateError, setTravelDateError] = useState("");
@@ -640,7 +642,8 @@ export default function BuyInsNew() {
     }
     return {
       className: "bg-slate-100 text-slate-700 border border-slate-200",
-      text: "החמרה למחלה קיימת: אין נתון",
+      // Background lookup by policy ID may still be running for this traveler
+      text: priorConditionResolving && info.policyId ? "החמרה למחלה קיימת: בודק…" : "החמרה למחלה קיימת: אין נתון",
       policyLabel: info.policyLabel,
     };
   };
@@ -1020,32 +1023,22 @@ export default function BuyInsNew() {
 
           if (useGetByIdU) {
             const mapped = mapPoliciesToCustomers(payload, normalizedId);
-            let priorConditionMap = mapped.priorConditionById;
-            let specialDiscountMap = mapped.specialDiscountById;
-            const primaryPrior = priorConditionMap[normalizedId];
+            const priorConditionMap = mapped.priorConditionById;
+            const specialDiscountMap = mapped.specialDiscountById;
 
-            if (primaryPrior?.status === "unknown" && primaryPrior.policyId) {
-              try {
-                const policyLookupUrl = `${API_BASE_URL}/api/policy/GetByIdU?id=${encodeURIComponent(primaryPrior.policyId)}&pass=Admin$123`;
-                const policyRes = await fetch(policyLookupUrl, {
-                  cache: "no-store",
-                  signal: controller.signal,
-                });
-                if (policyRes.ok) {
-                  const policyText = await policyRes.text();
-                  let policyPayload: unknown = null;
-                  try {
-                    policyPayload = policyText ? JSON.parse(policyText) : null;
-                  } catch {
-                    policyPayload = null;
-                  }
-                  const policyMapped = mapPoliciesToCustomers(policyPayload, normalizedId);
-                  priorConditionMap = mergePriorConditionMaps(priorConditionMap, policyMapped.priorConditionById);
-                  specialDiscountMap = mergeSpecialDiscountMaps(specialDiscountMap, policyMapped.specialDiscountById);
-                }
-              } catch (err) {
-                console.warn("Fallback policy lookup for prior condition failed:", err);
-              }
+            // Unknown prior-condition statuses are resolved by policy ID in the background
+            // (each lookup can take ~15s); badges show "בודק…" meanwhile and update on return.
+            // Covers every traveler, not just the main one.
+            const hasUnknownPrior = Object.values(priorConditionMap).some((info) => info.status === "unknown" && info.policyId);
+            if (hasUnknownPrior) {
+              setPriorConditionResolving(true);
+              void resolveUnknownPriorConditions(priorConditionMap, specialDiscountMap)
+                .then((resolved) => {
+                  setPriorConditionById((prev) => mergePriorConditionMaps(prev, resolved.priorConditionById));
+                  setSpecialDiscountById((prev) => ({ ...prev, ...resolved.specialDiscountById }));
+                })
+                .catch((err) => console.warn("Fallback policy lookup for prior condition failed:", err))
+                .finally(() => setPriorConditionResolving(false));
             }
 
             if (mapped.primaryCustomer) {
