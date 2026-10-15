@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>פירוט כיסויים ועלויות - Tour & Care</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Source: harel-group.co.il/insurance/foreign/policies/tour-and-care (rates indexed to Aug 2026 CPI).
+     Rebuild: npm run build:tour-care-pdf */
+  @page { size: A4; margin: 0; }
+  :root { --navy:#000144; --green:#00A247; --ink:#1B1F3B; --muted:#5B6180; --line:#E3E6F0; --soft:#F4F6FB; --mint:#E8F7EE; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Rubik, Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; position: relative; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
+  .page:last-child { page-break-after: auto; }
+
+  header { background: var(--navy); color: #fff; padding: 8mm 14mm 7mm; position: relative; }
+  header::after { content: ""; position: absolute; inset: auto 0 0 0; height: 2.2mm; background: var(--green); }
+  .brand { display: flex; align-items: center; gap: 4mm; }
+  .brand img { height: 15mm; }
+  .brand b { font-size: 13pt; font-weight: 700; display: block; }
+  .brand span { font-size: 8.5pt; opacity: .75; }
+  .title { margin-top: 4.5mm; }
+  .eyebrow { display: inline-block; background: var(--green); color: #fff; font-size: 8.5pt; font-weight: 600; padding: 1mm 3.5mm; border-radius: 99px; }
+  h1 { font-size: 21pt; font-weight: 800; line-height: 1.15; margin-top: 2.5mm; }
+  .lead { font-size: 10.5pt; opacity: .85; margin-top: 2mm; max-width: 150mm; }
+  .slim header { padding: 8mm 14mm 7mm; }
+  .slim .brand img { height: 10mm; }
+  .slim h1 { font-size: 15pt; margin-top: 0; }
+
+  main { padding: 6mm 14mm 0; flex: 1; }
+  h2 { font-size: 13pt; font-weight: 700; color: var(--navy); margin: 0 0 3mm; display: flex; align-items: center; gap: 2.5mm; }
+  h2::before { content: ""; width: 1.4mm; height: 5mm; background: var(--green); border-radius: 1mm; }
+  section { margin-bottom: 5mm; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; margin-bottom: 5mm; }
+  .stat { background: var(--soft); border-radius: 3mm; padding: 2.5mm 4mm; border-top: 1mm solid var(--green); }
+  .stat b { display: block; font-size: 15pt; font-weight: 800; color: var(--navy); line-height: 1.2; }
+  .stat span { font-size: 8.5pt; color: var(--muted); }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 3mm; overflow: hidden; }
+  th { background: var(--navy); color: #fff; font-weight: 600; font-size: 9.5pt; text-align: right; padding: 2.4mm 4mm; }
+  td { padding: 1.7mm 4mm; border-top: 1px solid var(--line); vertical-align: top; }
+  tr:nth-child(even) td { background: #FAFBFD; }
+  td.val { font-weight: 600; color: var(--navy); white-space: nowrap; width: 38mm; }
+  td.price { font-weight: 700; color: var(--green); white-space: nowrap; font-size: 11.5pt; }
+  .sub { display: block; color: var(--muted); font-size: 8pt; line-height: 1.4; font-weight: 400; margin-top: .5mm; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .card { border: 1px solid var(--line); border-radius: 3mm; padding: 3mm 4mm; }
+  .card h3 { font-size: 10.5pt; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm; }
+  .card p, .card li { font-size: 9.2pt; color: var(--ink); }
+  ul { list-style: none; }
+  li { position: relative; padding-right: 4.5mm; margin-bottom: 1mm; }
+  li::before { content: ""; position: absolute; right: 0; top: 2mm; width: 1.8mm; height: 1.8mm; border-radius: 50%; background: var(--green); }
+  .tag { display: inline-block; background: var(--mint); color: #00733A; font-size: 8pt; font-weight: 600; padding: .4mm 2.5mm; border-radius: 99px; margin-top: 1.5mm; }
+  .warn { background: #FFF6E5; border: 1px solid #F3D9A4; border-radius: 3mm; padding: 3.5mm 4mm; font-size: 9.2pt; }
+  .warn b { color: #8A5A00; }
+  .note { font-size: 8pt; color: var(--muted); line-height: 1.45; }
+
+  footer { background: var(--soft); border-top: 1px solid var(--line); padding: 4.5mm 14mm; display: flex; justify-content: space-between; align-items: center; font-size: 8.5pt; color: var(--muted); }
+  footer b { color: var(--navy); font-weight: 700; }
+  footer .cta { background: var(--green); color: #fff; font-weight: 700; padding: 1.8mm 4.5mm; border-radius: 99px; text-decoration: none; }
+  .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+  table.grouped tr td { background: #fff; }
+  table.grouped td:nth-last-child(2) { white-space: nowrap; width: 20mm; }
+  table.grouped tr.cont td { border-top: 1px dashed var(--line); }
+  .join { display: flex; justify-content: space-between; align-items: center; gap: 6mm; background: var(--navy); color: #fff; border-radius: 3mm; padding: 5mm 6mm; }
+  .join h3 { font-size: 12pt; font-weight: 700; margin-bottom: 1mm; }
+  .join p { font-size: 9.2pt; opacity: .85; }
+  .join-contact { text-align: left; white-space: nowrap; }
+  .join-contact b { display: block; font-size: 16pt; font-weight: 800; color: #3DDC84; }
+  .join-contact span { font-size: 9pt; opacity: .85; }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1: coverages ============ -->
+<div class="page">
+  <header>
+    <div class="brand">
+      <img src="../../src/assets/ophir-logo.png" alt="">
+      <div><b>אופיר ושות׳ סוכנות לביטוח</b><span>סוכן מורשה של הראל חברה לביטוח</span></div>
+    </div>
+    <div class="title">
+      <span class="eyebrow">ביטוח תיירים בישראל</span>
+      <h1>Tour &amp; Care<br>פירוט כיסויים ועלויות</h1>
+      <p class="lead">ביטוח בריאות לתיירים ולתושבים חוזרים המבקרים בישראל: כיסוי למגוון שירותים רפואיים בישראל בזמן השהות בארץ.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><b>350,000 ₪</b><span>גבול אחריות לפוליסה למבוטח</span></div>
+      <div class="stat"><b>עד 90 יום</b><span>הוצאות רפואיות בעת אשפוז</span></div>
+      <div class="stat"><b>מ־14.35 ₪</b><span>דמי ביטוח ליום למבוטח</span></div>
+    </div>
+
+    <section>
+      <h2>עיקרי הכיסויים</h2>
+      <table>
+        <thead><tr><th>כיסוי</th><th>גבול האחריות</th></tr></thead>
+        <tbody>
+          <tr><td>הוצאות רפואיות בישראל בעת אשפוז</td><td class="val">עד 90 יום</td></tr>
+          <tr><td>הוצאות רפואיות שלא בעת אשפוז, טיפול או ייעוץ רפואי אצל רופא שבהסכם</td><td class="val">כלול בגבולות האחריות</td></tr>
+          <tr><td>בדיקות מעבדה, חבישה, צילומי רנטגן</td><td class="val">כלול בגבולות האחריות</td></tr>
+          <tr><td>תרופות<span class="sub">בכפוף למרשם רופא בהסכם ובתי מרקחת שבהסכם</span></td><td class="val">עד 700 ₪ לתקופה</td></tr>
+          <tr><td>טיפול חירום בשיניים<span class="sub">במרפאות שבהסכם</span></td><td class="val">עד 700 ₪ לתקופה</td></tr>
+          <tr><td>העברת גופת המבוטח לארץ המוצא<span class="sub">בתנאי שההוצאה לא משולמת על ידי גורם אחר</span></td><td class="val">עד 18,000 ₪</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="two">
+      <div class="card">
+        <h3>תנאי הצטרפות</h3>
+        <ul>
+          <li>הצטרפות עד גיל 75 כולל</li>
+          <li>השירותים ניתנים באמצעות המערך הפרטי של הראל, קופת חולים מכבי או קופת חולים כללית, לפי בחירת הלקוח בעת ההצטרפות</li>
+          <li>השתתפות עצמית: כמפורט בדף פרטי הביטוח</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>מה לא מכוסה (תמצית החריגים)</h3>
+        <p>כל אירוע הקשור או נובע ממצב רפואי שקדם לתחילת הביטוח, ספורט אתגרי, הריון ולידה, שימוש בסמים או אלכוהול, תאונת עבודה ותאונת דרכים, ועוד כמפורט בתנאי הפוליסה.</p>
+      </div>
+    </section>
+
+    <section class="join">
+      <div>
+        <h3>רוצים לבטח תייר או תושב חוזר?</h3>
+        <p>נשמח לבדוק עבורכם את הכיסוי המתאים ולהפיק את הפוליסה. שלחו לנו את פרטי המבוטח ותאריכי השהות בישראל.</p>
+      </div>
+      <div class="join-contact"><b class="ltr">073-272-1111</b><span>ophir@ophirins.co.il</span></div>
+    </section>
+  </main>
+
+  <footer>
+    <div><b>אופיר ושות׳ סוכנות לביטוח</b> · <span class="ltr">073-272-1111</span> · ophir@ophirins.co.il</div>
+    <div>המשך: תעריפים ←</div>
+  </footer>
+</div>
+
+<!-- ============ PAGE 2: rates ============ -->
+<div class="page slim">
+  <header>
+    <div class="brand" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:4mm">
+        <img src="../../src/assets/ophir-logo.png" alt="">
+        <h1>Tour &amp; Care · תעריפים</h1>
+      </div>
+      <span class="eyebrow">ביטוח תיירים בישראל</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>דמי ביטוח ליום למבוטח</h2>
+      <table>
+        <thead><tr><th>גיל המבוטח</th><th>תקופת ביטוח מקסימלית</th><th>מכבי / כללית / מערך פרטי של הראל</th></tr></thead>
+        <tbody>
+          <tr><td>עד 59</td><td>180 יום</td><td class="price">14.35 ₪</td></tr>
+          <tr><td><span class="ltr">60–65</span></td><td>90 יום</td><td class="price">18.60 ₪</td></tr>
+          <tr><td><span class="ltr">66–75</span></td><td>45 יום</td><td class="price">18.60 ₪</td></tr>
+          <tr><td><span class="ltr">76–80</span></td><td>14 יום</td><td class="price">36.45 ₪</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>הרחבות: דמי ביטוח ליום למבוטח</h2>
+      <table class="grouped">
+        <thead><tr><th>הרחבה</th><th>גיל</th><th>מחיר ליום</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="2">נספח הטסה רפואית<span class="sub">עד 35,000 ₪. הטסה מישראל לחו״ל בטיסה רגילה או מיוחדת, בליווי צוות רפואי המותאם למצב המבוטח</span></td><td><span class="ltr">0–75</span></td><td class="price">1.88 ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">76–80</span></td><td class="price">15.20 ₪</td></tr>
+          <tr><td rowspan="2">נספח תאונות אישיות (בישראל בלבד)<span class="sub">מוות 50,000 ₪ · נכות לפי אחוז הנכות · שברים וכוויות עד 4,000 ₪ · אשפוז 100 ₪ ליום מהיום השלישי ועד 42 יום</span></td><td><span class="ltr">18–50</span></td><td class="price">0.87 ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">51–70</span></td><td class="price">1.56 ₪</td></tr>
+          <tr><td rowspan="2">כתב שירות: רופא מלווה אישי<span class="sub">רופא מומחה כמנהל רפואי אישי, ריכוז התיק הרפואי וליווי אחות לפי הצורך. אכשרה 48 שעות, השתתפות עצמית 450 ₪ למקרה</span></td><td><span class="ltr">0–20</span></td><td class="price">0.17 ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">21–80</span></td><td class="price">0.33 ₪</td></tr>
+          <tr><td rowspan="2">כתב שירות: ייעוץ רפואי בשיחת וידאו<span class="sub">רפואת משפחה וילדים ללא השתתפות עצמית · רופא מומחה (עור, אורתופדיה, קרדיולוגיה) תוך 24 שעות: 100 ₪ · איסוף מידע לפני הייעוץ: 90 ₪</span></td><td><span class="ltr">0–20</span></td><td class="price">0.36 ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">21–80</span></td><td class="price">0.54 ₪</td></tr>
+          <tr><td rowspan="2">נספח ביטול חריג ספורט אתגרי<span class="sub">כיסוי לשירותי בריאות לפי פרק ב׳ בפוליסה, בפעילות חובבנית</span></td><td><span class="ltr">0–75</span></td><td class="price">4.69 ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">76–80</span></td><td class="price">9.37 ₪</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+
+    <section class="warn">
+      <b>חשוב לדעת:</b> התשלום על הנספחים וכתבי השירות הוא לכל תקופת הביטוח. את נספח ביטול חריג ספורט אתגרי אפשר לרכוש גם לחלק מתקופת הביטוח. רכישתו אינה מהווה הרחבה לספורט אתגרי בנספח תאונות אישיות.
+    </section>
+
+    <p class="note">דמי הביטוח מוצמדים למדד המחירים לצרכן מדי חודש (מדד בסיס: ינואר 2025). המחירים בטבלאות הם ליום ביטוח, וצמודים למדד שפורסם באוגוסט 2026 (646.9823 נקודות). המידע בכפוף לתנאי הפוליסה וסייגיה ולהנחיות החיתום של הראל חברה לביטוח. התנאים המלאים והמחייבים הם תנאי הפוליסה, ובכל מקרה של סתירה הם הקובעים.</p>
+  </main>
+
+  <footer>
+    <div><b>אופיר ושות׳ סוכנות לביטוח</b> · <span class="ltr">073-272-1111</span> · ophir@ophirins.co.il · travelsure.co.il</div>
+    <div>מקור: אתר הראל, אוקטובר 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

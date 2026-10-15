@@ -17,7 +17,8 @@
     "cleanup:ftp": "powershell -ExecutionPolicy Bypass -File .\\cleanup-ftp.ps1 -Username \"Yaniv\" -Password \"180900\" -DryRun",
     "git:push": "powershell -ExecutionPolicy Bypass -File .\\git-push.ps1",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:tour-care-pdf": "node scripts/build-tour-care-pdf.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
