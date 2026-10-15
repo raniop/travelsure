@@ -382,6 +382,8 @@ const PurchaseV2 = () => {
 
   // Partner code (aid). Kept in state so the "switch discount" button applies instantly.
   const [aff, setAff] = useState(getQueryParam(params, ["aff", "shatapId", "id"]) || DEFAULT_AFF);
+  // Any partner link (arrived with a code, even our own 709) gets the logo-only bar
+  const [isPartnerLink] = useState(() => Boolean(getQueryParam(params, ["aff", "shatapId", "id"])));
   const discountPercent = SPECIAL_DISCOUNT_AFF_TO_PERCENT[aff] || "";
   // Same audience as the current form's badges: partner links that use GetByIdU
   const showPartnerInfo = GET_BY_IDU_AFFILIATES.has(aff);
@@ -722,11 +724,13 @@ const PurchaseV2 = () => {
       title="רכישת ביטוח נסיעות"
       subtitle="שלושה צעדים קצרים, והפוליסה אצלכם"
       surface="gray"
-      minimalHeader={aff !== DEFAULT_AFF}
+      minimalHeader={isPartnerLink}
+      partnerName={shatapName}
       bandContent={
-        shatapName || discountPercent ? (
+        // The partner name sits in the top bar on partner links; here only if the bar is the full one
+        (shatapName && !isPartnerLink) || discountPercent ? (
           <span className="flex flex-wrap items-center gap-2">
-            {shatapName && (
+            {shatapName && !isPartnerLink && (
               <span className="inline-flex min-h-[40px] items-center rounded-full bg-white/[0.12] px-4 text-[16px] font-bold text-white">
                 {shatapName}
               </span>

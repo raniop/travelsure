@@ -15,13 +15,15 @@ interface AgencyHeaderProps {
   onLanding?: boolean;
   /** Logo only (no navigation, buttons or home link), for partner links that should stay in the flow. */
   minimal?: boolean;
+  /** Shown on the far side of the minimal bar (the partner's name). */
+  partnerName?: string;
 }
 
 const linkClass =
   "flex min-h-[44px] items-center whitespace-nowrap text-[16px] font-semibold text-[#000144] no-underline hover:text-[#008C3D] xl:text-[17px]";
 
 /** White rounded top bar from the agency design; sits on a navy (#000144) background. */
-const AgencyHeader = ({ onLanding = false, minimal = false }: AgencyHeaderProps) => {
+const AgencyHeader = ({ onLanding = false, minimal = false, partnerName = "" }: AgencyHeaderProps) => {
   const { t } = useLanguage();
   const { pathname } = useLocation();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -106,8 +108,14 @@ const AgencyHeader = ({ onLanding = false, minimal = false }: AgencyHeaderProps)
   if (minimal) {
     return (
       <header className="relative z-30 rounded-[20px] bg-white font-rubik text-[#000144]">
-        <div className="flex items-center py-2 pl-2 pr-3 lg:py-2.5 lg:pl-2.5 lg:pr-5">
+        <div className="flex !flex-row items-center justify-between gap-3 py-2 pl-4 pr-3 lg:py-2.5 lg:pl-6 lg:pr-5">
           <div className="flex min-h-[52px] shrink-0 items-center gap-2.5 lg:gap-3">{brand}</div>
+          {partnerName && (
+            <div className="min-w-0 text-left leading-[1.15]">
+              <span className="block text-[13px] font-semibold text-[#46557A]">בשיתוף עם</span>
+              <span className="block truncate text-[18px] font-extrabold lg:text-[22px]">{partnerName}</span>
+            </div>
+          )}
         </div>
       </header>
     );
