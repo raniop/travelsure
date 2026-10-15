@@ -1,0 +1,49 @@
+name: Update Tour & Care PDF
+
+# Harel reprices Tour & Care monthly (CPI-linked) around the 15th. Checks daily on the 16th-20th
+# and only commits when the rates changed. The forms page links to the PDF via jsDelivr, so the
+# new file is live without a Lovable publish.
+on:
+  schedule:
+    - cron: "0 7 16-20 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-tour-care-pdf
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Read rates from Harel
+        id: rates
+        run: node scripts/update-tour-care-rates.mjs
+
+      - name: Build PDF
+        if: steps.rates.outputs.changed == 'true'
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/build-tour-care-pdf.mjs
+
+      - name: Commit and push
+        if: steps.rates.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/pdf/tour-care-rates.json public/docs/tourists/tour-and-care-coverages.pdf
+          git commit -m "chore(forms): update Tour & Care rates from Harel"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Refresh jsDelivr cache
+        if: steps.rates.outputs.changed == 'true'
+        run: curl -fsS "https://purge.jsdelivr.net/gh/raniop/travelsure@main/public/docs/tourists/tour-and-care-coverages.pdf"

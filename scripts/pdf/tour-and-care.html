@@ -7,7 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* Source: harel-group.co.il/insurance/foreign/policies/tour-and-care (rates indexed to Aug 2026 CPI).
-     Rebuild: npm run build:tour-care-pdf */
+     Prices come from tour-care-rates.json ({{key}} placeholders).
+     Update: npm run update:tour-care-pdf (also runs monthly in .github/workflows/update-tour-care-pdf.yml) */
   @page { size: A4; margin: 0; }
   :root { --navy:#000144; --green:#00A247; --ink:#1B1F3B; --muted:#5B6180; --line:#E3E6F0; --soft:#F4F6FB; --mint:#E8F7EE; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -94,7 +95,7 @@
     <div class="stats">
       <div class="stat"><b>350,000 ₪</b><span>גבול אחריות לפוליסה למבוטח</span></div>
       <div class="stat"><b>עד 90 יום</b><span>הוצאות רפואיות בעת אשפוז</span></div>
-      <div class="stat"><b>מ־14.35 ₪</b><span>דמי ביטוח ליום למבוטח</span></div>
+      <div class="stat"><b>מ־{{base.0}} ₪</b><span>דמי ביטוח ליום למבוטח</span></div>
     </div>
 
     <section>
@@ -160,10 +161,10 @@
       <table>
         <thead><tr><th>גיל המבוטח</th><th>תקופת ביטוח מקסימלית</th><th>מכבי / כללית / מערך פרטי של הראל</th></tr></thead>
         <tbody>
-          <tr><td>עד 59</td><td>180 יום</td><td class="price">14.35 ₪</td></tr>
-          <tr><td><span class="ltr">60–65</span></td><td>90 יום</td><td class="price">18.60 ₪</td></tr>
-          <tr><td><span class="ltr">66–75</span></td><td>45 יום</td><td class="price">18.60 ₪</td></tr>
-          <tr><td><span class="ltr">76–80</span></td><td>14 יום</td><td class="price">36.45 ₪</td></tr>
+          <tr><td>עד 59</td><td>180 יום</td><td class="price">{{base.0}} ₪</td></tr>
+          <tr><td><span class="ltr">60–65</span></td><td>90 יום</td><td class="price">{{base.1}} ₪</td></tr>
+          <tr><td><span class="ltr">66–75</span></td><td>45 יום</td><td class="price">{{base.2}} ₪</td></tr>
+          <tr><td><span class="ltr">76–80</span></td><td>14 יום</td><td class="price">{{base.3}} ₪</td></tr>
         </tbody>
       </table>
     </section>
@@ -173,16 +174,16 @@
       <table class="grouped">
         <thead><tr><th>הרחבה</th><th>גיל</th><th>מחיר ליום</th></tr></thead>
         <tbody>
-          <tr><td rowspan="2">נספח הטסה רפואית<span class="sub">עד 35,000 ₪. הטסה מישראל לחו״ל בטיסה רגילה או מיוחדת, בליווי צוות רפואי המותאם למצב המבוטח</span></td><td><span class="ltr">0–75</span></td><td class="price">1.88 ₪</td></tr>
-          <tr class="cont"><td><span class="ltr">76–80</span></td><td class="price">15.20 ₪</td></tr>
-          <tr><td rowspan="2">נספח תאונות אישיות (בישראל בלבד)<span class="sub">מוות 50,000 ₪ · נכות לפי אחוז הנכות · שברים וכוויות עד 4,000 ₪ · אשפוז 100 ₪ ליום מהיום השלישי ועד 42 יום</span></td><td><span class="ltr">18–50</span></td><td class="price">0.87 ₪</td></tr>
-          <tr class="cont"><td><span class="ltr">51–70</span></td><td class="price">1.56 ₪</td></tr>
-          <tr><td rowspan="2">כתב שירות: רופא מלווה אישי<span class="sub">רופא מומחה כמנהל רפואי אישי, ריכוז התיק הרפואי וליווי אחות לפי הצורך. אכשרה 48 שעות, השתתפות עצמית 450 ₪ למקרה</span></td><td><span class="ltr">0–20</span></td><td class="price">0.17 ₪</td></tr>
-          <tr class="cont"><td><span class="ltr">21–80</span></td><td class="price">0.33 ₪</td></tr>
-          <tr><td rowspan="2">כתב שירות: ייעוץ רפואי בשיחת וידאו<span class="sub">רפואת משפחה וילדים ללא השתתפות עצמית · רופא מומחה (עור, אורתופדיה, קרדיולוגיה) תוך 24 שעות: 100 ₪ · איסוף מידע לפני הייעוץ: 90 ₪</span></td><td><span class="ltr">0–20</span></td><td class="price">0.36 ₪</td></tr>
-          <tr class="cont"><td><span class="ltr">21–80</span></td><td class="price">0.54 ₪</td></tr>
-          <tr><td rowspan="2">נספח ביטול חריג ספורט אתגרי<span class="sub">כיסוי לשירותי בריאות לפי פרק ב׳ בפוליסה, בפעילות חובבנית</span></td><td><span class="ltr">0–75</span></td><td class="price">4.69 ₪</td></tr>
-          <tr class="cont"><td><span class="ltr">76–80</span></td><td class="price">9.37 ₪</td></tr>
+          <tr><td rowspan="2">נספח הטסה רפואית<span class="sub">עד 35,000 ₪. הטסה מישראל לחו״ל בטיסה רגילה או מיוחדת, בליווי צוות רפואי המותאם למצב המבוטח</span></td><td><span class="ltr">0–75</span></td><td class="price">{{riders.0.0}} ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">76–80</span></td><td class="price">{{riders.0.1}} ₪</td></tr>
+          <tr><td rowspan="2">נספח תאונות אישיות (בישראל בלבד)<span class="sub">מוות 50,000 ₪ · נכות לפי אחוז הנכות · שברים וכוויות עד 4,000 ₪ · אשפוז 100 ₪ ליום מהיום השלישי ועד 42 יום</span></td><td><span class="ltr">18–50</span></td><td class="price">{{riders.1.0}} ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">51–70</span></td><td class="price">{{riders.1.1}} ₪</td></tr>
+          <tr><td rowspan="2">כתב שירות: רופא מלווה אישי<span class="sub">רופא מומחה כמנהל רפואי אישי, ריכוז התיק הרפואי וליווי אחות לפי הצורך. אכשרה 48 שעות, השתתפות עצמית 450 ₪ למקרה</span></td><td><span class="ltr">0–20</span></td><td class="price">{{riders.2.0}} ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">21–80</span></td><td class="price">{{riders.2.1}} ₪</td></tr>
+          <tr><td rowspan="2">כתב שירות: ייעוץ רפואי בשיחת וידאו<span class="sub">רפואת משפחה וילדים ללא השתתפות עצמית · רופא מומחה (עור, אורתופדיה, קרדיולוגיה) תוך 24 שעות: 100 ₪ · איסוף מידע לפני הייעוץ: 90 ₪</span></td><td><span class="ltr">0–20</span></td><td class="price">{{riders.3.0}} ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">21–80</span></td><td class="price">{{riders.3.1}} ₪</td></tr>
+          <tr><td rowspan="2">נספח ביטול חריג ספורט אתגרי<span class="sub">כיסוי לשירותי בריאות לפי פרק ב׳ בפוליסה, בפעילות חובבנית</span></td><td><span class="ltr">0–75</span></td><td class="price">{{riders.4.0}} ₪</td></tr>
+          <tr class="cont"><td><span class="ltr">76–80</span></td><td class="price">{{riders.4.1}} ₪</td></tr>
         </tbody>
       </table>
     </section>
@@ -192,12 +193,12 @@
       <b>חשוב לדעת:</b> התשלום על הנספחים וכתבי השירות הוא לכל תקופת הביטוח. את נספח ביטול חריג ספורט אתגרי אפשר לרכוש גם לחלק מתקופת הביטוח. רכישתו אינה מהווה הרחבה לספורט אתגרי בנספח תאונות אישיות.
     </section>
 
-    <p class="note">דמי הביטוח מוצמדים למדד המחירים לצרכן מדי חודש (מדד בסיס: ינואר 2025). המחירים בטבלאות הם ליום ביטוח, וצמודים למדד שפורסם באוגוסט 2026 (646.9823 נקודות). המידע בכפוף לתנאי הפוליסה וסייגיה ולהנחיות החיתום של הראל חברה לביטוח. התנאים המלאים והמחייבים הם תנאי הפוליסה, ובכל מקרה של סתירה הם הקובעים.</p>
+    <p class="note">דמי הביטוח מוצמדים למדד המחירים לצרכן מדי חודש (מדד בסיס: ינואר 2025). המחירים בטבלאות הם ליום ביטוח, וצמודים למדד שפורסם ב{{indexMonth}} ({{indexPoints}} נקודות). המידע בכפוף לתנאי הפוליסה וסייגיה ולהנחיות החיתום של הראל חברה לביטוח. התנאים המלאים והמחייבים הם תנאי הפוליסה, ובכל מקרה של סתירה הם הקובעים.</p>
   </main>
 
   <footer>
     <div><b>אופיר ושות׳ סוכנות לביטוח</b> · <span class="ltr">073-272-1111</span> · ophir@ophirins.co.il · travelsure.co.il</div>
-    <div>מקור: אתר הראל, אוקטובר 2026</div>
+    <div>מקור: אתר הראל, עודכן {{checkedAtLabel}}</div>
   </footer>
 </div>
 

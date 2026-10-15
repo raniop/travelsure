@@ -1,0 +1,14 @@
+{
+  "source": "https://www.harel-group.co.il/insurance/foreign/policies/tour-and-care",
+  "checkedAt": "2026-10-15",
+  "indexMonth": "אוגוסט 2026",
+  "indexPoints": "646.9823",
+  "base": ["14.35", "18.60", "18.60", "36.45"],
+  "riders": [
+    ["1.88", "15.20"],
+    ["0.87", "1.56"],
+    ["0.17", "0.33"],
+    ["0.36", "0.54"],
+    ["4.69", "9.37"]
+  ]
+}
