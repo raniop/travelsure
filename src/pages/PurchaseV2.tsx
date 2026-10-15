@@ -206,8 +206,10 @@ const planFields = (t: Traveler): FieldKey[] => {
   return fields;
 };
 
-const withContact = (fields: FieldKey[], editContact: boolean): FieldKey[] =>
-  editContact ? Array.from(new Set<FieldKey>([...fields, "phone", "email"])) : fields;
+const ALL_FIELDS: FieldKey[] = ["gender", "names", "birthDate", "phone", "email"];
+
+/** Edit mode opens every field (prefilled), so CRM details can be corrected too. */
+const withContact = (fields: FieldKey[], editing: boolean): FieldKey[] => (editing ? ALL_FIELDS : fields);
 
 const TravelerFields = ({
   traveler,
@@ -582,7 +584,8 @@ const PurchaseV2 = () => {
     ) : null;
 
   const companionRow = (t: Traveler, removable: boolean) => {
-    const fields = withContact(fieldPlan.current[t.key] || [], Boolean(editContact[t.key]));
+    const editing = Boolean(editContact[t.key]);
+    const fields = withContact(fieldPlan.current[t.key] || [], editing);
     const name =
       t.source === "crm" ? displayName(t.data) : `${t.data.firstNameEn} ${t.data.lastNameEn}`.trim() || "נוסע/ת נוסף/ת";
     return (
@@ -616,10 +619,21 @@ const PurchaseV2 = () => {
         {fields.length > 0 && (
           <div className="rounded-[14px] bg-white p-3">
             <p className="m-0 mb-2 text-[14px] font-semibold text-[#33405F]">
-              {t.source === "crm" ? "חסרים לנו כמה פרטים:" : "לא מצאנו את הנוסע/ת במערכת, אז רק כמה פרטים:"}
+              {editing ? "עריכת הפרטים:" : t.source === "crm" ? "חסרים לנו כמה פרטים:" : "לא מצאנו את הנוסע/ת במערכת, אז רק כמה פרטים:"}
             </p>
-            <TravelerFields traveler={t} fields={fields} onChange={(p) => updateTraveler(t.key, p)} idPrefix={`c-${t.key}`} />
+            <TravelerFields
+              key={`${t.key}-${editing}`}
+              traveler={t}
+              fields={fields}
+              onChange={(p) => updateTraveler(t.key, p)}
+              idPrefix={`c-${t.key}`}
+            />
           </div>
+        )}
+        {t.source === "crm" && (
+          <button type="button" className={`${linkBtn} !min-h-[36px] text-[14px]`} onClick={() => setEditContact((p) => ({ ...p, [t.key]: !editing }))}>
+            {editing ? "סיום עריכה" : "עריכת פרטים"}
+          </button>
         )}
         {errorsFor(t.key)}
       </div>
@@ -758,11 +772,13 @@ const PurchaseV2 = () => {
                       ))}
                     </dl>
                     {badges(primary.key)}
-                    {!editContact[primary.key] && (
-                      <button type="button" className={linkBtn} onClick={() => setEditContact((p) => ({ ...p, [primary.key]: true }))}>
-                        הטלפון או המייל השתנו? עדכנו כאן
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={linkBtn}
+                      onClick={() => setEditContact((p) => ({ ...p, [primary.key]: !p[primary.key] }))}
+                    >
+                      {editContact[primary.key] ? "סיום עריכה" : "משהו השתנה? עריכת הפרטים"}
+                    </button>
                   </>
                 ) : (
                   <div className="flex flex-col gap-2">
