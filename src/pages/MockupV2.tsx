@@ -52,7 +52,7 @@ const iconProps = {
 
 const benefits = [
   {
-    title: "עד 5 מיליון $",
+    title: "עד 5 מיליון $",
     text: "כיסוי בחו״ל",
     icon: (
       <svg {...iconProps}>
@@ -98,9 +98,9 @@ const steps = [
 ];
 
 const stamps = [
-  { top: "מבטחים מאז", big: "1977", rotate: -7, bigFirst: false, bigSize: "text-[44px] leading-none" },
-  { top: "פוליסה של", big: "הראל", rotate: 5, bigFirst: false, bigSize: "text-[40px] leading-[1.05]" },
-  { top: "סוכנויות נסיעות", big: "כ-450", rotate: -4, bigFirst: true, bigSize: "text-[44px] leading-none" },
+  { top: "מבטחים מאז", big: "1977", rotate: -7, bigFirst: false, bigSize: "text-[27px] leading-none md:text-[44px]" },
+  { top: "פוליסה של", big: "הראל", rotate: 5, bigFirst: false, bigSize: "text-[25px] leading-[1.05] md:text-[40px]" },
+  { top: "סוכנויות נסיעות", big: "כ-450", rotate: -4, bigFirst: true, bigSize: "text-[27px] leading-none md:text-[44px]" },
 ];
 
 // Keys into the shared FAQ translations (same answers as /faq)
@@ -108,7 +108,7 @@ const faqKeys = [1, 3, 6, 5, 9, 10];
 
 const h2Class = "m-0 text-[clamp(34px,4.4cqw,60px)] font-black leading-[1.02] tracking-[-0.01em]";
 const fieldClass =
-  "min-h-[52px] w-full box-border rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] font-[inherit] text-[17px] font-semibold text-[#000144]";
+  "min-h-[52px] w-full min-w-0 appearance-none box-border rounded-[14px] border-2 border-[#D5DAE3] bg-white px-[14px] font-[inherit] text-[17px] font-semibold text-[#000144]";
 const labelClass = "text-sm font-semibold text-[#46557A]";
 
 const MockupV2 = () => {
@@ -151,37 +151,37 @@ const MockupV2 = () => {
         <div aria-hidden="true" className="absolute left-[22cqw] top-[9cqw] h-[4cqw] w-[15cqw] rounded-full bg-white/[0.07]" />
         <div aria-hidden="true" className="absolute left-[30cqw] top-[13.5cqw] h-[3cqw] w-[9cqw] rounded-full bg-white/[0.05]" />
 
-        <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
+        <div className="relative mx-auto max-w-[1200px] px-4 pt-4 md:px-6 md:pt-5">
           <AgencyHeader onLanding />
         </div>
 
-        <div className="relative mx-auto flex max-w-[1200px] flex-col gap-8 px-6 pb-[88px] pt-16">
-          <div className="flex flex-col gap-3.5">
-            <h1 className="m-0 text-[clamp(46px,7.4cqw,108px)] font-black leading-[0.98] tracking-[-0.02em]">
+        <div className="relative mx-auto flex max-w-[1200px] flex-col gap-6 px-4 pb-12 pt-8 md:gap-8 md:px-6 md:pb-[88px] md:pt-16">
+          <div className="flex flex-col gap-2.5 md:gap-3.5">
+            <h1 className="m-0 text-[clamp(36px,7.4cqw,108px)] font-black leading-[0.98] tracking-[-0.02em]">
               טסים לחו״ל?
               <br />
               <span className="text-[#00A247]">ביטוח בכמה דקות.</span>
             </h1>
-            <p className="m-0 text-[clamp(18px,1.8cqw,24px)] font-medium text-[#E3EAFF]">פוליסה של הראל · מוקד 24/7 בעברית</p>
+            <p className="m-0 text-[clamp(17px,1.8cqw,24px)] font-medium text-[#E3EAFF]">פוליסה של הראל · מוקד 24/7 בעברית</p>
           </div>
 
           {/* Boarding-pass card */}
-          <div className="flex flex-wrap overflow-hidden rounded-[28px] bg-white text-[#000144] shadow-[0_30px_60px_rgba(7,20,51,0.35)]">
-            <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-6 px-8 py-7">
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-3.5">
+          <div className="flex flex-col overflow-hidden rounded-[28px] lg:flex-row bg-white text-[#000144] shadow-[0_30px_60px_rgba(7,20,51,0.35)]">
+            <div className="flex min-w-0 flex-1 flex-col gap-5 px-5 py-6 md:gap-6 md:px-8 md:py-7">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3.5 md:gap-x-8">
                 <div className="flex flex-col">
                   <span className={labelClass}>מ־</span>
-                  <span className="text-[34px] font-extrabold leading-[1.1]">תל אביב</span>
+                  <span className="text-[26px] font-extrabold leading-[1.1] md:text-[34px]">תל אביב</span>
                 </div>
-                <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1)" }}>
+                <svg aria-hidden="true" width="40" height="40" className="h-8 w-8 md:h-10 md:w-10" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1)" }}>
                   <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
                 </svg>
                 <div className="flex flex-col">
                   <span className={labelClass}>אל</span>
-                  <span className="text-[34px] font-extrabold leading-[1.1] text-[#00A247]">{destLabel}</span>
+                  <span className="text-[26px] font-extrabold leading-[1.1] text-[#00A247] md:text-[34px]">{destLabel}</span>
                 </div>
               </div>
-              <div role="group" aria-label="בחירת יעד" className="-mt-2 flex flex-wrap gap-2">
+              <div role="group" aria-label="בחירת יעד" className="-mt-1 flex flex-wrap gap-2 md:-mt-2">
                 {destinations.map((label) => {
                   const on = dest === label;
                   return (
@@ -190,7 +190,7 @@ const MockupV2 = () => {
                       type="button"
                       aria-pressed={on}
                       onClick={() => setDest(label)}
-                      className={`min-h-[44px] cursor-pointer rounded-full border-2 px-[18px] font-[inherit] text-[16px] font-bold ${
+                      className={`min-h-[44px] cursor-pointer rounded-full border-2 px-[14px] font-[inherit] text-[15px] md:px-[18px] md:text-[16px] font-bold ${
                         on ? "border-[#00A247] bg-[#00A247] text-[#000144]" : "border-[#D5DAE3] bg-white text-[#000144] hover:border-[#000144]"
                       }`}
                     >
@@ -199,7 +199,7 @@ const MockupV2 = () => {
                   );
                 })}
               </div>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(160px,100%),1fr))] gap-3.5">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-3.5">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="t-from" className={labelClass}>יציאה</label>
                   <input
@@ -211,7 +211,7 @@ const MockupV2 = () => {
                       setFromDate(e.target.value);
                       setFormError("");
                     }}
-                    className={fieldClass}
+                    className={`${fieldClass} !px-3 !text-[15px] md:!px-[14px] md:!text-[17px]`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -225,10 +225,10 @@ const MockupV2 = () => {
                       setToDate(e.target.value);
                       setFormError("");
                     }}
-                    className={fieldClass}
+                    className={`${fieldClass} !px-3 !text-[15px] md:!px-[14px] md:!text-[17px]`}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="col-span-2 flex flex-col gap-1.5 md:col-span-1">
                   <label htmlFor="t-pax" className={labelClass}>נוסעים</label>
                   <input
                     id="t-pax"
@@ -242,7 +242,7 @@ const MockupV2 = () => {
                 </div>
               </div>
             </div>
-            <div className="box-border flex flex-[1_1_250px] flex-col justify-center gap-4 bg-[#F3F5F8] p-7 [border-inline-start:3px_dashed_#C5CCD8]">
+            <div className="box-border flex flex-col justify-center gap-4 border-0 border-t-[3px] border-dashed border-[#C5CCD8] bg-[#F3F5F8] p-5 md:p-7 lg:w-[300px] lg:shrink-0 lg:border-s-[3px] lg:border-t-0">
               <button
                 type="button"
                 onClick={goToPurchase}
@@ -271,22 +271,22 @@ const MockupV2 = () => {
       </section>
 
       {/* Trust stamps */}
-      <section aria-label="למה אפשר לסמוך עלינו" className="px-6 pb-2 pt-14">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap justify-center gap-x-16 gap-y-7">
+      <section aria-label="למה אפשר לסמוך עלינו" className="px-4 pb-2 pt-10 md:px-6 md:pt-14">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap justify-center gap-x-3 gap-y-7 md:gap-x-16">
           {stamps.map((s) => (
             <div
               key={s.big}
-              className="box-border flex h-[164px] w-[164px] flex-col items-center justify-center rounded-full border-4 border-dashed border-[#000144] text-center text-[#000144]"
+              className="box-border flex h-[108px] w-[108px] flex-col items-center justify-center rounded-full border-[3px] md:h-[164px] md:w-[164px] md:border-4 border-dashed border-[#000144] text-center text-[#000144]"
               style={{ transform: `rotate(${s.rotate}deg)` }}
             >
               {s.bigFirst ? (
                 <>
                   <span className={`${s.bigSize} font-black`}>{s.big}</span>
-                  <span className="text-base font-bold">{s.top}</span>
+                  <span className="text-[12px] font-bold md:text-base">{s.top}</span>
                 </>
               ) : (
                 <>
-                  <span className="text-base font-bold">{s.top}</span>
+                  <span className="text-[12px] font-bold md:text-base">{s.top}</span>
                   <span className={`${s.bigSize} font-black`}>{s.big}</span>
                 </>
               )}
@@ -299,13 +299,13 @@ const MockupV2 = () => {
       <section id="get" className="px-6 pb-[88px] pt-[72px]">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-9">
           <h2 className={h2Class}>מה מקבלים</h2>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] md:gap-5">
             {benefits.map((b) => (
-              <div key={b.title} className="box-border flex min-h-[220px] !flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7">
+              <div key={b.title} className="box-border flex min-h-[170px] !flex-col justify-between gap-4 rounded-[24px] bg-[#F3F5F8] p-5 md:min-h-[220px] md:gap-6 md:rounded-[28px] md:p-7 [&_svg]:h-9 [&_svg]:w-9 md:[&_svg]:h-12 md:[&_svg]:w-12">
                 {b.icon}
                 <div className="flex flex-col gap-1">
-                  <span className="text-[32px] font-black leading-[1.05]">{b.title}</span>
-                  <span className="text-[18px] font-medium text-[#33405F]">{b.text}</span>
+                  <span className="text-[20px] font-black leading-[1.05] md:text-[32px]">{b.title}</span>
+                  <span className="text-[15px] font-medium text-[#33405F] md:text-[18px]">{b.text}</span>
                 </div>
               </div>
             ))}
@@ -320,8 +320,8 @@ const MockupV2 = () => {
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-x-10 gap-y-7">
             {steps.map(([n, a, b]) => (
               <div key={n} className="flex items-center gap-5">
-                <span className="text-[112px] font-black leading-[0.9] text-[#00A247]">{n}</span>
-                <span className="text-[28px] font-extrabold leading-[1.15]">
+                <span className="text-[72px] font-black leading-[0.9] text-[#00A247] md:text-[112px]">{n}</span>
+                <span className="text-[22px] font-extrabold leading-[1.15] md:text-[28px]">
                   {a}
                   <br />
                   {b}
@@ -341,7 +341,7 @@ const MockupV2 = () => {
       {/* Existing customers + other insurance lines */}
       <section id="services" className="px-6 pt-[88px]">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-9">
-          <div className="box-border flex !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] border-[3px] border-[#000144] p-12">
+          <div className="box-border flex !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] border-[3px] border-[#000144] p-6 md:p-12">
             <div className="flex max-w-[620px] flex-col gap-3">
               <h2 className={h2Class}>כבר מבוטחים אצלנו?</h2>
               <p className="m-0 text-[20px] font-medium text-[#33405F]">
@@ -361,38 +361,38 @@ const MockupV2 = () => {
           </div>
 
           <h2 className={`${h2Class} mt-12`}>ביטוחים נוספים בסוכנות</h2>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] md:gap-5">
             {otherInsurance.map(({ to, icon: Icon, key }) => (
               <Link
                 key={key}
                 to={to}
-                className="group box-border flex min-h-[200px] !flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+                className="group box-border flex min-h-[160px] !flex-col justify-between gap-4 rounded-[24px] bg-[#F3F5F8] p-5 md:min-h-[200px] md:gap-6 md:rounded-[28px] md:p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
               >
-                <Icon aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+                <Icon aria-hidden="true" className="h-9 w-9 md:h-12 md:w-12" strokeWidth={1.8} />
                 <div className="flex flex-col gap-1">
-                  <span className="flex items-center gap-2 text-[28px] font-black leading-[1.05]">
+                  <span className="flex items-center gap-2 text-[20px] font-black leading-[1.05] md:text-[28px]">
                     {t(`services.${key}.title`)}
                     <span className="transition-transform group-hover:-translate-x-1">
                       <ArrowIcon size={20} />
                     </span>
                   </span>
-                  <span className="text-[17px] font-medium text-[#33405F]">{t(`services.${key}.desc`)}</span>
+                  <span className="text-[14px] font-medium text-[#33405F] md:text-[17px]">{t(`services.${key}.desc`)}</span>
                 </div>
               </Link>
             ))}
             <Link
               to="/foreigners"
-              className="group box-border flex min-h-[200px] !flex-col justify-between gap-6 rounded-[28px] bg-[#F3F5F8] p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+              className="group box-border flex min-h-[160px] !flex-col justify-between gap-4 rounded-[24px] bg-[#F3F5F8] p-5 md:min-h-[200px] md:gap-6 md:rounded-[28px] md:p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
             >
-              <Users aria-hidden="true" className="h-12 w-12" strokeWidth={1.8} />
+              <Users aria-hidden="true" className="h-9 w-9 md:h-12 md:w-12" strokeWidth={1.8} />
               <div className="flex flex-col gap-1">
-                <span className="flex items-center gap-2 text-[28px] font-black leading-[1.05]">
+                <span className="flex items-center gap-2 text-[20px] font-black leading-[1.05] md:text-[28px]">
                   עובדים זרים
                   <span className="transition-transform group-hover:-translate-x-1">
                     <ArrowIcon size={20} />
                   </span>
                 </span>
-                <span className="text-[17px] font-medium text-[#33405F]">ביטוח רפואי, עם טופס בקשה אונליין</span>
+                <span className="text-[14px] font-medium text-[#33405F] md:text-[17px]">ביטוח רפואי, עם טופס בקשה אונליין</span>
               </div>
             </Link>
           </div>
@@ -401,7 +401,7 @@ const MockupV2 = () => {
 
       {/* Contact */}
       <section aria-label="יצירת קשר" className="px-6 pb-10 pt-[88px]">
-        <div className="mx-auto box-border flex max-w-[1200px] !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-12">
+        <div className="mx-auto box-border flex max-w-[1200px] !flex-row flex-wrap items-center justify-between gap-x-12 gap-y-7 rounded-[36px] bg-[#F3F5F8] p-6 md:p-12">
           <h2 className={h2Class}>
             מעדיפים לדבר
             <br />

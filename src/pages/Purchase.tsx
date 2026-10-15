@@ -49,10 +49,10 @@ const Purchase = () => {
     <div className="flex h-screen flex-col bg-[#F3F5F8] font-rubik text-[#000144]" dir="rtl">
       <section className="relative z-20 shrink-0 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
-        <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
+        <div className="relative mx-auto max-w-[1200px] px-4 pt-4 md:px-6 md:pt-5">
           <AgencyHeader />
         </div>
-        <div className="relative mx-auto flex max-w-[1200px] flex-wrap items-end gap-x-8 gap-y-3 px-6 pb-7 pt-7">
+        <div className="relative mx-auto flex max-w-[1200px] flex-wrap items-end gap-x-8 gap-y-3 px-4 pb-6 pt-6 md:px-6 md:pb-7 md:pt-7">
           <div className="flex flex-col gap-1">
             <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-black leading-[1.02] tracking-[-0.01em]">
               רכישת ביטוח נסיעות

@@ -26,11 +26,11 @@ const AgencyPage = ({ title, subtitle, bandContent, surface = "white", children 
     <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
       <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[380px] w-[380px] rounded-full bg-[#0C1060]" />
       <div aria-hidden="true" className="absolute left-[260px] top-[70px] hidden h-[44px] w-[180px] rounded-full bg-white/[0.06] md:block" />
-      <div className="relative mx-auto max-w-[1200px] px-6 pt-5">
+      <div className="relative mx-auto max-w-[1200px] px-4 pt-4 md:px-6 md:pt-5">
         <AgencyHeader />
       </div>
-      <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3 px-6 pb-12 pt-12 md:pb-16 md:pt-14">
-        <h1 className="m-0 text-[clamp(38px,5.6vw,80px)] font-black leading-[0.98] tracking-[-0.02em]">{title}</h1>
+      <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3 px-4 pb-10 pt-8 md:px-6 md:pb-16 md:pt-14">
+        <h1 className="m-0 text-[clamp(34px,5.6vw,80px)] font-black leading-[0.98] tracking-[-0.02em]">{title}</h1>
         {subtitle && (
           <p className="m-0 max-w-[760px] text-[clamp(18px,1.6vw,22px)] font-medium text-[#E3EAFF]">{subtitle}</p>
         )}
