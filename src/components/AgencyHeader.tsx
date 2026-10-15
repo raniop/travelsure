@@ -111,10 +111,7 @@ const AgencyHeader = ({ onLanding = false, minimal = false, partnerName = "" }: 
         <div className="flex !flex-row items-center justify-between gap-3 py-2 pl-4 pr-3 lg:py-2.5 lg:pl-6 lg:pr-5">
           <div className="flex min-h-[52px] shrink-0 items-center gap-2.5 lg:gap-3">{brand}</div>
           {partnerName && (
-            <div className="min-w-0 text-left leading-[1.15]">
-              <span className="block text-[13px] font-semibold text-[#46557A]">בשיתוף עם</span>
-              <span className="block truncate text-[18px] font-extrabold lg:text-[22px]">{partnerName}</span>
-            </div>
+            <span className="min-w-0 truncate text-left text-[18px] font-extrabold leading-[1.15] lg:text-[22px]">{partnerName}</span>
           )}
         </div>
       </header>
