@@ -748,7 +748,14 @@ export const sanitizeHarelName = (value: string) => {
 /** ========= Shared flow helpers (used by BuyInsNew and PurchaseV2) ========= */
 
 export type PersonLookupResult =
-  | { status: "found"; customer: CustomerForm; additional: AdditionalCustomer[] }
+  | {
+      status: "found";
+      customer: CustomerForm;
+      additional: AdditionalCustomer[];
+      /** From past policies (lookupTravelerWithHistory only), keyed by normalized ID */
+      priorConditionById?: Record<string, PriorConditionInfo>;
+      specialDiscountById?: Record<string, SpecialDiscountInfo>;
+    }
   | { status: "notfound" }
   | { status: "error"; message: string };
 
@@ -854,11 +861,25 @@ export const lookupTravelerWithHistory = async (rawId: string, signal?: AbortSig
   const mergeAdditional = (base: AdditionalCustomer[]) =>
     Array.from(new Map([...historyAdditional, ...base].map((c) => [normalizeIdValue(c.personId), c])).values());
 
+  // Same fallback as the current form: when the main traveler's prior-condition status is
+  // unknown, look the latest policy up by its policy ID.
+  let priorConditionById = history?.priorConditionById || {};
+  let specialDiscountById = history?.specialDiscountById || {};
+  const primaryPrior = priorConditionById[normalizedId];
+  if (primaryPrior?.status === "unknown" && primaryPrior.policyId) {
+    const byPolicy = await fetchPolicyHistory(primaryPrior.policyId, signal).catch(() => null);
+    if (byPolicy) {
+      priorConditionById = mergePriorConditionMaps(priorConditionById, byPolicy.priorConditionById);
+      specialDiscountById = mergeSpecialDiscountMaps(specialDiscountById, byPolicy.specialDiscountById);
+    }
+  }
+  const extras = { priorConditionById, specialDiscountById };
+
   if (person.status === "found") {
-    return { ...person, additional: mergeAdditional(person.additional) };
+    return { ...person, additional: mergeAdditional(person.additional), ...extras };
   }
   if (history?.primaryCustomer) {
-    return { status: "found", customer: { ...history.primaryCustomer, id: normalizedId }, additional: mergeAdditional([]) };
+    return { status: "found", customer: { ...history.primaryCustomer, id: normalizedId }, additional: mergeAdditional([]), ...extras };
   }
   return person;
 };

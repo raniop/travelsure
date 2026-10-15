@@ -4,9 +4,13 @@ import { Check, Loader2, Plus, ShieldCheck, UserRound, X } from "lucide-react";
 import AgencyPage from "@/components/AgencyPage";
 import { ArrowIcon, agencyField, agencyLabel } from "@/components/AgencyUi";
 import {
+  GET_BY_IDU_AFFILIATES,
+  SPECIAL_DISCOUNT_AFF_TO_PERCENT,
+  SPECIAL_DISCOUNT_SWITCH_LINKS,
   birthDateParts,
   buildHarelUrl,
   calculateAge,
+  extractSpecialDiscountPercent,
   getQueryParam,
   isValidIsraeliId,
   isoToDDMMYYYY,
@@ -18,6 +22,8 @@ import {
   validateTraveler,
   type AdditionalCustomer,
   type CustomerForm,
+  type PriorConditionInfo,
+  type SpecialDiscountInfo,
 } from "@/lib/purchase/harel";
 
 /*
@@ -124,6 +130,59 @@ const Facts = ({ facts }: { facts: string[] }) => (
     ))}
   </span>
 );
+
+/* ---------- partner-link badges (same info the current form shows for GetByIdU partners) ---------- */
+
+const PRIOR_TEXT: Record<PriorConditionInfo["status"], string> = {
+  yes: "החמרה למחלה קיימת: כן",
+  no: "החמרה למחלה קיימת: לא",
+  unknown: "החמרה למחלה קיימת: אין נתון",
+};
+const PRIOR_STYLE: Record<PriorConditionInfo["status"], string> = {
+  yes: "border-[#F3B6B0] bg-[#FDECEA] text-[#8A1C12]",
+  no: "border-[#B7E4C7] bg-[#E6F6ED] text-[#0B5E2E]",
+  unknown: "border-[#D5DAE3] bg-white text-[#46557A]",
+};
+
+const PartnerBadges = ({
+  prior,
+  discount,
+  currentAff,
+  onSwitchAff,
+}: {
+  prior?: PriorConditionInfo;
+  discount?: SpecialDiscountInfo;
+  currentAff: string;
+  onSwitchAff: (aff: string) => void;
+}) => {
+  const lastPercent = discount ? extractSpecialDiscountPercent(discount.discountLabel) : "";
+  const currentPercent = SPECIAL_DISCOUNT_AFF_TO_PERCENT[currentAff] || "";
+  const switchTo = lastPercent && currentPercent && lastPercent !== currentPercent ? SPECIAL_DISCOUNT_SWITCH_LINKS[lastPercent] : undefined;
+  if (!prior && !discount) return null;
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      {prior && (
+        <span className={`inline-flex min-h-[28px] items-center rounded-full border px-2.5 text-[13px] font-bold ${PRIOR_STYLE[prior.status]}`}>
+          {PRIOR_TEXT[prior.status]}
+        </span>
+      )}
+      {discount?.discountLabel && (
+        <span className="inline-flex min-h-[28px] items-center rounded-full border border-[#C9D3EA] bg-[#E6ECFA] px-2.5 text-[13px] font-bold text-[#000144]">
+          הנחה אחרונה: {discount.discountLabel}
+        </span>
+      )}
+      {switchTo && (
+        <button
+          type="button"
+          onClick={() => onSwitchAff(switchTo.aff)}
+          className="inline-flex min-h-[32px] cursor-pointer items-center rounded-full border-2 border-[#000144] bg-white px-3 font-[inherit] text-[13px] font-bold text-[#000144] hover:bg-[#000144] hover:text-white"
+        >
+          מעבר ישיר להנחה {switchTo.label}
+        </button>
+      )}
+    </span>
+  );
+};
 
 /* ---------- traveler fields ---------- */
 
@@ -305,6 +364,24 @@ const PurchaseV2 = () => {
 
   const [step, setStep] = useState<Step>(1);
 
+  // Partner code (aid). Kept in state so the "switch discount" button applies instantly.
+  const [aff, setAff] = useState(getQueryParam(params, ["aff", "shatapId", "id"]) || DEFAULT_AFF);
+  const discountPercent = SPECIAL_DISCOUNT_AFF_TO_PERCENT[aff] || "";
+  // Same audience as the current form's badges: partner links that use GetByIdU
+  const showPartnerInfo = GET_BY_IDU_AFFILIATES.has(aff);
+  const [priorById, setPriorById] = useState<Record<string, PriorConditionInfo>>({});
+  const [discountById, setDiscountById] = useState<Record<string, SpecialDiscountInfo>>({});
+  const switchAff = (next: string) => {
+    setAff(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("aff", next);
+    window.history.replaceState(null, "", url.toString());
+  };
+  const badges = (key: string) =>
+    showPartnerInfo ? (
+      <PartnerBadges prior={priorById[key]} discount={discountById[key]} currentAff={aff} onSwitchAff={switchAff} />
+    ) : null;
+
   // Main traveler
   const [id, setId] = useState("");
   const [idError, setIdError] = useState("");
@@ -372,6 +449,8 @@ const PurchaseV2 = () => {
     try {
       const result = await lookupTravelerWithHistory(normalized, controller.signal);
       if (result.status === "found") {
+        setPriorById(result.priorConditionById || {});
+        setDiscountById(result.specialDiscountById || {});
         crmOriginal.current = { [normalized]: result.customer };
         setPrimary(track({ key: normalized, source: "crm", data: result.customer }));
         const family = result.additional
@@ -386,11 +465,15 @@ const PurchaseV2 = () => {
         if (result.status === "error") setLookupNote("לא הצלחנו לבדוק במערכת כרגע, אז נמלא את הפרטים ידנית.");
         setPrimary(track({ key: normalized, source: "manual", data: { ...EMPTY, id: normalized } }));
         setFamilyOptions([]);
+        setPriorById({});
+        setDiscountById({});
       }
     } catch {
       setLookupNote("לא הצלחנו לבדוק במערכת כרגע, אז נמלא את הפרטים ידנית.");
       setPrimary(track({ key: normalized, source: "manual", data: { ...EMPTY, id: normalized } }));
       setFamilyOptions([]);
+      setPriorById({});
+      setDiscountById({});
     } finally {
       window.clearTimeout(timeout);
       setChecking(false);
@@ -477,7 +560,7 @@ const PurchaseV2 = () => {
     }
     setRedirecting(true);
     const url = buildHarelUrl({
-      aid: getQueryParam(params, ["aff", "shatapId", "id"]) || DEFAULT_AFF,
+      aid: aff,
       from: isoToDDMMYYYY(fromDate),
       to: isoToDDMMYYYY(toDate),
       docket: getQueryParam(params, ["docket", "Docket"]) || "0",
@@ -511,6 +594,7 @@ const PurchaseV2 = () => {
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="text-[17px] font-bold">{name}</span>
             <Facts facts={factsOf(t.data)} />
+            {badges(t.key)}
           </span>
           <button
             type="button"
@@ -545,7 +629,18 @@ const PurchaseV2 = () => {
   const primaryFields = primary ? withContact(fieldPlan.current[primary.key] || [], Boolean(editContact[primary.key])) : [];
 
   return (
-    <AgencyPage title="רכישת ביטוח נסיעות" subtitle="שלושה צעדים קצרים, והפוליסה אצלכם" surface="gray">
+    <AgencyPage
+      title="רכישת ביטוח נסיעות"
+      subtitle="שלושה צעדים קצרים, והפוליסה אצלכם"
+      surface="gray"
+      bandContent={
+        discountPercent ? (
+          <span className="inline-flex min-h-[40px] items-center rounded-full border-2 border-[#00A247] px-4 text-[16px] font-bold text-white">
+            הנחה מיוחדת {discountPercent}%
+          </span>
+        ) : undefined
+      }
+    >
       <div className="mx-auto flex max-w-[600px] flex-col gap-5 px-4 py-8 md:py-12">
         <ol aria-label="שלבי הרכישה" className="m-0 grid list-none grid-cols-3 gap-2 p-0 md:flex md:flex-wrap">
           {STEPS.map((label, i) => {
@@ -662,6 +757,7 @@ const PurchaseV2 = () => {
                         </div>
                       ))}
                     </dl>
+                    {badges(primary.key)}
                     {!editContact[primary.key] && (
                       <button type="button" className={linkBtn} onClick={() => setEditContact((p) => ({ ...p, [primary.key]: true }))}>
                         הטלפון או המייל השתנו? עדכנו כאן
@@ -709,6 +805,7 @@ const PurchaseV2 = () => {
                         <span className="flex min-w-0 flex-col">
                           <span className="text-[17px] font-bold text-[#000144]">{displayName(t.data)}</span>
                           <Facts facts={factsOf(t.data)} />
+                          {badges(t.key)}
                         </span>
                       </button>
                     ),
@@ -842,6 +939,7 @@ const PurchaseV2 = () => {
                         {t.source === "crm" ? displayName(t.data) : `${t.data.firstNameEn} ${t.data.lastNameEn}`.trim() || "נוסע/ת"}
                       </span>
                       <Facts facts={factsOf(t.data)} />
+                      {badges(t.key)}
                     </span>
                   </li>
                 ))}
