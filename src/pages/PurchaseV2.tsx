@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Check, Loader2, Plus, ShieldCheck, UserRound, X } from "lucide-react";
 import AgencyPage from "@/components/AgencyPage";
@@ -15,7 +15,9 @@ import {
   isValidIsraeliId,
   isoToDDMMYYYY,
   lookupPersonById,
-  lookupTravelerWithHistory,
+  fetchShatapName,
+  fetchTravelerHistory,
+  resolveUnknownPriorConditions,
   normalizeIdValue,
   queryDateToIso,
   sanitizeNameInput,
@@ -24,6 +26,8 @@ import {
   type CustomerForm,
   type PriorConditionInfo,
   type SpecialDiscountInfo,
+  type PersonLookupResult,
+  type TravelerHistory,
 } from "@/lib/purchase/harel";
 
 /*
@@ -149,11 +153,14 @@ const PartnerBadges = ({
   discount,
   currentAff,
   onSwitchAff,
+  resolving,
 }: {
   prior?: PriorConditionInfo;
   discount?: SpecialDiscountInfo;
   currentAff: string;
   onSwitchAff: (aff: string) => void;
+  /** Background policy lookups still running for unknown statuses */
+  resolving: boolean;
 }) => {
   const lastPercent = discount ? extractSpecialDiscountPercent(discount.discountLabel) : "";
   const currentPercent = SPECIAL_DISCOUNT_AFF_TO_PERCENT[currentAff] || "";
@@ -162,8 +169,15 @@ const PartnerBadges = ({
   return (
     <span className="flex flex-wrap items-center gap-1.5">
       {prior && (
-        <span className={`inline-flex min-h-[28px] items-center rounded-full border px-2.5 text-[13px] font-bold ${PRIOR_STYLE[prior.status]}`}>
-          {PRIOR_TEXT[prior.status]}
+        <span className={`inline-flex min-h-[28px] items-center gap-1.5 rounded-full border px-2.5 text-[13px] font-bold ${PRIOR_STYLE[prior.status]}`}>
+          {prior.status === "unknown" && resolving ? (
+            <>
+              <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+              החמרה למחלה קיימת: בודקים…
+            </>
+          ) : (
+            PRIOR_TEXT[prior.status]
+          )}
         </span>
       )}
       {discount?.discountLabel && (
@@ -371,6 +385,18 @@ const PurchaseV2 = () => {
   const discountPercent = SPECIAL_DISCOUNT_AFF_TO_PERCENT[aff] || "";
   // Same audience as the current form's badges: partner links that use GetByIdU
   const showPartnerInfo = GET_BY_IDU_AFFILIATES.has(aff);
+
+  // Partner name in the band, like the current form's top bar (not for our own direct code)
+  const [shatapName, setShatapName] = useState("");
+  useEffect(() => {
+    setShatapName("");
+    if (aff === DEFAULT_AFF) return;
+    const controller = new AbortController();
+    fetchShatapName(aff, controller.signal).then((name) => {
+      if (!controller.signal.aborted) setShatapName(name);
+    });
+    return () => controller.abort();
+  }, [aff]);
   const [priorById, setPriorById] = useState<Record<string, PriorConditionInfo>>({});
   const [discountById, setDiscountById] = useState<Record<string, SpecialDiscountInfo>>({});
   const switchAff = (next: string) => {
@@ -381,7 +407,7 @@ const PurchaseV2 = () => {
   };
   const badges = (key: string) =>
     showPartnerInfo ? (
-      <PartnerBadges prior={priorById[key]} discount={discountById[key]} currentAff={aff} onSwitchAff={switchAff} />
+      <PartnerBadges prior={priorById[key]} discount={discountById[key]} currentAff={aff} onSwitchAff={switchAff} resolving={priorResolving} />
     ) : null;
 
   // Main traveler
@@ -437,53 +463,102 @@ const PurchaseV2 = () => {
     setExtra((prev) => prev.map((t) => (t.key === key ? patchData(t, patch) : t)));
   };
 
+  // Ignores results from an older lookup when the ID was changed in the meantime
+  const lookupSeq = useRef(0);
+  const [familyLoading, setFamilyLoading] = useState(false);
+  const [priorResolving, setPriorResolving] = useState(false);
+
+  const applyHistory = (primaryData: CustomerForm, history: TravelerHistory | null, seq: number) => {
+    if (!history) return;
+    setPriorById(history.priorConditionById);
+    setDiscountById(history.specialDiscountById);
+    setFamilyOptions(
+      history.additional
+        .map(fromAdditional)
+        .filter((c) => isSameFamily(primaryData, c))
+        .map((c) => {
+          crmOriginal.current[c.id] = c;
+          return track({ key: c.id, source: "crm" as const, data: c });
+        }),
+    );
+    // Slow per-policy lookups for "unknown" prior-condition statuses run in the background
+    // (partner links only, where the badge is shown); badges update when they come back.
+    const hasUnknown = Object.values(history.priorConditionById).some((i) => i.status === "unknown" && i.policyId);
+    if (showPartnerInfo && hasUnknown) {
+      setPriorResolving(true);
+      resolveUnknownPriorConditions(history.priorConditionById, history.specialDiscountById)
+        .then((res) => {
+          if (seq !== lookupSeq.current) return;
+          setPriorById(res.priorConditionById);
+          setDiscountById(res.specialDiscountById);
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (seq === lookupSeq.current) setPriorResolving(false);
+        });
+    }
+  };
+
+  /**
+   * Shows the person as soon as the fast GetByPersonId answers; the slower policy history
+   * (family, partner badges) arrives in the background.
+   */
   const lookupPrimary = async () => {
     if (!isValidIsraeliId(id)) {
       setIdError("מספר תעודת הזהות לא תקין. בדקו את 9 הספרות");
       return;
     }
     const normalized = normalizeIdValue(id);
+    const seq = ++lookupSeq.current;
     setIdError("");
-    setChecking(true);
     setLookupNote("");
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 10000);
-    try {
-      const result = await lookupTravelerWithHistory(normalized, controller.signal);
-      if (result.status === "found") {
-        setPriorById(result.priorConditionById || {});
-        setDiscountById(result.specialDiscountById || {});
-        crmOriginal.current = { [normalized]: result.customer };
-        setPrimary(track({ key: normalized, source: "crm", data: result.customer }));
-        const family = result.additional
-          .map(fromAdditional)
-          .filter((c) => isSameFamily(result.customer, c))
-          .map((c) => {
-            crmOriginal.current[c.id] = c;
-            return track({ key: c.id, source: "crm" as const, data: c });
-          });
-        setFamilyOptions(family);
-      } else {
-        if (result.status === "error") setLookupNote("לא הצלחנו לבדוק במערכת כרגע, אז נמלא את הפרטים ידנית.");
-        setPrimary(track({ key: normalized, source: "manual", data: { ...EMPTY, id: normalized } }));
-        setFamilyOptions([]);
-        setPriorById({});
-        setDiscountById({});
-      }
-    } catch {
-      setLookupNote("לא הצלחנו לבדוק במערכת כרגע, אז נמלא את הפרטים ידנית.");
-      setPrimary(track({ key: normalized, source: "manual", data: { ...EMPTY, id: normalized } }));
-      setFamilyOptions([]);
-      setPriorById({});
-      setDiscountById({});
-    } finally {
-      window.clearTimeout(timeout);
-      setChecking(false);
-    }
+    setChecking(true);
+    setFamilyOptions([]);
     setFamilySelected(new Set());
     setExtra([]);
     setEditContact({});
     setTravelerErrors({});
+    setPriorById({});
+    setDiscountById({});
+    setPriorResolving(false);
+
+    const historyPromise = fetchTravelerHistory(normalized).catch(() => null);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10000);
+    let person: PersonLookupResult;
+    try {
+      person = await lookupPersonById(normalized, controller.signal);
+    } catch {
+      person = { status: "error", message: "" };
+    } finally {
+      window.clearTimeout(timeout);
+    }
+    if (seq !== lookupSeq.current) return;
+
+    if (person.status === "found") {
+      crmOriginal.current = { [normalized]: person.customer };
+      setPrimary(track({ key: normalized, source: "crm", data: person.customer }));
+      setChecking(false);
+      setFamilyLoading(true);
+      const history = await historyPromise;
+      if (seq !== lookupSeq.current) return;
+      applyHistory(person.customer, history, seq);
+      setFamilyLoading(false);
+      return;
+    }
+
+    // Not found by ID: the policy history may still know the person
+    const history = await historyPromise;
+    if (seq !== lookupSeq.current) return;
+    setChecking(false);
+    if (history?.primaryCustomer) {
+      crmOriginal.current = { [normalized]: history.primaryCustomer };
+      setPrimary(track({ key: normalized, source: "crm", data: history.primaryCustomer }));
+      applyHistory(history.primaryCustomer, history, seq);
+      return;
+    }
+    if (person.status === "error") setLookupNote("לא הצלחנו לבדוק במערכת כרגע, אז נמלא את הפרטים ידנית.");
+    setPrimary(track({ key: normalized, source: "manual", data: { ...EMPTY, id: normalized } }));
   };
 
   const closeAdd = () => {
@@ -648,9 +723,18 @@ const PurchaseV2 = () => {
       subtitle="שלושה צעדים קצרים, והפוליסה אצלכם"
       surface="gray"
       bandContent={
-        discountPercent ? (
-          <span className="inline-flex min-h-[40px] items-center rounded-full border-2 border-[#00A247] px-4 text-[16px] font-bold text-white">
-            הנחה מיוחדת {discountPercent}%
+        shatapName || discountPercent ? (
+          <span className="flex flex-wrap items-center gap-2">
+            {shatapName && (
+              <span className="inline-flex min-h-[40px] items-center rounded-full bg-white/[0.12] px-4 text-[16px] font-bold text-white">
+                {shatapName}
+              </span>
+            )}
+            {discountPercent && (
+              <span className="inline-flex min-h-[40px] items-center rounded-full border-2 border-[#00A247] px-4 text-[16px] font-bold text-white">
+                הנחה מיוחדת {discountPercent}%
+              </span>
+            )}
           </span>
         ) : undefined
       }
@@ -708,6 +792,11 @@ const PurchaseV2 = () => {
                     onChange={(e) => {
                       setId(e.target.value.replace(/\D/g, "").slice(0, 9));
                       setIdError("");
+                      // Drop any lookup still in flight for the previous ID
+                      lookupSeq.current++;
+                      setChecking(false);
+                      setFamilyLoading(false);
+                      setPriorResolving(false);
                       if (primary) {
                         setPrimary(null);
                         setFamilyOptions([]);
@@ -805,6 +894,12 @@ const PurchaseV2 = () => {
                     {familyOptions.length > 0 ? "מצאנו את בני המשפחה שלך. סמנו מי מצטרף." : "נוסעים עוד אנשים? הוסיפו אותם לפי תעודת זהות."}
                   </p>
                 </div>
+                {familyLoading && (
+                  <p role="status" className="m-0 flex items-center gap-2 text-[15px] font-semibold text-[#46557A]">
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    מחפשים בני משפחה מהפוליסות הקודמות…
+                  </p>
+                )}
                 <div className="flex flex-col gap-2.5 empty:hidden">
                   {familyOptions.map((t) =>
                     familySelected.has(t.key) ? (

@@ -752,9 +752,6 @@ export type PersonLookupResult =
       status: "found";
       customer: CustomerForm;
       additional: AdditionalCustomer[];
-      /** From past policies (lookupTravelerWithHistory only), keyed by normalized ID */
-      priorConditionById?: Record<string, PriorConditionInfo>;
-      specialDiscountById?: Record<string, SpecialDiscountInfo>;
     }
   | { status: "notfound" }
   | { status: "error"; message: string };
@@ -842,46 +839,63 @@ const fetchPolicyHistory = async (normalizedId: string, signal?: AbortSignal) =>
   }
 };
 
+export type TravelerHistory = {
+  /** The main traveler as found on past policies (fallback when GetByPersonId has nothing) */
+  primaryCustomer: CustomerForm | null;
+  /** Everyone else insured on past policies (family is filtered by the caller) */
+  additional: AdditionalCustomer[];
+  priorConditionById: Record<string, PriorConditionInfo>;
+  specialDiscountById: Record<string, SpecialDiscountInfo>;
+};
+
 /**
- * Main-traveler lookup for the new flow: the person's details (lookupPersonById) plus the
- * people from their past policies, fetched in parallel. GetByPersonId alone returns only
- * the person, so without the policy history there'd be no family to offer.
+ * The customer's past policies (GetByIdU): people to offer as family, plus prior-condition
+ * and last-discount info. Slow for customers with many policies, so the new flow calls it
+ * in the background after showing the GetByPersonId result. GetByPersonId alone returns
+ * only the person, so this is where family members come from.
  */
-export const lookupTravelerWithHistory = async (rawId: string, signal?: AbortSignal): Promise<PersonLookupResult> => {
+export const fetchTravelerHistory = async (rawId: string, signal?: AbortSignal): Promise<TravelerHistory | null> => {
   const normalizedId = normalizeIdValue(rawId);
-  const [person, history] = await Promise.all([
-    lookupPersonById(normalizedId, signal),
-    fetchPolicyHistory(normalizedId, signal).catch(() => null),
-  ]);
+  const history = await fetchPolicyHistory(normalizedId, signal);
+  if (!history) return null;
+  return {
+    primaryCustomer: history.primaryCustomer ? { ...history.primaryCustomer, id: normalizedId } : null,
+    additional: history.additionalCustomers.filter((c) => {
+      const cid = normalizeIdValue(c.personId);
+      return cid !== normalizedId && cid.length === 9;
+    }),
+    priorConditionById: history.priorConditionById,
+    specialDiscountById: history.specialDiscountById,
+  };
+};
 
-  const historyAdditional = (history?.additionalCustomers || []).filter((c) => {
-    const cid = normalizeIdValue(c.personId);
-    return cid !== normalizedId && cid.length === 9;
+/**
+ * Prior-condition fallback: when someone's status is unknown (their latest policy came without
+ * riders), look that policy up by its policy ID. The current form does this for the main
+ * traveler only and blocks on it; it can take ~15s, so the new flow runs it in the background
+ * for every unknown traveler (one request per distinct policy, in parallel).
+ */
+export const resolveUnknownPriorConditions = async (
+  priorConditionById: Record<string, PriorConditionInfo>,
+  specialDiscountById: Record<string, SpecialDiscountInfo>,
+  signal?: AbortSignal,
+) => {
+  const unknownPolicyIds = Array.from(
+    new Set(
+      Object.values(priorConditionById)
+        .filter((info) => info.status === "unknown" && info.policyId)
+        .map((info) => info.policyId as string),
+    ),
+  ).slice(0, 8);
+  let prior = priorConditionById;
+  let discount = specialDiscountById;
+  const lookups = await Promise.all(unknownPolicyIds.map((pid) => fetchPolicyHistory(pid, signal).catch(() => null)));
+  lookups.forEach((byPolicy) => {
+    if (!byPolicy) return;
+    prior = mergePriorConditionMaps(prior, byPolicy.priorConditionById);
+    discount = mergeSpecialDiscountMaps(discount, byPolicy.specialDiscountById);
   });
-  const mergeAdditional = (base: AdditionalCustomer[]) =>
-    Array.from(new Map([...historyAdditional, ...base].map((c) => [normalizeIdValue(c.personId), c])).values());
-
-  // Same fallback as the current form: when the main traveler's prior-condition status is
-  // unknown, look the latest policy up by its policy ID.
-  let priorConditionById = history?.priorConditionById || {};
-  let specialDiscountById = history?.specialDiscountById || {};
-  const primaryPrior = priorConditionById[normalizedId];
-  if (primaryPrior?.status === "unknown" && primaryPrior.policyId) {
-    const byPolicy = await fetchPolicyHistory(primaryPrior.policyId, signal).catch(() => null);
-    if (byPolicy) {
-      priorConditionById = mergePriorConditionMaps(priorConditionById, byPolicy.priorConditionById);
-      specialDiscountById = mergeSpecialDiscountMaps(specialDiscountById, byPolicy.specialDiscountById);
-    }
-  }
-  const extras = { priorConditionById, specialDiscountById };
-
-  if (person.status === "found") {
-    return { ...person, additional: mergeAdditional(person.additional), ...extras };
-  }
-  if (history?.primaryCustomer) {
-    return { status: "found", customer: { ...history.primaryCustomer, id: normalizedId }, additional: mergeAdditional([]), ...extras };
-  }
-  return person;
+  return { priorConditionById: prior, specialDiscountById: discount };
 };
 
 /** Same per-traveler rules as the current form's validateForm (email/phone required from age 18). */
@@ -950,4 +964,23 @@ export const buildHarelUrl = ({ aid, from, to, docket, returnUrl, customers }: H
   });
 
   return `https://ophirbit.co.il/harel/?${harelParams.toString()}`;
+};
+
+/**
+ * Partner (shatap) display name for an aff code, from the same handler the current form uses
+ * (api-shatap.ashx on the IIS server, CORS-enabled). Returns "" when unknown.
+ */
+export const fetchShatapName = async (aff: string, signal?: AbortSignal): Promise<string> => {
+  if (!aff) return "";
+  try {
+    const res = await fetch(`https://ophir.travelsure.co.il/api-shatap.ashx?id=${encodeURIComponent(aff)}`, {
+      cache: "no-store",
+      signal,
+    });
+    if (!res.ok) return "";
+    const data = (await res.json()) as { name?: unknown };
+    return typeof data?.name === "string" ? data.name.trim() : "";
+  } catch {
+    return "";
+  }
 };
