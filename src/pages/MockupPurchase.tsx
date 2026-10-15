@@ -31,6 +31,9 @@ const DEMO_FAMILY = [
 
 const STEPS = ["מי נוסע", "הנוסעים", "סיכום"];
 
+// Demo only: these IDs act as "found in CRM"; any other valid ID is a new customer
+const DEMO_EXISTING_IDS = new Set(["000000018"]);
+
 const isValidIsraeliId = (id: string) => {
   const s = id.trim().padStart(9, "0");
   if (!/^\d{9}$/.test(s)) return false;
@@ -80,17 +83,6 @@ const MockupPurchase = () => {
   const [handoffNote, setHandoffNote] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ firstEn: "", lastEn: "", day: "", month: "", year: "", phone: "", email: "", gender: "" });
 
-  const restart = (next: Scenario) => {
-    setScenario(next);
-    setStep(1);
-    setId("");
-    setIdError("");
-    setFamily(new Set(["f1"]));
-    setExtra([]);
-    setAddingId(null);
-    setHandoffNote(false);
-  };
-
   const submitId = () => {
     if (!isValidIsraeliId(id)) {
       setIdError("מספר תעודת הזהות לא תקין. בדקו את 9 הספרות");
@@ -100,6 +92,8 @@ const MockupPurchase = () => {
     setChecking(true);
     window.setTimeout(() => {
       setChecking(false);
+      // The real flow decides by the CRM lookup result; the mockup fakes it by ID
+      setScenario(DEMO_EXISTING_IDS.has(id.padStart(9, "0")) ? "existing" : "new");
       setStep(2);
     }, 900);
   };
@@ -168,24 +162,6 @@ const MockupPurchase = () => {
   return (
     <AgencyPage title="רכישת ביטוח נסיעות" subtitle="שלושה צעדים קצרים, ואתם בדרך להראל" bandContent={stepper} surface="gray">
       <div className="mx-auto flex max-w-[600px] flex-col gap-5 px-4 py-8 md:py-12">
-        {/* Demo controls — mockup only */}
-        <div role="group" aria-label="תרחיש הדגמה" className="flex flex-wrap items-center gap-2 rounded-[18px] border-2 border-dashed border-[#C5CCD8] bg-white p-3 text-[14px] font-semibold text-[#46557A]">
-          <span>מוקאפ · הדגמה:</span>
-          {(["existing", "new"] as Scenario[]).map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={scenario === s}
-              onClick={() => restart(s)}
-              className={`min-h-[40px] cursor-pointer rounded-full border-2 px-3.5 font-[inherit] text-[14px] font-bold ${
-                scenario === s ? "border-[#000144] bg-[#000144] text-white" : "border-[#D5DAE3] bg-white text-[#000144]"
-              }`}
-            >
-              {s === "existing" ? "לקוח קיים" : "לקוח חדש"}
-            </button>
-          ))}
-        </div>
-
         {/* Step 1 — ID */}
         {step === 1 && (
           <section className={card} aria-labelledby="s1-title">
