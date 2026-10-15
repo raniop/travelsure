@@ -11,6 +11,7 @@ import {
   isValidIsraeliId,
   isoToDDMMYYYY,
   lookupPersonById,
+  lookupTravelerWithHistory,
   normalizeIdValue,
   queryDateToIso,
   sanitizeNameInput,
@@ -256,7 +257,7 @@ const TravelerFields = ({
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${idPrefix}-phone`} className={agencyLabel}>
             טלפון נייד
-            {!adult && " (לא חובה מתחת לגיל 18)"}
+            {adult ? <span className="text-[#B42318]"> * (חובה מגיל 18)</span> : " (לא חובה מתחת לגיל 18)"}
           </label>
           <input
             id={`${idPrefix}-phone`}
@@ -276,7 +277,7 @@ const TravelerFields = ({
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${idPrefix}-email`} className={agencyLabel}>
             מייל
-            {!adult && " (לא חובה מתחת לגיל 18)"}
+            {adult ? <span className="text-[#B42318]"> * (חובה מגיל 18)</span> : " (לא חובה מתחת לגיל 18)"}
           </label>
           <input
             id={`${idPrefix}-email`}
@@ -369,7 +370,7 @@ const PurchaseV2 = () => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 10000);
     try {
-      const result = await lookupPersonById(normalized, controller.signal);
+      const result = await lookupTravelerWithHistory(normalized, controller.signal);
       if (result.status === "found") {
         crmOriginal.current = { [normalized]: result.customer };
         setPrimary(track({ key: normalized, source: "crm", data: result.customer }));

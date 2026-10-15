@@ -816,6 +816,53 @@ export const lookupPersonById = async (rawId: string, signal?: AbortSignal): Pro
   };
 };
 
+// Same credential the current form already sends from the browser for partner links.
+// TODO: move GetByIdU behind a server-side proxy so the password isn't in the client bundle.
+const GET_BY_IDU_PASS = "Admin$123";
+
+/** People insured on the customer's past policies (GetByIdU), used to offer family members. */
+const fetchPolicyHistory = async (normalizedId: string, signal?: AbortSignal) => {
+  const res = await fetch(
+    `${API_BASE_URL}/api/policy/GetByIdU?id=${encodeURIComponent(normalizedId)}&pass=${GET_BY_IDU_PASS}`,
+    { cache: "no-store", signal },
+  );
+  if (!res.ok) return null;
+  const text = await res.text();
+  try {
+    return mapPoliciesToCustomers(text ? JSON.parse(text) : null, normalizedId);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Main-traveler lookup for the new flow: the person's details (lookupPersonById) plus the
+ * people from their past policies, fetched in parallel. GetByPersonId alone returns only
+ * the person, so without the policy history there'd be no family to offer.
+ */
+export const lookupTravelerWithHistory = async (rawId: string, signal?: AbortSignal): Promise<PersonLookupResult> => {
+  const normalizedId = normalizeIdValue(rawId);
+  const [person, history] = await Promise.all([
+    lookupPersonById(normalizedId, signal),
+    fetchPolicyHistory(normalizedId, signal).catch(() => null),
+  ]);
+
+  const historyAdditional = (history?.additionalCustomers || []).filter((c) => {
+    const cid = normalizeIdValue(c.personId);
+    return cid !== normalizedId && cid.length === 9;
+  });
+  const mergeAdditional = (base: AdditionalCustomer[]) =>
+    Array.from(new Map([...historyAdditional, ...base].map((c) => [normalizeIdValue(c.personId), c])).values());
+
+  if (person.status === "found") {
+    return { ...person, additional: mergeAdditional(person.additional) };
+  }
+  if (history?.primaryCustomer) {
+    return { status: "found", customer: { ...history.primaryCustomer, id: normalizedId }, additional: mergeAdditional([]) };
+  }
+  return person;
+};
+
 /** Same per-traveler rules as the current form's validateForm (email/phone required from age 18). */
 export const validateTraveler = (customer: CustomerForm, otherIds: string[]): string[] => {
   const errors: string[] = [];

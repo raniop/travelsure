@@ -248,6 +248,7 @@ const MockupPurchase = () => {
     newCustomer.month &&
     newCustomer.year.length === 4 &&
     newCustomer.phone.replace(/\D/g, "").length >= 9 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomer.email.trim()) &&
     newCustomer.gender;
 
 
@@ -584,11 +585,11 @@ const MockupPurchase = () => {
               </div>
             </fieldset>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="mp-phone" className={agencyLabel}>טלפון נייד</label>
+              <label htmlFor="mp-phone" className={agencyLabel}>טלפון נייד <span className="text-[#B42318]">* (חובה מגיל 18)</span></label>
               <input id="mp-phone" type="tel" inputMode="tel" autoComplete="tel" dir="ltr" placeholder="05X-XXXXXXX" value={newCustomer.phone} onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))} className={agencyField} style={{ textAlign: "right" }} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="mp-email" className={agencyLabel}>מייל (לא חובה)</label>
+              <label htmlFor="mp-email" className={agencyLabel}>מייל <span className="text-[#B42318]">* (חובה מגיל 18)</span></label>
               <input id="mp-email" type="email" inputMode="email" autoComplete="email" dir="ltr" value={newCustomer.email} onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))} className={agencyField} style={{ textAlign: "right" }} />
             </div>
           </section>
