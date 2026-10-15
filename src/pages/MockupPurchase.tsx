@@ -13,23 +13,78 @@ import { ArrowIcon, agencyField, agencyLabel } from "@/components/AgencyUi";
 type Scenario = "existing" | "new";
 type Step = 1 | 2 | 3;
 
-type Traveler = { key: string; name: string; detail: string };
+type Traveler = { key: string; name: string; facts: string[] };
 
-// Demo CRM result, already masked the way the real flow would show it
+/** One muted line of a traveler's (masked) details, wrapping on small screens. */
+const Facts = ({ facts }: { facts: string[] }) => (
+  <span className="text-[14px] font-semibold leading-[1.5] text-[#46557A]">
+    {facts.map((fact, i) => (
+      <span key={fact}>
+        {i > 0 && " · "}
+        {/* nowrap: a phone number or email never breaks across lines */}
+        <span className="whitespace-nowrap">{fact}</span>
+      </span>
+    ))}
+  </span>
+);
+
+// Demo CRM result; phone and email are shown masked, the birth date in full
 const DEMO_CUSTOMER = {
   greeting: "רני",
   name: "רני א׳",
-  birthYear: "1985",
+  lastNameHe: "אברהם",
+  lastNameEn: "Avraham",
+  birthDate: "14/03/1985",
   phone: "054-•••-4567",
   email: "ra•••@gmail.com",
 };
-const DEMO_FAMILY = [
-  { key: "f1", name: "דנה א׳", detail: "בת זוג · 41" },
-  { key: "f2", name: "נועם א׳", detail: "12" },
-  { key: "f3", name: "מאיה א׳", detail: "8" },
+
+type DemoPerson = {
+  key: string;
+  name: string;
+  lastNameHe: string;
+  lastNameEn: string;
+  birthDate: string;
+  phone?: string;
+  email?: string;
+};
+
+// Everyone the CRM links to the customer, including past co-travelers who aren't family
+const DEMO_LINKED_PEOPLE: DemoPerson[] = [
+  { key: "f1", name: "דנה א׳", lastNameHe: "אברהם", lastNameEn: "Avraham", birthDate: "02/07/1984", phone: "052-•••-1122", email: "da•••@gmail.com" },
+  { key: "f2", name: "נועם א׳", lastNameHe: "אברהם", lastNameEn: "Avraham", birthDate: "21/09/2013" },
+  { key: "f3", name: "מאיה א׳", lastNameHe: "אברהם", lastNameEn: "Avraham", birthDate: "05/01/2018" },
+  { key: "x1", name: "יוסי כ׳", lastNameHe: "כהן", lastNameEn: "Cohen", birthDate: "30/11/1983", phone: "050-•••-9081" },
 ];
 
-const STEPS = ["מי נוסע", "הנוסעים", "סיכום"];
+// Demo only: IDs that "exist in CRM" when added as another traveler; any other valid ID is new
+const DEMO_ID_LOOKUP: Record<string, Omit<DemoPerson, "key" | "lastNameHe" | "lastNameEn">> = {
+  "000000034": { name: "אורי ל׳", birthDate: "11/02/1990", phone: "053-•••-8890", email: "or•••@walla.co.il" },
+};
+
+// LTR-isolated so phone numbers and emails keep their order inside Hebrew text
+const ltr = (s: string) => `⁦${s}⁩`;
+
+// What we show about a person: full birth date, everything else masked
+const factsOf = (p: { birthDate: string; phone?: string; email?: string }) =>
+  [`תאריך לידה ${p.birthDate}`, p.phone && ltr(p.phone), p.email && ltr(p.email)].filter(Boolean) as string[];
+
+const normalizeName = (s: string) => s.replace(/["'׳״`\-\s]/g, "").toLowerCase();
+
+// Only people sharing the customer's last name (Hebrew or English) are offered as family
+const isSameFamily = (p: { lastNameHe: string; lastNameEn: string }) =>
+  (p.lastNameHe && normalizeName(p.lastNameHe) === normalizeName(DEMO_CUSTOMER.lastNameHe)) ||
+  (p.lastNameEn && normalizeName(p.lastNameEn) === normalizeName(DEMO_CUSTOMER.lastNameEn));
+
+const DEMO_FAMILY: Traveler[] = DEMO_LINKED_PEOPLE.filter(isSameFamily).map((p) => ({
+  key: p.key,
+  name: p.name,
+  facts: factsOf(p),
+}));
+
+const STEPS = ["הנסיעה", "הנוסעים", "סיכום"];
+
+const EMPTY_ADD_FORM = { gender: "", firstEn: "", lastEn: "", day: "", month: "", year: "" };
 
 // Demo only: these IDs act as "found in CRM"; any other valid ID is a new customer
 const DEMO_EXISTING_IDS = new Set(["000000018"]);
@@ -66,10 +121,12 @@ const lead = "m-0 text-[17px] font-medium text-[#33405F]";
 const MockupPurchase = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const tripDates =
-    shortDate(params.get("from")) && shortDate(params.get("to"))
-      ? `יציאה ${shortDate(params.get("from"))} · חזרה ${shortDate(params.get("to"))}`
-      : "יציאה 2.11 · חזרה 9.11";
+  // Prefilled from the homepage trip card when present; chosen here otherwise
+  const [fromDate, setFromDate] = useState(params.get("from") || "");
+  const [toDate, setToDate] = useState(params.get("to") || "");
+  const [dateError, setDateError] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+  const tripDates = `יציאה ${shortDate(fromDate)} · חזרה ${shortDate(toDate)}`;
 
   const [scenario, setScenario] = useState<Scenario>("existing");
   const [step, setStep] = useState<Step>(1);
@@ -80,10 +137,20 @@ const MockupPurchase = () => {
   const [extra, setExtra] = useState<Traveler[]>([]);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addError, setAddError] = useState("");
+  const [addNotFound, setAddNotFound] = useState(false);
+  const [addForm, setAddForm] = useState(EMPTY_ADD_FORM);
   const [handoffNote, setHandoffNote] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ firstEn: "", lastEn: "", day: "", month: "", year: "", phone: "", email: "", gender: "" });
 
   const submitId = () => {
+    if (!fromDate || !toDate) {
+      setDateError("בחרו תאריך יציאה ותאריך חזרה");
+      return;
+    }
+    if (toDate < fromDate) {
+      setDateError("תאריך החזרה צריך להיות אחרי היציאה");
+      return;
+    }
     if (!isValidIsraeliId(id)) {
       setIdError("מספר תעודת הזהות לא תקין. בדקו את 9 הספרות");
       return;
@@ -98,15 +165,50 @@ const MockupPurchase = () => {
     }, 900);
   };
 
+  const closeAdd = () => {
+    setAddingId(null);
+    setAddError("");
+    setAddNotFound(false);
+    setAddForm(EMPTY_ADD_FORM);
+  };
+
   const addTraveler = () => {
     if (addingId === null) return;
+    const key = addingId.padStart(9, "0");
     if (!isValidIsraeliId(addingId)) {
       setAddError("מספר תעודת הזהות לא תקין");
       return;
     }
-    setExtra((prev) => [...prev, { key: addingId, name: "נוסע/ת נוסף/ת", detail: `ת״ז ${maskId(addingId)} · נמצא/ה במערכת` }]);
-    setAddingId(null);
-    setAddError("");
+    if (key === id.padStart(9, "0") || extra.some((t) => t.key === key)) {
+      setAddError("הנוסע/ת כבר ברשימה");
+      return;
+    }
+    const found = DEMO_ID_LOOKUP[key];
+    if (found) {
+      setExtra((prev) => [...prev, { key, name: found.name, facts: [`ת״ז ${maskId(key)}`, ...factsOf(found)] }]);
+      closeAdd();
+      return;
+    }
+    if (!addNotFound) {
+      // Not in CRM: ask only for what Harel needs for this traveler
+      setAddNotFound(true);
+      setAddError("");
+      return;
+    }
+    const { firstEn, lastEn, day, month, year, gender } = addForm;
+    if (!firstEn.trim() || !lastEn.trim() || !day || !month || year.length !== 4 || !gender) {
+      setAddError("מלאו את כל הפרטים של הנוסע/ת");
+      return;
+    }
+    setExtra((prev) => [
+      ...prev,
+      {
+        key,
+        name: `${firstEn} ${lastEn}`,
+        facts: [`ת״ז ${maskId(key)}`, `תאריך לידה ${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`],
+      },
+    ]);
+    closeAdd();
   };
 
   const primaryName =
@@ -116,11 +218,20 @@ const MockupPurchase = () => {
 
   const travelers: Traveler[] = useMemo(
     () => [
-      { key: "primary", name: primaryName, detail: `ת״ז ${maskId(id || "000000000")}` },
+      {
+        key: "primary",
+        name: primaryName,
+        facts: [
+          `ת״ז ${maskId(id || "000000000")}`,
+          scenario === "existing"
+            ? `תאריך לידה ${DEMO_CUSTOMER.birthDate}`
+            : `תאריך לידה ${newCustomer.day.padStart(2, "0")}/${newCustomer.month.padStart(2, "0")}/${newCustomer.year}`,
+        ],
+      },
       ...DEMO_FAMILY.filter((f) => scenario === "existing" && family.has(f.key)),
       ...extra,
     ],
-    [primaryName, id, scenario, family, extra],
+    [primaryName, id, scenario, family, extra, newCustomer.day, newCustomer.month, newCustomer.year],
   );
 
   const newCustomerReady =
@@ -132,41 +243,191 @@ const MockupPurchase = () => {
     newCustomer.phone.replace(/\D/g, "").length >= 9 &&
     newCustomer.gender;
 
-  const stepper = (
-    <div className="flex flex-col gap-4">
-      <ol aria-label="שלבי הרכישה" className="m-0 flex list-none flex-wrap gap-2 p-0">
-        {STEPS.map((label, i) => {
-          const n = (i + 1) as Step;
-          const done = n < step;
-          const active = n === step;
+
+  // Travelers joining the main one: CRM family (existing customers) + anyone added by ID
+  const companions = (
+    <section className={card} aria-labelledby="s2-family">
+      <div className="flex flex-col gap-2">
+        <h2 id="s2-family" className="m-0 text-[22px] font-black md:text-[26px]">מי נוסע איתך?</h2>
+        <p className={lead}>
+          {scenario === "existing" && DEMO_FAMILY.length > 0
+            ? "מצאנו את בני המשפחה שלך. סמנו מי מצטרף."
+            : "נוסעים עוד אנשים? הוסיפו אותם לפי תעודת זהות."}
+        </p>
+      </div>
+      <div className="flex flex-col gap-2.5 empty:hidden">
+        {(scenario === "existing" ? DEMO_FAMILY : []).map((f) => {
+          const on = family.has(f.key);
           return (
-            <li
-              key={label}
-              aria-current={active ? "step" : undefined}
-              className={`inline-flex min-h-[40px] items-center gap-2 rounded-full border-2 px-3.5 text-[15px] font-bold ${
-                active ? "border-[#00A247] bg-[#00A247] text-[#000144]" : done ? "border-[#00A247] text-white" : "border-white/30 text-white/70"
+            <button
+              key={f.key}
+              type="button"
+              aria-pressed={on}
+              onClick={() =>
+                setFamily((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(f.key)) next.delete(f.key);
+                  else next.add(f.key);
+                  return next;
+                })
+              }
+              className={`flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[18px] border-2 px-4 text-start font-[inherit] ${
+                on ? "border-[#000144] bg-[#F3F5F8] ring-2 ring-inset ring-[#000144]" : "border-[#D5DAE3] bg-white"
               }`}
             >
-              <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${active ? "bg-[#000144] text-white" : done ? "bg-[#00A247] text-[#000144]" : "bg-white/15"}`}>
-                {done ? <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} /> : n}
+              <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${on ? "bg-[#00A247] text-[#000144]" : "border-2 border-[#D5DAE3]"}`}>
+                {on && <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} />}
               </span>
-              {label}
-            </li>
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[17px] font-bold text-[#000144]">{f.name}</span>
+                <Facts facts={f.facts} />
+              </span>
+            </button>
           );
         })}
-      </ol>
-      <p className="m-0 text-[16px] font-semibold text-[#E3EAFF]">{tripDates}</p>
-    </div>
+        {extra.map((t) => (
+          <div key={t.key} className="flex min-h-[60px] items-center gap-3 rounded-[18px] border-2 border-[#000144] bg-[#F3F5F8] py-2 pe-2 ps-4">
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#00A247] text-[#000144]"><Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} /></span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-[17px] font-bold">{t.name}</span>
+              <Facts facts={t.facts} />
+            </span>
+            <button
+              type="button"
+              aria-label={`הסרת ${t.name}`}
+              onClick={() => setExtra((prev) => prev.filter((x) => x.key !== t.key))}
+              className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] border-0 bg-transparent text-[#46557A] hover:bg-white hover:text-[#000144]"
+            >
+              <X aria-hidden="true" className="h-5 w-5" />
+            </button>
+          </div>
+        ))}
+      </div>
+      {addingId === null ? (
+        <button type="button" onClick={() => setAddingId("")} className={`${btnGhost} self-start`}>
+          <Plus aria-hidden="true" className="h-5 w-5" />
+          הוספת נוסע אחר
+        </button>
+      ) : (
+        <div className="flex flex-col gap-3 rounded-[18px] bg-[#F3F5F8] p-4">
+          <label htmlFor="mp-add" className={agencyLabel}>תעודת זהות של הנוסע/ת</label>
+          <div className="flex gap-2">
+            <input
+              id="mp-add"
+              inputMode="numeric"
+              maxLength={9}
+              dir="ltr"
+              value={addingId}
+              readOnly={addNotFound}
+              onChange={(e) => {
+                setAddingId(e.target.value.replace(/\D/g, "").slice(0, 9));
+                setAddError("");
+              }}
+              className={`${agencyField} text-center tracking-[0.1em] ${addNotFound ? "!bg-[#F3F5F8]" : ""}`}
+            />
+            {!addNotFound && (
+              <button type="button" onClick={addTraveler} className="min-h-[52px] shrink-0 cursor-pointer rounded-[14px] border-0 bg-[#000144] px-5 font-[inherit] text-[16px] font-bold text-white">בדיקה</button>
+            )}
+            <button type="button" aria-label="ביטול" onClick={closeAdd} className="inline-flex h-[52px] w-[52px] shrink-0 cursor-pointer items-center justify-center rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[#000144]"><X aria-hidden="true" className="h-5 w-5" /></button>
+          </div>
+
+          {addNotFound && (
+            <div className="flex flex-col gap-3">
+              <p className="m-0 text-[15px] font-semibold text-[#33405F]">לא מצאנו את הנוסע/ת במערכת, אז רק כמה פרטים:</p>
+              <fieldset className="m-0 grid grid-cols-2 gap-2.5 border-0 p-0">
+                <legend className="sr-only">מין</legend>
+                {[["male", "זכר"], ["female", "נקבה"]].map(([v, l]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={addForm.gender === v}
+                    onClick={() => setAddForm((p) => ({ ...p, gender: v }))}
+                    className={`min-h-[48px] cursor-pointer rounded-[14px] border-2 font-[inherit] text-[16px] font-bold ${
+                      addForm.gender === v ? "border-[#000144] bg-[#000144] text-white" : "border-[#D5DAE3] bg-white text-[#000144]"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </fieldset>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[["firstEn", "שם פרטי (באנגלית)"], ["lastEn", "שם משפחה (באנגלית)"]].map(([k, l]) => (
+                  <div key={k} className="flex flex-col gap-1">
+                    <label htmlFor={`mp-add-${k}`} className={agencyLabel}>{l}</label>
+                    <input
+                      id={`mp-add-${k}`}
+                      dir="ltr"
+                      value={addForm[k as "firstEn" | "lastEn"]}
+                      onChange={(e) => setAddForm((p) => ({ ...p, [k]: e.target.value.replace(/[^A-Za-z' -]/g, "") }))}
+                      className={agencyField}
+                    />
+                  </div>
+                ))}
+              </div>
+              <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+                <legend className={`${agencyLabel} mb-1`}>תאריך לידה</legend>
+                <div className="grid grid-cols-[1fr_1fr_1.4fr] gap-2.5" dir="ltr">
+                  {[["day", "יום", 2, "DD"], ["month", "חודש", 2, "MM"], ["year", "שנה", 4, "YYYY"]].map(([k, l, max, ph]) => (
+                    <input
+                      key={k as string}
+                      aria-label={l as string}
+                      inputMode="numeric"
+                      maxLength={max as number}
+                      placeholder={ph as string}
+                      value={addForm[k as "day" | "month" | "year"]}
+                      onChange={(e) => setAddForm((p) => ({ ...p, [k as string]: e.target.value.replace(/\D/g, "") }))}
+                      className={`${agencyField} text-center`}
+                    />
+                  ))}
+                </div>
+              </fieldset>
+              <button type="button" onClick={addTraveler} className="min-h-[52px] cursor-pointer rounded-[14px] border-0 bg-[#000144] px-5 font-[inherit] text-[16px] font-bold text-white">הוספת הנוסע/ת</button>
+            </div>
+          )}
+          {addError && <p role="alert" className="m-0 text-[15px] font-semibold text-[#B42318]">{addError}</p>}
+        </div>
+      )}
+    </section>
   );
 
   return (
-    <AgencyPage title="רכישת ביטוח נסיעות" subtitle="שלושה צעדים קצרים, ואתם בדרך להראל" bandContent={stepper} surface="gray">
+    <AgencyPage title="רכישת ביטוח נסיעות" subtitle="שלושה צעדים קצרים, ואתם בדרך להראל" surface="gray">
       <div className="mx-auto flex max-w-[600px] flex-col gap-5 px-4 py-8 md:py-12">
-        {/* Step 1 — ID */}
+        <ol aria-label="שלבי הרכישה" className="m-0 grid list-none grid-cols-3 gap-2 p-0 md:flex md:flex-wrap">
+          {STEPS.map((label, i) => {
+            const n = (i + 1) as Step;
+            const done = n < step;
+            const active = n === step;
+            return (
+              <li
+                key={label}
+                aria-current={active ? "step" : undefined}
+                className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border-2 px-2 text-[14px] font-bold md:justify-start md:gap-2 md:px-4 md:text-[15px] ${
+                  active
+                    ? "border-[#00A247] bg-[#00A247] text-[#000144]"
+                    : done
+                      ? "border-[#00A247] bg-white text-[#000144]"
+                      : "border-[#D5DAE3] bg-white text-[#46557A]"
+                }`}
+              >
+                <span
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-black ${
+                    active ? "bg-[#000144] text-white" : done ? "bg-[#00A247] text-[#000144]" : "bg-[#F3F5F8] text-[#46557A]"
+                  }`}
+                >
+                  {done ? <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} /> : n}
+                </span>
+                {label}
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* Step 1 — trip dates + ID */}
         {step === 1 && (
           <section className={card} aria-labelledby="s1-title">
             <div className="flex flex-col gap-2">
-              <h2 id="s1-title" className={h2}>מי הנוסע/ת הראשי/ת?</h2>
+              <h2 id="s1-title" className={h2}>מתי טסים, ומי הנוסע/ת הראשי/ת?</h2>
               <p className={lead}>נבדוק אם אתם כבר לקוחות שלנו, ונמלא את הפרטים בשבילכם.</p>
             </div>
             <form
@@ -177,6 +438,30 @@ const MockupPurchase = () => {
               }}
               className="flex flex-col gap-4"
             >
+              <div className="grid grid-cols-2 gap-3">
+                {(
+                  [
+                    ["mp-from", "יציאה", fromDate, setFromDate, today],
+                    ["mp-to", "חזרה", toDate, setToDate, fromDate || today],
+                  ] as const
+                ).map(([fid, label, value, setValue, min]) => (
+                  <div key={fid} className="flex flex-col gap-1.5">
+                    <label htmlFor={fid} className={agencyLabel}>{label}</label>
+                    <input
+                      id={fid}
+                      type="date"
+                      min={min}
+                      value={value}
+                      onChange={(e) => {
+                        setValue(e.target.value);
+                        setDateError("");
+                      }}
+                      className={`${agencyField} min-w-0 appearance-none !px-3 !text-[15px] md:!text-[17px] ${dateError ? "!border-[#B42318]" : ""}`}
+                    />
+                  </div>
+                ))}
+              </div>
+              {dateError && <p role="alert" className="m-0 -mt-2 text-[15px] font-semibold text-[#B42318]">{dateError}</p>}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="mp-id" className={agencyLabel}>תעודת זהות</label>
                 <input
@@ -231,7 +516,7 @@ const MockupPurchase = () => {
               <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-3 rounded-[20px] bg-[#F3F5F8] p-4 text-[16px]">
                 {[
                   ["שם", DEMO_CUSTOMER.name],
-                  ["שנת לידה", DEMO_CUSTOMER.birthYear],
+                  ["תאריך לידה", DEMO_CUSTOMER.birthDate],
                   ["טלפון", DEMO_CUSTOMER.phone],
                   ["מייל", DEMO_CUSTOMER.email],
                 ].map(([k, v]) => (
@@ -246,79 +531,7 @@ const MockupPurchase = () => {
               </button>
             </section>
 
-            <section className={card} aria-labelledby="s2-family">
-              <div className="flex flex-col gap-2">
-                <h2 id="s2-family" className="m-0 text-[22px] font-black md:text-[26px]">מי נוסע איתך?</h2>
-                <p className={lead}>מצאנו את בני המשפחה שלך. סמנו מי מצטרף.</p>
-              </div>
-              <div className="flex flex-col gap-2.5">
-                {DEMO_FAMILY.map((f) => {
-                  const on = family.has(f.key);
-                  return (
-                    <button
-                      key={f.key}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() =>
-                        setFamily((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(f.key)) next.delete(f.key);
-                          else next.add(f.key);
-                          return next;
-                        })
-                      }
-                      className={`flex min-h-[60px] cursor-pointer items-center gap-3 rounded-[18px] border-2 px-4 text-start font-[inherit] ${
-                        on ? "border-[#000144] bg-[#F3F5F8] ring-2 ring-inset ring-[#000144]" : "border-[#D5DAE3] bg-white"
-                      }`}
-                    >
-                      <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${on ? "bg-[#00A247] text-[#000144]" : "border-2 border-[#D5DAE3]"}`}>
-                        {on && <Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} />}
-                      </span>
-                      <span className="flex flex-col">
-                        <span className="text-[17px] font-bold text-[#000144]">{f.name}</span>
-                        <span className="text-[14px] font-semibold text-[#46557A]">{f.detail}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-                {extra.map((t) => (
-                  <div key={t.key} className="flex min-h-[60px] items-center gap-3 rounded-[18px] border-2 border-[#000144] bg-[#F3F5F8] px-4">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#00A247] text-[#000144]"><Check aria-hidden="true" className="h-4 w-4" strokeWidth={3} /></span>
-                    <span className="flex flex-col">
-                      <span className="text-[17px] font-bold">{t.name}</span>
-                      <span className="text-[14px] font-semibold text-[#46557A]">{t.detail}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {addingId === null ? (
-                <button type="button" onClick={() => setAddingId("")} className={`${btnGhost} self-start`}>
-                  <Plus aria-hidden="true" className="h-5 w-5" />
-                  הוספת נוסע אחר
-                </button>
-              ) : (
-                <div className="flex flex-col gap-2 rounded-[18px] bg-[#F3F5F8] p-4">
-                  <label htmlFor="mp-add" className={agencyLabel}>תעודת זהות של הנוסע/ת</label>
-                  <div className="flex gap-2">
-                    <input
-                      id="mp-add"
-                      inputMode="numeric"
-                      maxLength={9}
-                      dir="ltr"
-                      value={addingId}
-                      onChange={(e) => {
-                        setAddingId(e.target.value.replace(/\D/g, "").slice(0, 9));
-                        setAddError("");
-                      }}
-                      className={`${agencyField} text-center tracking-[0.1em]`}
-                    />
-                    <button type="button" onClick={addTraveler} className="min-h-[52px] shrink-0 cursor-pointer rounded-[14px] border-0 bg-[#000144] px-5 font-[inherit] text-[16px] font-bold text-white">הוספה</button>
-                    <button type="button" aria-label="ביטול" onClick={() => { setAddingId(null); setAddError(""); }} className="inline-flex h-[52px] w-[52px] shrink-0 cursor-pointer items-center justify-center rounded-[14px] border-2 border-[#D5DAE3] bg-white text-[#000144]"><X aria-hidden="true" className="h-5 w-5" /></button>
-                  </div>
-                  {addError && <p role="alert" className="m-0 text-[15px] font-semibold text-[#B42318]">{addError}</p>}
-                </div>
-              )}
-            </section>
+            {companions}
 
             <button type="button" onClick={() => setStep(3)} className={btnPrimary}>
               <span>{travelers.length === 1 ? "רק אני נוסע/ת, המשך" : `המשך עם ${travelers.length} נוסעים`}</span>
@@ -392,11 +605,16 @@ const MockupPurchase = () => {
               <label htmlFor="mp-email" className={agencyLabel}>מייל (לא חובה)</label>
               <input id="mp-email" type="email" inputMode="email" autoComplete="email" dir="ltr" value={newCustomer.email} onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))} className={agencyField} style={{ textAlign: "right" }} />
             </div>
+          </section>
+        )}
+        {step === 2 && scenario === "new" && (
+          <>
+            {companions}
             <button type="button" onClick={() => setStep(3)} disabled={!newCustomerReady} className={btnPrimary}>
-              <span>המשך</span>
+              <span>{travelers.length === 1 ? "המשך" : `המשך עם ${travelers.length} נוסעים`}</span>
               <ArrowIcon size={20} />
             </button>
-          </section>
+          </>
         )}
 
         {/* Step 3 — summary */}
@@ -416,9 +634,9 @@ const MockupPurchase = () => {
                 {travelers.map((t) => (
                   <li key={t.key} className="flex min-h-[56px] items-center gap-3 rounded-[16px] border-2 border-[#E3E7EE] px-4">
                     <UserRound aria-hidden="true" className="h-5 w-5 shrink-0 text-[#46557A]" />
-                    <span className="flex flex-col">
+                    <span className="flex min-w-0 flex-col">
                       <span className="text-[17px] font-bold">{t.name}</span>
-                      <span className="text-[14px] font-semibold text-[#46557A]">{t.detail}</span>
+                      <Facts facts={t.facts} />
                     </span>
                   </li>
                 ))}
