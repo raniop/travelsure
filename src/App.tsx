@@ -28,6 +28,7 @@ import BBQManager from "./pages/BBQManager";
 import FormsDownloads from "./pages/FormsDownloads";
 import MockupV2 from "./pages/MockupV2";
 import MockupPurchase from "./pages/MockupPurchase";
+import PurchaseV2 from "./pages/PurchaseV2";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const AppContent = () => {
         <Route path="/forms" element={<FormsDownloads />} />
         <Route path="/mockup-v2" element={<MockupV2 />} />
         <Route path="/mockup-purchase" element={<MockupPurchase />} />
+        <Route path="/purchase-v2" element={<PurchaseV2 />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
