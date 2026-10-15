@@ -13,13 +13,15 @@ type NavGroup = { id: string; label: string; items: NavLink[] };
 interface AgencyHeaderProps {
   /** True on the landing page itself: the quote CTA jumps to the trip card instead of /purchase. */
   onLanding?: boolean;
+  /** Logo only (no navigation, buttons or home link), for partner links that should stay in the flow. */
+  minimal?: boolean;
 }
 
 const linkClass =
   "flex min-h-[44px] items-center whitespace-nowrap text-[16px] font-semibold text-[#000144] no-underline hover:text-[#008C3D] xl:text-[17px]";
 
 /** White rounded top bar from the agency design; sits on a navy (#000144) background. */
-const AgencyHeader = ({ onLanding = false }: AgencyHeaderProps) => {
+const AgencyHeader = ({ onLanding = false, minimal = false }: AgencyHeaderProps) => {
   const { t } = useLanguage();
   const { pathname } = useLocation();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -91,15 +93,31 @@ const AgencyHeader = ({ onLanding = false }: AgencyHeaderProps) => {
     </Link>
   );
 
+  const brand = (
+    <>
+      <img src={logo} alt="" className="block h-10 w-auto lg:h-12" />
+      <span className="flex flex-col leading-[1.1]">
+        <span className="text-[20px] font-extrabold lg:text-[22px]">אופיר ושות׳</span>
+        <span className="text-sm font-semibold text-[#46557A]">סוכנות לביטוח</span>
+      </span>
+    </>
+  );
+
+  if (minimal) {
+    return (
+      <header className="relative z-30 rounded-[20px] bg-white font-rubik text-[#000144]">
+        <div className="flex items-center py-2 pl-2 pr-3 lg:py-2.5 lg:pl-2.5 lg:pr-5">
+          <div className="flex min-h-[52px] shrink-0 items-center gap-2.5 lg:gap-3">{brand}</div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header ref={headerRef} className="relative z-30 rounded-[20px] bg-white font-rubik text-[#000144]">
       <div className="flex items-center gap-3 py-2 pl-2 pr-3 lg:gap-6 lg:py-2.5 lg:pl-2.5 lg:pr-5">
         <Link to={AGENCY_LANDING_PATH} aria-label="אופיר ושות׳ סוכנות לביטוח, לדף הבית" className="flex min-h-[52px] shrink-0 items-center gap-2.5 text-[#000144] no-underline lg:gap-3">
-          <img src={logo} alt="" className="block h-10 w-auto lg:h-12" />
-          <span className="flex flex-col leading-[1.1]">
-            <span className="text-[20px] font-extrabold lg:text-[22px]">אופיר ושות׳</span>
-            <span className="text-sm font-semibold text-[#46557A]">סוכנות לביטוח</span>
-          </span>
+          {brand}
         </Link>
 
         {/* Desktop navigation */}

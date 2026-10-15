@@ -722,6 +722,7 @@ const PurchaseV2 = () => {
       title="רכישת ביטוח נסיעות"
       subtitle="שלושה צעדים קצרים, והפוליסה אצלכם"
       surface="gray"
+      minimalHeader={aff !== DEFAULT_AFF}
       bandContent={
         shatapName || discountPercent ? (
           <span className="flex flex-wrap items-center gap-2">
