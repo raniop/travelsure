@@ -82,7 +82,7 @@ const DEMO_FAMILY: Traveler[] = DEMO_LINKED_PEOPLE.filter(isSameFamily).map((p) 
   facts: factsOf(p),
 }));
 
-const STEPS = ["הנסיעה", "הנוסעים", "סיכום"];
+const STEPS = ["נוסעים", "תאריכים", "סיכום"];
 
 const EMPTY_ADD_FORM = { gender: "", firstEn: "", lastEn: "", day: "", month: "", year: "" };
 
@@ -133,6 +133,7 @@ const MockupPurchase = () => {
   const [id, setId] = useState("");
   const [idError, setIdError] = useState("");
   const [checking, setChecking] = useState(false);
+  const [lookedUp, setLookedUp] = useState(false);
   const [family, setFamily] = useState<Set<string>>(new Set(["f1"]));
   const [extra, setExtra] = useState<Traveler[]>([]);
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -142,7 +143,7 @@ const MockupPurchase = () => {
   const [handoffNote, setHandoffNote] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ firstEn: "", lastEn: "", day: "", month: "", year: "", phone: "", email: "", gender: "" });
 
-  const submitId = () => {
+  const submitDates = () => {
     if (!fromDate || !toDate) {
       setDateError("בחרו תאריך יציאה ותאריך חזרה");
       return;
@@ -151,6 +152,12 @@ const MockupPurchase = () => {
       setDateError("תאריך החזרה צריך להיות אחרי היציאה");
       return;
     }
+    setDateError("");
+    setStep(3);
+  };
+
+  // Travelers step: the lookup result opens below the ID on the same screen
+  const lookupId = () => {
     if (!isValidIsraeliId(id)) {
       setIdError("מספר תעודת הזהות לא תקין. בדקו את 9 הספרות");
       return;
@@ -161,7 +168,7 @@ const MockupPurchase = () => {
       setChecking(false);
       // The real flow decides by the CRM lookup result; the mockup fakes it by ID
       setScenario(DEMO_EXISTING_IDS.has(id.padStart(9, "0")) ? "existing" : "new");
-      setStep(2);
+      setLookedUp(true);
     }, 900);
   };
 
@@ -391,7 +398,7 @@ const MockupPurchase = () => {
   );
 
   return (
-    <AgencyPage title="רכישת ביטוח נסיעות" subtitle="שלושה צעדים קצרים, ואתם בדרך להראל" surface="gray">
+    <AgencyPage title="רכישת ביטוח נסיעות" subtitle="שלושה צעדים קצרים, והפוליסה אצלכם" surface="gray">
       <div className="mx-auto flex max-w-[600px] flex-col gap-5 px-4 py-8 md:py-12">
         <ol aria-label="שלבי הרכישה" className="m-0 grid list-none grid-cols-3 gap-2 p-0 md:flex md:flex-wrap">
           {STEPS.map((label, i) => {
@@ -423,45 +430,21 @@ const MockupPurchase = () => {
           })}
         </ol>
 
-        {/* Step 1 — trip dates + ID */}
+        {/* Step 1 — travelers: ID, then the lookup result opens below on the same screen */}
         {step === 1 && (
           <section className={card} aria-labelledby="s1-title">
             <div className="flex flex-col gap-2">
-              <h2 id="s1-title" className={h2}>מתי טסים, ומי הנוסע/ת הראשי/ת?</h2>
+              <h2 id="s1-title" className={h2}>מי הנוסע/ת הראשי/ת?</h2>
               <p className={lead}>נבדוק אם אתם כבר לקוחות שלנו, ונמלא את הפרטים בשבילכם.</p>
             </div>
             <form
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                submitId();
+                lookupId();
               }}
               className="flex flex-col gap-4"
             >
-              <div className="grid grid-cols-2 gap-3">
-                {(
-                  [
-                    ["mp-from", "יציאה", fromDate, setFromDate, today],
-                    ["mp-to", "חזרה", toDate, setToDate, fromDate || today],
-                  ] as const
-                ).map(([fid, label, value, setValue, min]) => (
-                  <div key={fid} className="flex flex-col gap-1.5">
-                    <label htmlFor={fid} className={agencyLabel}>{label}</label>
-                    <input
-                      id={fid}
-                      type="date"
-                      min={min}
-                      value={value}
-                      onChange={(e) => {
-                        setValue(e.target.value);
-                        setDateError("");
-                      }}
-                      className={`${agencyField} min-w-0 appearance-none !px-3 !text-[15px] md:!text-[17px] ${dateError ? "!border-[#B42318]" : ""}`}
-                    />
-                  </div>
-                ))}
-              </div>
-              {dateError && <p role="alert" className="m-0 -mt-2 text-[15px] font-semibold text-[#B42318]">{dateError}</p>}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="mp-id" className={agencyLabel}>תעודת זהות</label>
                 <input
@@ -476,6 +459,7 @@ const MockupPurchase = () => {
                   onChange={(e) => {
                     setId(e.target.value.replace(/\D/g, "").slice(0, 9));
                     setIdError("");
+                    setLookedUp(false);
                   }}
                   className={`${agencyField} !min-h-[60px] text-center !text-[24px] tracking-[0.12em] ${idError ? "!border-[#B42318]" : ""}`}
                   dir="ltr"
@@ -484,6 +468,7 @@ const MockupPurchase = () => {
                   <p id="mp-id-err" role="alert" className="m-0 text-[15px] font-semibold text-[#B42318]">{idError}</p>
                 )}
               </div>
+              {!lookedUp && (
               <button type="submit" className={btnPrimary} disabled={checking || id.length < 5}>
                 {checking ? (
                   <>
@@ -497,6 +482,7 @@ const MockupPurchase = () => {
                   </>
                 )}
               </button>
+              )}
             </form>
             <p className="m-0 flex items-center gap-2 text-[14px] font-semibold text-[#46557A]">
               <ShieldCheck aria-hidden="true" className="h-5 w-5 shrink-0 text-[#008C3D]" />
@@ -506,7 +492,7 @@ const MockupPurchase = () => {
         )}
 
         {/* Step 2 — existing customer: confirm + family */}
-        {step === 2 && scenario === "existing" && (
+        {step === 1 && lookedUp && scenario === "existing" && (
           <>
             <section className={card} aria-labelledby="s2-title">
               <div className="flex flex-col gap-2">
@@ -533,7 +519,7 @@ const MockupPurchase = () => {
 
             {companions}
 
-            <button type="button" onClick={() => setStep(3)} className={btnPrimary}>
+            <button type="button" onClick={() => setStep(2)} className={btnPrimary}>
               <span>{travelers.length === 1 ? "רק אני נוסע/ת, המשך" : `המשך עם ${travelers.length} נוסעים`}</span>
               <ArrowIcon size={20} />
             </button>
@@ -541,7 +527,7 @@ const MockupPurchase = () => {
         )}
 
         {/* Step 2 — new customer: only what's missing */}
-        {step === 2 && scenario === "new" && (
+        {step === 1 && lookedUp && scenario === "new" && (
           <section className={card} aria-labelledby="s2n-title">
             <div className="flex flex-col gap-2">
               <h2 id="s2n-title" className={h2}>נעים להכיר</h2>
@@ -607,14 +593,61 @@ const MockupPurchase = () => {
             </div>
           </section>
         )}
-        {step === 2 && scenario === "new" && (
+        {step === 1 && lookedUp && scenario === "new" && (
           <>
             {companions}
-            <button type="button" onClick={() => setStep(3)} disabled={!newCustomerReady} className={btnPrimary}>
+            <button type="button" onClick={() => setStep(2)} disabled={!newCustomerReady} className={btnPrimary}>
               <span>{travelers.length === 1 ? "המשך" : `המשך עם ${travelers.length} נוסעים`}</span>
               <ArrowIcon size={20} />
             </button>
           </>
+        )}
+
+        {/* Step 2 — trip dates (prefilled from the homepage card when present) */}
+        {step === 2 && (
+          <section className={card} aria-labelledby="s2d-title">
+            <div className="flex flex-col gap-2">
+              <h2 id="s2d-title" className={h2}>מתי טסים?</h2>
+              <p className={lead}>תאריכי היציאה והחזרה לישראל.</p>
+            </div>
+            <form
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitDates();
+              }}
+              className="flex flex-col gap-4"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {(
+                  [
+                    ["mp-from", "יציאה", fromDate, setFromDate, today],
+                    ["mp-to", "חזרה", toDate, setToDate, fromDate || today],
+                  ] as const
+                ).map(([fid, label, value, setValue, min]) => (
+                  <div key={fid} className="flex flex-col gap-1.5">
+                    <label htmlFor={fid} className={agencyLabel}>{label}</label>
+                    <input
+                      id={fid}
+                      type="date"
+                      min={min}
+                      value={value}
+                      onChange={(e) => {
+                        setValue(e.target.value);
+                        setDateError("");
+                      }}
+                      className={`${agencyField} min-w-0 appearance-none !px-3 !text-[15px] md:!text-[17px] ${dateError ? "!border-[#B42318]" : ""}`}
+                    />
+                  </div>
+                ))}
+              </div>
+              {dateError && <p role="alert" className="m-0 -mt-2 text-[15px] font-semibold text-[#B42318]">{dateError}</p>}
+              <button type="submit" className={btnPrimary}>
+                <span>המשך לסיכום</span>
+                <ArrowIcon size={20} />
+              </button>
+            </form>
+          </section>
         )}
 
         {/* Step 3 — summary */}
@@ -624,9 +657,14 @@ const MockupPurchase = () => {
               <h2 id="s3-title" className={h2}>הכול מוכן</h2>
               <p className={lead}>בשלב הבא נעביר אתכם לאתר של הראל לבחירת הכיסוי ולתשלום. כל הפרטים כבר יהיו שם.</p>
             </div>
-            <div className="flex flex-col gap-1 rounded-[20px] bg-[#F3F5F8] p-4">
-              <span className="text-[13px] font-semibold text-[#46557A]">הנסיעה</span>
-              <span className="text-[18px] font-bold">{tripDates}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[20px] bg-[#F3F5F8] p-4">
+              <div className="flex flex-1 flex-col gap-1">
+                <span className="text-[13px] font-semibold text-[#46557A]">הנסיעה</span>
+                <span className="text-[18px] font-bold">{tripDates}</span>
+              </div>
+              <button type="button" onClick={() => setStep(2)} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-[15px] font-bold text-[#000144] underline underline-offset-4">
+                שינוי
+              </button>
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-[13px] font-semibold text-[#46557A]">{travelers.length === 1 ? "נוסע אחד" : `${travelers.length} נוסעים`}</span>
@@ -641,7 +679,7 @@ const MockupPurchase = () => {
                   </li>
                 ))}
               </ul>
-              <button type="button" onClick={() => setStep(2)} className="self-start border-0 bg-transparent p-0 font-[inherit] text-[15px] font-bold text-[#000144] underline underline-offset-4 min-h-[44px] cursor-pointer">
+              <button type="button" onClick={() => setStep(1)} className="self-start border-0 bg-transparent p-0 font-[inherit] text-[15px] font-bold text-[#000144] underline underline-offset-4 min-h-[44px] cursor-pointer">
                 עריכת הנוסעים
               </button>
             </div>
