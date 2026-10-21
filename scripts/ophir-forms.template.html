@@ -277,7 +277,7 @@
 
   function renderRow(form) {
     var url = (form.url || "").trim();
-    var type = url ? form.fileType || fileTypeOf(url) : null;
+    var type = url ? fileTypeOf(url) : null;
     var lang = languageOf(form.title);
     var li = el("li");
     var row = el(url ? "a" : "div", "row");

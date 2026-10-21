@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink, FileSpreadsheet, FileText, Search } from "lucide-react";
+import { Download, ExternalLink, FileSpreadsheet, FileText, Search } from "lucide-react";
 import AgencyPage from "@/components/AgencyPage";
 import formCategories from "@/data/formCategories.json";
 import {
@@ -15,8 +15,36 @@ import {
 type DownloadFormItem = {
   title: string;
   url?: string;
-  /** For links whose address has no file extension (e.g. a viewer page). */
-  fileType?: "PDF" | "Excel";
+  /** Download straight away under this name instead of opening a tab (our own generated PDFs). */
+  downloadName?: string;
+  /** Same-origin copy used when `url` can't be fetched. */
+  fallbackUrl?: string;
+};
+
+const fetchFile = async (url: string) => {
+  const res = await fetch(url, { cache: "no-cache" });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.blob();
+};
+
+/**
+ * Cross-origin links ignore the download attribute (and some browsers then show nothing),
+ * so fetch the file and save it from a blob; fall back to our own copy.
+ */
+const downloadForm = async (form: DownloadFormItem, url: string) => {
+  try {
+    const blob = await fetchFile(url).catch(() => (form.fallbackUrl ? fetchFile(form.fallbackUrl) : Promise.reject()));
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = form.downloadName || "";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+  } catch {
+    window.location.href = form.fallbackUrl || url;
+  }
 };
 
 type FormCategory = {
@@ -197,7 +225,7 @@ const FormsDownloads = () => {
               <ul className="m-0 list-none divide-y-2 divide-[#E3E7EE] overflow-hidden rounded-[28px] border-2 border-[#E3E7EE] bg-white p-0">
                 {category.forms.map((form) => {
                   const url = form.url?.trim();
-                  const fileType = url ? form.fileType ?? fileTypeOf(url) : null;
+                  const fileType = url ? fileTypeOf(url) : null;
                   const language = languageOf(form.title);
                   const Icon = fileType === "Excel" ? FileSpreadsheet : FileText;
 
@@ -227,7 +255,12 @@ const FormsDownloads = () => {
                           )}
                         </span>
                       </span>
-                      {url && <ExternalLink aria-hidden="true" className="h-5 w-5 shrink-0 text-[#46557A]" />}
+                      {url &&
+                        (form.downloadName ? (
+                          <Download aria-hidden="true" className="h-5 w-5 shrink-0 text-[#46557A]" />
+                        ) : (
+                          <ExternalLink aria-hidden="true" className="h-5 w-5 shrink-0 text-[#46557A]" />
+                        ))}
                     </>
                   );
 
@@ -238,10 +271,19 @@ const FormsDownloads = () => {
                           href={url}
                           target="_blank"
                           rel="noreferrer"
+                          download={form.downloadName}
+                          onClick={
+                            form.downloadName
+                              ? (event) => {
+                                  event.preventDefault();
+                                  void downloadForm(form, url);
+                                }
+                              : undefined
+                          }
                           className="flex min-h-[64px] items-center gap-4 px-4 py-3 text-[#000144] no-underline transition-colors hover:bg-[#F3F5F8] focus-visible:bg-[#F3F5F8] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#000144] md:px-6"
                         >
                           {content}
-                          <span className="sr-only">(נפתח בחלון חדש)</span>
+                          <span className="sr-only">{form.downloadName ? "(הורדת קובץ)" : "(נפתח בחלון חדש)"}</span>
                         </a>
                       ) : (
                         <div className="flex min-h-[64px] items-center gap-4 px-4 py-3 text-[#46557A] md:px-6">{content}</div>
