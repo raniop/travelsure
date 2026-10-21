@@ -48,4 +48,9 @@ try {
   setTimeout(() => rmSync(tmp, { force: true }), 3000);
 }
 if (!existsSync(out)) throw new Error("PDF was not written");
+// Without Rubik the Hebrew text falls back to a font with no Hebrew glyphs and silently disappears.
+if (!readFileSync(out, "latin1").includes("Rubik")) {
+  rmSync(out, { force: true });
+  throw new Error("Rubik is not embedded in the PDF (font failed to load); not writing a PDF without Hebrew text");
+}
 console.log("wrote", out);

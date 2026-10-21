@@ -15,6 +15,8 @@ import {
 type DownloadFormItem = {
   title: string;
   url?: string;
+  /** For links whose address has no file extension (e.g. a viewer page). */
+  fileType?: "PDF" | "Excel";
 };
 
 type FormCategory = {
@@ -195,7 +197,7 @@ const FormsDownloads = () => {
               <ul className="m-0 list-none divide-y-2 divide-[#E3E7EE] overflow-hidden rounded-[28px] border-2 border-[#E3E7EE] bg-white p-0">
                 {category.forms.map((form) => {
                   const url = form.url?.trim();
-                  const fileType = url ? fileTypeOf(url) : null;
+                  const fileType = url ? form.fileType ?? fileTypeOf(url) : null;
                   const language = languageOf(form.title);
                   const Icon = fileType === "Excel" ? FileSpreadsheet : FileText;
 

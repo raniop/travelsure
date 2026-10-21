@@ -147,7 +147,8 @@
     "forms": [
       {
         "title": "פירוט כיסויים ועלויות - ביטוח תיירים בישראל (Tour & Care)",
-        "url": "https://cdn.jsdelivr.net/gh/raniop/travelsure@main/public/docs/tourists/tour-and-care-coverages.pdf"
+        "url": "https://travelsure.co.il/forms/tour-and-care",
+        "fileType": "PDF"
       },
       {
         "title": "תנאי פוליסה מלאים - Tour & Care",

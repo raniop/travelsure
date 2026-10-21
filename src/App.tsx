@@ -26,6 +26,7 @@ import HomeInsurance from "./pages/HomeInsurance";
 import BusinessInsurance from "./pages/BusinessInsurance";
 import BBQManager from "./pages/BBQManager";
 import FormsDownloads from "./pages/FormsDownloads";
+import TourCareCoverages from "./pages/TourCareCoverages";
 import MockupV2 from "./pages/MockupV2";
 import MockupPurchase from "./pages/MockupPurchase";
 import PurchaseV2 from "./pages/PurchaseV2";
@@ -60,6 +61,7 @@ const AppContent = () => {
         <Route path="/services/home" element={<HomeInsurance />} />
         <Route path="/services/business" element={<BusinessInsurance />} />
         <Route path="/forms" element={<FormsDownloads />} />
+        <Route path="/forms/tour-and-care" element={<TourCareCoverages />} />
         <Route path="/mockup-v2" element={<MockupV2 />} />
         <Route path="/mockup-purchase" element={<MockupPurchase />} />
         <Route path="/purchase-v2" element={<PurchaseV2 />} />
