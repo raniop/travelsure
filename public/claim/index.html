@@ -190,6 +190,7 @@
         justify-content: space-between; gap: 10px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--navy); cursor: pointer; text-align: right;
       }
       .currency-menu li button:hover, .currency-menu li button.active { background: var(--surface); }
+      .span-all { grid-column: 1 / -1; }
       .currency-hint { margin-top: 6px; font-size: 13px; color: var(--green-dark); font-weight: 700; }
 
       /* Claim type cards */
@@ -1549,29 +1550,31 @@
         return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
       }
 
+      // Totals per currency (expenses abroad are often in more than one). total/currency describe
+      // the first currency; label is the whole claim, e.g. "1344.26 CHF + 552 USD".
       function sumClaimExpenses(rows) {
         const filled = (rows || []).filter((e) => String(e.amount || "").trim());
-        if (!filled.length) return { total: "", currency: "USD", hasMixedCurrencies: false, count: 0 };
+        if (!filled.length) return { total: "", currency: "USD", hasMixedCurrencies: false, count: 0, totals: [], label: "" };
         const primary = String(filled[0].currency || "USD").trim().toUpperCase() || "USD";
-        let sum = 0;
-        let hasMixed = false;
+        const sums = new Map();
         let count = 0;
         filled.forEach((row) => {
           const n = parseClaimAmount(String(row.amount || ""));
           if (!Number.isFinite(n) || n <= 0) return;
           const cur = String(row.currency || primary).trim().toUpperCase() || primary;
-          if (cur !== primary) {
-            hasMixed = true;
-            return;
-          }
-          sum += n;
+          sums.set(cur, (sums.get(cur) || 0) + n);
           count += 1;
         });
+        const totals = Array.from(sums, ([currency, sum]) => ({ currency: currency, total: formatSummedAmount(sum) }))
+          .filter((t) => t.total);
+        const first = totals[0] || { currency: primary, total: "" };
         return {
-          total: formatSummedAmount(sum),
-          currency: primary,
-          hasMixedCurrencies: hasMixed,
+          total: first.total,
+          currency: first.currency,
+          hasMixedCurrencies: totals.length > 1,
           count: count,
+          totals: totals,
+          label: totals.map((t) => t.total + " " + t.currency).join(" + "),
         };
       }
 
@@ -1586,6 +1589,8 @@
         const currencyBtn = $("currencyBtn");
         if (!amountInput) return;
         if (!expensesDriveTotal()) {
+          $("claimCurrencyBox")?.classList.remove("hidden");
+          $("claimAmountField")?.classList.remove("span-all");
           if (label) label.textContent = "סכום נתבע";
           if (hint) {
             hint.classList.add("hidden");
@@ -1601,12 +1606,15 @@
         amountInput.readOnly = true;
         if (currencyBtn) currencyBtn.disabled = true;
         if (label) label.textContent = 'סה״כ סכום נתבע';
-        amountInput.value = summed.total || "";
+        // Several currencies: the total field lists each one and the single-currency picker steps aside
+        amountInput.value = summed.hasMixedCurrencies ? summed.label : summed.total || "";
+        $("claimCurrencyBox")?.classList.toggle("hidden", summed.hasMixedCurrencies);
+        $("claimAmountField")?.classList.toggle("span-all", summed.hasMixedCurrencies);
         if (summed.currency) setClaimCurrency(summed.currency, { manual: true });
         if (hint) {
           hint.classList.remove("hidden");
           hint.textContent = summed.hasMixedCurrencies
-            ? ("מחושב במטבע " + summed.currency + " בלבד — יש הוצאות במטבעות אחרים שלא נכללו")
+            ? "מחושב אוטומטית לפי פירוט ההוצאות, בנפרד לכל מטבע"
             : "מחושב אוטומטית לפי פירוט ההוצאות";
         }
       }
@@ -2664,11 +2672,6 @@
             return;
           }
           const summed = sumClaimExpenses(expenseRows);
-          if (summed.hasMixedCurrencies) {
-            $("detailsError").textContent = "כל ההוצאות חייבות להיות באותו מטבע כדי לחשב סה״כ אוטומטי";
-            $("expenseWrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
-            return;
-          }
           if (!summed.total) {
             $("detailsError").textContent = "לא ניתן לחשב סכום נתבע — בדקו את סכומי ההוצאות";
             return;
@@ -2710,6 +2713,9 @@
           return dateKeys.has(k) ? (parseDateToIso(raw) || raw) : raw;
         };
         const meta = types[claimType];
+        // Expense-driven claims may span several currencies: send the per-currency total as is
+        const expenseSum = expensesDriveTotal() ? sumClaimExpenses(collectRows($("expenseItems"))) : null;
+        const mixedSum = expenseSum && expenseSum.hasMixedCurrencies ? expenseSum : null;
         const payload = {
           claimType, claimTypeLabel: meta.title,
           baggageSubtype: claimType === "baggage" ? baggageSubtype : undefined,
@@ -2727,17 +2733,25 @@
           country: claimType === "trip_cancel" ? "" : get("country"),
           details: get("details"),
           claimAmount:
-            claimType === "baggage" && baggageSubtype === "delay" ? "155" : get("claimAmount"),
+            claimType === "baggage" && baggageSubtype === "delay" ? "155" : mixedSum ? mixedSum.label : get("claimAmount"),
           claimCurrency:
-            claimType === "baggage" && baggageSubtype === "delay" ? "USD" : get("claimCurrency"),
+            claimType === "baggage" && baggageSubtype === "delay"
+              ? "USD"
+              : mixedSum
+                ? mixedSum.totals.map((t) => t.currency).join(", ")
+                : get("claimCurrency"),
           totalClaimed:
             claimType === "baggage" && baggageSubtype === "delay"
               ? "155 USD"
-              : formatClaimTotal(get("claimAmount"), get("claimCurrency")),
+              : mixedSum
+                ? mixedSum.label
+                : formatClaimTotal(get("claimAmount"), get("claimCurrency")),
           amount:
             claimType === "baggage" && baggageSubtype === "delay"
               ? "155 USD"
-              : formatClaimTotal(get("claimAmount"), get("claimCurrency")),
+              : mixedSum
+                ? mixedSum.label
+                : formatClaimTotal(get("claimAmount"), get("claimCurrency")),
           bankName: get("bankName"), bankCode: get("bankCode"), branchName: get("branchName"), branchNumber: get("branchNumber"), accountNumber: get("accountNumber"),
           medicalWaiver:
             form.declaration.checked &&

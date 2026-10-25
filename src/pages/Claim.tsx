@@ -675,9 +675,6 @@ const Claim = () => {
         next.expenses = "יש להשלים תאריך, סוג הוצאה וסכום בכל שורה שהתחלתם";
       } else if (!expenseTotals.total) {
         next.claimAmount = "לא ניתן לחשב סכום נתבע — בדקו את סכומי ההוצאות";
-      } else if (expenseTotals.hasMixedCurrencies) {
-        next.expenses =
-          "כל ההוצאות חייבות להיות באותו מטבע כדי לחשב סה״כ אוטומטי (או פצלו לתביעות נפרדות)";
       }
       if (!formData.claimCurrency.trim()) next.claimCurrency = "שדה חובה";
     } else if (claimType === "trip_shorten") {
@@ -734,6 +731,7 @@ const Claim = () => {
     setStep("sending");
 
     try {
+      const mixedTotals = expensesDriveTotal && expenseTotals.hasMixedCurrencies ? expenseTotals : null;
       const payload = {
         ...formData,
         claimType,
@@ -756,14 +754,25 @@ const Claim = () => {
             : undefined,
         baggageItems:
           claimType === "baggage" && baggageSubtype !== "delay" ? baggageItems : undefined,
+        // Expense-driven claims may span several currencies: send the per-currency total as is
         totalClaimed:
           claimType === "baggage" && baggageSubtype === "delay"
             ? BAGGAGE_DELAY_FIXED_AMOUNT
-            : formatClaimTotal(formData.claimAmount, formData.claimCurrency),
+            : mixedTotals
+              ? mixedTotals.label
+              : formatClaimTotal(formData.claimAmount, formData.claimCurrency),
         claimAmount:
-          claimType === "baggage" && baggageSubtype === "delay" ? "155" : formData.claimAmount,
+          claimType === "baggage" && baggageSubtype === "delay"
+            ? "155"
+            : mixedTotals
+              ? mixedTotals.label
+              : formData.claimAmount,
         claimCurrency:
-          claimType === "baggage" && baggageSubtype === "delay" ? "USD" : formData.claimCurrency,
+          claimType === "baggage" && baggageSubtype === "delay"
+            ? "USD"
+            : mixedTotals
+              ? mixedTotals.totals.map((t) => t.currency).join(", ")
+              : formData.claimCurrency,
         crmMatched: true,
         selectedPolicyId: formData.policyNumber,
         selectedPolicyUid,
@@ -1635,9 +1644,10 @@ const Claim = () => {
                     currency={formData.claimCurrency}
                     computed
                     amountLabel='סה״כ סכום נתבע'
+                    computedDisplay={expenseTotals.hasMixedCurrencies ? expenseTotals.label : undefined}
                     computedHint={
                       expenseTotals.hasMixedCurrencies
-                        ? `מחושב במטבע ${formData.claimCurrency} בלבד — יש הוצאות במטבעות אחרים שלא נכללו`
+                        ? "מחושב אוטומטית לפי פירוט ההוצאות, בנפרד לכל מטבע"
                         : "מחושב אוטומטית לפי פירוט ההוצאות"
                     }
                     amountError={errors.claimAmount}

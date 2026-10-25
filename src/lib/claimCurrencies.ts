@@ -102,33 +102,44 @@ export function formatSummedAmount(total: number): string {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
 }
 
-/** Sum expense rows into a claimed total. Uses the first filled row's currency as primary. */
-export function sumClaimExpenses(
-  expenses: Array<{ amount?: string; currency?: string }>
-): { total: string; currency: string; hasMixedCurrencies: boolean; count: number } {
+export type ClaimExpenseTotals = {
+  /** Total of the first currency (the whole claim when there is only one) */
+  total: string;
+  currency: string;
+  hasMixedCurrencies: boolean;
+  count: number;
+  /** One entry per currency, in the order they first appear */
+  totals: Array<{ currency: string; total: string }>;
+  /** The whole claim, e.g. "1344.26 CHF + 552 USD" */
+  label: string;
+};
+
+/** Sum expense rows into a claimed total per currency (expenses abroad are often in more than one). */
+export function sumClaimExpenses(expenses: Array<{ amount?: string; currency?: string }>): ClaimExpenseTotals {
   const filled = expenses.filter((e) => String(e.amount || "").trim());
   if (!filled.length) {
-    return { total: "", currency: "USD", hasMixedCurrencies: false, count: 0 };
+    return { total: "", currency: "USD", hasMixedCurrencies: false, count: 0, totals: [], label: "" };
   }
   const primary = String(filled[0].currency || "USD").trim().toUpperCase() || "USD";
-  let sum = 0;
-  let hasMixed = false;
+  const sums = new Map<string, number>();
   let count = 0;
   for (const row of filled) {
     const n = parseClaimAmount(String(row.amount || ""));
     if (!Number.isFinite(n) || n <= 0) continue;
     const cur = String(row.currency || primary).trim().toUpperCase() || primary;
-    if (cur !== primary) {
-      hasMixed = true;
-      continue;
-    }
-    sum += n;
+    sums.set(cur, (sums.get(cur) || 0) + n);
     count += 1;
   }
+  const totals = Array.from(sums, ([currency, sum]) => ({ currency, total: formatSummedAmount(sum) })).filter(
+    (t) => t.total,
+  );
+  const first = totals[0] || { currency: primary, total: "" };
   return {
-    total: formatSummedAmount(sum),
-    currency: primary,
-    hasMixedCurrencies: hasMixed,
+    total: first.total,
+    currency: first.currency,
+    hasMixedCurrencies: totals.length > 1,
     count,
+    totals,
+    label: totals.map((t) => `${t.total} ${t.currency}`).join(" + "),
   };
 }

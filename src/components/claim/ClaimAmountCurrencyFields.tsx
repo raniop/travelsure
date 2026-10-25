@@ -20,6 +20,8 @@ type Props = {
   /** Amount auto-calculated from expense rows — not editable. */
   computed?: boolean;
   computedHint?: string;
+  /** Replaces "amount currency" in the computed box (e.g. a total in several currencies). */
+  computedDisplay?: string;
   amountLabel?: string;
 };
 
@@ -35,6 +37,7 @@ export function ClaimAmountCurrencyFields({
   lockedHint,
   computed = false,
   computedHint,
+  computedDisplay,
   amountLabel = "סכום נתבע",
 }: Props) {
   const [manualCurrency, setManualCurrency] = useState(false);
@@ -65,7 +68,7 @@ export function ClaimAmountCurrencyFields({
           {amountLabel} <span className="text-rose-500">*</span>
         </p>
         <p className="mt-1 text-2xl font-extrabold tracking-wide text-[#008C3D]" dir="ltr">
-          {amount ? `${amount} ${currency}` : "—"}
+          {computedDisplay || (amount ? `${amount} ${currency}` : "—")}
         </p>
         <p className="mt-2 text-xs font-medium text-[#008C3D]">
           {computedHint || "מחושב אוטומטית לפי פירוט ההוצאות"}
