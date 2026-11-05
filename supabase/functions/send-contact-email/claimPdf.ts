@@ -61,7 +61,6 @@ const GRAY = rgb(0.35, 0.38, 0.42);
 const LIGHT_ROW = rgb(0.94, 0.95, 0.96);
 
 const isRtlChar = (ch: string) => /[\u0590-\u05FF]/.test(ch);
-const isLtrStrong = (ch: string) => /[0-9A-Za-z]/.test(ch);
 
 const RTL_MIRROR: Record<string, string> = {
   "(": ")",
@@ -80,38 +79,40 @@ export function mirrorRtlChar(ch: string): string {
   return RTL_MIRROR[ch] || ch;
 }
 
+// A number stays together, with its single separators and any sign next to it: 15/9/26, 1,000.50, 20%, ₪500
+const NUMBER_AT = /^[%$€£₪]*\d+(?:[.,:/+-]\d+)*[%$€£₪]*/;
+// Latin text keeps going, digits and spaces included, up to the next Hebrew: "LY 315", "New York"
+const LATIN_AT = /^[A-Za-z][^\u0590-\u05FF]*/;
+const TRAILING_NEUTRALS = /[^0-9A-Za-z%$€£₪]+$/;
+
+/**
+ * Splits a line into runs in reading order, for a right-to-left paragraph (simplified Unicode bidi):
+ * only numbers and Latin text are left-to-right. Spaces and punctuation between them belong to the
+ * Hebrew flow, so "12/03, 14/03" reads 12/03 first. A line with no Hebrew is one left-to-right run.
+ */
 export function splitBidiRuns(input: unknown): BidiRun[] {
   const text = String(input ?? "");
   if (!text) return [];
+  if (![...text].some(isRtlChar)) return [{ text, ltr: true }];
 
   const runs: BidiRun[] = [];
-  let buf = "";
-  let mode: "ltr" | "rtl" | "neutral" = "neutral";
-
-  const flush = (next?: "ltr" | "rtl") => {
-    if (!buf) {
-      if (next) mode = next;
-      return;
+  let rtl = "";
+  let pos = 0;
+  while (pos < text.length) {
+    const rest = text.slice(pos);
+    const match = rest.match(NUMBER_AT) ?? rest.match(LATIN_AT);
+    if (!match) {
+      rtl += text[pos];
+      pos += 1;
+      continue;
     }
-    runs.push({ text: buf, ltr: mode === "ltr" });
-    buf = "";
-    mode = next || "neutral";
-  };
-
-  for (const ch of [...text]) {
-    if (isLtrStrong(ch)) {
-      if (mode === "rtl") flush("ltr");
-      else mode = "ltr";
-      buf += ch;
-    } else if (isRtlChar(ch)) {
-      if (mode === "ltr") flush("rtl");
-      else mode = "rtl";
-      buf += ch;
-    } else {
-      buf += ch;
-    }
+    const ltr = match[0].replace(TRAILING_NEUTRALS, "");
+    if (rtl) runs.push({ text: rtl, ltr: false });
+    rtl = "";
+    runs.push({ text: ltr, ltr: true });
+    pos += ltr.length;
   }
-  flush();
+  if (rtl) runs.push({ text: rtl, ltr: false });
   return runs;
 }
 
@@ -141,9 +142,9 @@ export function drawAlignedRtl(
   const runs = splitBidiRuns(text);
   if (!runs.length) return;
 
+  // Right-to-left paragraph: the first run in reading order sits at the right edge
   let x = right;
-  for (let i = runs.length - 1; i >= 0; i--) {
-    const run = runs[i];
+  for (const run of runs) {
     if (run.ltr) {
       const w = widthOf(run.text, font, size);
       x -= w;
