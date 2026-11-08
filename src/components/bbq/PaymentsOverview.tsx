@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { buildGuestPaymentWhatsAppMessage, whatsAppUrl } from "@/lib/bbq/payboxMessages";
+import { EventPayboxMarkControl, type EventPayboxFields } from "@/components/bbq/EventPayboxMarkControl";
 
 interface Payment {
   id: string;
@@ -47,6 +48,8 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const [totalDeposited, setTotalDeposited] = useState<number>(0);
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
+  const [payboxEvents, setPayboxEvents] = useState<EventPayboxFields[]>([]);
+  const [payboxEventFilter, setPayboxEventFilter] = useState<"pending" | "all">("pending");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -390,6 +393,28 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
       
       setTotalGuestPayments(guestPaymentsTotal);
 
+      if (isAdmin) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const pastForPaybox = events
+          .filter((e: any) => {
+            const d = new Date(e.event_date);
+            d.setHours(0, 0, 0, 0);
+            if (d >= today) return false;
+            const butcher = Number(e.butcher_cost) || 0;
+            const grocery = Number(e.grocery_cost) || 0;
+            const tc = butcher + grocery || Number(e.total_cost) || 0;
+            return tc > 0;
+          })
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.event_date).getTime() - new Date(a.event_date).getTime(),
+          ) as EventPayboxFields[];
+        setPayboxEvents(pastForPaybox);
+      } else {
+        setPayboxEvents([]);
+      }
+
       // Load current balance and total deposited (רק חברים, בלי אורחים)
       try {
         const members = await apiClient.getMembers(groupId);
@@ -518,6 +543,15 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
   );
   const memberPaymentsList = payments.filter((p) => p.payer_type === "member");
 
+  const payboxEventsFiltered =
+    payboxEventFilter === "pending"
+      ? payboxEvents.filter((e) => e.paybox_cash_out == null || Number.isNaN(Number(e.paybox_cash_out)))
+      : payboxEvents;
+
+  const payboxPendingCount = payboxEvents.filter(
+    (e) => e.paybox_cash_out == null || Number.isNaN(Number(e.paybox_cash_out)),
+  ).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -635,6 +669,54 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
           </CardContent>
         </Card>
       </div>
+
+      {/* תשלום מקופת פייבוקס לאירועים (מנהל) */}
+      {isAdmin && payboxEvents.length > 0 && (
+        <Card className="border-2 border-violet-300 shadow-md" dir="rtl">
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={payboxEventFilter === "pending" ? "default" : "outline"}
+                  onClick={() => setPayboxEventFilter("pending")}
+                >
+                  ממתינים ({payboxPendingCount})
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={payboxEventFilter === "all" ? "default" : "outline"}
+                  onClick={() => setPayboxEventFilter("all")}
+                >
+                  כל האירועים
+                </Button>
+              </div>
+              <CardTitle className="text-lg text-right">תשלום מקופת פייבוקס</CardTitle>
+            </div>
+            <CardDescription className="text-right">
+              סמן אילו אירועים כבר שילמת מהכסף במשיכה/העברה מפייבוקס (קצבייה, סופר וכו׳). לא משנה את הניכויים לחברים — רק לך לדעת מה כבר סגרת.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {payboxEventsFiltered.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-right py-4">
+                כל האירועים המוצגים כבר מסומנים ששולמו מפייבוקס.
+              </p>
+            ) : (
+              payboxEventsFiltered.map((ev) => (
+                <EventPayboxMarkControl
+                  key={ev.id}
+                  event={ev}
+                  showDate
+                  onUpdated={() => void loadPayments()}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* אורחים — ממתינים לתשלום (מנהל) */}
       {isAdmin && guestPendingPayments.length > 0 && (

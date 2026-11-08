@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar, Users, ChevronLeft, Clock, History, CheckCircle2, XCircle, MapPin, Coins } from "lucide-react";
 import { Link } from "react-router-dom";
 import EventDetailsDialog from "./EventDetailsDialog";
+import { EventPayboxMarkControl } from "./EventPayboxMarkControl";
 
 interface Event {
   id: string;
@@ -17,6 +18,7 @@ interface Event {
   total_cost?: number;
   butcher_cost?: number;
   grocery_cost?: number;
+  paybox_cash_out?: number | null;
   description: string | null;
   host_member_id?: string | null;
   created_at: string;
@@ -621,6 +623,14 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
                   </span>
                 </div>
               </div>
+            )}
+
+            {isAdmin && isPast && totalCost > 0 && (
+              <EventPayboxMarkControl
+                event={event}
+                compact
+                onUpdated={() => onEventDetailsClose?.()}
+              />
             )}
           </div>
 

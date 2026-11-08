@@ -20,6 +20,7 @@ import { he } from "date-fns/locale/he";
 import { Users, UserPlus, CheckCircle2, XCircle, Edit2, Trash2, Save, X, Check } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EventPayboxMarkControl } from "@/components/bbq/EventPayboxMarkControl";
 
 interface EventDetailsDialogProps {
   eventId: string;
@@ -1169,6 +1170,20 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
                   )}
               </div>
             </div>
+
+            {isAdmin && event && (() => {
+              const d = new Date(event.event_date);
+              d.setHours(0, 0, 0, 0);
+              const t = new Date();
+              t.setHours(0, 0, 0, 0);
+              const butcher = Number(event.butcher_cost) || 0;
+              const grocery = Number(event.grocery_cost) || 0;
+              const summed = butcher + grocery;
+              const total = summed > 0 ? summed : Number(event.total_cost) || 0;
+              return d < t && total > 0;
+            })() && (
+              <EventPayboxMarkControl event={event} onUpdated={loadEventDetails} />
+            )}
 
             {/* Members */}
             <div>
