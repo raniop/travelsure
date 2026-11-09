@@ -679,7 +679,7 @@ export const normalizeCarriedCustomersPayload = (payload: unknown): CarriedCusto
   if (!Array.isArray(parsed.customers)) return null;
   const customers = parsed.customers
     .filter((item) => item && typeof item === "object")
-    .map((item) => ({
+    .map((item): CustomerForm => ({
       id: String(item.id || ""),
       gender: item.gender === "M" || item.gender === "F" ? item.gender : "",
       firstNameHe: String(item.firstNameHe || ""),
