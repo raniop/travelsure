@@ -5,7 +5,8 @@
  * Adding a language = its template in embeddedAssets.ts + a layout here.
  */
 import { PDFDocument, PDFFont, PDFPage, rgb } from "https://esm.sh/pdf-lib@1.17.1";
-import * as fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import * as fontkitModule from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+const fontkit = ("default" in fontkitModule ? fontkitModule.default : fontkitModule) as typeof fontkitModule;
 import { decodeBase64, HEEBO_FONT_BASE64, TOUR_CARE_EN_BASE64, TOUR_CARE_HE_BASE64 } from "./embeddedAssets.ts";
 import { OPTION_BOXES_EN, OPTION_BOXES_HE, type OptionBoxes } from "./optionBoxes.ts";
 

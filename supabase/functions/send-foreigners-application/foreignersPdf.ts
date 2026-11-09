@@ -6,7 +6,8 @@
  * Do not import or modify claim PDF code from this module.
  */
 import { PDFDocument, PDFFont, PDFPage, rgb } from "https://esm.sh/pdf-lib@1.17.1";
-import * as fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import * as fontkitModule from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+const fontkit = ("default" in fontkitModule ? fontkitModule.default : fontkitModule) as typeof fontkitModule;
 import {
   decodeBase64,
   HEEBO_FONT_BASE64,
