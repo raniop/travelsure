@@ -59,7 +59,7 @@ const STEPS: { id: TouristStep; label: string }[] = [
   { id: "travelers", label: "המבוטחים" },
   { id: "stay", label: "שהייה בישראל" },
   { id: "health", label: "בריאות" },
-  { id: "riders", label: "הרחבות" },
+  { id: "riders", label: "הטסה רפואית" },
   { id: "payment", label: "תשלום" },
   { id: "review", label: "שליחה" },
 ];
@@ -67,10 +67,6 @@ const ORDER: TouristStep[] = ["intro", "travelers", "stay", "health", "riders", 
 
 const RIDERS: Array<{ key: keyof Omit<TouristRiders, "extremeFrom" | "extremeTo">; he: string; en: string; note?: string }> = [
   { key: "airTransport", he: "נספח הטסה רפואית", en: "Medical air transportation", note: "הטסה מישראל לחו״ל בליווי צוות רפואי, עד 35,000 ₪" },
-  { key: "accidents", he: "תאונות אישיות בישראל", en: "Personal accidents in Israel", note: "גילאי 18–70 בלבד" },
-  { key: "extremeSports", he: "ביטול חריג ספורט אתגרי", en: "Extreme sports exclusion cancellation", note: "אפשר גם לחלק מהתקופה" },
-  { key: "medicalManager", he: "רופא מלווה אישי", en: "Appointed medical manager" },
-  { key: "onlineConsult", he: "ייעוץ רפואי בשיחת וידאו", en: "Online medical consultation" },
 ];
 
 const Field = ({ label, required, error, children, hint }: { label: string; required?: boolean; error?: string; children: ReactNode; hint?: string }) => (
@@ -319,7 +315,6 @@ const Tourists = () => {
     const next: Record<string, string> = {};
     if (!form.declarationsAccepted) next.declarationsAccepted = "חובה לאשר את ההצהרות";
     if (hasChildren && !form.authorizedForChildren) next.authorizedForChildren = "שדה חובה";
-    if (!form.marketingConsent) next.marketingConsent = "שדה חובה";
     if (!form.signatureName.trim()) next.signatureName = "שדה חובה";
     if (!isValidDateDdMmYyyy(form.signatureDate)) next.signatureDate = "תאריך בפורמט DD/MM/YYYY";
     if (!form.payerId.trim()) next.payerId = "שדה חובה";
@@ -542,7 +537,7 @@ const Tourists = () => {
                   {[
                     "ממלאים את פרטי המבוטחים — עד 5 בבקשה אחת",
                     "פרטי השהייה בישראל ובחירת ספק השירות",
-                    "הצהרת בריאות (אפשר לסמן הכל כ־לא בלחיצה) והרחבות",
+                    "הצהרת בריאות (אפשר לסמן הכל כ־לא בלחיצה) והטסה רפואית",
                     "פרטי תשלום — ושולחים. אנחנו מקבלים את הטופס של הראל ממולא",
                   ].map((text, i) => (
                     <li key={text} className="flex items-center justify-center gap-3 text-right">
@@ -771,7 +766,7 @@ const Tourists = () => {
             {step === "riders" && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">הרחבות וכתבי שירות</h2>
+                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">הטסה רפואית</h2>
                   <p className="mt-1 text-[14px] font-medium text-[#46557A]">לא חובה · בתוספת דמי ביטוח · מסמנים למי מהמבוטחים להוסיף</p>
                 </div>
                 {RIDERS.map((rider) => {
@@ -837,9 +832,6 @@ const Tourists = () => {
                     <YesNoToggle name="authorized" value={form.authorizedForChildren} onChange={(v) => setField("authorizedForChildren", v)} />
                   </Field>
                 )}
-                <Field label="הסכמה לקבלת דברי פרסומת מחברות קבוצת הראל" required error={errors.marketingConsent}>
-                  <YesNoToggle name="marketing" value={form.marketingConsent} onChange={(v) => setField("marketingConsent", v)} />
-                </Field>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="שם מלא לחתימה" required error={errors.signatureName}>

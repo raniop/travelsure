@@ -110,7 +110,6 @@ const buildReadable = (form: TouristsForm) => {
   const declarations: Pair[] = [
     ["אישור ההצהרות", form.declarationsAccepted ? "כן" : "לא"],
     ["מוסמך/ת לחתום עבור הילדים", yn(form.authorizedForChildren)],
-    ["דיוור מקבוצת הראל", yn(form.marketingConsent)],
     ["שם החותם", form.signatureName],
     ["תאריך", form.signatureDate],
     ["הערות", form.notes],
