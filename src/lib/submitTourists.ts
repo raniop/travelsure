@@ -9,7 +9,7 @@ import {
 } from "@/lib/tourists/formDefaults";
 import type { TouristRole, TouristsForm } from "@/lib/tourists/types";
 
-const STAFF_NOTIFY = ["rani@ophirins.co.il"] as const;
+const STAFF_NOTIFY = ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"] as const;
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
