@@ -430,7 +430,7 @@ const Foreigners = () => {
       <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
         <div className="relative mx-auto max-w-[1200px] px-4 pt-5 sm:px-6">
-          <AgencyHeader />
+          <AgencyHeader minimal />
         </div>
         <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3 px-4 pb-8 pt-8 sm:px-6">
           <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-black leading-[1.02] tracking-[-0.01em]">
