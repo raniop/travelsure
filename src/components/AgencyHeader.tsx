@@ -48,6 +48,7 @@ const AgencyHeader = ({ onLanding = false, minimal = false, partnerName = "" }: 
       items: [
         { to: "/claim", label: t("nav.selfService.claim") },
         { to: "/foreigners", label: t("nav.selfService.foreigners") },
+        { to: "/tourists", label: t("nav.selfService.tourists") },
         { to: "/insurance-proposal", label: t("nav.selfService.proposal") },
         { to: "/forms", label: "טפסים להורדה" },
       ],

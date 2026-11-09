@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Briefcase, Car, FileDown, FileText, Home, Users } from "lucide-react";
+import { Briefcase, Car, FileDown, FileText, Home, Luggage, Users } from "lucide-react";
 import AgencyFooter from "@/components/AgencyFooter";
 import AgencyHeader from "@/components/AgencyHeader";
 import CookieBanner from "@/components/CookieBanner";
@@ -361,7 +361,7 @@ const MockupV2 = () => {
           </div>
 
           <h2 className={`${h2Class} mt-12`}>ביטוחים נוספים בסוכנות</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] md:gap-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
             {otherInsurance.map(({ to, icon: Icon, key }) => (
               <Link
                 key={key}
@@ -393,6 +393,21 @@ const MockupV2 = () => {
                   </span>
                 </span>
                 <span className="text-[14px] font-medium text-[#33405F] md:text-[17px]">ביטוח רפואי, עם טופס בקשה אונליין</span>
+              </div>
+            </Link>
+            <Link
+              to="/tourists"
+              className="col-span-2 md:col-span-1 group box-border flex min-h-[160px] !flex-col justify-between gap-4 rounded-[24px] bg-[#F3F5F8] p-5 md:min-h-[200px] md:gap-6 md:rounded-[28px] md:p-7 text-[#000144] no-underline transition-colors hover:bg-[#E6EAF0]"
+            >
+              <Luggage aria-hidden="true" className="h-9 w-9 md:h-12 md:w-12" strokeWidth={1.8} />
+              <div className="flex flex-col gap-1">
+                <span className="flex items-center gap-2 text-[20px] font-black leading-[1.05] md:text-[28px]">
+                  תיירים בישראל
+                  <span className="transition-transform group-hover:-translate-x-1">
+                    <ArrowIcon size={20} />
+                  </span>
+                </span>
+                <span className="text-[14px] font-medium text-[#33405F] md:text-[17px]">ביטוח בריאות לתיירים, בטופס אונליין</span>
               </div>
             </Link>
           </div>
