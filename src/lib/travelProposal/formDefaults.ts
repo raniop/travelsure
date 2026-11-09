@@ -190,22 +190,11 @@ export const isValidIsraeliId = (value: string) => {
   return sum % 10 === 0;
 };
 
-export const isValidCardNumber = (value: string) => {
-  const digits = value.replace(/\D/g, "");
-  if (!/^\d{13,19}$/.test(digits)) return false;
-  let sum = 0;
-  let alt = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let n = Number(digits[i]);
-    if (alt) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    sum += n;
-    alt = !alt;
-  }
-  return sum % 10 === 0;
-};
+/**
+ * Card number: 8–19 digits. No checksum, so Amex (15), Diners (14) and short Israeli
+ * Isracard numbers (8–9) are all accepted; the agency checks the card when charging.
+ */
+export const isValidCardNumber = (value: string) => /^\d{8,19}$/.test(value.replace(/\D/g, ""));
 
 export const isValidCardExpiry = (value: string) => {
   if (!/^\d{2}\/\d{2}$/.test(value.trim())) return false;

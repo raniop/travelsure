@@ -138,23 +138,11 @@ export const containsHebrew = (value: string) => /[\u0590-\u05FF]/.test(value);
 /** Keep Latin letters, digits, and common punctuation — strip Hebrew characters. */
 export const toEnglishOnly = (value: string) => value.replace(/[\u0590-\u05FF]+/g, "");
 
-/** Luhn check for credit/debit card numbers. */
-export const isValidCardNumber = (value: string) => {
-  const digits = value.replace(/\D/g, "");
-  if (!/^\d{13,19}$/.test(digits)) return false;
-  let sum = 0;
-  let alt = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let n = Number(digits[i]);
-    if (alt) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    sum += n;
-    alt = !alt;
-  }
-  return sum % 10 === 0;
-};
+/**
+ * Card number: 8–19 digits. No checksum, so Amex (15), Diners (14) and short Israeli
+ * Isracard numbers (8–9) are all accepted; the agency checks the card when charging.
+ */
+export const isValidCardNumber = (value: string) => /^\d{8,19}$/.test(value.replace(/\D/g, ""));
 
 /** MM/YY must be a real month and not expired. */
 export const isValidCardExpiry = (value: string) => {
