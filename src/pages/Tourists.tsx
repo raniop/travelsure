@@ -16,6 +16,7 @@ import {
   createInitialTouristsForm,
   emptyTraveler,
   formatDateInput,
+  normalizeDateInput,
   isValidCardExpiry,
   isValidCardNumber,
   isValidDateDdMmYyyy,
@@ -391,6 +392,10 @@ const Tourists = () => {
     <Input
       value={value}
       onChange={(e) => onChange(formatDateInput(e.target.value))}
+      onBlur={(e) => {
+        const full = normalizeDateInput(e.target.value);
+        if (full !== e.target.value) onChange(full);
+      }}
       inputMode="numeric"
       maxLength={10}
       placeholder="DD/MM/YYYY"

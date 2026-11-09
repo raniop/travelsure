@@ -8,6 +8,7 @@ export {
   isValidCardNumber,
   isValidDateDdMmYyyy,
   isValidEmail,
+  normalizeDateInput,
   toEnglishOnly,
 } from "@/lib/foreigners/formDefaults";
 

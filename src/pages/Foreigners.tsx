@@ -10,6 +10,7 @@ import {
   containsHebrew,
   createInitialForeignersForm,
   formatDateInput,
+  normalizeDateInput,
   isValidCardExpiry,
   isValidCardNumber,
   isValidDateDdMmYyyy,
@@ -350,6 +351,10 @@ const Foreigners = () => {
   const dateProps = (name: keyof ForeignersForm) => ({
     value: String(form[name] || ""),
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setField(name, formatDateInput(e.target.value) as never),
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => {
+      const full = normalizeDateInput(e.target.value);
+      if (full !== e.target.value) setField(name, full as never);
+    },
     inputMode: "numeric" as const,
     maxLength: 10,
     placeholder: "DD/MM/YYYY",

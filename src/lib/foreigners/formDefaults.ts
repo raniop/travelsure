@@ -87,10 +87,39 @@ export const createInitialForeignersForm = (): ForeignersForm => ({
 });
 
 export const formatDateInput = (raw: string) => {
+  // Typed with separators (1/5/26, 16.11.2026): keep the parts as typed; digits past a part's length move on
+  if (/[/.-]/.test(raw)) {
+    const segs = raw.split(/[/.-]/).map((p) => p.replace(/\D/g, ""));
+    const max = [2, 2, 4];
+    const out: string[] = [];
+    let carry = "";
+    for (let i = 0; i < 3; i++) {
+      if (i >= segs.length && !carry) break;
+      const part = carry + (segs[i] ?? "");
+      out.push(part.slice(0, max[i]));
+      carry = part.slice(max[i]);
+    }
+    return out.join("/");
+  }
   const digits = raw.replace(/\D/g, "").slice(0, 8);
   if (digits.length <= 2) return digits;
   if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+/**
+ * Completes a typed date on leaving the field: 16/11/26 → 16/11/2026, 1/5/78 → 01/05/1978.
+ * A 2-digit year up to 10 years ahead is this century, otherwise the last one.
+ */
+export const normalizeDateInput = (value: string) => {
+  const m = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!m) return value;
+  let year = m[3];
+  if (year.length === 2) {
+    const yy = Number(year);
+    year = String(yy <= (new Date().getFullYear() % 100) + 10 ? 2000 + yy : 1900 + yy);
+  }
+  return `${m[1].padStart(2, "0")}/${m[2].padStart(2, "0")}/${year}`;
 };
 
 export const isValidDateDdMmYyyy = (value: string) => {
