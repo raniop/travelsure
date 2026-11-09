@@ -84,6 +84,7 @@ export const createInitialTouristsForm = (): TouristsForm => ({
   cardholderName: "",
   cardNumber: "",
   cardExp: "",
+  cardCvv: "",
   installments: "1",
   payerZip: "",
   payerCity: "",

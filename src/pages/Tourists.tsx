@@ -324,6 +324,7 @@ const Tourists = () => {
     else if (!isValidCardNumber(form.cardNumber)) next.cardNumber = "מספר כרטיס לא תקין";
     if (!form.cardExp.trim()) next.cardExp = "שדה חובה";
     else if (!isValidCardExpiry(form.cardExp)) next.cardExp = "תוקף לא תקין או שפג";
+    if (!/^\d{3,4}$/.test(form.cardCvv)) next.cardCvv = "יש להזין 3 ספרות (באמריקן אקספרס 4)";
     if (!form.payerPhone.trim()) next.payerPhone = "שדה חובה";
     if (form.payerEmail.trim() && !isValidEmail(form.payerEmail)) next.payerEmail = "אימייל לא תקין";
     if (!form.paymentConsent) next.paymentConsent = "חובה לאשר";
@@ -447,6 +448,13 @@ const Tourists = () => {
           {q.he}
         </p>
         <p className="mt-0.5 text-[13px] font-medium text-[#46557A]">{q.en}</p>
+        {/* What the question covers, so short titles like "For men" are clear before answering */}
+        {!anyYes && q.options.length > 0 && q.id !== "q14" && (
+          <div className="mt-2 space-y-0.5 text-[12.5px] leading-[1.45] text-[#6B7894]">
+            <p>כולל: {q.options.map((o) => o.he).join(" · ")}</p>
+            <p dir="ltr" className="text-left">Includes: {q.options.map((o) => o.en.replace(/\*$/, "")).join(" · ")}</p>
+          </div>
+        )}
         {people.length === 1 ? (
           <div className="mt-3">
             <YesNoToggle name={q.id} value={ans.answers[people[0].role]} onChange={(v) => setAnswer(q.id, people[0].role, v)} />
@@ -899,6 +907,18 @@ const Tourists = () => {
                         maxLength={5}
                         placeholder="MM/YY"
                         className={`${fieldCls} text-left ${errors.cardExp ? "border-destructive" : ""}`}
+                        style={{ direction: "ltr", textAlign: "left" }}
+                      />
+                    </Field>
+                    <Field label="3 ספרות בגב הכרטיס (CVV)" required error={errors.cardCvv}>
+                      <Input
+                        value={form.cardCvv}
+                        onChange={(e) => setField("cardCvv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        inputMode="numeric"
+                        autoComplete="cc-csc"
+                        maxLength={4}
+                        placeholder="123"
+                        className={`${fieldCls} text-left ${errors.cardCvv ? "border-destructive" : ""}`}
                         style={{ direction: "ltr", textAlign: "left" }}
                       />
                     </Field>

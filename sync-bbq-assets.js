@@ -45,6 +45,12 @@ if (patchAssets(foreignersIndex)) {
   console.log(`sync-bbq-assets: updated dist/Foreigners/index.html -> ${jsPath}, ${cssPath}`);
 }
 
+// Tourists share page (WhatsApp preview): same treatment as Foreigners
+const touristsIndex = join(process.cwd(), "dist", "tourists", "index.html");
+if (patchAssets(touristsIndex)) {
+  console.log(`sync-bbq-assets: updated dist/tourists/index.html -> ${jsPath}, ${cssPath}`);
+}
+
 // Keep public/ in sync with dist/ so IIS/static hosts that serve public/ load the same hashed bundles as dist/
 const distAssets = join(process.cwd(), "dist", "assets");
 const publicDir = join(process.cwd(), "public");

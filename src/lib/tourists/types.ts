@@ -68,6 +68,7 @@ export type TouristsForm = {
   cardholderName: string;
   cardNumber: string;
   cardExp: string;
+  cardCvv: string;
   installments: "1" | "2";
   payerZip: string;
   payerCity: string;

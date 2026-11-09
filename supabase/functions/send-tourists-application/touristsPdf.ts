@@ -63,6 +63,7 @@ export type TouristsPdfInput = {
   cardholderName?: string;
   cardNumber?: string;
   cardExp?: string;
+  cardCvv?: string;
   installments?: string;
   payerZip?: string;
   payerCity?: string;
@@ -129,6 +130,7 @@ type Layout = {
     payerIdComb: { top: number; ticks: number[] };
     cardholder: At;
     cardComb: { top: number; ticks: number[] };
+    cvvComb: { top: number; ticks: number[] };
     expMonth: At;
     expYear: At;
     /** Boxes for 1 or 2 payments (offered for 91–181 days) */
@@ -198,6 +200,7 @@ const EN: Layout = {
     payerIdComb: { top: 439, ticks: [41.4, 72.3, 103.1, 134, 164.9, 195.7, 226.6, 257.5, 288.3, 319.2] },
     cardholder: [5, 324, 441],
     cardComb: { top: 485, ticks: [319.2, 334.7, 350.1, 365.6, 381.1, 396.5, 412, 427.4, 442.9, 458.4, 473.8, 489.3, 504.8, 520.2, 535.7, 551.1, 566.6] },
+    cvvComb: { top: 485, ticks: [41.2, 72, 103.2, 134] },
     expMonth: [5, 198, 475.3],
     expYear: [5, 224, 475.3],
     installmentBoxes: { "1": [5, 407.3, 520.2], "2": [5, 435.5, 520.2] },
@@ -268,6 +271,7 @@ const HE: Layout = {
     payerIdComb: { top: 99, ticks: [276.1, 307, 337.8, 368.7, 399.6, 430.4, 461.3, 492.2, 523, 553.9] },
     cardholder: [4, 205, 91],
     cardComb: { top: 131, ticks: [28.7, 44.2, 59.6, 75.1, 90.6, 106, 121.5, 136.9, 152.4, 167.9, 183.3, 198.8, 214.3, 229.7, 245.2, 260.6, 276.1] },
+    cvvComb: { top: 131, ticks: [460, 484, 522.8, 554] },
     expMonth: [4, 357, 124.9],
     expYear: [4, 385, 124.9],
     installmentBoxes: { "1": [4, 152.3, 164.8], "2": [4, 180.5, 164.8] },
@@ -616,6 +620,13 @@ function fill(pages: PDFPage[], font: PDFFont, L: Layout, data: TouristsPdfInput
   } else digits(P.payerIdComb, data.payerId);
   put(P.cardholder, data.cardholderName, 9, 170);
   digits(P.cardComb, data.cardNumber);
+  // 3 cells on the form; a 4-digit Amex code is written across the whole box
+  const cvv = s(data.cardCvv).replace(/\D/g, "");
+  if (cvv.length > P.cvvComb.ticks.length - 1) {
+    const t = P.cvvComb.ticks;
+    const w = widthOf(cvv, font, 10);
+    pages[P.page].drawText(cvv, { x: (t[0] + t[t.length - 1] - w) / 2, y: topY(P.cvvComb.top), size: 10, font, color: INK });
+  } else digits(P.cvvComb, cvv);
   const exp = s(data.cardExp).match(/^(\d{2})\s*\/?\s*(\d{2,4})$/);
   if (exp) {
     put(P.expMonth, exp[1], 9.5, 30);
