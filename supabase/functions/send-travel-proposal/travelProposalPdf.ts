@@ -3,7 +3,8 @@
  * Template is flat (no AcroForm) — values are overlaid at calibrated positions.
  */
 import { PDFDocument, PDFFont, PDFPage, rgb } from "https://esm.sh/pdf-lib@1.17.1";
-import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import * as fontkitModule from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+const fontkit = ("default" in fontkitModule ? fontkitModule.default : fontkitModule) as typeof fontkitModule;
 import {
   decodeBase64,
   HEEBO_FONT_BASE64,
@@ -78,6 +79,7 @@ export type TravelPersonPdf = {
 };
 
 export type TravelProposalPdfInput = {
+  notes?: string;
   agentName?: string;
   agentNo?: string;
   tripFrom?: string;

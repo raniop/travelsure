@@ -276,7 +276,7 @@ async function compressPdfFile(
       if (tighter.compressed && tighter.file.size < saved.byteLength) return tighter;
     }
 
-    const compressedFile = new File([saved], renameKeepBase(file.name, ".pdf"), {
+    const compressedFile = new File([new Uint8Array(saved)], renameKeepBase(file.name, ".pdf"), {
       type: "application/pdf",
       lastModified: Date.now(),
     });

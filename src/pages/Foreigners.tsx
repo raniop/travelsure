@@ -20,7 +20,7 @@ import {
   WORK_PURPOSE_LABELS,
 } from "@/lib/foreigners/formDefaults";
 import { HEALTH_CONDITION_GROUPS } from "@/lib/foreigners/healthQuestions";
-import type { ForeignersForm, HealthAnswer, Step, YesNo } from "@/lib/foreigners/types";
+import type { ForeignersForm, HealthAnswer, Provider, Step, WorkPurpose, YesNo } from "@/lib/foreigners/types";
 import { submitForeignersApplication } from "@/lib/submitForeigners";
 import {
   ArrowLeft,
@@ -609,7 +609,7 @@ const Foreigners = () => {
                 <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">מעסיק, ספק שירות וביטוח קודם</h2>
                 <Field label="מטרת ההגעה לישראל" required error={errors.workPurpose}>
                   <div className="grid grid-cols-2 gap-2">
-                    {(Object.keys(WORK_PURPOSE_LABELS) as Array<keyof typeof WORK_PURPOSE_LABELS>).map((key) => (
+                    {(Object.keys(WORK_PURPOSE_LABELS) as Array<Exclude<WorkPurpose, "">>).map((key) => (
                       <button
                         key={key}
                         type="button"
@@ -627,7 +627,7 @@ const Foreigners = () => {
                 </Field>
                 <Field label="בחירת ספק שירות (קופת חולים)" required error={errors.provider}>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {(Object.keys(PROVIDER_LABELS) as Array<keyof typeof PROVIDER_LABELS>).map((key) => (
+                    {(Object.keys(PROVIDER_LABELS) as Array<Exclude<Provider, "">>).map((key) => (
                       <button
                         key={key}
                         type="button"

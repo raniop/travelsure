@@ -53,6 +53,7 @@ interface Attendee {
 
 interface Guest {
   id: string;
+  attended?: boolean;
   name: string;
   phone: string | null;
   visit_count: number;
