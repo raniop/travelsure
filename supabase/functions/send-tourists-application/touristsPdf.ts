@@ -228,7 +228,7 @@ const HE: Layout = {
   genderBoxes: [[430.5, 402.2], [347.9, 319.6], [265.2, 236.9], [182.6, 154.3], [99.9, 71.6]],
   genderTop: 307.9,
   address: { street: [0, 418, 369.1], houseNo: [0, 317, 369.1], apartmentNo: [0, 231, 369.1], town: [0, 170, 369.1], maxWidth: 76 },
-  mobile: [0, 465, 398.6],
+  mobile: [0, 436, 398.6],
   host: [0, 440, 383],
   email: { at: [0, 440, 414.2], maxWidth: 400 },
   provider: { harel: [0, 443.8, 441.3], maccabi: [0, 344.4, 441.3], clalit: [0, 542.2, 441.3] },
