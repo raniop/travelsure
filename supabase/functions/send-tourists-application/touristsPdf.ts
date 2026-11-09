@@ -219,8 +219,8 @@ const HE: Layout = {
   agentName: [0, 147, 184.8],
   agentNo: [0, 147, 203.3],
   byPost: [0, 312, 127.3],
-  // Right-to-left combs: day in the right cell
-  period: { top: 101, from: [172.2, 145.6, 120], to: [94.1, 67.9, 41.7] },
+  // Day in the left cell, read left to right like a printed date (10 | 11 | 26)
+  period: { top: 101, from: [120, 145.6, 172.2], to: [41.7, 67.9, 94.1] },
   colLeft: [383, 301, 218, 136, 53],
   colWidth: 76,
   rows: { passportNo: 246.1, passportCountry: 259.7, firstName: 273.4, lastName: 287.1, birthDate: 300.7, entryDate: 328.1, citizenship: 341.7, visitPurpose: 355.4 },
