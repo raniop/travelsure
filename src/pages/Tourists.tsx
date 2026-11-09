@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -109,6 +109,10 @@ const YesNoToggle = ({ value, onChange, name, compact }: { value: YesNo | undefi
 const Tourists = () => {
   const { toast } = useToast();
   const [step, setStep] = useState<TouristStep>("intro");
+  // Every step opens at the top of the page (after it renders, so the new content is in place)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [step]);
   const [form, setForm] = useState<TouristsForm>(() => createInitialTouristsForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
@@ -359,13 +363,11 @@ const Tourists = () => {
     }
     const idx = ORDER.indexOf(step);
     if (idx >= 0 && idx < ORDER.length - 1) setStep(ORDER[idx + 1]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const goBack = () => {
     const idx = ORDER.indexOf(step);
     if (idx > 0) setStep(ORDER[idx - 1]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSubmit = async () => {

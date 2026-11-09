@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,6 +106,10 @@ const YesNoToggle = ({
 const Foreigners = () => {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("intro");
+  // Every step opens at the top of the page (after it renders, so the new content is in place)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [step]);
   const [form, setForm] = useState<ForeignersForm>(() => createInitialForeignersForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
