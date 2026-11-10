@@ -863,7 +863,10 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
   }
 
   for (const [groupId, opts] of Object.entries(OPTION_BOXES)) {
+    // Answers left over from the other gender (if it was changed) are not printed
+    if ((groupId === "women" && skipWomen) || (groupId === "men" && skipMen)) continue;
     const ans = conditions[groupId];
+    if (!ans || !isYes(ans.answer)) continue;
     if (!ans?.selected?.length) continue;
     for (const optId of ans.selected) {
       const box = opts[optId];
