@@ -155,12 +155,9 @@ export const includedPersons = (form: TravelProposalForm): { key: PersonKey; per
     ({ key, person }) => key === "primary" || person.included
   );
 
-export const formatDateInput = (raw: string) => {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-};
+// Same date typing as the foreigners and tourists forms: 16/11/26, 1.5.26 and 161126 all work,
+// completed to DD/MM/YYYY when leaving the field
+export { formatDateInput, normalizeDateInput } from "@/lib/foreigners/formDefaults";
 
 export const formatCardExpInput = (raw: string) => {
   const digits = raw.replace(/\D/g, "").slice(0, 4);

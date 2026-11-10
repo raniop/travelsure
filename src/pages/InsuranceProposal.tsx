@@ -11,6 +11,7 @@ import {
   displayName,
   emptyPerson,
   formatDateInput,
+  normalizeDateInput,
   includedPersons,
   isValidDateDdMmYyyy,
   isValidEmail,
@@ -712,6 +713,7 @@ const InsuranceProposal = () => {
               dir="ltr"
               value={person.birthDate}
               onChange={(e) => patchPerson(key, { birthDate: formatDateInput(e.target.value) })}
+                  onBlur={(e) => patchPerson(key, { birthDate: normalizeDateInput(e.target.value) })}
               placeholder="DD/MM/YYYY"
             />
           </Field>
@@ -1199,6 +1201,7 @@ const InsuranceProposal = () => {
                   onChange={(e) =>
                     patchPersonPlan(key, { adventureFrom: formatDateInput(e.target.value) })
                   }
+                  onBlur={(e) => patchPersonPlan(key, { adventureFrom: normalizeDateInput(e.target.value) })}
                 />
               </Field>
               <Field label="עד-">
@@ -1209,6 +1212,7 @@ const InsuranceProposal = () => {
                   onChange={(e) =>
                     patchPersonPlan(key, { adventureTo: formatDateInput(e.target.value) })
                   }
+                  onBlur={(e) => patchPersonPlan(key, { adventureTo: normalizeDateInput(e.target.value) })}
                 />
               </Field>
             </div>
@@ -1230,6 +1234,7 @@ const InsuranceProposal = () => {
                   onChange={(e) =>
                     patchPersonPlan(key, { winterFrom: formatDateInput(e.target.value) })
                   }
+                  onBlur={(e) => patchPersonPlan(key, { winterFrom: normalizeDateInput(e.target.value) })}
                 />
               </Field>
               <Field label="עד-">
@@ -1240,6 +1245,7 @@ const InsuranceProposal = () => {
                   onChange={(e) =>
                     patchPersonPlan(key, { winterTo: formatDateInput(e.target.value) })
                   }
+                  onBlur={(e) => patchPersonPlan(key, { winterTo: normalizeDateInput(e.target.value) })}
                 />
               </Field>
             </div>
@@ -1258,6 +1264,7 @@ const InsuranceProposal = () => {
                   dir="ltr"
                   value={plan.proFrom}
                   onChange={(e) => patchPersonPlan(key, { proFrom: formatDateInput(e.target.value) })}
+                  onBlur={(e) => patchPersonPlan(key, { proFrom: normalizeDateInput(e.target.value) })}
                 />
               </Field>
               <Field label="עד-">
@@ -1266,6 +1273,7 @@ const InsuranceProposal = () => {
                   dir="ltr"
                   value={plan.proTo}
                   onChange={(e) => patchPersonPlan(key, { proTo: formatDateInput(e.target.value) })}
+                  onBlur={(e) => patchPersonPlan(key, { proTo: normalizeDateInput(e.target.value) })}
                 />
               </Field>
             </div>
@@ -1358,6 +1366,7 @@ const InsuranceProposal = () => {
                     onChange={(e) =>
                       patchPersonPlan(key, { rentalFrom: formatDateInput(e.target.value) })
                     }
+                  onBlur={(e) => patchPersonPlan(key, { rentalFrom: normalizeDateInput(e.target.value) })}
                   />
                 </Field>
                 <Field label="עד-">
@@ -1368,6 +1377,7 @@ const InsuranceProposal = () => {
                     onChange={(e) =>
                       patchPersonPlan(key, { rentalTo: formatDateInput(e.target.value) })
                     }
+                  onBlur={(e) => patchPersonPlan(key, { rentalTo: normalizeDateInput(e.target.value) })}
                   />
                 </Field>
               </div>
@@ -1413,6 +1423,7 @@ const InsuranceProposal = () => {
                   onChange={(e) =>
                     patchPersonPlan(key, { bicyclePurchaseDate: formatDateInput(e.target.value) })
                   }
+                  onBlur={(e) => patchPersonPlan(key, { bicyclePurchaseDate: normalizeDateInput(e.target.value) })}
                 />
               </Field>
               <Field label="ערך ב־₪">
@@ -1454,7 +1465,7 @@ const InsuranceProposal = () => {
       <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
         <div className="relative mx-auto max-w-[1200px] px-4 pt-5 sm:px-6">
-          <AgencyHeader />
+          <AgencyHeader minimal />
         </div>
         <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3 px-4 pb-8 pt-8 sm:px-6">
           <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-black leading-[1.02] tracking-[-0.01em]">

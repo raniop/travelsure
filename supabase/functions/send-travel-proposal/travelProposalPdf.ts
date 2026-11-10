@@ -401,14 +401,14 @@ const USA_TO_SEGS: [number, number][] = [
   [337.7, 368.4],
 ];
 
-/** Insured rows: gender boxes + digit combs + name baselines (y from top). */
+/** Each insured row is 34pt: Hebrew names in the top half, English in the bottom half (line at +15.3). */
 const INSURED_ROWS = [
-  { genderY: 605.5, digitY: 613, nameHeY: 599, nameEnY: 628 }, // primary
-  { genderY: 639.5, digitY: 647, nameHeY: 633, nameEnY: 662 }, // spouse
-  { genderY: 673.5, digitY: 681, nameHeY: 667, nameEnY: 696 }, // child1
-  { genderY: 707.5, digitY: 715, nameHeY: 701, nameEnY: 730 }, // child2
-  { genderY: 741.5, digitY: 749, nameHeY: 735, nameEnY: 764 }, // child3
-  { genderY: 775.5, digitY: 783, nameHeY: 769, nameEnY: 798 }, // child4
+  { genderY: 605.5, digitY: 613, nameHeY: 599, nameEnY: 617.5 }, // primary
+  { genderY: 639.5, digitY: 647, nameHeY: 633, nameEnY: 651.5 }, // spouse
+  { genderY: 673.5, digitY: 681, nameHeY: 667, nameEnY: 685.5 }, // child1
+  { genderY: 707.5, digitY: 715, nameHeY: 701, nameEnY: 719.5 }, // child2
+  { genderY: 741.5, digitY: 749, nameHeY: 735, nameEnY: 753.5 }, // child3
+  { genderY: 775.5, digitY: 783, nameHeY: 769, nameEnY: 787.5 }, // child4
 ];
 const GENDER_MALE = { x0: 498.3, x1: 506.4 };
 const GENDER_FEMALE = { x0: 480.0, x1: 488.1 };
@@ -439,13 +439,14 @@ const HEALTH_Q_Y: Record<string, number> = {
   q3: 349,
   q31: 436,
   q4: 473,
-  q5: 553,
+  q5: 537, // row 529.9–544 ("האם הנך בהיריון?")
   q52: 578,
 };
 
 const Q21_BOX: Record<string, { x0: number; x1: number; y: number }> = {
-  dialysis: { x0: 369.3, x1: 377.4, y: 204 },
-  blood: { x0: 512.7, x1: 520.8, y: 204 },
+  // Each box sits to the right of its label: dialysis (text 385–510) | blood (text 216–366)
+  dialysis: { x0: 512.7, x1: 520.8, y: 204 },
+  blood: { x0: 369.3, x1: 377.4, y: 204 },
   cancer: { x0: 512.7, x1: 520.8, y: 217 },
   neuro: { x0: 512.6, x1: 520.7, y: 230 },
   liver: { x0: 513.0, x1: 521.2, y: 262 },
@@ -476,32 +477,49 @@ const PLAN_ROW_Y = {
   personalAccidentAdventure: 660,
   laptop: 700,
   phone: 722,
+  /** "כיסוי מיוחד לפריט יקר ערך" row (150–237) */
+  valuables: 190,
 };
 const PLAN_P4_Y = {
   bicycle: 70,
   rental: 145,
 };
 
+/** Valuable-item boxes on page 3, each to the right of its label (y = box top + 5.6). */
 const VALUABLE_BOX: Record<string, { x0: number; x1: number; y: number }> = {
-  camera: { x0: 470, x1: 478, y: 188 },
-  drone: { x0: 430, x1: 438, y: 188 },
-  religious: { x0: 360, x1: 368, y: 188 },
-  stroller: { x0: 470, x1: 478, y: 200 },
-  surfboard: { x0: 420, x1: 428, y: 200 },
-  wheelchair: { x0: 360, x1: 368, y: 200 },
-  scooter: { x0: 470, x1: 478, y: 212 },
-  instrument: { x0: 400, x1: 408, y: 212 },
+  camera: { x0: 542.9, x1: 551, y: 213.9 },
+  drone: { x0: 495.9, x1: 504, y: 213.9 },
+  religious: { x0: 457.3, x1: 465.4, y: 213.9 },
+  stroller: { x0: 542.9, x1: 551, y: 223.5 },
+  surfboard: { x0: 481.9, x1: 490, y: 223.5 },
+  wheelchair: { x0: 443.5, x1: 451.6, y: 223.5 },
+  scooter: { x0: 542.9, x1: 551, y: 233.1 },
+  instrument: { x0: 494.6, x1: 502.7, y: 233.1 },
 };
 
 const BICYCLE_LIMIT_BOX: Record<string, { x0: number; x1: number; y: number }> = {
-  "2500": { x0: 480, x1: 488, y: 58 },
-  "4500": { x0: 430, x1: 438, y: 58 },
-  "6000": { x0: 380, x1: 388, y: 58 },
+  "2500": { x0: 542.8, x1: 550.9, y: 78.4 },
+  "4500": { x0: 496.8, x1: 504.9, y: 78.4 },
+  "6000": { x0: 451.3, x1: 459.4, y: 78.4 },
 };
 const RENTAL_LIMIT_BOX: Record<string, { x0: number; x1: number; y: number }> = {
-  "1500": { x0: 480, x1: 488, y: 132 },
-  "6000": { x0: 430, x1: 438, y: 132 },
+  "1500": { x0: 542.8, x1: 550.9, y: 144.2 },
+  "6000": { x0: 487.5, x1: 495.6, y: 144.2 },
 };
+
+/** "__/__/__" date lines in the period column (day | month | year between the printed slashes). */
+const FROM_LINE_SEGS: [number, number][] = [[29, 46.6], [49.6, 64.6], [67.6, 84]];
+const TO_LINE_SEGS: [number, number][] = [[29, 45.2], [48.2, 63.1], [66.1, 80.5]];
+
+/** Right-aligned next to a label on the right (Hebrew forms), shrinking to fit. */
+function drawRightAligned(page: PDFPage, font: PDFFont, text: string, right: number, yFromTop: number, size: number, maxWidth: number) {
+  const v = s(text);
+  if (!v) return;
+  if (hasHebrew(v)) return drawText(page, font, v, right - maxWidth, yFromTop, size, maxWidth);
+  let used = size;
+  while (used > 5.5 && widthOf(v, font, used) > maxWidth) used -= 0.5;
+  page.drawText(v, { x: right - widthOf(v, font, used), y: topY(yFromTop) - used * 0.2, size: used, font, color: INK });
+}
 
 // —— Page 5 payment / signatures ——
 /** ID comb sits in row-1 band (y~341–358), ticks along the separator. */
@@ -535,8 +553,9 @@ function markPlan(page: PDFPage, font: PDFFont, personIdx: number, yFromTop: num
 }
 
 function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
-  drawText(page, font, s(input.agentName) || "אופיר ושות׳ סוכנות לביטוח", 28, 93, 8, 130);
-  drawText(page, font, AGENT_NO_FIXED, 28, 115, 9, 100);
+  // Agent box: on the dotted lines left of "שם הסוכן:" (baseline 102) and "מס' הסוכן:" (baseline 124.5)
+  drawText(page, font, s(input.agentName) || "אופיר ושות׳ סוכנות לביטוח", 33, 100, 8, 104);
+  drawText(page, font, AGENT_NO_FIXED, 60, 122.5, 9, 75);
 
   drawDateSegments(page, font, input.tripFrom, TRIP_FROM_SEGS, 212, 9);
   drawDateSegments(page, font, input.tripTo, TRIP_TO_SEGS, 212, 9);
@@ -554,11 +573,11 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
 
   drawText(page, font, s(input.countriesDetail), 40, 284, 8, 360);
 
-  // Contact row
-  drawText(page, font, s(input.street), 350, 488, 8, 160);
-  drawText(page, font, s(input.houseNo), 290, 488, 8, 40);
-  drawText(page, font, s(input.city), 150, 488, 8, 120);
-  drawText(page, font, s(input.occupation), 28, 488, 8, 110);
+  // Address row, under the labels. Cells: occupation 28.6–166.2 | town 166.2–303.8 | no. 303.8–349.9 | street 349.9–554.2
+  drawText(page, font, s(input.street), 352, 497, 8, 196);
+  drawText(page, font, s(input.houseNo), 307, 497, 8, 40);
+  drawText(page, font, s(input.city), 169, 497, 8, 131);
+  drawText(page, font, s(input.occupation), 31, 497, 8, 132);
 
   drawText(page, font, s(input.phone), 448, 520, 8, 95);
   drawText(page, font, s(input.mobile), 348, 520, 8, 70);
@@ -586,7 +605,7 @@ function fillPage1(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
 
 function fillPage2(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
   const people = resolvePeople(input);
-  let q4Details = "";
+  const q4Parts: Array<{ name: string; text: string }> = [];
 
   people.forEach((p, idx) => {
     if (!personShouldFill(p, idx)) return;
@@ -603,17 +622,32 @@ function fillPage2(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     markYnPerson(page, font, idx, HEALTH_Q_Y.q3, h.q3 || "no");
     if (isYes(h.q3)) markYnPerson(page, font, idx, HEALTH_Q_Y.q31, h.q31);
     markYnPerson(page, font, idx, HEALTH_Q_Y.q4, h.q4 || "no");
-    if (s(h.q4Details)) q4Details = [q4Details, s(h.q4Details)].filter(Boolean).join("; ");
+    if (s(h.q4Details)) q4Parts.push({ name: s(p.firstNameHe) || s(p.firstNameEn), text: s(h.q4Details) });
     if (isFemale(s(p.gender))) {
       markYnPerson(page, font, idx, HEALTH_Q_Y.q5, h.q5Pregnant || "no");
       if (isYes(h.q5Pregnant)) {
-        if (s(h.q51Week)) drawText(page, font, s(h.q51Week), 280, 566, 9, 80);
+        // On the dotted line after "מה שבוע ההיריון הנוכחי?" (204–429, baseline 561.5)
+        if (s(h.q51Week)) drawText(page, font, s(h.q51Week), 360, 559.5, 9, 60);
         markYnPerson(page, font, idx, HEALTH_Q_Y.q52, h.q52HighRisk || "no");
       }
     }
   });
 
-  if (q4Details) drawText(page, font, q4Details, 28, 500, 8, 450);
+  // Q4 details after "פרוט הבדיקות:" (text area 203–482, baseline 480.6), second line 203–465 (baseline 490.6)
+  if (q4Parts.length) {
+    const text = q4Parts.map((d) => (q4Parts.length > 1 && d.name ? `${d.name}: ${d.text}` : d.text)).join("; ");
+    const first = 482 - 205;
+    if (widthOf(text, font, 7) <= first) {
+      drawText(page, font, text, 205, 479, 8, first);
+    } else {
+      // Split at a word so the rest continues on the line below
+      const words = text.split(" ");
+      let line1 = "";
+      while (words.length && widthOf(`${line1} ${words[0]}`.trim(), font, 7) <= first) line1 = `${line1} ${words.shift()}`.trim();
+      drawText(page, font, line1, 205, 479, 7, first);
+      drawText(page, font, words.join(" "), 205, 489, 7, 465 - 205);
+    }
+  }
 }
 
 function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
@@ -645,6 +679,7 @@ function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     markPlan(page, font, idx, PLAN_ROW_Y.personalAccidentAdventure, !!plan.personalAccidentAdventure);
     markPlan(page, font, idx, PLAN_ROW_Y.laptop, !!plan.laptop);
     markPlan(page, font, idx, PLAN_ROW_Y.phone, !!plan.phone);
+    markPlan(page, font, idx, PLAN_ROW_Y.valuables, !!(plan.baggage && plan.baggageValuables));
 
     // Valuable-item ticks only when extended baggage was chosen
     if (plan.baggage && plan.baggageValuables) {
@@ -665,15 +700,17 @@ function fillPage3(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     if (box) markInBox(page, font, box.x0, box.x1, box.y, 8);
   }
 
-  if (adventureFrom) drawText(page, font, formatDate(adventureFrom), 40, 535, 7, 55);
-  if (adventureTo) drawText(page, font, formatDate(adventureTo), 40, 548, 7, 55);
-  if (winterFrom) drawText(page, font, formatDate(winterFrom), 40, 558, 7, 55);
-  if (winterTo) drawText(page, font, formatDate(winterTo), 40, 570, 7, 55);
-  if (proFrom) drawText(page, font, formatDate(proFrom), 40, 581, 7, 55);
-  if (proTo) drawText(page, font, formatDate(proTo), 40, 593, 7, 55);
+  // Sports periods: on the "מ- __/__/__" and "עד- __/__/__" lines (baselines 528.5/538.1, 551.8/561.4, 575.1/584.7)
+  if (adventureFrom) drawDateSegments(page, font, adventureFrom, FROM_LINE_SEGS, 526.5, 7);
+  if (adventureTo) drawDateSegments(page, font, adventureTo, TO_LINE_SEGS, 536.1, 7);
+  if (winterFrom) drawDateSegments(page, font, winterFrom, FROM_LINE_SEGS, 549.8, 7);
+  if (winterTo) drawDateSegments(page, font, winterTo, TO_LINE_SEGS, 559.4, 7);
+  if (proFrom) drawDateSegments(page, font, proFrom, FROM_LINE_SEGS, 573.1, 7);
+  if (proTo) drawDateSegments(page, font, proTo, TO_LINE_SEGS, 582.7, 7);
 
-  if (laptopModel) drawText(page, font, laptopModel, 200, 700, 8, 180);
-  if (phoneModel) drawText(page, font, phoneModel, 200, 722, 8, 180);
+  // Models on the "דגם ....." lines left of the label (baselines 709.3 / 731.1)
+  if (laptopModel) drawRightAligned(page, font, laptopModel, 535, 707.7, 8, 135);
+  if (phoneModel) drawRightAligned(page, font, phoneModel, 535, 729.5, 8, 135);
 }
 
 function fillPage4(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) {
@@ -704,15 +741,17 @@ function fillPage4(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
     if (plan.rentalTo) rentalTo = s(plan.rentalTo);
   });
 
-  if (bikeModel) drawText(page, font, bikeModel, 280, 95, 8, 180);
-  if (bikeDate) drawText(page, font, formatDate(bikeDate), 280, 108, 8, 120);
-  if (bikeValue) drawText(page, font, bikeValue, 100, 108, 8, 80);
-  if (rentalFrom) drawText(page, font, formatDate(rentalFrom), 40, 155, 7, 55);
-  if (rentalTo) drawText(page, font, formatDate(rentalTo), 40, 168, 7, 55);
+  // Bicycle details on the dotted lines left of "דגם" / "תאריך רכישת האופניים" / "ערך האופניים ב-₪"
+  if (bikeModel) drawRightAligned(page, font, bikeModel, 534, 89.5, 8, 130);
+  if (bikeDate) drawRightAligned(page, font, formatDate(bikeDate), 466, 101, 8, 66);
+  if (bikeValue) drawRightAligned(page, font, bikeValue, 481, 112.3, 8, 80);
+  // Rental period on its "מ-" / "עד-" lines (baselines 147.3 / 162.3)
+  if (rentalFrom) drawDateSegments(page, font, rentalFrom, [[29, 46.4], [49.4, 64.4], [67.4, 84]], 145.3, 7);
+  if (rentalTo) drawDateSegments(page, font, rentalTo, [[29, 45], [48, 63], [66, 80.5]], 160.3, 7);
 
   if (input.marketingConsentExtra) {
-    // 4ב consent checkbox — approximate near marketing section
-    mark(page, font, 545, 610, 10);
+    // 4ב "additional advertising" box (519.8, 611)
+    markInBox(page, font, 519.8, 527.9, 616.6, 8);
   }
 }
 
@@ -720,10 +759,25 @@ function fillPage5(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   const people = resolvePeople(input);
   const sigDate = formatDate(input.signatureDate) || formatDate(new Date().toISOString().slice(0, 10));
 
+  // Signature rows: main insured, spouse, then "ילד/ה מעל גיל 18" rows — children under 18 don't sign
+  const ageOn = (birth: unknown, on: string) => {
+    const b = formatDate(birth).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    const d = on.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!b || !d) return null;
+    let age = Number(d[3]) - Number(b[3]);
+    if (Number(d[2]) < Number(b[2]) || (d[2] === b[2] && Number(d[1]) < Number(b[1]))) age -= 1;
+    return age;
+  };
+  let nextChildRow = 2;
   people.forEach((p, idx) => {
     if (!personShouldFill(p, idx)) return;
-    // Children under 18 typically don't sign — still fill name/id for adults; fill all included for completeness.
-    const y = SIG_ROWS_Y[idx];
+    let row = idx;
+    if (idx >= 2) {
+      const age = ageOn(p.birthDate, sigDate);
+      if (age != null && age < 18) return;
+      row = nextChildRow++;
+    }
+    const y = SIG_ROWS_Y[row];
     if (y == null) return;
     const name = [s(p.firstNameHe) || s(p.firstNameEn), s(p.lastNameHe) || s(p.lastNameEn)]
       .filter(Boolean)
@@ -739,19 +793,33 @@ function fillPage5(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   drawText(page, font, s(input.agentName) || "אופיר ושות׳ סוכנות לביטוח", 300, 178, 8, 100);
   drawText(page, font, AGENT_NO_FIXED, 50, 178, 9, 70);
   drawText(page, font, sigDate, 460, 178, 8, 70);
-  drawText(page, font, s(input.agentName) || "אופיר ושות׳", 320, 305, 8, 70);
+  // Agent's declaration: name on the dots left of "שם הסוכן:" (367–403), date left of "תאריך:"
+  drawText(page, font, s(input.agentName) || "אופיר ושות׳ סוכנות לביטוח", 238, 305, 8, 125);
   drawText(page, font, sigDate, 460, 305, 8, 70);
 
-  // Payment (section ט) — values sit in the lower half of each row (below labels)
-  drawText(page, font, s(input.payerName), 330, 354, 9, 210);
-  drawDigits(page, font, s(input.payerId), PAYER_ID_TICKS, 354, 10);
+  // Payment (section ט) — values in the lower half of each row, under the labels
+  // Row 1 (341–366): holder | ID comb 173–322 | installments ; row 2 (366–392): card comb | expiry MM|YY | CVV
+  drawText(page, font, s(input.payerName), 330, 362, 9, 218);
+  drawDigits(page, font, s(input.payerId), PAYER_ID_TICKS, 360, 10);
   const install = digitsOnly(s(input.installments) || "1").slice(0, 2);
-  if (install) drawText(page, font, install, 70, 354, 11, 80);
+  if (install) drawText(page, font, install, 70, 362, 11, 80);
 
   const card = digitsOnly(s(input.cardNumber)).slice(0, 16);
-  drawDigits(page, font, card, CARD_TICKS, 378, 10);
-  drawDigits(page, font, digitsOnly(s(input.cardExp)).slice(0, 4), EXP_TICKS, 378, 10);
-  drawDigits(page, font, digitsOnly(s(input.cardCvv)).slice(0, 3), CVV_TICKS, 378, 10);
+  drawDigits(page, font, card, CARD_TICKS, 386, 10);
+  const exp = digitsOnly(s(input.cardExp));
+  if (exp.length >= 4) {
+    // Two cells: MM (173–232.4) | YY (232.4–288.9)
+    for (const [text, x0, x1] of [[exp.slice(0, 2), 173, 232.4], [exp.slice(2, 4), 232.4, 288.9]] as const) {
+      const w = widthOf(text, font, 10);
+      page.drawText(text, { x: (x0 + x1 - w) / 2, y: topY(386) - 3.2, size: 10, font, color: INK });
+    }
+  }
+  // CVV box 28.3–173 has no cells: centre all 3 (or Amex 4) digits under the label
+  const cvv = digitsOnly(s(input.cardCvv)).slice(0, 4);
+  if (cvv) {
+    const w = widthOf(cvv.split("").join(" "), font, 10);
+    page.drawText(cvv.split("").join(" "), { x: 100.6 - w / 2, y: topY(386) - 3.2, size: 10, font, color: INK });
+  }
 
   drawText(page, font, s(input.payerStreet), 360, 404, 8, 160);
   drawText(page, font, s(input.payerHouseNo), 290, 404, 8, 30);
@@ -761,7 +829,8 @@ function fillPage5(page: PDFPage, font: PDFFont, input: TravelProposalPdfInput) 
   drawText(page, font, s(input.payerMobile), 120, 428, 8, 100);
 
   drawText(page, font, sigDate, 460, 585, 8, 70);
-  drawText(page, font, s(input.payerName), 40, 585, 8, 150);
+  // Cardholder signature: on the dots, clear of the pen icon (~155)
+  drawText(page, font, s(input.payerName), 40, 585, 8, 110);
 }
 
 export async function buildTravelProposalFilledPdfBase64(
