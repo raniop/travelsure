@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, ExternalLink, FileSpreadsheet, FileText, Search } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileSpreadsheet, FileText, MousePointerClick, Search } from "lucide-react";
 import AgencyPage from "@/components/AgencyPage";
 import formCategories from "@/data/formCategories.json";
 import {
@@ -19,6 +19,8 @@ type DownloadFormItem = {
   downloadName?: string;
   /** Same-origin copy used when `url` can't be fetched. */
   fallbackUrl?: string;
+  /** A page on this site instead of a file (the digital application forms). */
+  to?: string;
 };
 
 const fetchFile = async (url: string) => {
@@ -224,6 +226,29 @@ const FormsDownloads = () => {
 
               <ul className="m-0 list-none divide-y-2 divide-[#E3E7EE] overflow-hidden rounded-[28px] border-2 border-[#E3E7EE] bg-white p-0">
                 {category.forms.map((form) => {
+                  if (form.to) {
+                    return (
+                      <li key={`${category.id}-${form.title}`}>
+                        <Link
+                          to={form.to}
+                          className="flex min-h-[64px] items-center gap-4 bg-[#EAF7EF] px-4 py-3 text-[#000144] no-underline transition-colors hover:bg-[#DDF2E5] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#000144] md:px-6"
+                        >
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#00A247] text-white">
+                            <MousePointerClick aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
+                          </span>
+                          <span className="flex min-w-0 flex-1 flex-col gap-1.5 md:flex-row md:items-center md:gap-3">
+                            <span className="min-w-0 break-words text-[17px] font-extrabold leading-[1.35] md:flex-1 md:text-[18px]">
+                              {form.title}
+                            </span>
+                            <span className="w-fit shrink-0 rounded-full bg-[#00A247] px-2.5 py-0.5 text-[14px] font-bold text-white">
+                              טופס אונליין
+                            </span>
+                          </span>
+                          <ArrowLeft aria-hidden="true" className="h-5 w-5 shrink-0 text-[#000144]" />
+                        </Link>
+                      </li>
+                    );
+                  }
                   const url = form.url?.trim();
                   const fileType = url ? fileTypeOf(url) : null;
                   const language = languageOf(form.title);
