@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { formatDateInput, normalizeDateInput } from "@/lib/foreigners/formDefaults";
 import { he } from "date-fns/locale/he";
 import { cn } from "@/lib/utils";
 import {
@@ -77,15 +78,8 @@ export const parseDdMmYyyy = (value: string): Date | undefined => {
   return d;
 };
 
-const maskDate = (raw: string) => {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  const dd = digits.slice(0, 2);
-  const mm = digits.slice(2, 4);
-  const yyyy = digits.slice(4, 8);
-  if (digits.length <= 2) return dd;
-  if (digits.length <= 4) return `${dd}/${mm}`;
-  return `${dd}/${mm}/${yyyy}`;
-};
+// Same date typing as the other forms: 1/12/26, 1.12.26 and 011226 all work, completed on leaving the field
+const maskDate = formatDateInput;
 
 const DestMapIcon = ({ id, active }: { id: DestinationId; active: boolean }) => {
   const src = DEST_ICON_SRC[id][active ? "green" : "blue"];
@@ -199,6 +193,10 @@ function TripDateField({
           placeholder="DD/MM/YYYY"
           value={value}
           onChange={(e) => onValueChange(maskDate(e.target.value))}
+          onBlur={(e) => {
+            const full = normalizeDateInput(e.target.value);
+            if (full !== e.target.value) onValueChange(full);
+          }}
           onClick={() => {
             setMonth(selected ?? minDay ?? new Date());
             setOpen(true);
