@@ -218,7 +218,6 @@ function drawText(
 ) {
   const value = s(text);
   if (!value) return;
-  const y = topY(yFromTop) - size * 0.2;
 
   if (!hasHebrew(value)) {
     let draw = value;
@@ -239,9 +238,13 @@ function drawText(
     return;
   }
 
-  // Hebrew / mixed: draw RTL-aligned inside the field box
+  // Hebrew / mixed: draw RTL-aligned inside the field box, smaller when it does not fit
   const right = x + (maxWidth ?? 180);
   const runs = splitBidiRuns(value);
+  if (maxWidth) {
+    while (size > 5.5 && widthOf(value, font, size) > maxWidth) size -= 0.5;
+  }
+  const y = topY(yFromTop) - size * 0.2;
   let cursor = right;
   // Right-to-left paragraph: the first run in reading order sits at the right edge
   for (const run of runs) {
@@ -479,12 +482,14 @@ const OPTION_BOXES: Record<string, Record<string, [number, number, number]>> = {
     dvt: [0, 182.6, 766.3],
     pvd: [0, 350.8, 766.3],
   },
+  // Boxes matched to their printed labels (Thyroid | Lymph | Salivary | Sweat / Pituitary | Diabetes | ...)
   metabolic: {
-    diabetes: [1, 150.6, 56.8],
-    thyroid: [1, 233.3, 56.8],
-    lymph: [1, 309.6, 56.8],
-    salivary: [1, 392.7, 56.8],
+    thyroid: [1, 150.6, 56.8],
+    lymph: [1, 233.3, 56.8],
+    salivary: [1, 309.6, 56.8],
+    sweat: [1, 392.7, 56.8],
     pituitary: [1, 61.3, 67.8],
+    diabetes: [1, 148.8, 67.8],
     hypertension: [1, 208.1, 67.8],
     cholesterol: [1, 288.9, 67.8],
   },
@@ -553,6 +558,32 @@ const OPTION_BOXES: Record<string, Record<string, [number, number, number]>> = {
   },
 };
 
+/** Previous-insurance period combs (proposal p2 and health p2): From | To, 6 cells each (DDMMYY). */
+const PREV_FROM_TICKS = [41.4, 59.2, 76.9, 94.7, 112.5, 130.2, 148];
+const PREV_TO_TICKS = [148, 165.8, 183.5, 201.3, 219.1, 236.8, 254.6];
+
+/**
+ * "please specify:" dotted line of each condition group on the health form: [page, x after the label, baseline].
+ * Groups without such a line (nervous, hernia, cancer, mental) go to "Please provide details:" at the end.
+ */
+const SPECIFY_LINE: Record<string, [number, number, number]> = {
+  eyes: [0, 358, 690.9],
+  heart: [0, 474, 732.5],
+  vessels: [0, 376, 788.1],
+  metabolic: [1, 310, 86.6],
+  respiratory: [1, 423, 135.1],
+  digestive: [1, 412, 194.7],
+  liver: [1, 411, 232.3],
+  kidney: [1, 223, 318],
+  joints: [1, 415, 355.6],
+  skin: [1, 433, 404.2],
+  women: [1, 267, 456.9],
+  men: [1, 385, 505.5],
+  ent: [1, 432, 558.1],
+};
+/** Right edge for text on the health form (the Yes/No columns start at 523). */
+const HEALTH_TEXT_RIGHT = 518;
+
 /** Main Yes/No row anchors for condition groups [page, yFromTop] */
 const CONDITION_YN: Record<string, [number, number]> = {
   nervous: [0, 540],
@@ -615,7 +646,8 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   // Contact cell 629.6–654.6: email | mobile | phone
   drawText(p0, font, s(data.email), 50, 650, 9, 240);
   drawText(p0, font, s(data.mobile), 318, 650, 10, 105);
-  drawText(p0, font, s(data.phone), 450, 650, 10, 95);
+  // Telephone: clear of the printed "No" that wraps under the label
+  drawText(p0, font, s(data.phone), 462, 650, 10, 88);
 
   // B – purpose checkboxes @ y≈722.4
   const purpose = s(data.workPurpose).toLowerCase();
@@ -640,8 +672,9 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   drawText(p1, font, s(data.previousCompany), 265, 82, 9, 110);
   drawText(p1, font, s(data.previousPolicyNo), 400, 82, 9, 50);
   drawText(p1, font, s(data.previousMembershipNo), 510, 82, 9, 40);
-  drawText(p1, font, formatDate(data.previousFrom), 48, 92, 9, 90);
-  drawText(p1, font, formatDate(data.previousTo), 160, 92, 9, 70);
+  // Period: one digit per cell (DDMMYY), like the other date combs
+  drawDigits(p1, font, dateDigits6(data.previousFrom), PREV_FROM_TICKS, 93.5, 10.5);
+  drawDigits(p1, font, dateDigits6(data.previousTo), PREV_TO_TICKS, 93.5, 10.5);
 
   // E – employer / policyholder
   // Row1 114–141.7 — Name | ID | Telephone (values near bottom ~140)
@@ -653,15 +686,23 @@ function fillProposal(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput)
   drawText(p1, font, s(data.employerAddress), 300, 188, 9, 120);
   drawText(p1, font, s(data.employerMobile), 440, 188, 9, 100);
 
-  // Employer signature value row 684–718; dotted line ~700. Cols: 41–212 | 212–383 | 383–554
-  drawText(p1, font, s(data.employerName), 50, 697, 11, 150);
-  drawText(p1, font, s(data.employerName), 220, 697, 11, 150);
-  drawText(p1, font, formatDate(data.signatureDate), 400, 697, 11, 130);
+  // Employer signature value row 684–718; dotted line ~700. Cols: 41–297 | 297–483 | 483–554
+  drawText(p1, font, s(data.employerName), 50, 697, 11, 230);
+  drawText(p1, font, s(data.employerName), 304, 697, 11, 172);
+  drawText(p1, font, formatDate(data.signatureDate), 490, 697, 11, 60);
 
-  // Agent block bottom of p2
-  drawText(p1, font, formatDate(data.signatureDate), 50, 780, 9, 100);
-  drawText(p1, font, s(data.agentName), 220, 780, 9, 140);
-  drawText(p1, font, AGENT_NO_FIXED, 400, 780, 9, 80);
+  // Witness to the signature (the insurance agent), on its dotted lines:
+  // top row  תאריך (dots ~430–525) | שם (~212–398) | ת"ז ; bottom row  מס' רישיון (~400–514) | חתימה | חותמת
+  const agentName = s(data.agentName) || "אופיר ושות׳ סוכנות לביטוח";
+  drawText(p1, font, formatDate(data.signatureDate), 440, 763, 9, 80);
+  drawText(p1, font, agentName, 215, 763, 9, 180);
+  drawText(p1, font, AGENT_NO_FIXED, 420, 790, 9, 90);
+
+  // J – agent's declaration (page 3): date and agent name, Hebrew row and English row
+  drawText(p2, font, formatDate(data.signatureDate), 458, 81, 9, 66);
+  drawText(p2, font, agentName, 255, 81, 9, 138);
+  drawText(p2, font, formatDate(data.signatureDate), 66, 157, 9, 84);
+  drawText(p2, font, agentName, 215, 157, 9, 140);
 
   // K – payment (page 3)
   drawText(p2, font, s(data.lastName), 50, 338, 10, 155);
@@ -760,18 +801,41 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
     { key: "regularMedications", y: 450 },
     { key: "allergies", y: 482 },
   ];
+  // Details without a line of their own are collected for "Please provide details:" (end of page 2)
+  const extraDetails: string[] = [];
+  const generalNo: Record<string, string> = {
+    pendingExams: "A3",
+    surgeryTransplant: "A4",
+    hospitalized: "A5",
+    regularMedications: "A6",
+    allergies: "A7",
+  };
   for (const g of general) {
     const ans = answerOf(data[g.key]);
     if (isYes(ans)) markYn(h0, font, g.y, true);
     else markYn(h0, font, g.y, false); // unanswered → No
     const det = detailsOf(data[g.key]);
-    if (det) drawText(h0, font, det, 120, g.y + 18, 6.5, 360);
+    if (!det) continue;
+    // Q4 has a dotted line after "Please describe in details:"
+    if (g.key === "surgeryTransplant") drawText(h0, font, det, 258, 404.4, 8, HEALTH_TEXT_RIGHT - 258);
+    else extraDetails.push(`${generalNo[g.key as string]}: ${det}`);
   }
 
   // Conditions Yes/No + option boxes — mark No when unanswered so the form is complete
   const conditions = data.conditionAnswers || {};
   const skipMen = isFemale(gender);
   const skipWomen = isMale(gender);
+  const groupNo: Record<string, string> = {
+    nervous: "B1", eyes: "B2", heart: "B3", vessels: "B4", metabolic: "B5", respiratory: "B6", digestive: "B7",
+    liver: "B8", hernia: "B9", kidney: "B10", joints: "B11", skin: "B12", cancer: "B13", women: "B14", men: "B15",
+    mental: "B16", ent: "B17",
+  };
+  const HERNIA_PLACES: Record<string, string> = {
+    diaphragm: "diaphragm",
+    navel: "navel",
+    right_groin: "right groin",
+    left_groin: "left groin",
+  };
   for (const [groupId, ynPos] of Object.entries(CONDITION_YN)) {
     if (groupId === "women" && skipWomen) continue;
     if (groupId === "men" && skipMen) continue;
@@ -780,7 +844,22 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
     if (!page) continue;
     if (ans && isYes(ans.answer)) markYn(page, font, ynPos[1], true);
     else markYn(page, font, ynPos[1], false);
-    if (ans?.details) drawText(page, font, ans.details, 300, ynPos[1] + 22, 6.5, 200);
+    if (!ans || !isYes(ans.answer)) continue;
+    let det = s(ans.details);
+    // The hernia location has no boxes on the form: write it with the details
+    if (groupId === "hernia") {
+      const places = (ans.selected || []).map((id) => HERNIA_PLACES[id]).filter(Boolean);
+      if (places.length) det = [`Location: ${places.join(", ")}`, det].filter(Boolean).join(". ");
+    }
+    if (!det) continue;
+    const line = SPECIFY_LINE[groupId];
+    const linePage = line ? pages[line[0]] : null;
+    // On the group's own "please specify" line when it fits at a readable size, otherwise at the end
+    if (line && linePage && widthOf(det, font, 6.5) <= HEALTH_TEXT_RIGHT - line[1]) {
+      drawText(linePage, font, det, line[1], line[2] - 1.6, 8, HEALTH_TEXT_RIGHT - line[1]);
+    } else {
+      extraDetails.push(`${groupNo[groupId] || groupId}: ${det}`);
+    }
   }
 
   for (const [groupId, opts] of Object.entries(OPTION_BOXES)) {
@@ -800,7 +879,8 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
   if (hernia) {
     if (isYes(hernia.answer)) {
       mark(h1, font, 326.4, 268, 8);
-      drawText(h1, font, formatDate(hernia.herniaSurgeryDate), 380, 268, 7, 80);
+      // After the printed "Yes, when (date)?" (ends at x≈418)
+      drawText(h1, font, formatDate(hernia.herniaSurgeryDate), 421, 268, 8, 95);
     } else if (isNo(hernia.answer)) {
       mark(h1, font, 297.3, 268, 8);
     }
@@ -810,25 +890,46 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
 
   // Women pregnancy / cesarean
   const women = conditions.women;
-  if (women) {
-    if (isYes(women.isPregnant)) mark(h1, font, 134.4, 456, 8);
-    else if (isNo(women.isPregnant)) mark(h1, font, 105.4, 456, 8);
+  if (women && !skipWomen) {
+    // "Are you pregnant?" is a single box (61.3, 460.1): ticked only when pregnant
+    if (isYes(women.isPregnant)) mark(h1, font, 61.8, 467, 8);
     const hadCesarean = Boolean(women.selected?.includes("cesarean") || s(women.cesareanDate));
     if (hadCesarean) {
       mark(h1, font, 403.7, 467, 8);
-      drawText(h1, font, formatDate(women.cesareanDate), 450, 467, 7, 70);
+      // On the line after "specify when (date):" (next row, ends at x≈153)
+      drawText(h1, font, formatDate(women.cesareanDate), 157, 477.3, 8, 100);
     } else if (isNo(women.answer) || (women.selected && !women.selected.includes("cesarean"))) {
       mark(h1, font, 374.7, 467, 8);
     }
   }
 
+  // Section B (health p2) — previous insurance, same answers as in the proposal
+  if (isYes(data.hadPreviousInsurance)) mark(h1, font, 401.3, 611.4, 8);
+  else if (isNo(data.hadPreviousInsurance)) mark(h1, font, 372.2, 611.4, 8);
+  drawDigits(h1, font, dateDigits6(data.previousFrom), PREV_FROM_TICKS, 650, 10);
+  drawDigits(h1, font, dateDigits6(data.previousTo), PREV_TO_TICKS, 650, 10);
+  drawText(h1, font, s(data.previousCompany), 258, 649, 9, 104);
+  drawText(h1, font, s(data.previousPolicyNo), 369, 649, 9, 82);
+  drawText(h1, font, s(data.previousMembershipNo), 457, 649, 9, 106);
+
+  // "Please provide details:" — everything without its own line, shrinking to fit
+  if (extraDetails.length) {
+    const text = extraDetails.join("; ");
+    const x0 = 133;
+    const maxW = 564 - x0;
+    let size = 8;
+    while (size > 5 && widthOf(text, font, size) > maxW) size -= 0.25;
+    drawText(h1, font, text, x0, 584, size, maxW);
+  }
+
   // Page 3 – marketing / dismissed / signature
   // Q6 advertising: no @524 / yes @547 (labels); boxes around marketing extra at 69.6,575.8
+  // The X goes in the answer cell under the "no" / "yes" headers (columns 523 | 545.2 | 567.4)
   if (isYes(data.marketingConsent)) {
-    mark(h2, font, 547, 458, 8);
+    markInBox(h2, font, 545.2, 567.4, 478, 10);
     mark(h2, font, 70.2, 583, 8);
   } else if (isNo(data.marketingConsent)) {
-    mark(h2, font, 524, 458, 8);
+    markInBox(h2, font, 523, 545.2, 478, 10);
   }
 
   if (isYes(data.dismissedBefore)) {
@@ -838,11 +939,12 @@ function fillHealth(pages: PDFPage[], font: PDFFont, data: ForeignersPdfInput) {
     mark(h2, font, 471.0, 660, 8);
   }
 
-  const sig = s(data.signatureName) || `${s(data.firstName)} ${s(data.lastName)}`.trim();
-  // Bottom signature row: Date | Signature (candidate) | Signature (other)
+  // Bottom signature row: Date | Signature of Insurance Candidate (the worker) | Signature of witness (who filled the form)
+  const workerName = `${s(data.firstName)} ${s(data.lastName)}`.trim();
+  const signer = s(data.signatureName) || workerName;
   drawText(h2, font, formatDate(data.signatureDate), 60, 808, 8, 70);
-  drawText(h2, font, sig, 320, 808, 8, 70);
-  drawText(h2, font, sig, 505, 808, 8, 55);
+  drawText(h2, font, workerName || signer, 316, 808, 8, 74);
+  drawText(h2, font, signer, 503, 808, 8, 60);
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
