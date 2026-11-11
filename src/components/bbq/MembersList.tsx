@@ -22,6 +22,11 @@ import { stripEmojisForPlainText } from "@/lib/bbq/plainText";
 const PAYBOX_GROUP_LINK = "https://links.payboxapp.com/k5qia1URTZb";
 const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500, היתרה = 500 − סכום ניכויים מאירועים
 
+function depositAmountToReachPeriodBalance(currentBalance: number): number {
+  const gap = parseFloat((DEPOSIT_PER_MEMBER - currentBalance).toFixed(2));
+  return gap > 0 ? gap : 0;
+}
+
 function buildDepositRequestWhatsAppMessage(
   memberName: string,
   currentBalance: number,
@@ -30,25 +35,35 @@ function buildDepositRequestWhatsAppMessage(
   const cleanMemberName = stripEmojisForPlainText(memberName) || memberName.trim();
   const cleanGroupName = groupName ? stripEmojisForPlainText(groupName) : "";
   const groupLabel = cleanGroupName ? `קבוצת «${cleanGroupName}»` : "הקבוצה";
+  const amountToTransfer = depositAmountToReachPeriodBalance(currentBalance);
   const balanceLine =
     currentBalance < 0
-      ? `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נוצל יותר מהיתרה, ויש להפקיד מחדש.`
-      : `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נמוכה, וכדאי להפקיד מחדש.`;
+      ? `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪ — נוצל יותר מהיתרה.`
+      : `היתרה שלך כרגע: ${currentBalance.toFixed(2)} ₪.`;
+  const targetLine =
+    amountToTransfer > 0
+      ? `כדי לחזור ליתרה של ${DEPOSIT_PER_MEMBER} ₪ בתחילת הקופה — העבר/י ${amountToTransfer.toFixed(2)} ₪.`
+      : `היתרה שלך כבר ${DEPOSIT_PER_MEMBER} ₪ ומעלה — אין צורך בהפקדה כרגע.`;
 
   return [
     `שלום ${cleanMemberName}!`,
     "",
     `זו הודעה מ${groupLabel} לגבי קופת האירועים המשותפת (מזון ועלויות אירועים).`,
     "",
-    `בכל תקופה כל חבר מפקיד ${DEPOSIT_PER_MEMBER} ₪ לקבוצת PayBox שלנו. מסכום זה מקוזזים עלויות האירועים לפי השתתפות.`,
+    `בכל תקופה יתרת חבר היא ${DEPOSIT_PER_MEMBER} ₪; ממנה מקוזזים עלויות אירועים לפי השתתפות.`,
     "",
     balanceLine,
+    targetLine,
     "",
     "מה לעשות:",
-    `1. העבר/י ${DEPOSIT_PER_MEMBER} ₪ לקבוצת PayBox:`,
-    PAYBOX_GROUP_LINK,
-    "2. שלח/י לי הודעה לאחר ההעברה.",
-    "3. אעדכן את היתרה במערכת.",
+    ...(amountToTransfer > 0
+      ? [
+          `1. העבר/י ${amountToTransfer.toFixed(2)} ₪ לקבוצת PayBox:`,
+          PAYBOX_GROUP_LINK,
+          "2. שלח/י לי הודעה לאחר ההעברה.",
+          "3. אעדכן את היתרה במערכת.",
+        ]
+      : ["אין פעולה נדרשת כרגע."]),
     "",
     "תודה!",
   ].join("\n");
@@ -378,6 +393,7 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                   size="sm"
                   onClick={() => {
                     const currentBalance = member.balance || 0;
+                    const amountToTransfer = depositAmountToReachPeriodBalance(currentBalance);
                     const message = buildDepositRequestWhatsAppMessage(
                       member.name,
                       currentBalance,
@@ -389,7 +405,10 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                     window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, "_blank");
                     toast({
                       title: "נשלחה הודעת WhatsApp",
-                      description: `בקשה להפקדת ${DEPOSIT_PER_MEMBER} ₪ ל-${member.name}`,
+                      description:
+                        amountToTransfer > 0
+                          ? `בקשה להפקדת ${amountToTransfer.toFixed(2)} ₪ (עד יתרה ${DEPOSIT_PER_MEMBER} ₪) ל-${member.name}`
+                          : `נשלחה הודעה ל-${member.name} — אין הפקדה נדרשת`,
                     });
                   }}
                 >
