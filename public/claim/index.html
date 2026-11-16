@@ -661,11 +661,11 @@
         <div id="step-success" class="hidden" style="text-align:center;padding:18px 8px 8px">
           <div style="width:64px;height:64px;border-radius:999px;background:var(--green);color:var(--navy);font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px">✓</div>
           <h2 style="margin-bottom:6px">התביעה נשלחה בהצלחה</h2>
-          <p class="muted" style="margin:0 auto;max-width:420px">הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה באופיר למעקב מולנו.</p>
+          <p class="muted" style="margin:0 auto;max-width:420px">הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. נגיש את התביעה להראל ונעדכן אתכם.</p>
           <div style="margin:18px auto 0;max-width:420px;text-align:right;border-radius:20px;padding:20px;background:var(--surface)">
-            <div style="font-size:13px;font-weight:800;color:var(--green-dark)">מספר תביעה באופיר</div>
-            <div id="successClaimNumber" dir="ltr" style="margin-top:4px;font-family:ui-monospace,monospace;font-size:24px;font-weight:900;color:var(--brand-dark);letter-spacing:.04em"></div>
-            <p class="tiny" style="margin:8px 0 0;color:var(--label);line-height:1.5">זה מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר תביעה בהראל או בחברת הביטוח.</p>
+            <div style="font-size:13px;font-weight:800;color:var(--green-dark)">מספר הפוליסה</div>
+            <div id="successPolicyNumber" dir="ltr" style="margin-top:4px;font-family:ui-monospace,monospace;font-size:24px;font-weight:900;color:var(--brand-dark);letter-spacing:.04em"></div>
+            <p class="tiny" style="margin:8px 0 0;color:var(--label);line-height:1.5">את מספר התביעה בהראל נשלח אליכם אחרי שנגיש את התביעה. בפנייה להראל לפני כן — מסרו את מספר הפוליסה ותעודת הזהות.</p>
             <ul id="successSummary" style="margin:14px 0 0;padding:0 18px 0 0;color:var(--body);font-size:15px;line-height:1.7"></ul>
           </div>
           <p class="tiny" style="margin-top:12px">העתק נשלח לצוות הטיפול בתביעות (רני / אלי).</p>
@@ -3021,7 +3021,8 @@
             clearInterval(tick);
           }
           if (!result.ok) throw new Error(result.error || "fail");
-          $("successClaimNumber").textContent = result.claimNumber || "";
+          // The customer gets the policy number; our internal number stays with the staff (it was mistaken for a Harel claim number)
+          $("successPolicyNumber").textContent = payload.policyNumber || "";
           $("successSummary").innerHTML =
             "<li><strong>שם:</strong> " + (payload.fullName || "") + "</li>" +
             "<li><strong>סוג:</strong> " + (payload.claimTypeLabel || "") + "</li>" +
@@ -3037,7 +3038,7 @@
             const warn = document.createElement("p");
             warn.style.cssText = "margin:12px 0 0;padding:10px 12px;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:13px;font-weight:700;text-align:right";
             warn.textContent = result.warning;
-            const box = $("successClaimNumber");
+            const box = $("successPolicyNumber");
             if (box && box.parentElement) box.parentElement.appendChild(warn);
           }
         } catch (err) {

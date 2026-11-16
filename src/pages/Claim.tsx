@@ -270,7 +270,8 @@ const Claim = () => {
   const [allBranches, setAllBranches] = useState<IsraeliBranch[]>([]);
   const [branchQuery, setBranchQuery] = useState("");
   const [branchMenuOpen, setBranchMenuOpen] = useState(false);
-  const [submittedClaimNumber, setSubmittedClaimNumber] = useState("");
+  // Shown to the customer instead of our internal claim number (that was quoted to Harel as a claim number)
+  const [submittedPolicyNumber, setSubmittedPolicyNumber] = useState("");
   const [submittedSummary, setSubmittedSummary] = useState<{
     fullName: string;
     claimTypeLabel: string;
@@ -783,7 +784,7 @@ const Claim = () => {
       const result = await submitClaimRequest(payload, filesSnapshot, setSubmitPhase);
       if (!result.ok) throw new Error(result.error || "claim_submit_failed");
 
-      setSubmittedClaimNumber(result.claimNumber || "");
+      setSubmittedPolicyNumber(formData.policyNumber);
       setSubmittedSummary({
         fullName,
         claimTypeLabel,
@@ -2186,15 +2187,15 @@ const Claim = () => {
               </div>
               <h2 className="text-[26px] font-black leading-tight text-[#000144]">התביעה נשלחה בהצלחה</h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-[#33405F]">
-                הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. שמרו את מספר התביעה באופיר למעקב מולנו.
+                הפרטים התקבלו אצל אופיר ושות׳ סוכנות לביטוח. נגיש את התביעה להראל ונעדכן אתכם.
               </p>
               <div className="mx-auto mt-6 max-w-md rounded-[20px] bg-[#F3F5F8] p-5 text-right">
-                <p className="text-xs font-bold text-[#008C3D]">מספר תביעה באופיר</p>
+                <p className="text-xs font-bold text-[#008C3D]">מספר הפוליסה</p>
                 <p className="mt-1 font-mono text-2xl font-extrabold tracking-wide text-[#000144]" dir="ltr">
-                  {submittedClaimNumber}
+                  {submittedPolicyNumber}
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-[#46557A]">
-                  זה מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר תביעה בהראל או בחברת הביטוח.
+                  את מספר התביעה בהראל נשלח אליכם אחרי שנגיש את התביעה. בפנייה להראל לפני כן — מסרו את מספר הפוליסה ותעודת הזהות.
                 </p>
                 {submittedSummary ? (
                   <ul className="mt-4 space-y-1.5 text-sm text-[#33405F]">
@@ -2222,7 +2223,7 @@ const Claim = () => {
                 type="button"
                 className={`claim-cta mt-6 ${agencyBtnPrimary}`}
                 onClick={() => {
-                  setSubmittedClaimNumber("");
+                  setSubmittedPolicyNumber("");
                   setSubmittedSummary(null);
                   setStep("type");
                 }}

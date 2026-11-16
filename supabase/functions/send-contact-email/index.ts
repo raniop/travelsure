@@ -366,7 +366,8 @@ function buildClaimStaffHtml(
 </html>`;
 }
 
-function buildClaimCustomerHtml(claimNumber: string, firstName: string): string {
+/** Customer confirmation: shows the policy number, not our internal number (it was quoted to Harel as a claim number). */
+function buildClaimCustomerHtml(policyNumber: string, firstName: string): string {
   return `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
@@ -377,8 +378,8 @@ function buildClaimCustomerHtml(claimNumber: string, firstName: string): string 
     <div style="padding:22px 24px;color:#111827;line-height:1.7;">
       <p style="margin:0 0 12px;">שלום ${esc(firstName || "לקוח/ה")},</p>
       <p style="margin:0 0 12px;">תביעת ביטוח הנסיעות שלך התקבלה במערכת TravelSure.</p>
-      <p style="margin:0 0 8px;font-size:20px;letter-spacing:0.5px;">מספר תביעה באופיר: <strong>${esc(claimNumber)}</strong></p>
-      <p style="margin:0 0 12px;color:#374151;font-size:14px;">זה מספר מעקב פנימי אצל <strong>אופיר ושות׳ סוכנות לביטוח</strong> — לא מספר תביעה בהראל או בחברת הביטוח. לשמירה ולמעקב מולנו בלבד.</p>
+      ${policyNumber ? `<p style="margin:0 0 8px;font-size:20px;letter-spacing:0.5px;">מספר הפוליסה: <strong>${esc(policyNumber)}</strong></p>` : ""}
+      <p style="margin:0 0 12px;color:#374151;font-size:14px;">נגיש את התביעה להראל ונשלח אליך את מספר התביעה בהראל. אם צריך לפנות להראל לפני כן — יש למסור את מספר הפוליסה ותעודת הזהות.</p>
       <p style="margin:0;color:#6b7280;font-size:13px;">TravelSure · אופיר ושות׳ סוכנות לביטוח<br>טלפון: 03-6244444 · אימייל: ophir@ophirins.co.il</p>
     </div>
   </div>
@@ -625,9 +626,9 @@ const handler = async (req: Request): Promise<Response> => {
           await sendResendEmail({
             from: RESEND_FROM,
             to: [customerEmail],
-            subject: `אישור קבלת תביעה באופיר · ${claimNumber}`,
+            subject: policyNumber ? `אישור קבלת תביעה · פוליסה ${policyNumber}` : "אישור קבלת תביעה",
             html: buildClaimCustomerHtml(
-              claimNumber,
+              policyNumber,
               String(claim.firstName || name || ""),
             ),
           });
@@ -639,9 +640,9 @@ const handler = async (req: Request): Promise<Response> => {
             await sendResendEmail({
               from: RESEND_FROM,
               to: [customerEmail],
-              subject: `אישור קבלת תביעה באופיר · ${claimNumber}`,
+              subject: policyNumber ? `אישור קבלת תביעה · פוליסה ${policyNumber}` : "אישור קבלת תביעה",
               html: buildClaimCustomerHtml(
-                claimNumber,
+                policyNumber,
                 String(claim.firstName || name || ""),
               ),
             });
