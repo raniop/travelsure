@@ -50,6 +50,10 @@
     "icon": "annual",
     "forms": [
       {
+        "title": "הפקה דיגיטלית - הצעה לביטוח נסיעות שנתי (שנתית / שנתית מורחבת)",
+        "to": "/annual"
+      },
+      {
         "title": "דרכון First Class שנתי - מידע על הפוליסה",
         "url": "https://travelsure.co.il/docs/annual/first-class-annual-info.pdf"
       },

@@ -13,6 +13,7 @@ import Tirosh from "./pages/Tirosh";
 import Claim from "./pages/Claim";
 import Foreigners from "./pages/Foreigners";
 import Tourists from "./pages/Tourists";
+import Annual from "./pages/Annual";
 import InsuranceProposal from "./pages/InsuranceProposal";
 import FAQ from "./pages/FAQ";
 import Services from "./pages/Services";
@@ -53,6 +54,8 @@ const AppContent = () => {
         <Route path="/foreigners" element={<Foreigners />} />
         <Route path="/Tourists" element={<Tourists />} />
         <Route path="/tourists" element={<Tourists />} />
+        <Route path="/Annual" element={<Annual />} />
+        <Route path="/annual" element={<Annual />} />
         <Route path="/Insurance-Proposal" element={<InsuranceProposal />} />
         <Route path="/insurance-proposal" element={<InsuranceProposal />} />
         <Route path="/services" element={<Services />} />
