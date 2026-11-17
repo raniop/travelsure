@@ -1547,7 +1547,7 @@ const Claim = () => {
                     {expenses.map((row, idx) => (
                       <div
                         key={idx}
-                        className={`grid gap-3 rounded-[18px] border-2 p-3 sm:grid-cols-[1.1fr_1fr_1fr_auto_auto] ${
+                        className={`grid gap-3 rounded-[18px] border-2 p-3 sm:grid-cols-2 ${
                           errors.expenses ? "border-rose-300" : "border-[#E3E7EE]"
                         }`}
                       >
@@ -1565,7 +1565,7 @@ const Claim = () => {
                             }
                           }}
                           aria-label={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
-                          placeholder={claimType === "medical" ? "תאריך טיפול *" : "תאריך הוצאה *"}
+                          placeholder={claimType === "medical" ? "תאריך טיפול" : "תאריך הוצאה"}
                           required
                         />
                         <Input
@@ -1613,8 +1613,8 @@ const Claim = () => {
                           }}
                           aria-label={`מטבע להוצאה ${idx + 1}`}
                         />
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="inline-flex items-center gap-2 text-xs text-[#33405F]">
+                        <div className="flex items-center justify-between gap-2 sm:col-span-2">
+                          <label className="inline-flex items-center gap-2 text-sm text-[#33405F]">
                             <input
                               type="checkbox"
                               className="h-4 w-4 accent-[#00A247]"

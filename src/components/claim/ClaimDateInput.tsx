@@ -82,14 +82,14 @@ export function ClaimDateInput({
             commit(text);
           }
         }}
-        className={`${agencyField} h-auto pe-10 text-left md:text-[17px] focus-visible:ring-0 focus-visible:ring-offset-0`}
+        className={`${agencyField} h-auto !pl-11 text-left md:text-[17px] focus-visible:ring-0 focus-visible:ring-offset-0`}
       />
       <button
         type="button"
         tabIndex={-1}
         disabled={disabled}
         aria-label="בחירת תאריך מלוח שנה"
-        className="absolute left-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#000144] hover:bg-[#F3F5F8] disabled:opacity-50"
+        className="absolute left-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[#000144] hover:bg-[#F3F5F8] disabled:opacity-50"
         onClick={() => {
           const el = pickerRef.current;
           if (!el) return;
@@ -100,7 +100,7 @@ export function ClaimDateInput({
           }
         }}
       >
-        <CalendarDays className="h-4 w-4" />
+        <CalendarDays className="h-5 w-5" />
       </button>
       <input
         ref={pickerRef}
