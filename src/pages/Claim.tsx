@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ import { ClaimAmountCurrencyFields } from "@/components/claim/ClaimAmountCurrenc
 import { ClaimCurrencyPicker } from "@/components/claim/ClaimCurrencyPicker";
 import { formatClaimTotal, suggestCurrencyForDestination, sumClaimExpenses } from "@/lib/claimCurrencies";
 import { submitClaimRequest } from "@/lib/submitClaim";
+import { clearClaimDraft, loadClaimDraft, saveClaimDraft } from "@/lib/claimDraft";
 import {
   flattenClaimDocFiles,
   getClaimDocumentRequirements,
@@ -280,6 +281,104 @@ const Claim = () => {
     filesCount: number;
   } | null>(null);
 
+  // Draft: what the customer filled in survives a refresh or a failed send (files included)
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const keepFilesOnTypeChange = useRef(false);
+  type ClaimDraft = {
+    step: Step;
+    claimType: ClaimType | null;
+    baggageSubtype: BaggageSubtype | null;
+    lookupId: string;
+    lookupPolicyNumber: string;
+    crmCustomer: ClaimCrmCustomer | null;
+    crmPolicies: ClaimCrmPolicy[];
+    selectedPolicyUid: string;
+    docFiles: Record<string, File[]>;
+    extraFiles: File[];
+    formData: typeof initialForm;
+    expenses: ExpenseRow[];
+    baggageItems: BaggageRow[];
+    branchQuery: string;
+  };
+  const DRAFT_STEPS: Step[] = ["policy", "details", "files"];
+
+  useEffect(() => {
+    let cancelled = false;
+    loadClaimDraft<ClaimDraft>().then((d) => {
+      if (cancelled) return;
+      if (d && DRAFT_STEPS.includes(d.step) && d.claimType && d.crmCustomer) {
+        keepFilesOnTypeChange.current = true;
+        setClaimType(d.claimType);
+        setBaggageSubtype(d.baggageSubtype);
+        setLookupId(d.lookupId || "");
+        setLookupPolicyNumber(d.lookupPolicyNumber || "");
+        setCrmCustomer(d.crmCustomer);
+        setCrmPolicies(d.crmPolicies || []);
+        setSelectedPolicyUid(d.selectedPolicyUid || "");
+        setDocFiles(d.docFiles || {});
+        setExtraFiles(d.extraFiles || []);
+        setFormData({ ...initialForm, ...d.formData });
+        setExpenses(d.expenses?.length ? d.expenses : [emptyExpense()]);
+        setBaggageItems(d.baggageItems?.length ? d.baggageItems : [emptyBaggage()]);
+        setBranchQuery(d.branchQuery || "");
+        setStep(d.step);
+        setDraftRestored(true);
+      }
+      setDraftReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const saveStep: Step | null = step === "sending" ? "files" : DRAFT_STEPS.includes(step) ? step : null;
+    if (!saveStep || !claimType || !crmCustomer) return;
+    const timer = window.setTimeout(() => {
+      void saveClaimDraft<ClaimDraft>({
+        step: saveStep,
+        claimType,
+        baggageSubtype,
+        lookupId,
+        lookupPolicyNumber,
+        crmCustomer,
+        crmPolicies,
+        selectedPolicyUid,
+        docFiles,
+        extraFiles,
+        formData,
+        expenses,
+        baggageItems,
+        branchQuery,
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftReady, step, claimType, baggageSubtype, lookupId, lookupPolicyNumber, crmCustomer, crmPolicies, selectedPolicyUid, docFiles, extraFiles, formData, expenses, baggageItems, branchQuery]);
+
+  const startOver = () => {
+    void clearClaimDraft();
+    setDraftRestored(false);
+    setFormData(initialForm);
+    setExpenses([emptyExpense()]);
+    setBaggageItems([emptyBaggage()]);
+    setDocFiles({});
+    setExtraFiles([]);
+    setErrors({});
+    setClaimType(null);
+    setBaggageSubtype(null);
+    setCrmCustomer(null);
+    setCrmPolicies([]);
+    setSelectedPolicyUid("");
+    setLookupId("");
+    setLookupPolicyNumber("");
+    setBranchQuery("");
+    setStep("type");
+  };
+
   const activeMeta = useMemo(() => (claimType ? claimTypeMeta[claimType] : null), [claimType]);
   const isBaggageDelay = claimType === "baggage" && baggageSubtype === "delay";
   const expensesDriveTotal = claimType === "medical" || claimType === "trip_cancel";
@@ -373,6 +472,11 @@ const Claim = () => {
   }, [claimType, baggageSubtype]);
 
   useEffect(() => {
+    // A restored draft sets the claim type together with its files; keep those
+    if (keepFilesOnTypeChange.current) {
+      keepFilesOnTypeChange.current = false;
+      return;
+    }
     setDocFiles({});
     setExtraFiles([]);
   }, [claimType, baggageSubtype]);
@@ -806,6 +910,8 @@ const Claim = () => {
       setSelectedPolicyUid("");
       setLookupId("");
       setLookupError("");
+      void clearClaimDraft();
+      setDraftRestored(false);
       setStep("success");
       if (result.warning) {
         toast({
@@ -985,6 +1091,18 @@ const Claim = () => {
         </div>
 
         <div className="claim-rise claim-rise-d2 overflow-hidden rounded-[28px] border-2 border-[#E3E7EE] bg-white">
+          {draftRestored && DRAFT_STEPS.includes(step) ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#E3E7EE] bg-[#E8F7EE] px-6 py-3 sm:px-9">
+              <p className="m-0 text-[15px] font-bold text-[#000144]">המשכנו מהמקום שעצרתם — הפרטים והקבצים נשמרו במכשיר הזה</p>
+              <button
+                type="button"
+                onClick={startOver}
+                className="text-[14px] font-bold text-[#008C3D] underline underline-offset-2"
+              >
+                התחלה מחדש
+              </button>
+            </div>
+          ) : null}
 
           {step === "type" ? (
             <div className="p-6 sm:p-8">
