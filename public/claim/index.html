@@ -697,6 +697,8 @@
       const SUPABASE_URL = "https://zhsfjwpwxjeysvstgsus.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpoc2Zqd3B3eGpleXN2c3Rnc3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2NjUyNjQsImV4cCI6MjA4MjI0MTI2NH0.kU8g5NpJv1bpkvDLuWqg4vXc6xuGbka3pE9bD9sKl3Y";
       const CONTACT_FN_URL = `${SUPABASE_URL}/functions/v1/send-contact-email`;
+      const CLAIM_RELAY_URL = "https://ophir.travelsure.co.il/api-relay/claim.ashx";
+      let useClaimRelay = false;
       const OPHIR_FALLBACKS = [
         "https://ophir.travelsure.co.il/api-claim.ashx",
         "https://ophir.travelsure.co.il/api-claim.php",
@@ -2831,17 +2833,32 @@
             };
           }
 
+          // Some networks (filtered internet, antivirus) block supabase.co; then the same
+          // request goes through our own server, which forwards it to the edge function.
+          async function sendClaimRequest(json) {
+            if (!useClaimRelay) {
+              try {
+                return await fetch(CONTACT_FN_URL, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  },
+                  body: json,
+                });
+              } catch (err) {
+                console.warn("Direct claim send failed, trying the relay:", err);
+                useClaimRelay = true;
+              }
+            }
+            // text/plain keeps it a simple request (no CORS preflight); the relay sends it on as JSON
+            return fetch(CLAIM_RELAY_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: json });
+          }
+
           async function postJson(bodyObj) {
             try {
-              const res = await fetch(CONTACT_FN_URL, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  apikey: SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                },
-                body: JSON.stringify(bodyObj),
-              });
+              const res = await sendClaimRequest(JSON.stringify(bodyObj));
               if (!res.ok) {
                 return {
                   ok: false,
