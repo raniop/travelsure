@@ -157,6 +157,7 @@ const initialForm = {
   policyNumber: "",
   purchasedWhere: "",
   notifiedCreditCard: "" as YesNo,
+  creditCardCompany: "",
   creditCardPolicyNumber: "",
   medicalExtension: "" as YesNo,
   medicalExtensionPolicy: "",
@@ -1390,20 +1391,6 @@ const Claim = () => {
                   <Field label="מספר פוליסה" required error={errors.policyNumber} className="sm:col-span-2">
                     <Input className={claimFieldReadOnly} value={formData.policyNumber} readOnly />
                   </Field>
-                  <YesNoField
-                    label="האם הודעת למוקד חברת האשראי על הנסיעה?"
-                    value={formData.notifiedCreditCard}
-                    onChange={(v) => setField("notifiedCreditCard", v)}
-                  />
-                  {formData.notifiedCreditCard === "yes" ? (
-                    <Field label="מספר פוליסה בחברת האשראי">
-                      <Input
-                        className={claimField}
-                        value={formData.creditCardPolicyNumber}
-                        onChange={(e) => setField("creditCardPolicyNumber", e.target.value)}
-                      />
-                    </Field>
-                  ) : null}
                   {claimType === "medical" ? (
                     <>
                       <YesNoField
@@ -1446,6 +1433,29 @@ const Claim = () => {
                         onChange={(e) => setField("otherAbroadCompany", e.target.value)}
                       />
                     </Field>
+                  ) : null}
+                  <YesNoField
+                    label="האם יש לך ביטוח נסיעות גם דרך כרטיס האשראי?"
+                    value={formData.notifiedCreditCard}
+                    onChange={(v) => setField("notifiedCreditCard", v)}
+                  />
+                  {formData.notifiedCreditCard === "yes" ? (
+                    <>
+                      <Field label="מאיזו חברת אשראי?">
+                        <Input
+                          className={claimField}
+                          value={formData.creditCardCompany}
+                          onChange={(e) => setField("creditCardCompany", e.target.value)}
+                        />
+                      </Field>
+                      <Field label="מספר הפוליסה (אם ידוע)">
+                        <Input
+                          className={claimField}
+                          value={formData.creditCardPolicyNumber}
+                          onChange={(e) => setField("creditCardPolicyNumber", e.target.value)}
+                        />
+                      </Field>
+                    </>
                   ) : null}
                   {claimType === "baggage" ? (
                     <YesNoField
