@@ -6,7 +6,10 @@ const fontkit = ("default" in fontkitModule ? fontkitModule.default : fontkitMod
  * Bundled Heebo Regular — includes Hebrew + Latin digits/punctuation.
  */
 const LOCAL_FONT_URL = new URL("./fonts/Heebo-Regular.ttf", import.meta.url);
-const LOCAL_LOGO_URL = new URL("./assets/ophir-logo.png", import.meta.url);
+import { OPHIR_LOGO_PNG_BASE64 } from "./ophirLogo.ts";
+
+const loadLogoBytes = (): Uint8Array =>
+  Uint8Array.from(atob(OPHIR_LOGO_PNG_BASE64), (c) => c.charCodeAt(0));
 
 const FALLBACK_FONT_URLS = [
   "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/heebo/Heebo%5Bwght%5D.ttf",
@@ -415,7 +418,7 @@ export async function buildClaimPdfBase64(
       // Top-left: Ophir agency logo
       let logoDrawn = false;
       try {
-        const logoBytes = await Deno.readFile(LOCAL_LOGO_URL);
+        const logoBytes = loadLogoBytes();
         if (logoBytes.byteLength > 500) {
           const logo = await pdf.embedPng(logoBytes);
           const maxH = 56;
