@@ -51,6 +51,12 @@ if (patchAssets(touristsIndex)) {
   console.log(`sync-bbq-assets: updated dist/tourists/index.html -> ${jsPath}, ${cssPath}`);
 }
 
+// Claim share page: the same React claim form as the site menu (one form everywhere)
+const claimIndex = join(process.cwd(), "dist", "claim", "index.html");
+if (patchAssets(claimIndex)) {
+  console.log(`sync-bbq-assets: updated dist/claim/index.html -> ${jsPath}, ${cssPath}`);
+}
+
 // Keep public/ in sync with dist/ so IIS/static hosts that serve public/ load the same hashed bundles as dist/
 const distAssets = join(process.cwd(), "dist", "assets");
 const publicDir = join(process.cwd(), "public");
