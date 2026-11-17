@@ -20,6 +20,8 @@ public class ClaimRelayHandler : IHttpHandler
         context.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
         context.Response.AddHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
         context.Response.ContentType = "application/json; charset=utf-8";
+        // Pass the function's own error JSON through instead of IIS's error page
+        context.Response.TrySkipIisCustomErrors = true;
 
         if (context.Request.HttpMethod == "OPTIONS")
         {
