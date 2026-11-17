@@ -13,6 +13,29 @@ const OPHIR_CLAIM_ENDPOINTS = [
 
 const STAFF_NOTIFY = ["rani@ophirins.co.il", "eli@ophirins.co.il"] as const;
 
+// Some networks (filtered internet, antivirus) block supabase.co. Then the same request goes
+// through our own server, which forwards it to send-contact-email (ophir-server/api-relay).
+const CLAIM_RELAY_URL = "https://ophir.travelsure.co.il/api-relay/claim.ashx";
+let useClaimRelay = false;
+
+async function invokeViaRelay(body: Record<string, unknown>): Promise<InvokeResult> {
+  try {
+    // text/plain keeps it a simple request (no CORS preflight); the relay sends it on as JSON
+    const res = await fetch(CLAIM_RELAY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify(body),
+    });
+    const data = (await res.json().catch(() => ({}))) as { error?: string; mode?: string; claimNumber?: string };
+    if (res.ok && !data.error) {
+      return { ok: true, mode: String(data.mode || ""), claimNumber: String(data.claimNumber || "") };
+    }
+    return { ok: false, status: res.status, error: classifyInvokeFailure(res.status, data.error || "") };
+  } catch (err) {
+    return { ok: false, error: classifyInvokeFailure(undefined, err instanceof Error ? err.message : String(err || "")) };
+  }
+}
+
 /** Display fallback only — authoritative number is allocated by the edge function. */
 export const generateClaimNumber = () => {
   const year = new Date().getFullYear();
@@ -151,8 +174,15 @@ export async function submitClaimRequest(
   const message = buildClaimMessage(fullPayload, filesToSend, messagePlaceholder);
 
   const tryInvoke = async (body: Record<string, unknown>): Promise<InvokeResult> => {
+    if (useClaimRelay) return invokeViaRelay(body);
     try {
       const { data, error } = await supabase.functions.invoke("send-contact-email", { body });
+      // No HTTP status = the request never reached Supabase (network blocks supabase.co)
+      if (error && (error as { name?: string }).name === "FunctionsFetchError") {
+        console.warn("Direct claim send failed, trying the relay:", error);
+        useClaimRelay = true;
+        return invokeViaRelay(body);
+      }
       if (!error && data && !(data as { error?: string }).error) {
         return {
           ok: true,
