@@ -2102,16 +2102,20 @@ const Claim = () => {
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div
+                        {/* The circle opens the same file picker as "בחירת קובץ" */}
+                        <label
+                          htmlFor={`doc-file-${doc.id}`}
+                          title={done ? "הוספת קובץ" : "בחירת קובץ"}
                           className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                            isPreparingFiles ? "pointer-events-none" : "cursor-pointer"
+                          } ${
                             done
                               ? "bg-[#00A247] text-[#000144]"
-                              : "border-2 border-[#D5DAE3] bg-transparent text-slate-300"
+                              : "border-2 border-[#D5DAE3] bg-transparent text-slate-300 hover:border-[#00A247] hover:bg-[#E6F6ED]"
                           }`}
-                          aria-hidden
                         >
                           {done ? <Check className="h-4 w-4 stroke-[2.5]" /> : null}
-                        </div>
+                        </label>
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -2163,6 +2167,7 @@ const Claim = () => {
                             <FileUp className="h-3.5 w-3.5" />
                             {isPreparingFiles ? "מכין קובץ..." : done ? "הוספת קובץ" : "בחירת קובץ"}
                             <input
+                              id={`doc-file-${doc.id}`}
                               type="file"
                               multiple
                               className="hidden"
