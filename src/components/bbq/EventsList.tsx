@@ -263,21 +263,26 @@ function EventStat({
   icon,
   label,
   value,
+  sub,
 }: {
   tone: keyof typeof STAT_TONES;
   icon: React.ReactElement;
   label: string;
   value: string;
+  sub?: string;
 }) {
   const t = STAT_TONES[tone];
   return (
-    <div className={`flex items-center gap-2 rounded-2xl py-1.5 pl-3 pr-1.5 ${t.box}`}>
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${t.dot} [&>svg]:h-3.5 [&>svg]:w-3.5`}>
+    <div
+      className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1.5 py-2.5 text-center sm:flex-row sm:gap-2 sm:py-1.5 sm:pl-3 sm:pr-1.5 sm:text-right ${t.box}`}
+    >
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white shadow-sm sm:h-7 sm:w-7 ${t.dot} [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-3.5 sm:[&>svg]:w-3.5`}>
         {icon}
       </span>
-      <div className="flex flex-col leading-tight">
-        <span className="text-[11px] text-muted-foreground">{label}</span>
-        <span dir="auto" className={`max-w-[120px] truncate text-sm font-bold tabular-nums ${t.text}`}>{value}</span>
+      <div className="flex min-w-0 max-w-full flex-col leading-tight">
+        <span dir="auto" className={`truncate text-[15px] font-bold tabular-nums sm:order-2 sm:max-w-[130px] sm:text-sm ${t.text}`}>{value}</span>
+        <span className="truncate text-[11px] text-muted-foreground sm:order-1">{label}</span>
+        {sub && <span dir="auto" className="truncate text-[10px] text-muted-foreground sm:order-3">{sub}</span>}
       </div>
     </div>
   );
@@ -516,33 +521,28 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
         </div>
       </div>
 
-      {/* Colored stats */}
+      {/* Colored stats: a 3-column tile grid on phones, a row of pills from sm up */}
       <div className="px-3 pb-3 sm:px-4 sm:pb-4">
-          <div className="flex flex-wrap gap-2">
-            <EventStat tone="green" icon={<Users />} label="מגיעים" value={String(confirmedCount)} />
-            {hasBothPaymentTypes ? (
-              <>
-                <EventStat tone="teal" icon={<Coins />} label="משלמים על הכל" value={String(fullPayersCount)} />
-                <EventStat tone="teal" icon={<Coins />} label="רק סופר" value={String(groceryOnlyPayersCount)} />
-              </>
-            ) : (
-              <EventStat tone="teal" icon={<Coins />} label="משלמים" value={String(payingCount)} />
-            )}
-            <EventStat tone="blue" icon={<Coins />} label="עלות כוללת" value={`${totalCost.toFixed(2)} ₪`} />
-            {payingCount > 0 && totalCost > 0 && (
-              <EventStat
-                tone="orange"
-                icon={<Coins />}
-                label={hasBothPaymentTypes ? "למשתתף על הכל" : "למשתתף"}
-                value={`${costFull.toFixed(2)} ₪`}
-              />
-            )}
-            {payingCount > 0 && hasBothPaymentTypes && (
-              <EventStat tone="orange" icon={<Coins />} label="למשתתף רק סופר" value={`${costGroceryOnly.toFixed(2)} ₪`} />
-            )}
-            <EventStat tone="purple" icon={<Clock />} label="שעה" value={format(eventDate, "HH:mm", { locale: he })} />
-            {hostMember && <EventStat tone="pink" icon={<MapPin />} label="מיקום" value={hostMember.name} />}
-          </div>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+          <EventStat tone="green" icon={<Users />} label="מגיעים" value={String(confirmedCount)} />
+          <EventStat
+            tone="teal"
+            icon={<Coins />}
+            label="משלמים"
+            value={String(payingCount)}
+            sub={hasBothPaymentTypes ? `${fullPayersCount} הכל · ${groceryOnlyPayersCount} סופר` : undefined}
+          />
+          <EventStat tone="blue" icon={<Coins />} label="עלות כוללת" value={`${totalCost.toFixed(0)} ₪`} />
+          <EventStat
+            tone="orange"
+            icon={<Coins />}
+            label="למשתתף"
+            value={payingCount > 0 && totalCost > 0 ? `${costFull.toFixed(2)} ₪` : "—"}
+            sub={payingCount > 0 && hasBothPaymentTypes ? `סופר ${costGroceryOnly.toFixed(2)} ₪` : undefined}
+          />
+          <EventStat tone="purple" icon={<Clock />} label="שעה" value={format(eventDate, "HH:mm", { locale: he })} />
+          <EventStat tone="pink" icon={<MapPin />} label="מיקום" value={hostMember ? hostMember.name : "—"} />
+        </div>
       </div>
 
       {/* Actions */}
