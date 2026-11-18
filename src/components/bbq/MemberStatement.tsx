@@ -45,15 +45,15 @@ function describeLedgerEntry(entry: LedgerEntry, events: Map<string, EventInfo>)
     case "opening":
       return { title: "יתרת פתיחה", detail: "היתרה שהייתה לפני שהתחיל הרישום המפורט" };
     case "deposit":
-      return { title: "הפקדה", detail: entry.note || "" };
+      return { title: "הפקדה", detail: (entry.note || entry.note_added) || "" };
     case "transfer":
-      return { title: "העברה שאושרה", detail: entry.note || "" };
+      return { title: "העברה שאושרה", detail: (entry.note || entry.note_added) || "" };
     case "charge":
       return { title: "חיוב על אירוע", detail: ev };
     case "refund":
-      return { title: "החזר חיוב", detail: [ev, entry.note].filter(Boolean).join(" · ") };
+      return { title: "החזר חיוב", detail: [ev, (entry.note || entry.note_added)].filter(Boolean).join(" · ") };
     default:
-      return { title: "תיקון ידני", detail: entry.note || "" };
+      return { title: "תיקון ידני", detail: (entry.note || entry.note_added) || "" };
   }
 }
 

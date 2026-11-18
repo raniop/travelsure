@@ -87,17 +87,17 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
     const amt = Number(e.amount) || 0;
     if (e.type === "deposit" || e.type === "transfer") {
       // With a PayBox file, app deposits are already in it, unless they came after its last row
-      const netted = isNettedDeposit(e.note);
+      const netted = isNettedDeposit(e.note || e.note_added);
       if (pb && !netted && e.created_at.slice(0, 19) <= new Date(pbLast).toISOString().slice(0, 19)) continue;
       items.push({
         at: e.created_at,
         amount: amt,
         title: netted ? "הפקדה בקיזוז" : e.type === "transfer" ? "העברה שאושרה" : "הפקדה",
-        detail: e.note || undefined,
+        detail: e.note || e.note_added || undefined,
         kind: "in",
       });
     } else if (e.type === "adjustment") {
-      items.push({ at: e.created_at, amount: amt, title: "תיקון ידני", detail: e.note || undefined, kind: "fix" });
+      items.push({ at: e.created_at, amount: amt, title: "תיקון ידני", detail: e.note || e.note_added || undefined, kind: "fix" });
     }
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -341,7 +341,7 @@ const BBQMemberPage = () => {
             if (pb) {
               const pbLastIso = new Date(pb.meta.last_date.replace(" ", "T")).toISOString().slice(0, 19);
               const afterFile = data.ledger
-                .filter((e) => (e.type === "deposit" || e.type === "transfer") && (e.created_at.slice(0, 19) > pbLastIso || isNettedDeposit(e.note)))
+                .filter((e) => (e.type === "deposit" || e.type === "transfer") && (e.created_at.slice(0, 19) > pbLastIso || isNettedDeposit(e.note || e.note_added)))
                 .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
               const fixes = data.ledger.filter((e) => e.type === "adjustment").reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
               const deposited = Number(pb.total) + afterFile;
@@ -401,7 +401,7 @@ const BBQMemberPage = () => {
               const list = [...pb.deposits].sort((a, b) => b.date.localeCompare(a.date));
               const pbSince = pb.deposits.filter((d) => d.date > PAYBOX_BASELINE_LOCAL).reduce((s, d) => s + (Number(d.amount) || 0), 0);
               const appSince = data.ledger
-                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC && !isNettedDeposit(e.note))
+                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC && !isNettedDeposit(e.note || e.note_added))
                 .reduce((s, e) => s + (Number(e.amount) || 0), 0);
               const sinceOk = Math.abs(pbSince - appSince) < 0.01;
               return (

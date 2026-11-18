@@ -424,7 +424,7 @@ public class BBQHandler : IHttpHandler
             return true;
         }
 
-        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox" && action != "paybox_notes")
+        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox" && action != "paybox_notes" && action != "ledger_note")
         {
             WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid entity" } });
             return true;
@@ -460,6 +460,11 @@ public class BBQHandler : IHttpHandler
         if (action == "paybox_notes")
         {
             HandlePayboxNotes(context, sessionUserId, dataFolder);
+            return true;
+        }
+        if (action == "ledger_note")
+        {
+            HandleLedgerNote(context, sessionUserId, dataFolder);
             return true;
         }
         if (entity == "transfers")
@@ -638,6 +643,36 @@ public class BBQHandler : IHttpHandler
         }
 
         HandlePutWithBody(context, "members", dataFolder, Json().Serialize(body));
+    }
+
+    /**
+     * POST action=ledger_note&id={entryId} {note}: the group owner adds a note to an existing ledger
+     * line. Amount, balances, date and the original note stay untouched; the note is kept separately
+     * with when and by whom it was added.
+     */
+    private void HandleLedgerNote(HttpContext context, string sessionUserId, string dataFolder)
+    {
+        string id = context.Request.QueryString["id"] ?? "";
+        Dictionary<string, object> entry = LoadEntity("ledger", id, dataFolder);
+        if (context.Request.HttpMethod != "POST" || entry == null || !IsGroupOwner(Str(entry, "group_id"), sessionUserId, dataFolder))
+        {
+            WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+            return;
+        }
+        Dictionary<string, object> body = ParseObject(ReadBody(context)) ?? new Dictionary<string, object>();
+        string note = Str(body, "note").Trim();
+        if (note.Length > 300) note = note.Substring(0, 300);
+        if (note == "")
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "missing_note" } });
+            return;
+        }
+        Dictionary<string, object> actor = LoadEntity("users", sessionUserId, dataFolder);
+        entry["note_added"] = note;
+        entry["note_added_at"] = DateTime.UtcNow.ToString("o");
+        entry["note_added_by_name"] = Str(actor, "name");
+        SaveEntityJson("ledger", id, Json().Serialize(entry), dataFolder);
+        WriteJson(context, 200, entry);
     }
 
     private void HandleLedger(HttpContext context, string sessionUserId, string dataFolder)
@@ -1056,7 +1091,7 @@ public class BBQHandler : IHttpHandler
         mine.Sort((a, b) => string.CompareOrdinal(Str(a, "created_at"), Str(b, "created_at")));
         List<object> ledger = new List<object>();
         foreach (Dictionary<string, object> l in mine)
-            ledger.Add(Pick(l, "id", "type", "amount", "balance_before", "balance_after", "note", "event_id", "created_by_name", "created_at"));
+            ledger.Add(Pick(l, "id", "type", "amount", "balance_before", "balance_after", "note", "note_added", "event_id", "created_by_name", "created_at"));
 
         List<Dictionary<string, object>> myTransfers = new List<Dictionary<string, object>>();
         foreach (Dictionary<string, object> t in LoadAll("transfers", dataFolder))

@@ -53,6 +53,8 @@ export interface LedgerEntry {
   balance_before: number;
   balance_after: number;
   note?: string;
+  /** Added later by the group owner; the original line is unchanged */
+  note_added?: string;
   event_id?: string;
   created_by?: string;
   created_by_name?: string;

@@ -98,7 +98,7 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
     }
     const sinceApp: Record<string, number> = {};
     for (const e of ledger) {
-      if ((e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC && !isNettedDeposit(e.note)) {
+      if ((e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC && !isNettedDeposit(e.note || e.note_added)) {
         sinceApp[e.member_id] = (sinceApp[e.member_id] || 0) + (Number(e.amount) || 0);
       }
     }
