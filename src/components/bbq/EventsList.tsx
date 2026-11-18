@@ -461,202 +461,103 @@ const EventCard = ({ event, groupId, userId, isAdmin, onPaymentsCalculated, onEv
   const totalCost = (event.butcher_cost || 0) + (event.grocery_cost || 0) || (event.total_cost || 0);
 
   return (
-    <Card className={`w-full relative overflow-hidden border shadow-md hover:shadow-lg transition-all duration-200 ${isFuture ? 'bg-white dark:bg-gray-900 border-primary/30 ' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'}`} dir="rtl">
-      {/* Top accent bar */}
-      <div className={`absolute top-0 right-0 w-full h-1 ${isFuture ? 'bg-primary' : 'bg-gray-400'}`}></div>
-      
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4" dir="rtl" style={{ direction: "rtl" }}>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`p-1.5 rounded ${isFuture ? 'bg-accent ' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                <Calendar className={`w-4 h-4 ${isFuture ? 'text-primary' : 'text-gray-600'}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-lg md:text-xl font-bold truncate">
-                  {format(eventDate, "EEEE, d בMMMM yyyy", { locale: he })}
-                </CardTitle>
-              </div>
-            </div>
-            
-            {event.description && (
-              <CardDescription className="mt-2 text-sm text-right line-clamp-2">
-                {event.description}
-              </CardDescription>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0 pb-4">
-        {/* Bottom row: Stats and Actions */}
+    <Card className={`w-full overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md ${isFuture ? "border-primary/40" : ""}`} dir="rtl">
+      <div className="flex items-stretch gap-3 p-3 sm:gap-4 sm:p-4">
+        {/* Date block */}
         <div
-          dir="rtl"
-          className="w-full flex flex-col gap-3 items-end sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+          className={`flex w-16 shrink-0 flex-col items-center justify-center rounded-xl py-2 text-center sm:w-20 ${
+            isFuture ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+          }`}
         >
-          {/* Stats (משמאל בדסקטופ) */}
-          <div className="flex flex-wrap justify-start gap-2 w-full sm:w-auto sm:order-2" dir="rtl" style={{ direction: "rtl" }}>
-            {/* Attendance toggle */}
-            {isFuture && !isAdmin && userMember && (
-              <Toggle
-                pressed={isAttending === true}
-                onPressedChange={(pressed) => handleToggleAttendance(pressed)}
-                disabled={loadingAttendance || isAttending === null}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs h-auto ${
- isAttending
- ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-950/50"
- : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-950/50"
- }`}
-                aria-label={isAttending ? "מגיע" : "לא מגיע"}
-              >
-                {isAttending ? (
-                  <>
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span className="font-medium">מגיע</span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-3 h-3" />
-                    <span className="font-medium">לא מגיע</span>
-                  </>
-                )}
-              </Toggle>
-            )}
+          <span className="text-[11px] leading-none opacity-80">{format(eventDate, "EEEE", { locale: he })}</span>
+          <span className="bbq-display text-3xl font-extrabold leading-tight">{format(eventDate, "d")}</span>
+          <span className="text-xs leading-none opacity-80">{format(eventDate, "MMM yy", { locale: he })}</span>
+        </div>
 
-            {/* Confirmed */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-green-100/80 dark:bg-green-950/30 border-green-200 dark:border-green-800/50" : "bg-green-50 dark:bg-green-950/20 border-green-100 dark:border-green-900/40"}`}>
-              <Users className={`w-3.5 h-3.5 ${isFuture ? "text-green-600" : "text-green-600/80"}`} />
-              <div className="flex flex-col items-end">
-                <span className={`text-[10px] leading-tight ${isFuture ? "text-green-600/90" : "text-green-700/70"}`}>מאשרים</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-green-800 dark:text-green-300" : "text-green-700 dark:text-green-400"}`}>
-                  {confirmedCount}
-                </span>
-              </div>
-            </div>
-
-            {/* Paying – 2 blocks when both payment types */}
-            {hasBothPaymentTypes ? (
-              <>
-                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-primary/80 border-primary/30 " : "bg-accent border-primary/30 "}`}>
-                  <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-primary" : "text-primary"}`} />
-                  <div className="flex flex-col items-end">
-                    <span className={`text-[10px] leading-tight ${isFuture ? "text-primary" : "text-primary"}`}>משלמים על הכל</span>
-                    <span className={`text-xs font-bold ${isFuture ? "text-primary " : "text-primary "}`}>{fullPayersCount}</span>
-                  </div>
-                </div>
-                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-primary/80 border-primary/30 " : "bg-accent border-primary/30 "}`}>
-                  <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-primary" : "text-primary"}`} />
-                  <div className="flex flex-col items-end">
-                    <span className={`text-[10px] leading-tight ${isFuture ? "text-primary" : "text-primary"}`}>משלמים רק סופר</span>
-                    <span className={`text-xs font-bold ${isFuture ? "text-primary " : "text-primary "}`}>{groceryOnlyPayersCount}</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-primary/80 border-primary/30 " : "bg-accent border-primary/30 "}`}>
-                <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-primary" : "text-primary"}`} />
-                <div className="flex flex-col items-end">
-                  <span className={`text-[10px] leading-tight ${isFuture ? "text-primary" : "text-primary"}`}>משלמים</span>
-                  <span className={`text-xs font-bold ${isFuture ? "text-primary " : "text-primary "}`}>{payingCount}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Total Cost */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-primary/80 border-primary/30 " : "bg-accent border-primary/30 "}`}>
-              <Coins className={`w-3.5 h-3.5 ${isFuture ? "text-primary" : "text-primary"}`} />
-              <div className="flex flex-col items-end">
-                <span className={`text-[10px] leading-tight ${isFuture ? "text-primary" : "text-primary"}`}>עלות סה"כ</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-primary " : "text-primary "}`}>
-                  {totalCost.toFixed(2)} ₪
-                </span>
-              </div>
-            </div>
-
-            {/* Cost Per Person – 2 blocks when both payment types */}
-            {payingCount > 0 && (hasBothPaymentTypes ? (
-              <>
-                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
-                  <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
-                  <div className="flex flex-col items-end">
-                    <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף על הכל</span>
-                    <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>{costFull.toFixed(2)} ₪</span>
-                  </div>
-                </div>
-                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
-                  <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
-                  <div className="flex flex-col items-end">
-                    <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף רק סופר</span>
-                    <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>{costGroceryOnly.toFixed(2)} ₪</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-amber-100/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50" : "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/40"}`}>
-                <Coins className={`w-3.5 h-3.5 shrink-0 ${isFuture ? "text-amber-600" : "text-amber-600/80"}`} />
-                <div className="flex flex-col items-end">
-                  <span className={`text-[10px] leading-tight ${isFuture ? "text-amber-600/90" : "text-amber-700/70"}`}>עלות למשתתף</span>
-                  <span className={`text-xs font-bold ${isFuture ? "text-amber-800 dark:text-amber-300" : "text-amber-700 dark:text-amber-400"}`}>{costFull.toFixed(2)} ₪</span>
-                </div>
-              </div>
-            ))}
-
-            {/* Time */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-primary/80 border-primary/30 " : "bg-accent border-primary/30 "}`}>
-              <Clock className={`w-3.5 h-3.5 ${isFuture ? "text-primary" : "text-primary"}`} />
-              <div className="flex flex-col items-end">
-                <span className={`text-[10px] leading-tight ${isFuture ? "text-primary" : "text-primary"}`}>שעה</span>
-                <span className={`text-xs font-bold ${isFuture ? "text-primary " : "text-primary "}`}>
-                  {format(eventDate, "HH:mm", { locale: he })}
-                </span>
-              </div>
-            </div>
-
-            {/* Location */}
+        {/* What, when, who */}
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-base font-bold sm:text-lg">{event.description?.trim() || "מפגש"}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              {format(eventDate, "HH:mm", { locale: he })}
+            </span>
             {hostMember && (
-              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border ${isFuture ? "bg-primary/80 border-primary/30 " : "bg-accent border-primary/30 "}`}>
-                <MapPin className={`w-3.5 h-3.5 ${isFuture ? "text-primary" : "text-primary"}`} />
-                <div className="flex flex-col items-end">
-                  <span className={`text-[10px] leading-tight ${isFuture ? "text-primary" : "text-primary"}`}>מיקום</span>
-                  <span className={`text-xs font-bold truncate max-w-[100px] ${isFuture ? "text-primary " : "text-primary "}`}>
-                    {hostMember.name}
-                  </span>
-                </div>
-              </div>
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">אצל {hostMember.name}</span>
+              </span>
             )}
-
-            {isAdmin && isPast && totalCost > 0 && (
-              <EventPayboxMarkControl
-                event={event}
-                compact
-                onUpdated={() => onEventDetailsClose?.()}
-              />
-            )}
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {confirmedCount} מגיעים
+              {payingCount !== confirmedCount ? ` · ${payingCount} משלמים` : ""}
+            </span>
           </div>
-
-          {/* Button (מימין בדסקטופ) */}
-          <div className="self-end sm:self-auto sm:order-1">
-            <EventDetailsDialog
-              eventId={event.id}
-              groupId={groupId}
-              userId={userId}
-              isAdmin={isAdmin}
-              onPaymentsCalculated={onPaymentsCalculated}
-              onClose={onEventDetailsClose}
-            >
-              <Button
-                variant="default"
-                size="sm"
-                className={`min-w-[80px] h-7 text-xs px-3 ${isFuture ? "bg-primary hover:bg-primary text-white" : ""}`}
-                type="button"
-              >
-                <ChevronLeft className="w-3 h-3 ml-1" />
-                פרטים
-              </Button>
-            </EventDetailsDialog>
+          <div className="mt-1 text-sm text-muted-foreground">
+            עלות כוללת <span dir="ltr" className="font-semibold text-foreground tabular-nums">{totalCost.toFixed(2)} ₪</span>
+            {hasBothPaymentTypes && (
+              <span>
+                {" "}
+                · {fullPayersCount} על הכל, {groceryOnlyPayersCount} רק סופר
+              </span>
+            )}
           </div>
         </div>
-      </CardContent>
+
+        {/* Per person */}
+        {payingCount > 0 && totalCost > 0 && (
+          <div className="flex shrink-0 flex-col items-end justify-center text-left">
+            <span dir="ltr" className="bbq-display text-xl font-extrabold tabular-nums sm:text-2xl">
+              {costFull.toFixed(2)} ₪
+            </span>
+            <span className="text-xs text-muted-foreground">למשתתף</span>
+            {hasBothPaymentTypes && (
+              <span className="text-xs text-muted-foreground">
+                רק סופר <span dir="ltr" className="tabular-nums">{costGroceryOnly.toFixed(2)} ₪</span>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-3 py-2 sm:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {isFuture && !isAdmin && userMember && (
+            <Toggle
+              pressed={isAttending === true}
+              onPressedChange={(pressed) => handleToggleAttendance(pressed)}
+              disabled={loadingAttendance || isAttending === null}
+              className={`h-8 gap-1 rounded-full px-3 text-xs ${
+                isAttending
+                  ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 data-[state=on]:bg-emerald-100"
+                  : "bg-card text-muted-foreground ring-1 ring-border hover:bg-muted"
+              }`}
+              aria-label={isAttending ? "מגיע" : "לא מגיע"}
+            >
+              {isAttending ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+              <span className="font-medium">{isAttending ? "אני מגיע/ה" : "לא מגיע/ה"}</span>
+            </Toggle>
+          )}
+          {isAdmin && isPast && totalCost > 0 && (
+            <EventPayboxMarkControl event={event} compact onUpdated={() => onEventDetailsClose?.()} />
+          )}
+        </div>
+        <EventDetailsDialog
+          eventId={event.id}
+          groupId={groupId}
+          userId={userId}
+          isAdmin={isAdmin}
+          onPaymentsCalculated={onPaymentsCalculated}
+          onClose={onEventDetailsClose}
+        >
+          <Button variant={isFuture ? "default" : "outline"} size="sm" className="h-8 rounded-full px-4" type="button">
+            פרטים
+            <ChevronLeft className="mr-1 h-4 w-4" />
+          </Button>
+        </EventDetailsDialog>
+      </div>
     </Card>
   );
 };

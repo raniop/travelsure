@@ -320,12 +320,12 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
           </div>
           {/* Balance - fixed min height so cards align */}
           <div
-            className={`shrink-0 w-[120px] min-h-[56px] flex flex-col items-end justify-center gap-0.5 px-3 py-2 rounded-xl ${
- isNegative ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400" : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
- }`}
+            className={`shrink-0 min-w-[104px] flex flex-col items-end justify-center gap-0.5 px-3 py-2 rounded-xl ${
+              isNegative ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"
+            }`}
           >
-            <span className="text-sm font-bold tabular-nums" dir="ltr">
-              {isNegative ? "-" : ""}{Math.abs(balance).toFixed(2)} ₪
+            <span className="text-base font-extrabold tabular-nums" dir="ltr">
+              {isNegative ? "−" : ""}{Math.abs(balance).toFixed(2)} ₪
             </span>
             <span className="text-xs">
               {isNegative ? "יתרה במינוס" : "יתרה"}
@@ -333,24 +333,8 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
           </div>
         </div>
 
-        {/* Actions - one row, consistent spacing */}
-        <div className="flex flex-wrap items-center gap-2 justify-start border-t border-border/50 pt-3" dir="rtl" style={{ direction: "rtl" }}>
-          {editingNickname !== member.id && (
-            <MemberStatementDialog groupId={groupId} member={member}>
-              <Button variant="secondary" size="sm">
-                <ReceiptText className="w-4 h-4 ml-1.5" />
-                דף חשבון
-              </Button>
-            </MemberStatementDialog>
-          )}
-          {isAdmin && editingNickname !== member.id && (
-            <MemberLinkDialog member={member} groupName={groupName}>
-              <Button variant="outline" size="sm">
-                <Link2 className="w-4 h-4 ml-1.5" />
-                קישור אישי
-              </Button>
-            </MemberLinkDialog>
-          )}
+        {/* Actions: the statement for everyone; the rest small and quiet */}
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-3" dir="rtl" style={{ direction: "rtl" }}>
           {editingNickname === member.id ? (
             <EditNicknameDialog
               member={member}
@@ -362,64 +346,32 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
               }}
               onCancel={() => setEditingNickname(null)}
             />
-          ) : isCurrentUser ? (
+          ) : (
             <>
-              <Button variant="outline" size="sm" onClick={() => setEditingNickname(member.id)}>
-                {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
-              </Button>
-              {isAdmin && (
-                <UpdateBalanceDialog
-                  member={member}
-                  groupId={groupId}
-                  groupName={groupName}
-                  onBalanceUpdated={loadMembers}
-                >
-                  <Button variant="outline" size="sm">עדכן יתרה</Button>
-                </UpdateBalanceDialog>
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={async () => {
-                  if (!confirm("האם אתה בטוח שברצונך לצאת מהקבוצה?")) return;
-                  try {
-                    await apiClient.deleteMember(member.id);
-                    toast({ title: "הצלחה!", description: "יצאת מהקבוצה בהצלחה." });
-                    onLeaveGroup?.();
-                  } catch (e: any) {
-                    toast({ title: "שגיאה", description: e.message || "לא הצלחנו לצאת מהקבוצה.", variant: "destructive" });
-                  }
-                }}
-              >
-                <LogOut className="w-4 h-4 ml-1.5" />
-                צא מהקבוצה
-              </Button>
-            </>
-          ) : isAdmin ? (
-            <>
-              {showRequestDeposit && (
+              <MemberStatementDialog groupId={groupId} member={member}>
+                <Button variant="secondary" size="sm" className="h-8 rounded-full px-3">
+                  <ReceiptText className="w-4 h-4 ml-1.5" />
+                  דף חשבון
+                </Button>
+              </MemberStatementDialog>
+              {showRequestDeposit && !isCurrentUser && (
                 <Button
-                  variant="default"
                   size="sm"
+                  className="h-8 rounded-full px-3"
                   onClick={() => {
                     const currentBalance = member.balance || 0;
                     const amountToTransfer = depositAmountToReachPeriodBalance(currentBalance);
-                    const message = buildDepositRequestWhatsAppMessage(
-                      member.name,
-                      currentBalance,
-                      groupName,
-                      groupId,
-                    );
+                    const message = buildDepositRequestWhatsAppMessage(member.name, currentBalance, groupName, groupId);
                     let phoneNumber = (member.phone || "").replace(/[^0-9]/g, "");
                     if (phoneNumber.startsWith("0")) phoneNumber = "972" + phoneNumber.slice(1);
                     else if (!phoneNumber.startsWith("972")) phoneNumber = "972" + phoneNumber;
                     window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, "_blank");
                     toast({
-                      title: "נשלחה הודעת WhatsApp",
+                      title: "נפתח WhatsApp",
                       description:
                         amountToTransfer > 0
                           ? `בקשה להפקדת ${amountToTransfer.toFixed(2)} ₪ (עד יתרה ${DEPOSIT_PER_MEMBER} ₪) ל-${member.name}`
-                          : `נשלחה הודעה ל-${member.name} — אין הפקדה נדרשת`,
+                          : `הודעה ל-${member.name} — אין הפקדה נדרשת`,
                     });
                   }}
                 >
@@ -427,20 +379,60 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                   בקש הפקדה
                 </Button>
               )}
-              <UpdateBalanceDialog
-                member={member}
-                groupId={groupId}
-                groupName={groupName}
-                onBalanceUpdated={loadMembers}
-              >
-                <Button variant="outline" size="sm">עדכן יתרה</Button>
-              </UpdateBalanceDialog>
-              <Button variant="destructive" size="sm" onClick={() => deleteMember(member.id)}>
-                <Trash2 className="w-4 h-4 ml-1.5" />
-                מחק
-              </Button>
+              {isAdmin && (
+                <MemberLinkDialog member={member} groupName={groupName}>
+                  <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-muted-foreground hover:text-foreground">
+                    <Link2 className="w-4 h-4 ml-1.5" />
+                    קישור
+                  </Button>
+                </MemberLinkDialog>
+              )}
+              {isAdmin && (
+                <UpdateBalanceDialog member={member} groupId={groupId} groupName={groupName} onBalanceUpdated={loadMembers}>
+                  <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-muted-foreground hover:text-foreground">
+                    <Wallet className="w-4 h-4 ml-1.5" />
+                    יתרה
+                  </Button>
+                </UpdateBalanceDialog>
+              )}
+              {isCurrentUser && (
+                <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-muted-foreground hover:text-foreground" onClick={() => setEditingNickname(member.id)}>
+                  {member.nickname ? "כינוי" : "הוסף כינוי"}
+                </Button>
+              )}
+              <div className="flex-1" />
+              {isCurrentUser ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full px-2 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                  title="יציאה מהקבוצה"
+                  onClick={async () => {
+                    if (!confirm("האם אתה בטוח שברצונך לצאת מהקבוצה?")) return;
+                    try {
+                      await apiClient.deleteMember(member.id);
+                      toast({ title: "הצלחה!", description: "יצאת מהקבוצה בהצלחה." });
+                      onLeaveGroup?.();
+                    } catch (e: any) {
+                      toast({ title: "שגיאה", description: e.message || "לא הצלחנו לצאת מהקבוצה.", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              ) : isAdmin ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full px-2 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                  title="מחיקת החבר"
+                  onClick={() => deleteMember(member.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              ) : null}
             </>
-          ) : null}
+          )}
         </div>
       </div>
     );

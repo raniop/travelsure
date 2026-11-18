@@ -191,7 +191,7 @@ const GroupsDashboard = ({ userId, userPhone, userName, userProfileImage, onSele
   return (
     <div className="min-h-screen bg-background pb-8" dir="rtl" style={{ direction: "rtl" }}>
       {/* Header */}
-      <header className="mb-6 bg-secondary px-4 pb-16 pt-7 text-secondary-foreground md:px-8">
+      <header className="mb-6 bg-secondary px-4 pb-7 pt-7 text-secondary-foreground md:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             {userProfileImage ? (
@@ -212,8 +212,8 @@ const GroupsDashboard = ({ userId, userPhone, userName, userProfileImage, onSele
           </Button>
         </div>
       </header>
-      <div className="mx-auto -mt-14 mb-8 max-w-7xl px-4 md:px-8">
-        <Button onClick={handleCreateGroup} className="h-12 w-full text-base shadow-lg md:w-auto">
+      <div className="mx-auto mb-8 max-w-7xl px-4 md:px-8">
+        <Button onClick={handleCreateGroup} className="h-12 w-full text-base md:w-auto">
           <Plus className="ml-2 h-4 w-4" />
           צור קבוצה חדשה
         </Button>
