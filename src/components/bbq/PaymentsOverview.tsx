@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/integrations/api/client";
 import { GroupLedgerCard, MemberStatementDialog } from "@/components/bbq/MemberStatement";
+import { ReportTransferDialog, TransfersCard } from "@/components/bbq/Transfers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Wallet, TrendingDown, TrendingUp, Coins, Calendar, UserPlus, MessageCircle, Clock, Phone } from "lucide-react";
+import { CheckCircle2, Wallet, TrendingDown, TrendingUp, Coins, Calendar, UserPlus, MessageCircle, Clock, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,7 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
     pending: 0
   });
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [moneyRefresh, setMoneyRefresh] = useState(0);
   const [groupMembers, setGroupMembers] = useState<{ id: string; name: string; phone?: string; balance?: number }[]>([]);
   const [totalDeposited, setTotalDeposited] = useState<number>(0);
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
@@ -632,110 +634,12 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 w-full mb-4" dir="rtl" style={{ direction: "rtl" }}>
-        <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent text-right">
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground text-right">
           תשלומים
         </h2>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Deposited */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <CardTitle className="text-lg font-bold text-right">סה״כ שהופקד</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600 mb-1 text-right">
-              <span dir="ltr" className="tabular-nums">
-                {isAdmin ? totalDeposited.toFixed(2) : (currentBalance !== null && currentBalance > 0 ? currentBalance.toFixed(2) : "0.00")}
-              </span> שקל
-            </div>
-            <p className="text-sm text-muted-foreground text-right">
-              {isAdmin ? "סך הכל שהופקד על ידי כל החברים" : "סך הכל שהופקד על ידך"}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Current Balance */}
-        <Card className={`relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 ${currentBalance !== null && currentBalance < 0 ? 'bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10' : 'bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10'}`}>
-          <div className={`absolute top-0 right-0 w-full h-1 ${currentBalance !== null && currentBalance < 0 ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-green-500 to-green-600'}`}></div>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className={`p-2 rounded-lg ${currentBalance !== null && currentBalance < 0 ? 'bg-red-500/10' : 'bg-green-500/10'}`}>
-                <Wallet className={`w-5 h-5 ${currentBalance !== null && currentBalance < 0 ? 'text-red-600' : 'text-green-600'}`} />
-              </div>
-              <CardTitle className="text-lg font-bold text-right">יתרה נוכחית</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold mb-1 text-right ${currentBalance !== null && currentBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {currentBalance !== null ? (
-                <span dir="ltr" className="tabular-nums">
-                  {currentBalance.toFixed(2)}
-                </span>
-              ) : (
-                "טוען..."
-              )}
-              {" "}שקל
-            </div>
-            <p className="text-sm text-muted-foreground text-right">
-              {isAdmin ? "סה\"כ יתרה" : "היתרה שלך"}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Total Payments */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Coins className="w-5 h-5 text-purple-600" />
-              </div>
-              <CardTitle className="text-lg font-bold text-right">סה״כ תשלומים</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600 mb-1 text-right">
-              <span dir="ltr" className="tabular-nums">{summary.total.toFixed(2)}</span> שקל
-            </div>
-            <p className="text-sm text-muted-foreground text-right">
-              סך הכל תשלומים שנוצרו
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Guest Payments */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <UserPlus className="w-5 h-5 text-orange-600" />
-              </div>
-              <CardTitle className="text-lg font-bold text-right">תשלומי אורחים</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600 mb-1 text-right">
-              <span dir="ltr" className="tabular-nums">{totalGuestPayments.toFixed(2)}</span> שקל
-            </div>
-            <p className="text-sm text-muted-foreground text-right">
-              {isAdmin && summary.pending > 0
-                ? `ממתין לגבייה: ${summary.pending.toFixed(2)} ₪`
-                : "סך הכל תשלומים של אורחים"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* דף החשבון שלי — every deposit and charge behind my balance */}
+      {/* Summary: real numbers only (balances come from the server; every change is in the ledger) */}
       {(() => {
         let myPhone = "";
         try {
@@ -744,20 +648,90 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
           myPhone = "";
         }
         const me = groupMembers.find((m) => m.phone === myPhone);
-        if (!me) return null;
+        const total = groupMembers.reduce((sum, m) => sum + (Number(m.balance) || 0), 0);
+        const shown = isAdmin ? total : Number(me?.balance) || 0;
+        const fmt = (n: number) => `${n < 0 ? "−" : ""}${Math.abs(n).toFixed(2)} ₪`;
         return (
-          <MemberStatementDialog groupId={groupId} member={me}>
-            <Button variant="outline" className="w-full border-2 h-12 text-base">
-              <Wallet className="w-5 h-5 ml-2" />
-              דף החשבון שלי — איך הגעתי ליתרה
-            </Button>
-          </MemberStatementDialog>
+          <section className="rounded-3xl border bg-card p-5 shadow-sm">
+            <div className="text-sm text-muted-foreground">
+              {isAdmin ? "בקופה עכשיו — סך היתרות של כל החברים" : "היתרה שלי בקופה"}
+            </div>
+            <div dir="ltr" className={`bbq-display text-right text-4xl font-extrabold tabular-nums md:text-5xl ${shown < 0 ? "text-red-600" : "text-foreground"}`}>
+              {fmt(shown)}
+            </div>
+            {isAdmin && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                השוו לסכום בקבוצת ה-PayBox. אם יש פער — ביומן הקופה למטה רואים כל הפקדה וכל חיוב.
+              </p>
+            )}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="rounded-2xl bg-muted p-3">
+                <div className="text-xs text-muted-foreground">{isAdmin ? "חיובים על אירועים" : "החיובים שלי על אירועים"}</div>
+                <div dir="ltr" className="text-right text-xl font-bold tabular-nums">{fmt(summary.total)}</div>
+              </div>
+              <div className="rounded-2xl bg-muted p-3">
+                <div className="text-xs text-muted-foreground">תשלומי אורחים</div>
+                <div dir="ltr" className="text-right text-xl font-bold tabular-nums">{fmt(totalGuestPayments)}</div>
+                {isAdmin && summary.pending > 0 && (
+                  <div className="text-xs text-amber-700">ממתין לגבייה: {summary.pending.toFixed(2)} ₪</div>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* My money: statement + "העברתי"; admin: transfers waiting for approval */}
+      {(() => {
+        let myPhone = "";
+        try {
+          myPhone = JSON.parse(localStorage.getItem('bbq_current_user') || '{}').phone || "";
+        } catch {
+          myPhone = "";
+        }
+        const me = groupMembers.find((m) => m.phone === myPhone);
+        const memberNames = Object.fromEntries(groupMembers.map((m) => [m.id, m.name]));
+        const myBalance = Number(me?.balance) || 0;
+        return (
+          <div className="space-y-3">
+            {me && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <ReportTransferDialog
+                  suggestedAmount={myBalance < 500 ? 500 - myBalance : undefined}
+                  onSubmit={(data) => apiClient.createTransfer({ group_id: groupId, ...data })}
+                  onDone={() => setMoneyRefresh((n) => n + 1)}
+                >
+                  <Button className="w-full h-12 text-base">
+                    <Send className="w-5 h-5 ml-2" />
+                    העברתי כסף לקופה
+                  </Button>
+                </ReportTransferDialog>
+                <MemberStatementDialog groupId={groupId} member={me}>
+                  <Button variant="outline" className="w-full border-2 h-12 text-base">
+                    <Wallet className="w-5 h-5 ml-2" />
+                    דף החשבון שלי
+                  </Button>
+                </MemberStatementDialog>
+              </div>
+            )}
+            <TransfersCard
+              groupId={groupId}
+              isAdmin={isAdmin}
+              myMemberId={me?.id}
+              memberNames={memberNames}
+              refreshKey={moneyRefresh}
+              onChanged={() => {
+                setMoneyRefresh((n) => n + 1);
+                loadPayments();
+              }}
+            />
+          </div>
         );
       })()}
 
       {/* תשלום מקופת פייבוקס לאירועים (מנהל) */}
       {isAdmin && payboxEvents.length > 0 && (
-        <Card className="border-2 border-violet-300 shadow-md" dir="rtl">
+        <Card className="border-2 border-primary/30 shadow-md" dir="rtl">
           <CardHeader className="pb-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex gap-2">
@@ -805,10 +779,10 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
 
       {/* אורחים — ממתינים לתשלום (מנהל) */}
       {isAdmin && guestPendingPayments.length > 0 && (
-        <Card className="border-2 border-orange-300 shadow-md" dir="rtl">
+        <Card className="border-2 border-primary/30 shadow-md" dir="rtl">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
-              <Badge variant="outline" className="border-orange-400 text-orange-700 bg-orange-50">
+              <Badge variant="outline" className="border-primary/30 text-primary bg-accent">
                 <Clock className="w-3.5 h-3.5 ml-1" />
                 {guestPendingPayments.length} ממתינים
               </Badge>
@@ -826,13 +800,13 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
               return (
                 <div
                   key={payment.id}
-                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border-2 border-orange-200 bg-orange-50/50 dark:bg-orange-950/20"
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border-2 border-primary/30 bg-primary/50 "
                   dir="rtl"
                 >
                   <div className="text-right min-w-0">
                     <div className="font-semibold text-base">{payment.payer_name}</div>
                     <div className="text-sm text-muted-foreground">אירוע {eventDate}</div>
-                    <div className="text-lg font-bold text-orange-700 tabular-nums mt-1" dir="ltr">
+                    <div className="text-lg font-bold text-primary tabular-nums mt-1" dir="ltr">
                       {payment.amount.toFixed(2)} ₪
                     </div>
                   </div>
@@ -999,14 +973,14 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
                   return (
                     <Card key={eventGroup.event?.id || 'unknown'} className="relative overflow-hidden border-2 shadow-md hover:shadow-lg transition-all duration-200" dir="rtl">
                       {/* Top accent bar */}
-                      <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                      <div className="absolute top-0 right-0 w-full h-1 bg-card "></div>
                       
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-4" dir="rtl" style={{ direction: "rtl" }}>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
-                              <div className="p-1.5 rounded bg-blue-100 dark:bg-blue-950/30">
-                                <Calendar className="w-4 h-4 text-blue-600" />
+                              <div className="p-1.5 rounded bg-accent ">
+                                <Calendar className="w-4 h-4 text-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <CardTitle className="text-lg md:text-xl font-bold truncate">
@@ -1022,11 +996,11 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
                             
                             {/* Event Summary */}
                             <div className="flex items-center gap-3 mt-3 flex-wrap">
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                                <Coins className="w-4 h-4 text-blue-600" />
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent ">
+                                <Coins className="w-4 h-4 text-primary" />
                                 <div className="flex flex-col items-end">
                                   <span className="text-[10px] text-muted-foreground leading-tight">עלות אירוע</span>
-                                  <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                                  <span className="text-sm font-bold text-primary ">
                                     <span dir="ltr" className="tabular-nums">{totalCost.toFixed(2)}</span> שקל
                                   </span>
                                 </div>
@@ -1054,7 +1028,7 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
                             return (
                               <div
                                 key={payment.id}
-                                className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
+                                className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-card to-muted/20"
                                 style={{ animationDelay: `${index * 50}ms` }}
                                 dir="rtl"
                               >
@@ -1076,13 +1050,13 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
                                       {(payment as any).profile_image ? (
                                         <AvatarImage src={(payment as any).profile_image} alt={payment.payer_name} />
                                       ) : null}
-                                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
+                                      <AvatarFallback className="bg-card text-primary font-bold text-lg">
                                         {payment.payer_name?.charAt(0).toUpperCase() || "?"}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col items-end text-right" dir="rtl" style={{ direction: "rtl" }}>
                                       <div className="font-semibold text-base md:text-lg text-right">{payment.payer_name}</div>
-                                      <Badge variant="default" className="bg-blue-600 text-xs mt-1">
+                                      <Badge variant="default" className="bg-primary text-xs mt-1">
                                         {isFutureEvent ? "נקזז מהיתרה" : "קוזז מהיתרה"}
                                       </Badge>
                                     </div>
@@ -1102,7 +1076,7 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
         )}
       </div>
 
-      <GroupLedgerCard groupId={groupId} />
+      <GroupLedgerCard groupId={groupId} refreshKey={moneyRefresh} />
     </div>
   );
 };

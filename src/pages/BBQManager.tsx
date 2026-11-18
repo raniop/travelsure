@@ -4,7 +4,7 @@ import { apiClient, getBbqToken, BBQ_AUTH_EXPIRED_EVENT } from "@/integrations/a
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw, BarChart3, MessageSquare } from "lucide-react";
+import { Plus, Users, Calendar, DollarSign, Settings, Copy, Check, LogOut, User as UserIcon, RefreshCw, BarChart3, MessageSquare, Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CreateEventDialog from "@/components/bbq/CreateEventDialog";
 import EventsList from "@/components/bbq/EventsList";
@@ -20,6 +20,7 @@ import InstallPrompt from "@/components/bbq/InstallPrompt";
 import GroupsDashboard from "@/components/bbq/GroupsDashboard";
 import PollsList from "@/components/bbq/PollsList";
 import { usePWAConfig } from "@/hooks/usePWAConfig";
+import { useBbqTheme } from "@/lib/bbq/theme";
 
 interface Group {
   id: string;
@@ -52,6 +53,8 @@ const BBQManager = () => {
   const [userNotInGroup, setUserNotInGroup] = useState(false);
   const [checkingGroups, setCheckingGroups] = useState(false);
   const { toast } = useToast();
+
+  useBbqTheme();
 
   // Update PWA config with group name and image (must be before any conditional returns)
   usePWAConfig({
@@ -479,7 +482,7 @@ const BBQManager = () => {
   // Show login dialog if no user
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-card flex items-center justify-center" dir="rtl">
         <LoginDialog 
           open={showLogin} 
           onOpenChange={(open) => {
@@ -511,7 +514,7 @@ const BBQManager = () => {
   // Show "user not in group" screen if user is not in any group
   if (user && userNotInGroup && !loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-card " dir="rtl">
         <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-2xl text-center">אינך נמצא בקבוצה</CardTitle>
@@ -570,7 +573,7 @@ const BBQManager = () => {
   // Show loading group message if user exists but no group yet (and not in "not in group" state)
   if (!group && !userNotInGroup) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-card " dir="rtl">
         <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle className="text-2xl">טוען קבוצה...</CardTitle>
@@ -589,62 +592,49 @@ const BBQManager = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50" dir="rtl">
+    <div className="min-h-screen bg-background" dir="rtl">
       {group && <InstallPrompt />}
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between w-full" style={{ flexDirection: 'row-reverse' }}>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBackToDashboard}
-              className="ml-2"
-            >
-              חזרה לדשבורד
-            </Button>
-            {/* Hide user info on mobile, show only on desktop */}
-            <div className="hidden md:flex items-center gap-3">
-              {user.profile_image ? (
-                <img 
-                  src={user.profile_image} 
-                  alt={user.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">שלום, {user.name}</div>
-                {user.isAdmin && (
-                  <div className="text-xs text-primary font-semibold">מנהל</div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
+      <header className="bg-secondary text-secondary-foreground">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 pb-7 pt-6">
+          <div className="flex min-w-0 items-center gap-3">
             {group.group_image ? (
-              <img 
-                src={group.group_image} 
-                alt={group.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
+              <img src={group.group_image} alt={group.name} className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/15" />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xl">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-primary-foreground">
                 {group.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{group.name}</h1>
-              {group.description && (
-                <p className="text-sm md:text-base text-gray-600">{group.description}</p>
-              )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 text-xs opacity-70">
+                <Flame className="h-3.5 w-3.5 text-primary" />
+                {user.isAdmin ? "את/ה מנהל/ת הקבוצה" : "הקבוצה שלי"}
+              </div>
+              <h1 className="truncate text-2xl font-extrabold md:text-3xl">{group.name}</h1>
+              {group.description && <p className="truncate text-sm opacity-75">{group.description}</p>}
             </div>
           </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="hidden items-center gap-2 md:flex">
+              {user.profile_image ? (
+                <img src={user.profile_image} alt={user.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-white/15" />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-semibold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="text-sm opacity-85">{user.name}</div>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleBackToDashboard}
+              className="border border-white/20 bg-white/10 text-secondary-foreground hover:bg-white/20"
+            >
+              כל הקבוצות
+            </Button>
+          </div>
         </div>
-
+      </header>
+      <div className="container mx-auto px-4 py-6">
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={(value) => {
           setActiveTab(value);
@@ -658,7 +648,7 @@ const BBQManager = () => {
         }} className="w-full">
           {/* Desktop Tabs - Modern Design */}
           <div className="hidden md:block mb-8" dir="rtl">
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-800/50 rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+            <div className="bg-card rounded-2xl p-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
               <div className={`grid w-full ${user.isAdmin ? 'grid-cols-7' : 'grid-cols-6'} gap-2`} dir="rtl">
                 <button
                   onClick={() => {
@@ -671,16 +661,13 @@ const BBQManager = () => {
                     }
                   }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                    activeTab === "events"
-                      ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/30 scale-105"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                  }`}
+ activeTab === "events"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                 >
                   <Calendar className={`w-5 h-5 transition-transform ${activeTab === "events" ? "scale-110" : "group-hover:scale-110"}`} />
                   <span>אירועים</span>
-                  {activeTab === "events" && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/20 to-red-500/20 blur-sm -z-10"></div>
-                  )}
                 </button>
                 
                 <button
@@ -694,16 +681,13 @@ const BBQManager = () => {
                     }
                   }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                    activeTab === "members"
-                      ? "bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg shadow-green-500/30 scale-105"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                  }`}
+ activeTab === "members"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                 >
                   <Users className={`w-5 h-5 transition-transform ${activeTab === "members" ? "scale-110" : "group-hover:scale-110"}`} />
                   <span>חברים</span>
-                  {activeTab === "members" && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400/20 to-teal-500/20 blur-sm -z-10"></div>
-                  )}
                 </button>
                 
                 <button
@@ -717,16 +701,13 @@ const BBQManager = () => {
                     }
                   }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                    activeTab === "payments"
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                  }`}
+ activeTab === "payments"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                 >
                   <DollarSign className={`w-5 h-5 transition-transform ${activeTab === "payments" ? "scale-110" : "group-hover:scale-110"}`} />
                   <span>תשלומים</span>
-                  {activeTab === "payments" && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-purple-500/20 blur-sm -z-10"></div>
-                  )}
                 </button>
                 
                 <button
@@ -740,16 +721,13 @@ const BBQManager = () => {
                     }
                   }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                    activeTab === "polls"
-                      ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/30 scale-105"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                  }`}
+ activeTab === "polls"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                 >
                   <MessageSquare className={`w-5 h-5 transition-transform ${activeTab === "polls" ? "scale-110" : "group-hover:scale-110"}`} />
                   <span>סקרים</span>
-                  {activeTab === "polls" && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-400/20 to-rose-500/20 blur-sm -z-10"></div>
-                  )}
                 </button>
                 
                 <button
@@ -763,16 +741,13 @@ const BBQManager = () => {
                     }
                   }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                    activeTab === "reports"
-                      ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30 scale-105"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                  }`}
+ activeTab === "reports"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                 >
                   <BarChart3 className={`w-5 h-5 transition-transform ${activeTab === "reports" ? "scale-110" : "group-hover:scale-110"}`} />
                   <span>דוחות</span>
-                  {activeTab === "reports" && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 to-secondary/20 blur-sm -z-10"></div>
-                  )}
                 </button>
                 
                 {user.isAdmin && (
@@ -787,16 +762,13 @@ const BBQManager = () => {
                       }
                     }}
                     className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                      activeTab === "users"
-                        ? "bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/30 scale-105"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                    }`}
+ activeTab === "users"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                   >
                     <UserIcon className={`w-5 h-5 transition-transform ${activeTab === "users" ? "scale-110" : "group-hover:scale-110"}`} />
                     <span>משתמשים</span>
-                    {activeTab === "users" && (
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-400/20 to-blue-500/20 blur-sm -z-10"></div>
-                    )}
                   </button>
                 )}
                 
@@ -811,16 +783,13 @@ const BBQManager = () => {
                     }
                   }}
                   className={`group relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                    activeTab === "settings"
-                      ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg shadow-gray-500/30 scale-105"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md"
-                  }`}
+ activeTab === "settings"
+ ? "bg-primary text-primary-foreground shadow-md"
+ : "text-muted-foreground hover:bg-muted hover:text-foreground"
+ }`}
                 >
                   <Settings className={`w-5 h-5 transition-transform ${activeTab === "settings" ? "scale-110" : "group-hover:scale-110"}`} />
                   <span>הגדרות</span>
-                  {activeTab === "settings" && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-gray-500/20 to-gray-600/20 blur-sm -z-10"></div>
-                  )}
                 </button>
               </div>
               {activeTab === "reports" && (
@@ -853,7 +822,7 @@ const BBQManager = () => {
 
           <TabsContent value="events" className="w-full text-right !block space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">אירועים</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">אירועים</h2>
               {user.isAdmin && (
                 <CreateEventDialog groupId={group.id} onEventCreated={() => { loadGroup(user.id); setEventsRefreshTrigger((t) => t + 1); }}>
                   <Button>

@@ -21,7 +21,7 @@ public class BBQHandler : IHttpHandler
     private const int SessionDays = 180;
     private const int HashIterations = 20000;
     private static readonly HashSet<string> AllowedEntities = new HashSet<string>(new string[] {
-        "groups", "events", "members", "payments", "polls", "attendees", "guests", "users", "group_invitations", "ledger"
+        "groups", "events", "members", "payments", "polls", "attendees", "guests", "users", "group_invitations", "ledger", "transfers", "receipts"
     });
     private static readonly Regex SafeId = new Regex("^[A-Za-z0-9_\\-]{1,100}$");
     private static readonly Regex TokenFormat = new Regex("^[a-f0-9]{64}$");
@@ -418,7 +418,13 @@ public class BBQHandler : IHttpHandler
             return true;
         }
 
-        if (!AllowedEntities.Contains(entity))
+        if (action == "public" || action == "public_receipt" || action == "public_transfer")
+        {
+            HandlePublic(context, dataFolder);
+            return true;
+        }
+
+        if (!AllowedEntities.Contains(entity) && action != "member_link")
         {
             WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid entity" } });
             return true;
@@ -439,6 +445,21 @@ public class BBQHandler : IHttpHandler
         if (entity == "users")
         {
             HandleUsers(context, action, id, sessionUserId, dataFolder);
+            return true;
+        }
+        if (action == "member_link")
+        {
+            HandleMemberLink(context, sessionUserId, dataFolder);
+            return true;
+        }
+        if (entity == "transfers")
+        {
+            HandleTransfers(context, action, id, sessionUserId, dataFolder);
+            return true;
+        }
+        if (entity == "receipts")
+        {
+            HandleReceipts(context, action, id, sessionUserId, dataFolder);
             return true;
         }
         if (entity == "ledger")
@@ -530,6 +551,45 @@ public class BBQHandler : IHttpHandler
         return false;
     }
 
+    /** Writes the ledger line for a balance change (and the opening line the first time). */
+    private string AppendBalanceChange(string dataFolder, string memberId, string groupId, decimal oldBalance,
+        decimal newBalance, string type, string note, string eventId, string actorId)
+    {
+        Dictionary<string, object> actor = LoadEntity("users", actorId, dataFolder);
+        string actorName = Str(actor, "name");
+        if (!HasLedgerEntries(memberId, dataFolder))
+        {
+            Dictionary<string, object> opening = new Dictionary<string, object>();
+            opening["group_id"] = groupId;
+            opening["member_id"] = memberId;
+            opening["type"] = "opening";
+            opening["amount"] = oldBalance;
+            opening["balance_before"] = 0m;
+            opening["balance_after"] = oldBalance;
+            opening["note"] = "";
+            opening["created_by"] = actorId;
+            opening["created_by_name"] = actorName;
+            opening["created_at"] = DateTime.UtcNow.AddMilliseconds(-1).ToString("o");
+            WriteLedgerEntry(dataFolder, opening);
+        }
+        note = (note ?? "").Trim();
+        if (note.Length > 300) note = note.Substring(0, 300);
+        if (!SafeId.IsMatch(eventId ?? "")) eventId = "";
+        Dictionary<string, object> entry = new Dictionary<string, object>();
+        entry["group_id"] = groupId;
+        entry["member_id"] = memberId;
+        entry["type"] = type;
+        entry["amount"] = newBalance - oldBalance;
+        entry["balance_before"] = oldBalance;
+        entry["balance_after"] = newBalance;
+        entry["note"] = note;
+        entry["event_id"] = eventId;
+        entry["created_by"] = actorId;
+        entry["created_by_name"] = actorName;
+        WriteLedgerEntry(dataFolder, entry);
+        return Str(entry, "id");
+    }
+
     private void HandleMemberUpdate(HttpContext context, string id, string sessionUserId, string dataFolder)
     {
         string raw = ReadBody(context);
@@ -560,42 +620,10 @@ public class BBQHandler : IHttpHandler
             }
             else
             {
-                Dictionary<string, object> actor = LoadEntity("users", sessionUserId, dataFolder);
-                string actorName = Str(actor, "name");
-                if (!HasLedgerEntries(id, dataFolder))
-                {
-                    Dictionary<string, object> opening = new Dictionary<string, object>();
-                    opening["group_id"] = groupId;
-                    opening["member_id"] = id;
-                    opening["type"] = "opening";
-                    opening["amount"] = oldBalance;
-                    opening["balance_before"] = 0m;
-                    opening["balance_after"] = oldBalance;
-                    opening["note"] = "";
-                    opening["created_by"] = sessionUserId;
-                    opening["created_by_name"] = actorName;
-                    opening["created_at"] = DateTime.UtcNow.AddMilliseconds(-1).ToString("o");
-                    WriteLedgerEntry(dataFolder, opening);
-                }
                 string type = Str(hint, "type");
-                if (!LedgerTypes.Contains(type)) type = "adjustment";
-                string note = Str(hint, "note").Trim();
-                if (note.Length > 300) note = note.Substring(0, 300);
-                string eventId = Str(hint, "event_id");
-                if (!SafeId.IsMatch(eventId)) eventId = "";
-
-                Dictionary<string, object> entry = new Dictionary<string, object>();
-                entry["group_id"] = groupId;
-                entry["member_id"] = id;
-                entry["type"] = type;
-                entry["amount"] = newBalance - oldBalance;
-                entry["balance_before"] = oldBalance;
-                entry["balance_after"] = newBalance;
-                entry["note"] = note;
-                entry["event_id"] = eventId;
-                entry["created_by"] = sessionUserId;
-                entry["created_by_name"] = actorName;
-                WriteLedgerEntry(dataFolder, entry);
+                if (!LedgerTypes.Contains(type) || type == "transfer") type = "adjustment";
+                AppendBalanceChange(dataFolder, id, groupId, oldBalance, newBalance, type,
+                    Str(hint, "note"), Str(hint, "event_id"), sessionUserId);
             }
         }
 
@@ -630,6 +658,425 @@ public class BBQHandler : IHttpHandler
         }
         entries.Sort((a, b) => string.CompareOrdinal(Str(a, "created_at"), Str(b, "created_at")));
         WriteJson(context, 200, entries);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Transfers ("העברתי"), receipts, and each member's personal read-only link.
+    // ---------------------------------------------------------------------------------------------
+    private static readonly Regex KeyFormat = new Regex("^[a-f0-9]{48}$");
+    private const int MaxImageChars = 4000000;
+
+    private static bool IsImageDataUrl(string s)
+    {
+        return s != null && s.Length < MaxImageChars && Regex.IsMatch(s, "^data:image/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$");
+    }
+
+    private static string RandomHex(int bytes)
+    {
+        byte[] b = new byte[bytes];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) rng.GetBytes(b);
+        return BitConverter.ToString(b).Replace("-", "").ToLowerInvariant();
+    }
+
+    private Dictionary<string, object> MemberOfUser(string groupId, string userId, string dataFolder)
+    {
+        Dictionary<string, object> user = LoadEntity("users", userId, dataFolder);
+        string phone = Digits(Str(user, "phone"));
+        if (phone == "") return null;
+        foreach (Dictionary<string, object> m in LoadAll("members", dataFolder))
+        {
+            if (Str(m, "group_id") == groupId && Digits(Str(m, "phone")) == phone) return m;
+        }
+        return null;
+    }
+
+    private static Dictionary<string, object> WithoutImage(Dictionary<string, object> d, string field)
+    {
+        Dictionary<string, object> copy = new Dictionary<string, object>(d);
+        copy["has_" + field] = Str(d, field) != "";
+        copy.Remove(field);
+        return copy;
+    }
+
+    private static bool ValidAmount(decimal amount) { return amount > 0m && amount <= 20000m; }
+
+    private Dictionary<string, object> NewTransfer(string dataFolder, string groupId, string memberId, decimal amount,
+        string note, string proof, string source, string actorId)
+    {
+        Dictionary<string, object> t = new Dictionary<string, object>();
+        string id = Guid.NewGuid().ToString();
+        string cleanNote = (note ?? "").Trim();
+        if (cleanNote.Length > 200) cleanNote = cleanNote.Substring(0, 200);
+        t["id"] = id;
+        t["group_id"] = groupId;
+        t["member_id"] = memberId;
+        t["amount"] = amount;
+        t["note"] = cleanNote;
+        t["proof_image"] = IsImageDataUrl(proof) ? proof : "";
+        t["status"] = "pending";
+        t["source"] = source;
+        t["created_by"] = actorId;
+        t["created_at"] = DateTime.UtcNow.ToString("o");
+        SaveEntityJson("transfers", id, Json().Serialize(t), dataFolder);
+        return t;
+    }
+
+    private void HandleTransfers(HttpContext context, string action, string id, string sessionUserId, string dataFolder)
+    {
+        string method = context.Request.HttpMethod;
+        if (method == "GET")
+        {
+            if (id != "")
+            {
+                Dictionary<string, object> one = LoadEntity("transfers", id, dataFolder);
+                if (one == null || !CanSeeGroup(Str(one, "group_id"), sessionUserId, dataFolder))
+                {
+                    WriteJson(context, 404, new Dictionary<string, object> { { "error", "Not found" } });
+                    return;
+                }
+                WriteJson(context, 200, one);
+                return;
+            }
+            string groupId = context.Request.QueryString["group_id"] ?? "";
+            if (!SafeId.IsMatch(groupId) || !CanSeeGroup(groupId, sessionUserId, dataFolder))
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+                return;
+            }
+            List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+            foreach (Dictionary<string, object> t in LoadAll("transfers", dataFolder))
+                if (Str(t, "group_id") == groupId) list.Add(WithoutImage(t, "proof_image"));
+            list.Sort((a, b) => string.CompareOrdinal(Str(b, "created_at"), Str(a, "created_at")));
+            WriteJson(context, 200, list);
+            return;
+        }
+        if (method != "POST")
+        {
+            WriteJson(context, 405, new Dictionary<string, object> { { "error", "Method not allowed" } });
+            return;
+        }
+
+        if (action == "approve" || action == "reject")
+        {
+            Dictionary<string, object> t = LoadEntity("transfers", id, dataFolder);
+            if (t == null) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "Not found" } }); return; }
+            string groupId = Str(t, "group_id");
+            if (!IsGroupOwner(groupId, sessionUserId, dataFolder))
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+                return;
+            }
+            if (Str(t, "status") != "pending")
+            {
+                WriteJson(context, 409, new Dictionary<string, object> { { "error", "already_decided" } });
+                return;
+            }
+            Dictionary<string, object> body = ParseObject(ReadBody(context)) ?? new Dictionary<string, object>();
+            if (action == "approve")
+            {
+                string memberId = Str(t, "member_id");
+                Dictionary<string, object> member = LoadEntity("members", memberId, dataFolder);
+                if (member == null) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "member_not_found" } }); return; }
+                decimal amount = Num(t["amount"]);
+                decimal oldBalance = Num(member.ContainsKey("balance") ? member["balance"] : null);
+                decimal newBalance = oldBalance + amount;
+                string note = Str(t, "note");
+                string ledgerId = AppendBalanceChange(dataFolder, memberId, groupId, oldBalance, newBalance, "transfer",
+                    note == "" ? "העברה ל-PayBox שאושרה" : note, "", sessionUserId);
+                member["balance"] = newBalance;
+                member["updated_at"] = DateTime.UtcNow.ToString("o");
+                SaveEntityJson("members", memberId, Json().Serialize(member), dataFolder);
+                t["ledger_id"] = ledgerId;
+                t["status"] = "approved";
+            }
+            else
+            {
+                t["status"] = "rejected";
+                string reason = Str(body, "reason").Trim();
+                t["reject_reason"] = reason.Length > 200 ? reason.Substring(0, 200) : reason;
+            }
+            t["decided_by"] = sessionUserId;
+            t["decided_at"] = DateTime.UtcNow.ToString("o");
+            SaveEntityJson("transfers", id, Json().Serialize(t), dataFolder);
+            WriteJson(context, 200, WithoutImage(t, "proof_image"));
+            return;
+        }
+
+        if (action == "")
+        {
+            Dictionary<string, object> body = ParseObject(ReadBody(context));
+            string groupId = Str(body, "group_id");
+            decimal amount = Num(body == null ? null : (body.ContainsKey("amount") ? body["amount"] : null));
+            if (!SafeId.IsMatch(groupId) || !ValidAmount(amount))
+            {
+                WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_transfer" } });
+                return;
+            }
+            Dictionary<string, object> member = MemberOfUser(groupId, sessionUserId, dataFolder);
+            if (member == null)
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "not_a_member" } });
+                return;
+            }
+            Dictionary<string, object> t = NewTransfer(dataFolder, groupId, Str(member, "id"), amount, Str(body, "note"),
+                Str(body, "proof_image"), "app", sessionUserId);
+            WriteJson(context, 200, WithoutImage(t, "proof_image"));
+            return;
+        }
+        WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_action" } });
+    }
+
+    private void HandleReceipts(HttpContext context, string action, string id, string sessionUserId, string dataFolder)
+    {
+        string method = context.Request.HttpMethod;
+        if (method == "GET")
+        {
+            if (id != "")
+            {
+                Dictionary<string, object> one = LoadEntity("receipts", id, dataFolder);
+                if (one == null || !CanSeeGroup(Str(one, "group_id"), sessionUserId, dataFolder))
+                {
+                    WriteJson(context, 404, new Dictionary<string, object> { { "error", "Not found" } });
+                    return;
+                }
+                WriteJson(context, 200, one);
+                return;
+            }
+            string eventId = context.Request.QueryString["event_id"] ?? "";
+            Dictionary<string, object> ev = LoadEntity("events", eventId, dataFolder);
+            if (ev == null || !CanSeeGroup(Str(ev, "group_id"), sessionUserId, dataFolder))
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+                return;
+            }
+            List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+            foreach (Dictionary<string, object> r in LoadAll("receipts", dataFolder))
+                if (Str(r, "event_id") == eventId) list.Add(WithoutImage(r, "image"));
+            list.Sort((a, b) => string.CompareOrdinal(Str(a, "created_at"), Str(b, "created_at")));
+            WriteJson(context, 200, list);
+            return;
+        }
+        if (method != "POST") { WriteJson(context, 405, new Dictionary<string, object> { { "error", "Method not allowed" } }); return; }
+
+        if (action == "delete")
+        {
+            Dictionary<string, object> r = LoadEntity("receipts", id, dataFolder);
+            if (r == null) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "Not found" } }); return; }
+            if (!IsGroupOwner(Str(r, "group_id"), sessionUserId, dataFolder)) { WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } }); return; }
+            HandleDelete(context, "receipts", dataFolder);
+            return;
+        }
+        Dictionary<string, object> body = ParseObject(ReadBody(context));
+        string evId = Str(body, "event_id");
+        Dictionary<string, object> evt = LoadEntity("events", evId, dataFolder);
+        string image = Str(body, "image");
+        if (evt == null || !IsImageDataUrl(image))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_receipt" } });
+            return;
+        }
+        if (!IsGroupOwner(Str(evt, "group_id"), sessionUserId, dataFolder)) { WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } }); return; }
+        Dictionary<string, object> rec = new Dictionary<string, object>();
+        string recId = Guid.NewGuid().ToString();
+        string label = Str(body, "label").Trim();
+        rec["id"] = recId;
+        rec["event_id"] = evId;
+        rec["group_id"] = Str(evt, "group_id");
+        rec["label"] = label.Length > 80 ? label.Substring(0, 80) : label;
+        rec["amount"] = Num(body.ContainsKey("amount") ? body["amount"] : null);
+        rec["image"] = image;
+        rec["created_by"] = sessionUserId;
+        rec["created_at"] = DateTime.UtcNow.ToString("o");
+        SaveEntityJson("receipts", recId, Json().Serialize(rec), dataFolder);
+        WriteJson(context, 200, WithoutImage(rec, "image"));
+    }
+
+    /** Owner only: get (GET) or create/replace (POST) a member's personal link key. */
+    private void HandleMemberLink(HttpContext context, string sessionUserId, string dataFolder)
+    {
+        string memberId = context.Request.QueryString["member_id"] ?? "";
+        Dictionary<string, object> member = LoadEntity("members", memberId, dataFolder);
+        if (member == null || !IsGroupOwner(Str(member, "group_id"), sessionUserId, dataFolder))
+        {
+            WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+            return;
+        }
+        string folder = Path.Combine(dataFolder, "member_keys");
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        bool replace = context.Request.HttpMethod == "POST";
+        string existingKey = "";
+        foreach (string file in Directory.GetFiles(folder, "*.json"))
+        {
+            Dictionary<string, object> k = ParseObject(File.ReadAllText(file, Encoding.UTF8));
+            if (k == null || Str(k, "member_id") != memberId) continue;
+            if (replace) { try { File.Delete(file); } catch { } }
+            else existingKey = Path.GetFileNameWithoutExtension(file);
+        }
+        if (replace)
+        {
+            existingKey = RandomHex(24);
+            Dictionary<string, object> k = new Dictionary<string, object>();
+            k["member_id"] = memberId;
+            k["group_id"] = Str(member, "group_id");
+            k["created_by"] = sessionUserId;
+            k["created_at"] = DateTime.UtcNow.ToString("o");
+            File.WriteAllText(Path.Combine(folder, existingKey + ".json"), Json().Serialize(k), Encoding.UTF8);
+        }
+        WriteJson(context, 200, new Dictionary<string, object> { { "key", existingKey } });
+    }
+
+    /** Resolves a personal link key to its member (null if unknown or replaced). */
+    private Dictionary<string, object> MemberForKey(string key, string dataFolder)
+    {
+        key = (key ?? "").Trim().ToLowerInvariant();
+        if (!KeyFormat.IsMatch(key)) return null;
+        string path = Path.Combine(Path.Combine(dataFolder, "member_keys"), key + ".json");
+        if (!File.Exists(path)) return null;
+        Dictionary<string, object> k = ParseObject(File.ReadAllText(path, Encoding.UTF8));
+        Dictionary<string, object> member = LoadEntity("members", Str(k, "member_id"), dataFolder);
+        if (member == null || Str(member, "group_id") != Str(k, "group_id")) return null;
+        return member;
+    }
+
+    private static Dictionary<string, object> Pick(Dictionary<string, object> d, params string[] keys)
+    {
+        Dictionary<string, object> o = new Dictionary<string, object>();
+        foreach (string k in keys) if (d.ContainsKey(k)) o[k] = d[k];
+        return o;
+    }
+
+    /** The personal page: balance, statement, events with this member's share, receipts, transfers. */
+    private void HandlePublic(HttpContext context, string dataFolder)
+    {
+        string action = context.Request.QueryString["action"] ?? "";
+        Dictionary<string, object> member = MemberForKey(context.Request.QueryString["key"], dataFolder);
+        if (member == null)
+        {
+            WriteJson(context, 404, new Dictionary<string, object> { { "error", "link_not_found" } });
+            return;
+        }
+        string memberId = Str(member, "id");
+        string groupId = Str(member, "group_id");
+
+        if (action == "public_receipt")
+        {
+            Dictionary<string, object> r = LoadEntity("receipts", context.Request.QueryString["id"] ?? "", dataFolder);
+            if (r == null || Str(r, "group_id") != groupId) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "Not found" } }); return; }
+            WriteJson(context, 200, Pick(r, "id", "label", "amount", "image", "created_at"));
+            return;
+        }
+
+        if (action == "public_transfer")
+        {
+            if (context.Request.HttpMethod != "POST") { WriteJson(context, 405, new Dictionary<string, object> { { "error", "Method not allowed" } }); return; }
+            Dictionary<string, object> body = ParseObject(ReadBody(context));
+            decimal amount = Num(body == null ? null : (body.ContainsKey("amount") ? body["amount"] : null));
+            if (!ValidAmount(amount)) { WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_transfer" } }); return; }
+            int pending = 0;
+            foreach (Dictionary<string, object> x in LoadAll("transfers", dataFolder))
+                if (Str(x, "member_id") == memberId && Str(x, "status") == "pending") pending++;
+            if (pending >= 5) { WriteJson(context, 429, new Dictionary<string, object> { { "error", "too_many_pending" } }); return; }
+            Dictionary<string, object> t = NewTransfer(dataFolder, groupId, memberId, amount, Str(body, "note"),
+                Str(body, "proof_image"), "link", "");
+            WriteJson(context, 200, WithoutImage(t, "proof_image"));
+            return;
+        }
+
+        Dictionary<string, object> group = LoadEntity("groups", groupId, dataFolder) ?? new Dictionary<string, object>();
+
+        Dictionary<string, object> eventsById = new Dictionary<string, object>();
+        List<Dictionary<string, object>> groupEvents = new List<Dictionary<string, object>>();
+        foreach (Dictionary<string, object> e in LoadAll("events", dataFolder))
+        {
+            if (Str(e, "group_id") != groupId) continue;
+            groupEvents.Add(e);
+            eventsById[Str(e, "id")] = e;
+        }
+
+        Dictionary<string, bool> myAttend = new Dictionary<string, bool>();
+        Dictionary<string, int> participants = new Dictionary<string, int>();
+        foreach (Dictionary<string, object> a in LoadAll("attendees", dataFolder))
+        {
+            string ev = Str(a, "event_id");
+            if (!eventsById.ContainsKey(ev)) continue;
+            if (Str(a, "attended") == "False") continue;
+            participants[ev] = (participants.ContainsKey(ev) ? participants[ev] : 0) + 1;
+            if (Str(a, "member_id") == memberId) myAttend[ev] = true;
+        }
+        Dictionary<string, Dictionary<string, object>> myPayment = new Dictionary<string, Dictionary<string, object>>();
+        foreach (Dictionary<string, object> p in LoadAll("payments", dataFolder))
+            if (Str(p, "payer_type") == "member" && Str(p, "payer_id") == memberId && eventsById.ContainsKey(Str(p, "event_id")))
+                myPayment[Str(p, "event_id")] = p;
+        Dictionary<string, List<object>> receiptsByEvent = new Dictionary<string, List<object>>();
+        foreach (Dictionary<string, object> r in LoadAll("receipts", dataFolder))
+        {
+            if (Str(r, "group_id") != groupId) continue;
+            string ev = Str(r, "event_id");
+            if (!receiptsByEvent.ContainsKey(ev)) receiptsByEvent[ev] = new List<object>();
+            receiptsByEvent[ev].Add(Pick(r, "id", "label", "amount"));
+        }
+
+        List<object> events = new List<object>();
+        foreach (Dictionary<string, object> e in groupEvents)
+        {
+            string ev = Str(e, "id");
+            Dictionary<string, object> o = Pick(e, "id", "event_date", "description", "butcher_cost", "grocery_cost", "total_cost", "location");
+            o["attending"] = myAttend.ContainsKey(ev);
+            o["participants"] = participants.ContainsKey(ev) ? participants[ev] : 0;
+            if (myPayment.ContainsKey(ev))
+            {
+                o["my_amount"] = Num(myPayment[ev].ContainsKey("amount") ? myPayment[ev]["amount"] : null);
+                o["my_status"] = Str(myPayment[ev], "payment_status");
+            }
+            o["receipts"] = receiptsByEvent.ContainsKey(ev) ? receiptsByEvent[ev] : new List<object>();
+            events.Add(o);
+        }
+
+        List<Dictionary<string, object>> mine = new List<Dictionary<string, object>>();
+        decimal groupDeposits = 0m, groupCharges = 0m;
+        foreach (Dictionary<string, object> l in LoadAll("ledger", dataFolder))
+        {
+            if (Str(l, "group_id") != groupId) continue;
+            string type = Str(l, "type");
+            decimal amt = Num(l.ContainsKey("amount") ? l["amount"] : null);
+            if (type == "deposit" || type == "transfer") groupDeposits += amt;
+            if (type == "charge" || type == "refund") groupCharges -= amt;
+            if (Str(l, "member_id") == memberId) mine.Add(l);
+        }
+        mine.Sort((a, b) => string.CompareOrdinal(Str(a, "created_at"), Str(b, "created_at")));
+        List<object> ledger = new List<object>();
+        foreach (Dictionary<string, object> l in mine)
+            ledger.Add(Pick(l, "id", "type", "amount", "balance_before", "balance_after", "note", "event_id", "created_by_name", "created_at"));
+
+        List<Dictionary<string, object>> myTransfers = new List<Dictionary<string, object>>();
+        foreach (Dictionary<string, object> t in LoadAll("transfers", dataFolder))
+            if (Str(t, "member_id") == memberId) myTransfers.Add(t);
+        myTransfers.Sort((a, b) => string.CompareOrdinal(Str(b, "created_at"), Str(a, "created_at")));
+        List<object> transfers = new List<object>();
+        foreach (Dictionary<string, object> t in myTransfers)
+            transfers.Add(Pick(t, "id", "amount", "note", "status", "reject_reason", "created_at", "decided_at"));
+
+        int membersCount = 0;
+        decimal balancesSum = 0m;
+        foreach (Dictionary<string, object> m in LoadAll("members", dataFolder))
+        {
+            if (Str(m, "group_id") != groupId) continue;
+            membersCount++;
+            balancesSum += Num(m.ContainsKey("balance") ? m["balance"] : null);
+        }
+
+        Dictionary<string, object> result = new Dictionary<string, object>();
+        result["group"] = Pick(group, "id", "name", "group_image");
+        result["member"] = Pick(member, "id", "name", "nickname", "balance");
+        result["events"] = events;
+        result["ledger"] = ledger;
+        result["transfers"] = transfers;
+        result["group_totals"] = new Dictionary<string, object> {
+            { "members", membersCount }, { "balances_sum", balancesSum },
+            { "deposits", groupDeposits }, { "charges", groupCharges }
+        };
+        context.Response.Headers.Add("Cache-Control", "no-store");
+        WriteJson(context, 200, result);
     }
 
     public void ProcessRequest(HttpContext context)

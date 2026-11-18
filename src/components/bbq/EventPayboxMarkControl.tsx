@@ -97,10 +97,10 @@ export function EventPayboxMarkControl({
   return (
     <div
       className={`rounded-lg border p-3 text-right space-y-2 ${
-        marked
-          ? "border-green-300 bg-green-50/80 dark:bg-green-950/20"
-          : "border-amber-300 bg-amber-50/60 dark:bg-amber-950/15"
-      }`}
+ marked
+ ? "border-green-300 bg-green-50/80 dark:bg-green-950/20"
+ : "border-amber-300 bg-amber-50/60 dark:bg-amber-950/15"
+ }`}
       dir="rtl"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">

@@ -189,34 +189,36 @@ const GroupsDashboard = ({ userId, userPhone, userName, userProfileImage, onSele
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl" style={{ direction: "rtl" }}>
+    <div className="min-h-screen bg-background pb-8" dir="rtl" style={{ direction: "rtl" }}>
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+      <header className="mb-6 bg-secondary px-4 pb-16 pt-7 text-secondary-foreground md:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {userProfileImage ? (
-              <img src={userProfileImage} alt={userName} className="w-12 h-12 rounded-full object-cover" />
+              <img src={userProfileImage} alt={userName} className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white/15" />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xl">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground">
                 {userName.charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">שלום, {userName}</h1>
-              <p className="text-sm text-muted-foreground">דשבורד קבוצות</p>
+            <div className="min-w-0">
+              <p className="text-sm opacity-70">הקבוצות שלי</p>
+              <h1 className="truncate text-2xl font-extrabold md:text-3xl">שלום, {userName}</h1>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
-            <LogOut className="w-4 h-4 ml-2" />
+          <Button size="sm" onClick={onLogout} className="shrink-0 border border-white/20 bg-white/10 text-secondary-foreground hover:bg-white/20">
+            <LogOut className="ml-1.5 h-4 w-4" />
             התנתק
           </Button>
         </div>
-
-        <Button onClick={handleCreateGroup} className="w-full md:w-auto mb-6">
-          <Plus className="w-4 h-4 ml-2" />
+      </header>
+      <div className="mx-auto -mt-14 mb-8 max-w-7xl px-4 md:px-8">
+        <Button onClick={handleCreateGroup} className="h-12 w-full text-base shadow-lg md:w-auto">
+          <Plus className="ml-2 h-4 w-4" />
           צור קבוצה חדשה
         </Button>
       </div>
+      <div className="px-4 md:px-8">
 
       {/* Pending Invitations */}
       {invitations.length > 0 && (
@@ -313,6 +315,7 @@ const GroupsDashboard = ({ userId, userPhone, userName, userProfileImage, onSele
             })}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

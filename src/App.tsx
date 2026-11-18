@@ -27,6 +27,7 @@ import CarInsurance from "./pages/CarInsurance";
 import HomeInsurance from "./pages/HomeInsurance";
 import BusinessInsurance from "./pages/BusinessInsurance";
 import BBQManager from "./pages/BBQManager";
+import BBQMemberPage from "./pages/BBQMemberPage";
 import FormsDownloads from "./pages/FormsDownloads";
 import MockupV2 from "./pages/MockupV2";
 import MockupPurchase from "./pages/MockupPurchase";
@@ -37,7 +38,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const isBBQPage = location.pathname === "/bbq" || location.pathname === "/on-the-fire";
+  const isBBQPage = location.pathname === "/bbq" || location.pathname === "/bbq/me" || location.pathname === "/on-the-fire";
   
   return (
     <>
@@ -75,6 +76,7 @@ const AppContent = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/on-the-fire" element={<BBQManager />} />
         <Route path="/bbq" element={<BBQManager />} />
+        <Route path="/bbq/me" element={<BBQMemberPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

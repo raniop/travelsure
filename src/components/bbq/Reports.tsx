@@ -525,7 +525,7 @@ const Reports = ({
       type="button"
       variant="default"
       size="sm"
-      className="gap-2 shrink-0 bg-teal-600 hover:bg-teal-700 w-full sm:w-auto"
+      className="gap-2 shrink-0 bg-primary hover:bg-primary w-full sm:w-auto"
       onClick={() => void handleExportPdf()}
       disabled={pdfExporting || loading}
     >
@@ -556,7 +556,7 @@ const Reports = ({
       {/* Header + בחירת תקופה — דסקטופ: כפתור PDF בשורת הטאבים (מתחת ל«הגדרות»); מובייל: בשורה תחת הכותרת */}
       <div className="flex flex-col gap-3 pb-4" dir="rtl" style={{ direction: "rtl" }}>
         <div className="min-w-0 w-full">
-          <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent text-right mb-1">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground text-right mb-1">
             דוחות וסטטיסטיקות
           </h2>
           <p className="text-xs text-muted-foreground text-right hidden sm:block">
@@ -650,12 +650,12 @@ const Reports = ({
       {/* Summary Cards - Modern Design */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Events Card - בחודש נבחר */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-card ">
+          <div className="absolute top-0 right-0 w-full h-1 bg-card "></div>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Calendar className="w-5 h-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Calendar className="w-5 h-5 text-primary" />
               </div>
               <CardTitle className="text-sm font-medium text-muted-foreground text-right">
                 סה"כ אירועים
@@ -665,7 +665,7 @@ const Reports = ({
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
-              <span className="text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-400">
+              <span className="text-3xl md:text-4xl font-bold text-primary ">
                 {totalEventsInMonth}
               </span>
               <span className="text-sm text-muted-foreground">אירועים</span>
@@ -674,8 +674,8 @@ const Reports = ({
         </Card>
 
         {/* Total Deducted */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-red-500 to-red-600"></div>
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-card ">
+          <div className="absolute top-0 right-0 w-full h-1 bg-card "></div>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
               <div className="p-2 rounded-lg bg-red-500/10">
@@ -698,8 +698,8 @@ const Reports = ({
         </Card>
 
         {/* Total Balance - יתרה נוכחית (כל החברים) */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 sm:col-span-2 lg:col-span-1">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-card sm:col-span-2 lg:col-span-1">
+          <div className="absolute top-0 right-0 w-full h-1 bg-card "></div>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
               <div className="p-2 rounded-lg bg-green-500/10">
@@ -722,12 +722,12 @@ const Reports = ({
         </Card>
 
         {/* Guest Payments - בחודש נבחר */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10">
-          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-orange-500 to-orange-600"></div>
+        <Card className="relative overflow-hidden border-2 hover:shadow-lg transition-all duration-300 bg-card ">
+          <div className="absolute top-0 right-0 w-full h-1 bg-card "></div>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between" dir="rtl" style={{ direction: "rtl" }}>
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <UserPlus className="w-5 h-5 text-orange-600" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <UserPlus className="w-5 h-5 text-primary" />
               </div>
               <CardTitle className="text-sm font-medium text-muted-foreground text-right">
                 תשלומי אורחים
@@ -737,7 +737,7 @@ const Reports = ({
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2" dir="rtl" style={{ direction: "rtl" }}>
-              <span className="text-3xl md:text-4xl font-bold text-orange-700 dark:text-orange-400">
+              <span className="text-3xl md:text-4xl font-bold text-primary ">
                 {totalGuestPayments.toFixed(2)}
               </span>
               <span className="text-sm text-muted-foreground">שקל</span>
@@ -750,7 +750,7 @@ const Reports = ({
       <div className="grid grid-cols-1 gap-6">
         {/* Monthly Events Chart */}
         <Card className="border-2 shadow-md">
-          <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-secondary/5">
+          <CardHeader className="border-b bg-card ">
             <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
               <BarChart3 className="w-6 h-6 text-primary" />
               <CardTitle className="text-lg md:text-xl text-right">אירועים לפי חודש</CardTitle>
@@ -799,7 +799,7 @@ const Reports = ({
 
         {/* Monthly Payments Chart */}
         <Card className="border-2 shadow-md">
-          <CardHeader className="border-b bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20">
+          <CardHeader className="border-b bg-card ">
             <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
               <LineChart className="w-6 h-6 text-red-600" />
               <CardTitle className="text-lg md:text-xl text-right">תשלומים לפי חודש</CardTitle>
@@ -873,7 +873,7 @@ const Reports = ({
           };
           return (
             <Card className="rounded-3xl overflow-hidden border-0 shadow-2xl bg-card" dir="rtl">
-              <header className="bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5 text-white" dir="rtl">
+              <header className="bg-secondary px-6 py-5 text-secondary-foreground" dir="rtl">
                 <div className="flex items-center gap-4 justify-start max-w-full w-full">
                   <div className="text-right min-w-0">
                     <h3 className="text-xl md:text-2xl font-bold tracking-tight">נוכחות חברים</h3>
@@ -970,7 +970,7 @@ const Reports = ({
         {/* Host Statistics */}
         {hostStats.length > 0 && (
           <Card className="border-2 shadow-md">
-            <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20">
+            <CardHeader className="border-b bg-card ">
               <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
                 <Award className="w-6 h-6 text-amber-600" />
                 <CardTitle className="text-lg md:text-xl text-right">אירועים לפי מארח</CardTitle>
@@ -982,7 +982,7 @@ const Reports = ({
                 {hostStats.map((host, index) => (
                   <div
                     key={host.memberId}
-                    className="flex items-center justify-between p-4 rounded-lg border-2 hover:border-primary/50 hover:shadow-md transition-all bg-gradient-to-r from-background to-muted/30"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 hover:border-primary/50 hover:shadow-md transition-all bg-card to-muted/30"
                     dir="rtl"
                     style={{ direction: "rtl" }}
                   >
@@ -1013,7 +1013,7 @@ const Reports = ({
 
       {/* Member Reports - Modern List Design */}
       <Card className="border-2 shadow-md">
-        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-secondary/5">
+        <CardHeader className="border-b bg-card ">
           <div className="flex items-center gap-3 justify-between" dir="rtl" style={{ direction: "rtl", flexDirection: "row-reverse" }}>
             <Users className="w-6 h-6 text-primary" />
             <CardTitle className="text-lg md:text-xl text-right">דוחות לפי אנשים</CardTitle>
@@ -1031,7 +1031,7 @@ const Reports = ({
               {reports.map((report, index) => (
                 <div
                   key={report.memberId}
-                  className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-background via-background to-muted/20"
+                  className="group relative p-4 rounded-xl border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-card to-muted/20"
                   style={{ animationDelay: `${index * 50}ms` }}
                   dir="rtl"
                 >
@@ -1043,7 +1043,7 @@ const Reports = ({
                         {report.profileImage ? (
                           <AvatarImage src={report.profileImage} alt={report.memberName} />
                         ) : (
-                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-lg">
+                          <AvatarFallback className="bg-card text-primary font-bold text-lg">
                             {report.memberName.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         )}
@@ -1063,10 +1063,10 @@ const Reports = ({
                       {report.currentBalance !== undefined && (
                         <div
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                            report.currentBalance >= 0
-                              ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-                              : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-                          }`}
+ report.currentBalance >= 0
+ ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+ : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+ }`}
                           dir="rtl"
                         >
                           <div className="flex flex-col items-end">
@@ -1101,7 +1101,7 @@ const Reports = ({
 
                       {/* סה"כ שהפקיד */}
                       {report.totalDeposited !== undefined && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400" dir="rtl">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent text-primary " dir="rtl">
                           <div className="flex flex-col items-end">
                             <span className="text-xs text-muted-foreground">סה&quot;כ שהפקיד</span>
                             <span className="text-sm md:text-base font-semibold">

@@ -21,6 +21,7 @@ import { Users, UserPlus, CheckCircle2, XCircle, Edit2, Trash2, Save, X, Check }
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventPayboxMarkControl } from "@/components/bbq/EventPayboxMarkControl";
+import { EventReceipts } from "@/components/bbq/EventReceipts";
 
 interface EventDetailsDialogProps {
   eventId: string;
@@ -641,6 +642,22 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
 
     try {
       setDeleting(true);
+      // Give back what this event charged each member (logged as a refund), then remove its payments.
+      const eventPayments = await apiClient.getPayments(eventId);
+      for (const payment of eventPayments) {
+        if (payment.payer_type === "member" && payment.payment_status === "deducted") {
+          const fresh = (await apiClient.getMembers(groupId)).find((m: any) => m.id === payment.payer_id);
+          if (fresh) {
+            const back = parseFloat(((Number(fresh.balance) || 0) + (Number(payment.amount) || 0)).toFixed(2));
+            await apiClient.updateMember(fresh.id, { ...fresh, balance: back }, {
+              type: "refund",
+              event_id: eventId,
+              note: "האירוע נמחק — החיוב הוחזר",
+            });
+          }
+        }
+        await apiClient.deletePayment(payment.id).catch(() => undefined);
+      }
       await apiClient.deleteEvent(eventId);
 
       toast({
@@ -1426,6 +1443,10 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
               </div>
               )}
             </div>
+
+            <Separator />
+
+            <EventReceipts eventId={eventId} isAdmin={isAdmin} />
 
             <Separator />
 

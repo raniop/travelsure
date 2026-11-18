@@ -59,6 +59,53 @@ export interface LedgerEntry {
   created_at: string;
 }
 
+export interface TransferRequest {
+  id: string;
+  group_id: string;
+  member_id: string;
+  amount: number;
+  note?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reject_reason?: string;
+  source?: 'app' | 'link';
+  has_proof_image?: boolean;
+  created_at: string;
+  decided_at?: string;
+}
+
+export interface Receipt {
+  id: string;
+  event_id?: string;
+  label?: string;
+  amount?: number;
+  has_image?: boolean;
+  created_at?: string;
+}
+
+export interface PublicEvent {
+  id: string;
+  event_date: string;
+  description?: string | null;
+  butcher_cost?: number;
+  grocery_cost?: number;
+  total_cost?: number;
+  location?: string | null;
+  attending: boolean;
+  participants: number;
+  my_amount?: number;
+  my_status?: string;
+  receipts: Receipt[];
+}
+
+export interface PublicMemberPage {
+  group: { id: string; name: string; group_image?: string | null };
+  member: { id: string; name: string; nickname?: string | null; balance?: number };
+  events: PublicEvent[];
+  ledger: LedgerEntry[];
+  transfers: TransferRequest[];
+  group_totals: { members: number; balances_sum: number; deposits: number; charges: number };
+}
+
 export interface AuthResult {
   token: string;
   user: { id: string; name: string; phone: string; profile_image?: string | null; [key: string]: unknown };
@@ -200,6 +247,65 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(ledger ? { ...data, _ledger: ledger } : data),
     });
+  }
+
+  // Transfers ("העברתי"): a member reports a PayBox transfer, the group owner approves or rejects it
+  async getTransfers(groupId: string): Promise<TransferRequest[]> {
+    return this.request(`entity=transfers&group_id=${encodeURIComponent(groupId)}`);
+  }
+
+  async getTransfer(id: string): Promise<TransferRequest & { proof_image?: string }> {
+    return this.request(`entity=transfers&id=${encodeURIComponent(id)}`);
+  }
+
+  async createTransfer(data: { group_id: string; amount: number; note?: string; proof_image?: string }): Promise<TransferRequest> {
+    return this.request('entity=transfers', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async decideTransfer(id: string, decision: 'approve' | 'reject', reason?: string): Promise<TransferRequest> {
+    return this.request(`entity=transfers&id=${encodeURIComponent(id)}&action=${decision}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason || '' }),
+    });
+  }
+
+  // Receipts: photos of the butcher/grocery bills behind an event's cost
+  async getReceipts(eventId: string): Promise<Receipt[]> {
+    return this.request(`entity=receipts&event_id=${encodeURIComponent(eventId)}`);
+  }
+
+  async getReceipt(id: string): Promise<Receipt & { image?: string }> {
+    return this.request(`entity=receipts&id=${encodeURIComponent(id)}`);
+  }
+
+  async createReceipt(data: { event_id: string; image: string; label?: string; amount?: number }): Promise<Receipt> {
+    return this.request('entity=receipts', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async deleteReceipt(id: string): Promise<void> {
+    await this.request(`entity=receipts&id=${encodeURIComponent(id)}&action=delete`, { method: 'POST', body: '{}' });
+  }
+
+  // Personal read-only link per member (owner only)
+  async getMemberLink(memberId: string): Promise<{ key: string }> {
+    return this.request(`action=member_link&member_id=${encodeURIComponent(memberId)}`);
+  }
+
+  async createMemberLink(memberId: string): Promise<{ key: string }> {
+    return this.request(`action=member_link&member_id=${encodeURIComponent(memberId)}`, { method: 'POST', body: '{}' });
+  }
+
+  // The personal page itself (no sign-in: the key in the link is the access)
+  async getPublicPage(key: string): Promise<PublicMemberPage> {
+    return this.request(`action=public&key=${encodeURIComponent(key)}`);
+  }
+
+  async getPublicReceipt(key: string, id: string): Promise<Receipt & { image?: string }> {
+    return this.request(`action=public_receipt&key=${encodeURIComponent(key)}&id=${encodeURIComponent(id)}`);
+  }
+
+  async createPublicTransfer(key: string, data: { amount: number; note?: string; proof_image?: string }): Promise<TransferRequest> {
+    return this.request(`action=public_transfer&key=${encodeURIComponent(key)}`, { method: 'POST', body: JSON.stringify(data) });
   }
 
   /** Append-only balance history (written only by the server). Oldest first. */

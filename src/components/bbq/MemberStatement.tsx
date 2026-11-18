@@ -51,13 +51,13 @@ function describeLedgerEntry(entry: LedgerEntry, events: Map<string, EventInfo>)
     case "charge":
       return { title: "חיוב על אירוע", detail: ev };
     case "refund":
-      return { title: "ביטול חיוב (חישוב מחדש)", detail: ev };
+      return { title: "החזר חיוב", detail: [ev, entry.note].filter(Boolean).join(" · ") };
     default:
       return { title: "תיקון ידני", detail: entry.note || "" };
   }
 }
 
-function useLedger(groupId: string, memberId: string | undefined, active: boolean) {
+function useLedger(groupId: string, memberId: string | undefined, active: boolean, refreshKey = 0) {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [events, setEvents] = useState<Map<string, EventInfo>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -79,7 +79,7 @@ function useLedger(groupId: string, memberId: string | undefined, active: boolea
     return () => {
       cancelled = true;
     };
-  }, [groupId, memberId, active]);
+  }, [groupId, memberId, active, refreshKey]);
 
   return { entries, events, loading, error };
 }
@@ -112,8 +112,8 @@ function EntryRow({ entry, events, memberName }: { entry: LedgerEntry; events: M
         <div
           dir="ltr"
           className={`font-bold tabular-nums ${
-            isOpening ? "text-foreground" : amount > 0 ? "text-emerald-600" : amount < 0 ? "text-red-600" : "text-foreground"
-          }`}
+ isOpening ? "text-foreground" : amount > 0 ? "text-emerald-600" : amount < 0 ? "text-red-600" : "text-foreground"
+ }`}
         >
           {isOpening ? money(amount) : signed(amount)}
         </div>
@@ -124,6 +124,20 @@ function EntryRow({ entry, events, memberName }: { entry: LedgerEntry; events: M
     </li>
   );
 }
+
+/** A member's ledger lines, newest first (used by the personal page too). */
+export function LedgerList({ entries, events }: { entries: LedgerEntry[]; events: Map<string, EventInfo> }) {
+  const newestFirst = [...entries].reverse();
+  return (
+    <ul className="divide-y">
+      {newestFirst.map((entry) => (
+        <EntryRow key={entry.id} entry={entry} events={events} />
+      ))}
+    </ul>
+  );
+}
+
+export { TrustNote };
 
 /** One member's account statement: every deposit, charge and fix, with the balance after each. */
 export function MemberStatementDialog({
@@ -152,10 +166,10 @@ export function MemberStatementDialog({
 
         <div
           className={`rounded-lg border px-3 py-2.5 text-right ${
-            currentBalance < 0
-              ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
-              : "border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
-          }`}
+ currentBalance < 0
+ ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+ : "border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+ }`}
         >
           <div className="text-xs opacity-80">יתרה נוכחית</div>
           <div className="text-xl font-bold tabular-nums" dir="ltr">
@@ -189,9 +203,9 @@ export function MemberStatementDialog({
 }
 
 /** The whole group's cash box: totals in and out, and every movement, visible to all members. */
-export function GroupLedgerCard({ groupId }: { groupId: string }) {
+export function GroupLedgerCard({ groupId, refreshKey = 0 }: { groupId: string; refreshKey?: number }) {
   const [showAll, setShowAll] = useState(false);
-  const { entries, events, loading, error } = useLedger(groupId, undefined, true);
+  const { entries, events, loading, error } = useLedger(groupId, undefined, true, refreshKey);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
 
   useEffect(() => {

@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, User, Mail, Trash2, Wallet, MessageCircle, Users, LogOut, ReceiptText } from "lucide-react";
+import { Plus, User, Mail, Trash2, Wallet, MessageCircle, Users, LogOut, ReceiptText, Link2 } from "lucide-react";
+import { MemberLinkDialog } from "@/components/bbq/MemberLinkDialog";
 import { MemberStatementDialog } from "@/components/bbq/MemberStatement";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -301,7 +302,7 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
               {member.profile_image ? (
                 <AvatarImage src={member.profile_image} alt={member.name} />
               ) : null}
-              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-xl">
+              <AvatarFallback className="bg-card text-primary font-bold text-xl">
                 {member.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
@@ -320,8 +321,8 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
           {/* Balance - fixed min height so cards align */}
           <div
             className={`shrink-0 w-[120px] min-h-[56px] flex flex-col items-end justify-center gap-0.5 px-3 py-2 rounded-xl ${
-              isNegative ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400" : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
-            }`}
+ isNegative ? "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400" : "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400"
+ }`}
           >
             <span className="text-sm font-bold tabular-nums" dir="ltr">
               {isNegative ? "-" : ""}{Math.abs(balance).toFixed(2)} ₪
@@ -341,6 +342,14 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                 דף חשבון
               </Button>
             </MemberStatementDialog>
+          )}
+          {isAdmin && editingNickname !== member.id && (
+            <MemberLinkDialog member={member} groupName={groupName}>
+              <Button variant="outline" size="sm">
+                <Link2 className="w-4 h-4 ml-1.5" />
+                קישור אישי
+              </Button>
+            </MemberLinkDialog>
           )}
           {editingNickname === member.id ? (
             <EditNicknameDialog
@@ -522,7 +531,7 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                 {/* Guests Section */}
                 {guests.length > 0 && (
                   <div className="mt-8">
-                    <h3 className="text-lg md:text-xl font-semibold mb-3 text-right bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">
+                    <h3 className="text-lg md:text-xl font-semibold mb-3 text-right text-foreground">
                       נספחים
                     </h3>
                     <div className="grid gap-3 md:grid-cols-2">
@@ -537,13 +546,13 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                         return (
                           <div
                             key={guest.id}
-                            className="group relative p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-purple-50 via-purple-50 to-pink-50"
+                            className="group relative p-4 rounded-xl border-2 border-primary/30 hover:border-primary/30 hover:shadow-lg transition-all duration-300 bg-card "
                             style={{ animationDelay: `${index * 50}ms` }}
                             dir="rtl"
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div className="flex items-center gap-3 flex-1">
-                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold">
+                                <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-primary font-semibold">
                                   {guest.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 text-right">
@@ -556,7 +565,7 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                               </div>
                               <div className="flex flex-col items-end gap-1">
                                 {guest.should_pay && guest.cost_per_person > 0 ? (
-                                  <Badge className="bg-purple-600 text-white text-sm px-3 py-1">
+                                  <Badge className="bg-primary text-white text-sm px-3 py-1">
                                     {guest.cost_per_person.toFixed(2)} ₪
                                   </Badge>
                                 ) : (
@@ -881,10 +890,10 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
           <div className="grid gap-4 py-4">
             <div
               className={`rounded-lg border px-3 py-2.5 text-right ${
-                currentBalance < 0
-                  ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
-                  : "border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
-              }`}
+ currentBalance < 0
+ ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+ : "border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+ }`}
             >
               <div className="text-xs opacity-80">יתרה נוכחית</div>
               <div className="text-xl font-bold tabular-nums" dir="ltr">
@@ -912,9 +921,9 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
                 </div>
 
                 {newBalancePreview != null && (
-                  <div className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2.5 text-right dark:border-teal-900 dark:bg-teal-950/30">
-                    <div className="text-xs text-teal-800 dark:text-teal-300">יתרה אחרי ההפקדה</div>
-                    <div className="text-lg font-bold text-teal-900 tabular-nums dark:text-teal-200" dir="ltr">
+                  <div className="rounded-lg border border-primary/30 bg-accent px-3 py-2.5 text-right ">
+                    <div className="text-xs text-primary ">יתרה אחרי ההפקדה</div>
+                    <div className="text-lg font-bold text-primary tabular-nums " dir="ltr">
                       {newBalancePreview.toFixed(2)} ₪
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 tabular-nums" dir="ltr">
