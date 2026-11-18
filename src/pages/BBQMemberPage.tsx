@@ -326,22 +326,39 @@ const BBQMemberPage = () => {
             // so single old deposits cannot be listed. Their total is exact: what is left + what was charged.
             const myCharges = (data.events || []).reduce((sum, e) => sum + (Number(e.my_amount) || 0), 0);
             const totalIn = balance + myCharges;
+            // With a PayBox file: what they really put in (PayBox + app deposits after the file) and the
+            // settlement lines, exactly as in the list below. Used only when it adds up to the balance.
+            const pb = data.paybox;
+            let shownIn = totalIn;
+            let settled = 0;
+            if (pb) {
+              const pbLastIso = new Date(pb.meta.last_date.replace(" ", "T")).toISOString().slice(0, 19);
+              const afterFile = data.ledger
+                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at.slice(0, 19) > pbLastIso)
+                .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+              const fixes = data.ledger.filter((e) => e.type === "adjustment").reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+              const deposited = Number(pb.total) + afterFile;
+              const lines = (pb.notes || []).reduce((sum, n) => sum + (Number(n.amount) || 0), 0) + fixes;
+              if (Math.abs(deposited + lines - myCharges - balance) < 0.01) {
+                shownIn = deposited;
+                settled = lines;
+              }
+            }
+            const showSettled = Math.abs(settled) >= 0.01;
+            const box = (label: string, value: string, tone: string) => (
+              <div className={`rounded-xl p-3 ${tone}`}>
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">
+                  {value}
+                </div>
+              </div>
+            );
             return (
-              <div className="mb-3 grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-emerald-500/10 p-3">
-                  <div className="text-xs text-muted-foreground">הפקדתי עד היום</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-emerald-700">
-                    {money(totalIn)}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-red-500/10 p-3">
-                  <div className="text-xs text-muted-foreground">חויבתי על מפגשים</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-red-600">{money(myCharges)}</div>
-                </div>
-                <div className="rounded-xl bg-muted p-3">
-                  <div className="text-xs text-muted-foreground">נשאר ביתרה</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">{money(balance)}</div>
-                </div>
+              <div className={`mb-3 grid gap-2 ${showSettled ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+                {box("הפקדתי עד היום", money(shownIn), "bg-emerald-500/10 text-emerald-700")}
+                {showSettled && box("התחשבנויות מול הקופה", `${settled < 0 ? "−" : "+"}${Math.abs(settled).toFixed(2)} ₪`, "bg-slate-500/10 text-slate-700")}
+                {box("חויבתי על מפגשים", `−${myCharges.toFixed(2)} ₪`, "bg-red-500/10 text-red-600")}
+                {box("נשאר ביתרה", money(balance), "bg-muted text-foreground")}
               </div>
             );
           })()}
