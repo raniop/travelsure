@@ -268,12 +268,34 @@ const BBQMemberPage = () => {
           </Section>
         )}
 
-        <Section title="התנועות שלי" icon={<Wallet className="h-5 w-5" />}>
-          {data.ledger.length === 0 ? (
-            <p className="text-sm text-muted-foreground">הרישום המפורט מתחיל מהשינוי הבא ביתרה — כל הפקדה וכל חיוב יופיעו כאן.</p>
-          ) : (
-            <LedgerList entries={data.ledger} events={events} />
-          )}
+        <Section title="ההפקדות והחיובים שלי" icon={<Wallet className="h-5 w-5" />}>
+          {(() => {
+            // Before 18/11/2026 the app overwrote the balance on each deposit and kept no record of it,
+            // so single old deposits cannot be listed. Their total is exact: what is left + what was charged.
+            const myCharges = (data.events || []).reduce((sum, e) => sum + (Number(e.my_amount) || 0), 0);
+            const totalIn = balance + myCharges;
+            return (
+              <div className="mb-3 grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-emerald-500/10 p-3">
+                  <div className="text-xs text-muted-foreground">הפקדתי עד היום</div>
+                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-emerald-700">{money(totalIn)}</div>
+                </div>
+                <div className="rounded-xl bg-red-500/10 p-3">
+                  <div className="text-xs text-muted-foreground">חויבתי על מפגשים</div>
+                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-red-600">{money(myCharges)}</div>
+                </div>
+                <div className="rounded-xl bg-muted p-3">
+                  <div className="text-xs text-muted-foreground">נשאר ביתרה</div>
+                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">{money(balance)}</div>
+                </div>
+              </div>
+            );
+          })()}
+          <p className="mb-3 text-xs text-muted-foreground">
+            «הפקדתי עד היום» = מה שנשאר ביתרה + כל מה שחויב על מפגשים. עד 18/11/2026 המערכת לא שמרה כל הפקדה בנפרד
+            (רק עדכנה את היתרה), ולכן ההפקדות הישנות מופיעות כסכום אחד. מעכשיו כל הפקדה נרשמת כאן עם התאריך והסכום.
+          </p>
+          {data.ledger.length > 0 && <LedgerList entries={data.ledger} events={events} />}
         </Section>
 
         <Section title="המפגשים שהשתתפתי בהם" icon={<Flame className="h-5 w-5" />}>
@@ -306,24 +328,44 @@ const BBQMemberPage = () => {
         )}
 
         <Section title="קופת הקבוצה" icon={<Users className="h-5 w-5" />}>
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="rounded-xl bg-muted p-3">
-              <div className="text-xs text-muted-foreground">חברים</div>
-              <div className="text-xl font-bold">{data.group_totals.members}</div>
-            </div>
-            <div className="rounded-xl bg-muted p-3">
-              <div className="text-xs text-muted-foreground">סך היתרות של כולם</div>
-              <div dir="ltr" className="text-xl font-bold tabular-nums">{money(Number(data.group_totals.balances_sum))}</div>
-            </div>
-            <div className="rounded-xl bg-muted p-3">
-              <div className="text-xs text-muted-foreground">הופקד מאז תחילת הרישום</div>
-              <div dir="ltr" className="text-lg font-bold tabular-nums text-emerald-700">{money(Number(data.group_totals.deposits))}</div>
-            </div>
-            <div className="rounded-xl bg-muted p-3">
-              <div className="text-xs text-muted-foreground">חויב על מפגשים</div>
-              <div dir="ltr" className="text-lg font-bold tabular-nums text-red-600">{money(Number(data.group_totals.charges))}</div>
-            </div>
-          </div>
+          {(() => {
+            const past = (data.events || []).filter((e) => (e.event_date || "").slice(0, 10) < today);
+            const allCosts = past.reduce((sum, e) => sum + eventCost(e), 0);
+            const deposits = Number(data.group_totals.deposits) || 0;
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-muted p-3">
+                    <div className="text-xs text-muted-foreground">חברים</div>
+                    <div className="text-xl font-bold">{data.group_totals.members}</div>
+                  </div>
+                  <div className="rounded-xl bg-muted p-3">
+                    <div className="text-xs text-muted-foreground">סך היתרות של כולם עכשיו</div>
+                    <div dir="ltr" className="text-right text-xl font-bold tabular-nums">{money(Number(data.group_totals.balances_sum))}</div>
+                  </div>
+                  <div className="rounded-xl bg-muted p-3">
+                    <div className="text-xs text-muted-foreground">מפגשים שהתקיימו</div>
+                    <div className="text-xl font-bold">{past.length}</div>
+                  </div>
+                  <div className="rounded-xl bg-muted p-3">
+                    <div className="text-xs text-muted-foreground">עלות כל המפגשים</div>
+                    <div dir="ltr" className="text-right text-xl font-bold tabular-nums">{money(allCosts)}</div>
+                  </div>
+                  {deposits > 0 && (
+                    <div className="col-span-2 rounded-xl bg-muted p-3">
+                      <div className="text-xs text-muted-foreground">הפקדות שנרשמו ביומן</div>
+                      <div dir="ltr" className="text-right text-xl font-bold tabular-nums text-emerald-700">{money(deposits)}</div>
+                    </div>
+                  )}
+                </div>
+                {deposits <= 0 && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    רישום ההפקדות ביומן התחיל ב-18/11/2026 — מכאן כל הפקדה שתאושר תופיע גם כאן.
+                  </p>
+                )}
+              </>
+            );
+          })()}
         </Section>
 
         <p className="px-2 text-center text-xs text-muted-foreground">
