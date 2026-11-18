@@ -360,22 +360,40 @@ const BBQMemberPage = () => {
             // so single old deposits cannot be listed. Their total is exact: what is left + what was charged.
             const myCharges = (data.events || []).reduce((sum, e) => sum + (Number(e.my_amount) || 0), 0);
             const totalIn = balance + myCharges;
+            const pbTotal = data.paybox ? Number(data.paybox.total) || 0 : totalIn;
+            // Money that went through this member for the group (Bit from others, a returned overpayment,
+            // a reimbursement): it is in their PayBox deposits but is not their own money.
+            const passedThrough = Math.round((pbTotal - totalIn) * 100) / 100;
+            const showPassed = Boolean(data.paybox) && Math.abs(passedThrough) >= 0.01;
+            const box = (label: string, value: number, tone: string, sign = "") => (
+              <div className={`rounded-xl p-3 ${tone}`}>
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">
+                  {sign}
+                  {money(value)}
+                </div>
+              </div>
+            );
             return (
-              <div className="mb-3 grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-emerald-500/10 p-3">
-                  <div className="text-xs text-muted-foreground">{data.paybox ? "הפקדתי ב-PayBox" : "הפקדתי עד היום"}</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-emerald-700">
-                    {money(data.paybox ? Number(data.paybox.total) : totalIn)}
-                  </div>
+              <div className="mb-3">
+                <div className={`grid gap-2 ${showPassed ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+                  {box(data.paybox ? "הפקדתי ב-PayBox" : "הפקדתי עד היום", pbTotal, "bg-emerald-500/10 text-emerald-700")}
+                  {showPassed &&
+                    box(
+                      passedThrough > 0 ? "עבר דרכי בשביל אחרים" : "עוד לא בקובץ ה-PayBox",
+                      Math.abs(passedThrough),
+                      "bg-slate-500/10 text-slate-700",
+                      passedThrough > 0 ? "−" : "+",
+                    )}
+                  {box("חויבתי על מפגשים", myCharges, "bg-red-500/10 text-red-600", "−")}
+                  {box("נשאר ביתרה", balance, "bg-muted text-foreground", "=")}
                 </div>
-                <div className="rounded-xl bg-red-500/10 p-3">
-                  <div className="text-xs text-muted-foreground">חויבתי על מפגשים</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-red-600">{money(myCharges)}</div>
-                </div>
-                <div className="rounded-xl bg-muted p-3">
-                  <div className="text-xs text-muted-foreground">נשאר ביתרה</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">{money(balance)}</div>
-                </div>
+                {showPassed && passedThrough > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    «עבר דרכי בשביל אחרים» = כסף שהועבר דרכך לקבוצה ואינו הפקדה שלך (למשל כסף של אחרים שהעברת ב-PayBox, עודף
+                    שהוחזר או החזר על קנייה). כך החשבון מסתדר בדיוק עם היתרה.
+                  </p>
+                )}
               </div>
             );
           })()}
