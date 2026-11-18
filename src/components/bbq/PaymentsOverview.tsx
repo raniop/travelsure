@@ -730,6 +730,11 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
         );
       })()}
 
+      {/* Comparison with PayBox (owner) and the cash-box ledger: high on the page, not after the long per-event list */}
+      {isAdmin && <PayboxReconcileCard groupId={groupId} />}
+
+      <GroupLedgerCard groupId={groupId} refreshKey={moneyRefresh} />
+
       {/* תשלום מקופת פייבוקס לאירועים (מנהל) */}
       {isAdmin && payboxEvents.length > 0 && (
         <Card className="border-2 border-primary/30 shadow-md" dir="rtl">
@@ -1077,9 +1082,7 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
         )}
       </div>
 
-      {isAdmin && <PayboxReconcileCard groupId={groupId} />}
 
-      <GroupLedgerCard groupId={groupId} refreshKey={moneyRefresh} />
     </div>
   );
 };
