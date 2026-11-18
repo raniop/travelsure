@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, User, Mail, Trash2, Wallet, MessageCircle, Users, LogOut } from "lucide-react";
+import { Plus, User, Mail, Trash2, Wallet, MessageCircle, Users, LogOut, ReceiptText } from "lucide-react";
+import { MemberStatementDialog } from "@/components/bbq/MemberStatement";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -33,6 +34,7 @@ function buildDepositRequestWhatsAppMessage(
   memberName: string,
   currentBalance: number,
   groupName?: string,
+  groupId?: string,
 ): string {
   const cleanMemberName = stripEmojisForPlainText(memberName) || memberName.trim();
   const cleanGroupName = groupName ? stripEmojisForPlainText(groupName) : "";
@@ -67,6 +69,13 @@ function buildDepositRequestWhatsAppMessage(
         ]
       : ["אין פעולה נדרשת כרגע."]),
     "",
+    ...(groupId
+      ? [
+          "איך הגענו ליתרה? כל הפקדה וכל חיוב על אירוע מופיעים ב«דף החשבון שלי»:",
+          `https://travelsure.co.il/bbq?group=${groupId}&tab=payments`,
+          "",
+        ]
+      : []),
     "תודה!",
   ].join("\n");
 }
@@ -128,41 +137,18 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
           allPayments.push({ ...p, event_id: event.id });
         }
       }
-      // יתרה: 500 − ניכויים; אם יש הפקדה נוספת (עדכון יתרה) – היתרה השמורה גבוהה יותר
-      const membersWithCorrectBalance = members.map((member: any) => {
+      // The balance shown is the one stored on the server. Every change to it is written to the
+      // ledger by the server (deposit, event charge, refund, manual fix), so it is never recomputed
+      // or silently "corrected" here — that is what made the numbers impossible to follow.
+      const membersWithRoundedBalances = members.map((member: any) => {
+        if (member.balance != null) {
+          return { ...member, balance: parseFloat(Number(member.balance).toFixed(2)) };
+        }
         const deducted = allPayments
           .filter((p: any) => p.payer_type === "member" && p.payer_id === member.id && p.payment_status !== "paid")
-          .reduce((sum: number, p: any) => sum + parseFloat((p.amount || 0).toFixed(2)), 0);
-        const calculatedBalance = parseFloat((DEPOSIT_PER_MEMBER - deducted).toFixed(2));
-        const storedBalance = member.balance != null ? parseFloat((member.balance).toFixed(2)) : null;
-        // אם היתרה שמורה גבוהה מהמחושבת = הפקיד עוד → להציג ולשמור את השמורה
-        const displayBalance = storedBalance != null && storedBalance > calculatedBalance
-          ? storedBalance
-          : calculatedBalance;
-        return { ...member, balance: displayBalance };
+          .reduce((sum: number, p: any) => sum + parseFloat(Number(p.amount || 0).toFixed(2)), 0);
+        return { ...member, balance: parseFloat((DEPOSIT_PER_MEMBER - deducted).toFixed(2)) };
       });
-      const membersWithRoundedBalances = membersWithCorrectBalance.map((member: any) => ({
-        ...member,
-        balance: member.balance != null ? parseFloat((member.balance).toFixed(2)) : member.balance
-      }));
-      // מנהל: תקן ב-API רק כשהמחושב נמוך מהיתרה השמורה (לא לדרוס הפקדה ידנית)
-      if (isAdmin) {
-        for (const member of membersWithRoundedBalances) {
-          const stored = members.find((m: any) => m.id === member.id);
-          const storedBalance = stored?.balance != null ? parseFloat((stored.balance).toFixed(2)) : null;
-          const deducted = allPayments
-            .filter((p: any) => p.payer_type === "member" && p.payer_id === member.id && p.payment_status !== "paid")
-            .reduce((sum: number, p: any) => sum + parseFloat((p.amount || 0).toFixed(2)), 0);
-          const calculatedBalance = parseFloat((DEPOSIT_PER_MEMBER - deducted).toFixed(2));
-          if (storedBalance != null && storedBalance > calculatedBalance) continue;
-          if (storedBalance === calculatedBalance) continue;
-          try {
-            await apiClient.updateMember(member.id, { ...member, balance: calculatedBalance });
-          } catch (e) {
-            console.error("Error syncing balance for member", member.id, e);
-          }
-        }
-      }
       // Load all users to get profile images
       try {
         const allUsers = await apiClient.getUsers();
@@ -348,6 +334,14 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
 
         {/* Actions - one row, consistent spacing */}
         <div className="flex flex-wrap items-center gap-2 justify-start border-t border-border/50 pt-3" dir="rtl" style={{ direction: "rtl" }}>
+          {editingNickname !== member.id && (
+            <MemberStatementDialog groupId={groupId} member={member}>
+              <Button variant="secondary" size="sm">
+                <ReceiptText className="w-4 h-4 ml-1.5" />
+                דף חשבון
+              </Button>
+            </MemberStatementDialog>
+          )}
           {editingNickname === member.id ? (
             <EditNicknameDialog
               member={member}
@@ -405,6 +399,7 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                       member.name,
                       currentBalance,
                       groupName,
+                      groupId,
                     );
                     let phoneNumber = (member.phone || "").replace(/[^0-9]/g, "");
                     if (phoneNumber.startsWith("0")) phoneNumber = "972" + phoneNumber.slice(1);
@@ -738,6 +733,8 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
   const [depositAmount, setDepositAmount] = useState("");
   const [manualMode, setManualMode] = useState(false);
   const [manualBalance, setManualBalance] = useState("");
+  const [depositNote, setDepositNote] = useState("");
+  const [manualReason, setManualReason] = useState("");
   const [sendWhatsAppConfirmation, setSendWhatsAppConfirmation] = useState(true);
   const { toast } = useToast();
   const memberHasPhone = Boolean(member.phone?.trim());
@@ -749,6 +746,8 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
     setDepositAmount("");
     setManualMode(false);
     setManualBalance((member.balance ?? 0).toString());
+    setDepositNote("");
+    setManualReason("");
     setSendWhatsAppConfirmation(true);
   }, [open, member.balance, member.id]);
 
@@ -768,6 +767,14 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
         toast({
           title: "שגיאה",
           description: "אנא הזן יתרה תקינה (מספר)",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!manualReason.trim()) {
+        toast({
+          title: "חסרה סיבה",
+          description: "כתבו למה משנים את היתרה ידנית — זה נשמר ביומן שהחברים רואים",
           variant: "destructive",
         });
         return;
@@ -794,11 +801,19 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
         throw new Error("חבר לא נמצא");
       }
 
+      // A deposit adds to the balance stored on the server right now (not the one on screen).
+      if (!manualMode) {
+        const serverBalance = Number(currentMember.balance) || 0;
+        balanceValue = parseFloat((serverBalance + parsedDeposit).toFixed(2));
+      }
       const roundedBalance = parseFloat(balanceValue.toFixed(2));
-      await apiClient.updateMember(member.id, {
-        ...currentMember,
-        balance: roundedBalance,
-      });
+      await apiClient.updateMember(
+        member.id,
+        { ...currentMember, balance: roundedBalance },
+        manualMode
+          ? { type: "adjustment", note: manualReason.trim() }
+          : { type: "deposit", note: depositNote.trim() || undefined },
+      );
 
       const recordedDeposit = !manualMode;
       const depositForMessage = recordedDeposit ? parsedDeposit : 0;
@@ -908,6 +923,17 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
                   </div>
                 )}
 
+                <div className="grid gap-2">
+                  <Label htmlFor="deposit-note">הערה (לא חובה)</Label>
+                  <Input
+                    id="deposit-note"
+                    value={depositNote}
+                    onChange={(e) => setDepositNote(e.target.value)}
+                    placeholder="למשל: PayBox 12/11"
+                    maxLength={120}
+                  />
+                </div>
+
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => handleQuickDeposit(500)}>
                     <Wallet className="w-4 h-4 ml-1.5" />
@@ -935,6 +961,15 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
                 <p className="text-xs text-muted-foreground text-right">
                   לתיקון ידני בלבד — בדרך כלל עדיף «כמה הופקד».
                 </p>
+                <Label htmlFor="manual-reason">סיבת התיקון (חובה — מופיעה ביומן)</Label>
+                <Input
+                  id="manual-reason"
+                  value={manualReason}
+                  onChange={(e) => setManualReason(e.target.value)}
+                  placeholder="למשל: החזר על אירוע שבוטל"
+                  maxLength={200}
+                  required
+                />
               </div>
             )}
 

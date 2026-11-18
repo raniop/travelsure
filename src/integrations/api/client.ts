@@ -36,6 +36,29 @@ export class ApiError extends Error {
   }
 }
 
+export type LedgerType = 'opening' | 'deposit' | 'charge' | 'refund' | 'adjustment' | 'transfer';
+
+export interface LedgerHint {
+  type: Exclude<LedgerType, 'opening'>;
+  note?: string;
+  event_id?: string;
+}
+
+export interface LedgerEntry {
+  id: string;
+  group_id: string;
+  member_id: string;
+  type: LedgerType;
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  note?: string;
+  event_id?: string;
+  created_by?: string;
+  created_by_name?: string;
+  created_at: string;
+}
+
 export interface AuthResult {
   token: string;
   user: { id: string; name: string; phone: string; profile_image?: string | null; [key: string]: unknown };
@@ -168,11 +191,22 @@ class ApiClient {
     });
   }
 
-  async updateMember(id: string, data: any): Promise<any> {
+  /**
+   * When the balance changes, the server writes a ledger line by itself; `ledger` only says why
+   * (deposit, event charge, refund on recalculation, manual adjustment) and is not stored on the member.
+   */
+  async updateMember(id: string, data: any, ledger?: LedgerHint): Promise<any> {
     return this.request(`entity=members&id=${id}&action=update`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(ledger ? { ...data, _ledger: ledger } : data),
     });
+  }
+
+  /** Append-only balance history (written only by the server). Oldest first. */
+  async getLedger(groupId: string, memberId?: string): Promise<LedgerEntry[]> {
+    const q = `entity=ledger&group_id=${encodeURIComponent(groupId)}` +
+      (memberId ? `&member_id=${encodeURIComponent(memberId)}` : '');
+    return this.request(q);
   }
 
   async deleteMember(id: string): Promise<void> {

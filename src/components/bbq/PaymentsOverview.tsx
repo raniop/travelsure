@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/integrations/api/client";
+import { GroupLedgerCard, MemberStatementDialog } from "@/components/bbq/MemberStatement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -56,6 +57,7 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
     pending: 0
   });
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [groupMembers, setGroupMembers] = useState<{ id: string; name: string; phone?: string; balance?: number }[]>([]);
   const [totalDeposited, setTotalDeposited] = useState<number>(0);
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
   const [payboxEvents, setPayboxEvents] = useState<EventPayboxFields[]>([]);
@@ -74,6 +76,8 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
   const loadPayments = async () => {
     try {
       setLoading(true);
+      // Members for "דף החשבון שלי" — needed even when the group has no events yet
+      apiClient.getMembers(groupId).then(setGroupMembers).catch(() => undefined);
 
       // Get all events for this group
       const events = await apiClient.getEvents(groupId);
@@ -432,6 +436,7 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
       // Load current balance and total deposited (רק חברים, בלי אורחים)
       try {
         const members = await apiClient.getMembers(groupId);
+        setGroupMembers(members);
         const sumBalances = members.reduce((sum, m: any) => {
           const b = m.balance != null ? (typeof m.balance === 'string' ? parseFloat(m.balance) : m.balance) : 0;
           return parseFloat((sum + parseFloat(b.toFixed(2))).toFixed(2));
@@ -729,6 +734,26 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
           </CardContent>
         </Card>
       </div>
+
+      {/* דף החשבון שלי — every deposit and charge behind my balance */}
+      {(() => {
+        let myPhone = "";
+        try {
+          myPhone = JSON.parse(localStorage.getItem('bbq_current_user') || '{}').phone || "";
+        } catch {
+          myPhone = "";
+        }
+        const me = groupMembers.find((m) => m.phone === myPhone);
+        if (!me) return null;
+        return (
+          <MemberStatementDialog groupId={groupId} member={me}>
+            <Button variant="outline" className="w-full border-2 h-12 text-base">
+              <Wallet className="w-5 h-5 ml-2" />
+              דף החשבון שלי — איך הגעתי ליתרה
+            </Button>
+          </MemberStatementDialog>
+        );
+      })()}
 
       {/* תשלום מקופת פייבוקס לאירועים (מנהל) */}
       {isAdmin && payboxEvents.length > 0 && (
@@ -1076,6 +1101,8 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
           })()
         )}
       </div>
+
+      <GroupLedgerCard groupId={groupId} />
     </div>
   );
 };

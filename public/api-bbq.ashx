@@ -21,7 +21,7 @@ public class BBQHandler : IHttpHandler
     private const int SessionDays = 180;
     private const int HashIterations = 20000;
     private static readonly HashSet<string> AllowedEntities = new HashSet<string>(new string[] {
-        "groups", "events", "members", "payments", "polls", "attendees", "guests", "users", "group_invitations"
+        "groups", "events", "members", "payments", "polls", "attendees", "guests", "users", "group_invitations", "ledger"
     });
     private static readonly Regex SafeId = new Regex("^[A-Za-z0-9_\\-]{1,100}$");
     private static readonly Regex TokenFormat = new Regex("^[a-f0-9]{64}$");
@@ -441,7 +441,195 @@ public class BBQHandler : IHttpHandler
             HandleUsers(context, action, id, sessionUserId, dataFolder);
             return true;
         }
+        if (entity == "ledger")
+        {
+            HandleLedger(context, sessionUserId, dataFolder);
+            return true;
+        }
+        bool isMemberUpdate = entity == "members" && id != ""
+            && (context.Request.HttpMethod == "PUT" || (context.Request.HttpMethod == "POST" && action == "update"));
+        if (isMemberUpdate)
+        {
+            HandleMemberUpdate(context, id, sessionUserId, dataFolder);
+            return true;
+        }
         return false;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Ledger: every change to a member's balance is recorded here by the server (append-only).
+    // Only the group owner can change a balance; the app cannot write, edit or delete entries.
+    // ---------------------------------------------------------------------------------------------
+    private static readonly HashSet<string> LedgerTypes = new HashSet<string>(new string[] {
+        "deposit", "charge", "refund", "adjustment", "transfer"
+    });
+
+    private static decimal Num(object v)
+    {
+        if (v == null) return 0m;
+        decimal d;
+        if (decimal.TryParse(Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture),
+            System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d))
+            return Math.Round(d, 2);
+        return 0m;
+    }
+
+    private Dictionary<string, object> LoadEntity(string entity, string id, string dataFolder)
+    {
+        if (string.IsNullOrEmpty(id) || !SafeId.IsMatch(id)) return null;
+        return ParseObject(LoadEntityJson(entity, id, dataFolder));
+    }
+
+    private List<Dictionary<string, object>> LoadAll(string entity, string dataFolder)
+    {
+        List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+        string folder = Path.Combine(dataFolder, entity);
+        if (!Directory.Exists(folder)) return list;
+        foreach (string file in Directory.GetFiles(folder, "*.json"))
+        {
+            Dictionary<string, object> d = ParseObject(File.ReadAllText(file, Encoding.UTF8));
+            if (d != null) list.Add(d);
+        }
+        return list;
+    }
+
+    private bool IsGroupOwner(string groupId, string userId, string dataFolder)
+    {
+        Dictionary<string, object> group = LoadEntity("groups", groupId, dataFolder);
+        return group != null && Str(group, "owner_id") == userId;
+    }
+
+    /** Owner, or a member of the group whose phone is the signed-in user's phone. */
+    private bool CanSeeGroup(string groupId, string userId, string dataFolder)
+    {
+        if (IsGroupOwner(groupId, userId, dataFolder)) return true;
+        Dictionary<string, object> user = LoadEntity("users", userId, dataFolder);
+        string phone = Digits(Str(user, "phone"));
+        if (phone == "") return false;
+        foreach (Dictionary<string, object> m in LoadAll("members", dataFolder))
+        {
+            if (Str(m, "group_id") == groupId && Digits(Str(m, "phone")) == phone) return true;
+        }
+        return false;
+    }
+
+    private void WriteLedgerEntry(string dataFolder, Dictionary<string, object> entry)
+    {
+        string id = Guid.NewGuid().ToString();
+        entry["id"] = id;
+        if (!entry.ContainsKey("created_at")) entry["created_at"] = DateTime.UtcNow.ToString("o");
+        SaveEntityJson("ledger", id, Json().Serialize(entry), dataFolder);
+    }
+
+    private bool HasLedgerEntries(string memberId, string dataFolder)
+    {
+        foreach (Dictionary<string, object> e in LoadAll("ledger", dataFolder))
+        {
+            if (Str(e, "member_id") == memberId) return true;
+        }
+        return false;
+    }
+
+    private void HandleMemberUpdate(HttpContext context, string id, string sessionUserId, string dataFolder)
+    {
+        string raw = ReadBody(context);
+        Dictionary<string, object> body = ParseObject(raw);
+        Dictionary<string, object> existing = LoadEntity("members", id, dataFolder);
+        if (body == null || existing == null)
+        {
+            HandlePutWithBody(context, "members", dataFolder, raw);
+            return;
+        }
+
+        Dictionary<string, object> hint = null;
+        object hintObj;
+        if (body.TryGetValue("_ledger", out hintObj)) hint = hintObj as Dictionary<string, object>;
+        body.Remove("_ledger");
+
+        string groupId = Str(existing, "group_id");
+        decimal oldBalance = Num(existing.ContainsKey("balance") ? existing["balance"] : null);
+        bool hasNewBalance = body.ContainsKey("balance") && body["balance"] != null;
+        decimal newBalance = hasNewBalance ? Num(body["balance"]) : oldBalance;
+
+        if (newBalance != oldBalance)
+        {
+            if (!IsGroupOwner(groupId, sessionUserId, dataFolder))
+            {
+                // Only the group owner moves money; anyone else's save keeps the stored balance.
+                if (existing.ContainsKey("balance")) body["balance"] = existing["balance"]; else body.Remove("balance");
+            }
+            else
+            {
+                Dictionary<string, object> actor = LoadEntity("users", sessionUserId, dataFolder);
+                string actorName = Str(actor, "name");
+                if (!HasLedgerEntries(id, dataFolder))
+                {
+                    Dictionary<string, object> opening = new Dictionary<string, object>();
+                    opening["group_id"] = groupId;
+                    opening["member_id"] = id;
+                    opening["type"] = "opening";
+                    opening["amount"] = oldBalance;
+                    opening["balance_before"] = 0m;
+                    opening["balance_after"] = oldBalance;
+                    opening["note"] = "";
+                    opening["created_by"] = sessionUserId;
+                    opening["created_by_name"] = actorName;
+                    opening["created_at"] = DateTime.UtcNow.AddMilliseconds(-1).ToString("o");
+                    WriteLedgerEntry(dataFolder, opening);
+                }
+                string type = Str(hint, "type");
+                if (!LedgerTypes.Contains(type)) type = "adjustment";
+                string note = Str(hint, "note").Trim();
+                if (note.Length > 300) note = note.Substring(0, 300);
+                string eventId = Str(hint, "event_id");
+                if (!SafeId.IsMatch(eventId)) eventId = "";
+
+                Dictionary<string, object> entry = new Dictionary<string, object>();
+                entry["group_id"] = groupId;
+                entry["member_id"] = id;
+                entry["type"] = type;
+                entry["amount"] = newBalance - oldBalance;
+                entry["balance_before"] = oldBalance;
+                entry["balance_after"] = newBalance;
+                entry["note"] = note;
+                entry["event_id"] = eventId;
+                entry["created_by"] = sessionUserId;
+                entry["created_by_name"] = actorName;
+                WriteLedgerEntry(dataFolder, entry);
+            }
+        }
+
+        HandlePutWithBody(context, "members", dataFolder, Json().Serialize(body));
+    }
+
+    private void HandleLedger(HttpContext context, string sessionUserId, string dataFolder)
+    {
+        if (context.Request.HttpMethod != "GET")
+        {
+            WriteJson(context, 405, new Dictionary<string, object> { { "error", "ledger_is_read_only" } });
+            return;
+        }
+        string groupId = context.Request.QueryString["group_id"] ?? "";
+        string memberId = context.Request.QueryString["member_id"] ?? "";
+        if (!SafeId.IsMatch(groupId))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "missing_group_id" } });
+            return;
+        }
+        if (!CanSeeGroup(groupId, sessionUserId, dataFolder))
+        {
+            WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+            return;
+        }
+        List<Dictionary<string, object>> entries = new List<Dictionary<string, object>>();
+        foreach (Dictionary<string, object> e in LoadAll("ledger", dataFolder))
+        {
+            if (Str(e, "group_id") != groupId) continue;
+            if (memberId != "" && Str(e, "member_id") != memberId) continue;
+            entries.Add(e);
+        }
+        entries.Sort((a, b) => string.CompareOrdinal(Str(a, "created_at"), Str(b, "created_at")));
+        WriteJson(context, 200, entries);
     }
 
     public void ProcessRequest(HttpContext context)

@@ -735,7 +735,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
               await apiClient.updateMember(member.id, {
                 ...member,
                 balance: roundedNewBalance
-              });
+              }, { type: "refund", event_id: eventId, note: "ביטול החיוב הקודם לפני חישוב מחדש" });
             }
           }
         }
@@ -788,7 +788,7 @@ const EventDetailsDialog = ({ eventId, groupId, userId, isAdmin, children, onPay
           await apiClient.updateMember(member.id, {
             ...member,
             balance: roundedNewBalance
-          });
+          }, { type: "charge", event_id: eventId });
 
           await apiClient.createPayment({
             event_id: eventId,
