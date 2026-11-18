@@ -363,9 +363,9 @@ const BBQMemberPage = () => {
             return (
               <div className="mb-3 grid grid-cols-3 gap-2">
                 <div className="rounded-xl bg-emerald-500/10 p-3">
-                  <div className="text-xs text-muted-foreground">{data.paybox ? "הפקדתי ב-PayBox" : "הפקדתי עד היום"}</div>
+                  <div className="text-xs text-muted-foreground">הפקדתי עד היום</div>
                   <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-emerald-700">
-                    {money(data.paybox ? Number(data.paybox.total) : totalIn)}
+                    {money(totalIn)}
                   </div>
                 </div>
                 <div className="rounded-xl bg-red-500/10 p-3">
