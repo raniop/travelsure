@@ -34,6 +34,40 @@ export function buildGuestPaymentWhatsAppMessage(opts: {
   ].join("\n");
 }
 
+export function buildDepositRecordedWhatsAppMessage(opts: {
+  memberName: string;
+  depositAmount: number;
+  newBalance: number;
+  previousBalance: number;
+  groupName?: string;
+}): string {
+  const name = stripEmojisForPlainText(opts.memberName) || opts.memberName.trim();
+  const group = opts.groupName ? stripEmojisForPlainText(opts.groupName) : "";
+  const groupLabel = group ? `קבוצת «${group}»` : "הקבוצה";
+  const wasNegative = opts.previousBalance < 0;
+  const balanceNote =
+    opts.newBalance >= 500
+      ? "היתרה שלך מעודכנת ואת/ה מסודר/ת לקראת האירועים הקרובים."
+      : wasNegative && opts.newBalance < 0
+        ? "עדיין חסרה יתרה — אפשר להשלים בהמשך לפי הצורך."
+        : opts.newBalance < 500
+          ? `אם תרצה/י להגיע ליתרת בסיס של 500 ₪, נשאר להשלים עוד ${(500 - opts.newBalance).toFixed(2)} ₪.`
+          : "היתרה שלך מעודכנת.";
+
+  return [
+    `שלום ${name}!`,
+    "",
+    `קיבלנו ורשמנו את ההפקדה שלך לקופת האירועים המשותפת (${groupLabel}).`,
+    "",
+    `סכום שהתקבל: ${opts.depositAmount.toFixed(2)} ₪`,
+    `יתרה מעודכנת: ${opts.newBalance.toFixed(2)} ₪`,
+    "",
+    balanceNote,
+    "",
+    "תודה על ההעברה — נתראה באירוע הבא!",
+  ].join("\n");
+}
+
 export function whatsAppUrl(phone: string, message: string): string {
   let phoneNumber = phone.replace(/[^0-9]/g, "");
   if (phoneNumber.startsWith("0")) phoneNumber = "972" + phoneNumber.slice(1);

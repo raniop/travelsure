@@ -4,8 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Wallet, TrendingDown, TrendingUp, Coins, Calendar, UserPlus, MessageCircle, Clock } from "lucide-react";
+import { CheckCircle2, Wallet, TrendingDown, TrendingUp, Coins, Calendar, UserPlus, MessageCircle, Clock, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { buildGuestPaymentWhatsAppMessage, whatsAppUrl } from "@/lib/bbq/payboxMessages";
@@ -50,6 +60,10 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
   const [totalGuestPayments, setTotalGuestPayments] = useState<number>(0);
   const [payboxEvents, setPayboxEvents] = useState<EventPayboxFields[]>([]);
   const [payboxEventFilter, setPayboxEventFilter] = useState<"pending" | "all">("pending");
+  const [guestPhoneDialog, setGuestPhoneDialog] = useState<Payment | null>(null);
+  const [guestPhoneInput, setGuestPhoneInput] = useState("");
+  const [guestPhoneSaving, setGuestPhoneSaving] = useState(false);
+  const [openWhatsAppAfterPhoneSave, setOpenWhatsAppAfterPhoneSave] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -515,13 +529,15 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
     }
   };
 
+  const openGuestPhoneDialog = (payment: Payment, thenWhatsApp: boolean) => {
+    setGuestPhoneDialog(payment);
+    setGuestPhoneInput(payment.guest_phone?.trim() || "");
+    setOpenWhatsAppAfterPhoneSave(thenWhatsApp);
+  };
+
   const sendGuestPaymentWhatsApp = (payment: Payment) => {
-    if (!payment.guest_phone) {
-      toast({
-        title: "אין טלפון",
-        description: "הוסף מספר טלפון לאורח באירוע כדי לשלוח WhatsApp",
-        variant: "destructive",
-      });
+    if (!payment.guest_phone?.trim()) {
+      openGuestPhoneDialog(payment, true);
       return;
     }
     const eventDate = payment.event?.event_date
@@ -536,6 +552,50 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
     });
     window.open(whatsAppUrl(payment.guest_phone, message), "_blank");
     toast({ title: "נפתח WhatsApp", description: `בקשת תשלום ל-${payment.payer_name}` });
+  };
+
+  const saveGuestPhone = async () => {
+    if (!guestPhoneDialog?.event?.id) return;
+    const phone = guestPhoneInput.replace(/[^\d+\-\s]/g, "").trim();
+    if (!phone) {
+      toast({
+        title: "שגיאה",
+        description: "הזן מספר טלפון",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setGuestPhoneSaving(true);
+      const guests = await apiClient.getGuests(guestPhoneDialog.event.id);
+      const guest = guests.find((g) => g.id === guestPhoneDialog.payer_id);
+      if (!guest) {
+        throw new Error("אורח לא נמצא");
+      }
+
+      await apiClient.updateGuest(guest.id, {
+        ...guest,
+        phone,
+      });
+
+      const updatedPayment: Payment = { ...guestPhoneDialog, guest_phone: phone };
+      setPayments((prev) => prev.map((p) => (p.id === updatedPayment.id ? updatedPayment : p)));
+
+      toast({ title: "נשמר", description: "מספר הטלפון עודכן לאורח" });
+      setGuestPhoneDialog(null);
+      setGuestPhoneInput("");
+
+      if (openWhatsAppAfterPhoneSave) {
+        sendGuestPaymentWhatsApp(updatedPayment);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "לא הצלחנו לשמור את הטלפון";
+      toast({ title: "שגיאה", description: message, variant: "destructive" });
+    } finally {
+      setGuestPhoneSaving(false);
+      setOpenWhatsAppAfterPhoneSave(false);
+    }
   };
 
   const guestPendingPayments = payments.filter(
@@ -752,6 +812,18 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 shrink-0">
+                    {!payment.guest_phone?.trim() && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="gap-1.5"
+                        onClick={() => openGuestPhoneDialog(payment, false)}
+                      >
+                        <Phone className="w-4 h-4" />
+                        הוסף טלפון
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       size="sm"
@@ -778,6 +850,52 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={guestPhoneDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setGuestPhoneDialog(null);
+            setGuestPhoneInput("");
+            setOpenWhatsAppAfterPhoneSave(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">טלפון לאורח</DialogTitle>
+            <DialogDescription className="text-right">
+              {guestPhoneDialog?.payer_name
+                ? `מספר ל-${guestPhoneDialog.payer_name} — נשמר לכך שתוכל/י לשלוח בקשת תשלום ב-WhatsApp.`
+                : "הזן מספר טלפון לשליחת WhatsApp."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="guest-phone-pay" className="text-right">
+              מספר טלפון
+            </Label>
+            <Input
+              id="guest-phone-pay"
+              type="tel"
+              inputMode="tel"
+              placeholder="05X-XXXXXXX"
+              value={guestPhoneInput}
+              onChange={(e) => setGuestPhoneInput(e.target.value)}
+              className="text-left tabular-nums"
+              dir="ltr"
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <Button type="button" variant="outline" onClick={() => setGuestPhoneDialog(null)}>
+              ביטול
+            </Button>
+            <Button type="button" disabled={guestPhoneSaving} onClick={() => void saveGuestPhone()}>
+              {guestPhoneSaving ? "שומר..." : openWhatsAppAfterPhoneSave ? "שמור ושלח WhatsApp" : "שמור"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Payments List - Grouped by Event */}
       <div>

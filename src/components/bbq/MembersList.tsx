@@ -18,6 +18,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { stripEmojisForPlainText } from "@/lib/bbq/plainText";
+import { buildDepositRecordedWhatsAppMessage, whatsAppUrl } from "@/lib/bbq/payboxMessages";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const PAYBOX_GROUP_LINK = "https://links.payboxapp.com/k5qia1URTZb";
 const DEPOSIT_PER_MEMBER = 500; // כל חבר מפקיד 500, היתרה = 500 − סכום ניכויים מאירועים
@@ -363,7 +365,12 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                 {member.nickname ? "ערוך כינוי" : "הוסף כינוי"}
               </Button>
               {isAdmin && (
-                <UpdateBalanceDialog member={member} groupId={groupId} onBalanceUpdated={loadMembers}>
+                <UpdateBalanceDialog
+                  member={member}
+                  groupId={groupId}
+                  groupName={groupName}
+                  onBalanceUpdated={loadMembers}
+                >
                   <Button variant="outline" size="sm">עדכן יתרה</Button>
                 </UpdateBalanceDialog>
               )}
@@ -416,7 +423,12 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
                   בקש הפקדה
                 </Button>
               )}
-              <UpdateBalanceDialog member={member} groupId={groupId} onBalanceUpdated={loadMembers}>
+              <UpdateBalanceDialog
+                member={member}
+                groupId={groupId}
+                groupName={groupName}
+                onBalanceUpdated={loadMembers}
+              >
                 <Button variant="outline" size="sm">עדכן יתרה</Button>
               </UpdateBalanceDialog>
               <Button variant="destructive" size="sm" onClick={() => deleteMember(member.id)}>
@@ -715,17 +727,20 @@ const AddMemberDialog = ({ groupId, onMemberAdded, children }: AddMemberDialogPr
 interface UpdateBalanceDialogProps {
   member: Member;
   groupId: string;
+  groupName?: string;
   onBalanceUpdated: () => void;
   children: React.ReactNode;
 }
 
-const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: UpdateBalanceDialogProps) => {
+const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, children }: UpdateBalanceDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [manualMode, setManualMode] = useState(false);
   const [manualBalance, setManualBalance] = useState("");
+  const [sendWhatsAppConfirmation, setSendWhatsAppConfirmation] = useState(true);
   const { toast } = useToast();
+  const memberHasPhone = Boolean(member.phone?.trim());
 
   const currentBalance = member.balance ?? 0;
 
@@ -734,6 +749,7 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
     setDepositAmount("");
     setManualMode(false);
     setManualBalance((member.balance ?? 0).toString());
+    setSendWhatsAppConfirmation(true);
   }, [open, member.balance, member.id]);
 
   const parsedDeposit = parseFloat(depositAmount);
@@ -784,12 +800,36 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
         balance: roundedBalance,
       });
 
+      const recordedDeposit = !manualMode;
+      const depositForMessage = recordedDeposit ? parsedDeposit : 0;
+
       toast({
         title: "הצלחה!",
         description: manualMode
           ? "היתרה עודכנה בהצלחה"
           : `נרשמה הפקדה של ${parsedDeposit.toFixed(2)} ₪ — יתרה חדשה: ${roundedBalance.toFixed(2)} ₪`,
       });
+
+      if (recordedDeposit && sendWhatsAppConfirmation && member.phone?.trim()) {
+        const message = buildDepositRecordedWhatsAppMessage({
+          memberName: member.name,
+          depositAmount: depositForMessage,
+          newBalance: roundedBalance,
+          previousBalance: currentBalance,
+          groupName,
+        });
+        window.open(whatsAppUrl(member.phone, message), "_blank");
+        toast({
+          title: "נפתח WhatsApp",
+          description: `אישור הפקדה ל-${member.name} — שלח/י למחבר`,
+        });
+      } else if (recordedDeposit && sendWhatsAppConfirmation && !member.phone?.trim()) {
+        toast({
+          title: "אין טלפון",
+          description: "ההפקדה נשמרה — הוסף מספר טלפון לחבר כדי לשלוח אישור ב-WhatsApp",
+          variant: "destructive",
+        });
+      }
 
       setOpen(false);
       onBalanceUpdated();
@@ -905,6 +945,22 @@ const UpdateBalanceDialog = ({ member, groupId, onBalanceUpdated, children }: Up
             >
               {manualMode ? "← חזרה להפקדה רגילה" : "קבע יתרה ידנית (מתקדם)"}
             </button>
+
+            {!manualMode && memberHasPhone && (
+              <div className="flex items-center gap-2 justify-end">
+                <Label
+                  htmlFor="wa-deposit-confirm"
+                  className="text-sm font-normal cursor-pointer text-right leading-snug"
+                >
+                  לאחר השמירה — פתח WhatsApp עם הודעת אישור לחבר
+                </Label>
+                <Checkbox
+                  id="wa-deposit-confirm"
+                  checked={sendWhatsAppConfirmation}
+                  onCheckedChange={(c) => setSendWhatsAppConfirmation(c === true)}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
