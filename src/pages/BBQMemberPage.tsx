@@ -353,12 +353,37 @@ const BBQMemberPage = () => {
                 </div>
               </div>
             );
+            const settleLines = showSettled ? [...(pb?.notes || [])].sort((x, y) => x.date.localeCompare(y.date)) : [];
             return (
-              <div className={`mb-3 grid gap-2 ${showSettled ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+              <div className="mb-3">
+              <div className={`grid gap-2 ${showSettled ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
                 {box("הפקדתי עד היום", money(shownIn), "bg-emerald-500/10 text-emerald-700")}
                 {showSettled && box("התחשבנויות מול הקופה", `${settled < 0 ? "−" : "+"}${Math.abs(settled).toFixed(2)} ₪`, "bg-slate-500/10 text-slate-700")}
                 {box("חויבתי על מפגשים", `−${myCharges.toFixed(2)} ₪`, "bg-red-500/10 text-red-600")}
                 {box("נשאר ביתרה", money(balance), "bg-muted text-foreground")}
+              </div>
+              {settleLines.length > 0 && (
+                <div className="mt-2 rounded-xl bg-slate-500/10 p-3 text-sm">
+                  <div className="mb-1 font-semibold">מה זה «התחשבנויות מול הקופה»?</div>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    חלק מהכסף שהעברת ל-PayBox לא היה הפקדה שלך לקופה, אלא כסף שעבר דרכך בשביל הקבוצה:
+                  </p>
+                  <ul className="space-y-1.5">
+                    {settleLines.map((n) => (
+                      <li key={n.id} className="flex items-start justify-between gap-3">
+                        <span className="min-w-0 flex-1 text-right">
+                          <span className="text-xs text-muted-foreground">{shortDay(n.date.replace(" ", "T"))} · </span>
+                          {n.note}
+                        </span>
+                        <span dir="ltr" className="shrink-0 font-semibold tabular-nums">
+                          {Number(n.amount) < 0 ? "−" : "+"}
+                          {Math.abs(Number(n.amount)).toFixed(2)} ₪
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               </div>
             );
           })()}
