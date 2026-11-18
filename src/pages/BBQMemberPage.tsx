@@ -65,71 +65,13 @@ function ReceiptViewer({ pageKey, receiptId, onClose }: { pageKey: string; recei
   );
 }
 
-function EventRow({ e, onReceipt }: { e: PublicEvent; onReceipt: (id: string) => void }) {
-  const cost = eventCost(e);
-  return (
-    <li className="py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 text-right">
-          <div className="font-semibold">{e.description?.trim() || "מפגש"}</div>
-          <div className="text-sm text-muted-foreground">{dayOf(e.event_date)}</div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {cost > 0 && <>עלות כוללת <span dir="ltr" className="tabular-nums">{money(cost)}</span> · </>}
-            {e.participants} משתתפים
-            {(Number(e.butcher_cost) || 0) > 0 && (
-              <>
-                {" "}
-                · קצב <span dir="ltr" className="tabular-nums">{money(Number(e.butcher_cost))}</span>
-              </>
-            )}
-            {(Number(e.grocery_cost) || 0) > 0 && (
-              <>
-                {" "}
-                · סופר <span dir="ltr" className="tabular-nums">{money(Number(e.grocery_cost))}</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="shrink-0 text-left">
-          {e.my_amount != null ? (
-            <>
-              <div dir="ltr" className="font-bold tabular-nums text-red-600">
-                −{Number(e.my_amount).toFixed(2)} ₪
-              </div>
-              <div className="text-xs text-muted-foreground">החלק שלי</div>
-            </>
-          ) : e.attending ? (
-            <div className="text-xs text-muted-foreground">עוד לא חושב</div>
-          ) : null}
-        </div>
-      </div>
-      {e.receipts.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {e.receipts.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => onReceipt(r.id)}
-              className="inline-flex items-center gap-1.5 rounded-full border bg-accent px-3 py-1 text-xs font-medium text-accent-foreground hover:bg-accent/70"
-            >
-              <ReceiptText className="h-3.5 w-3.5" />
-              {r.label || "קבלה"}
-              {r.amount ? <span dir="ltr" className="tabular-nums"> · {Number(r.amount).toFixed(0)} ₪</span> : null}
-            </button>
-          ))}
-        </div>
-      )}
-    </li>
-  );
-}
-
-type TimelineItem = { at: string; amount: number; title: string; detail?: string; kind: "in" | "out" | "fix" };
+type TimelineItem = { at: string; amount: number; title: string; detail?: string; kind: "in" | "out" | "fix"; receipts?: PublicEvent["receipts"]; pending?: boolean };
 
 /**
  * Deposits and charges in one list, by date: PayBox deposits (or deposits written in the app when
  * there is no PayBox file, or after its last row), event charges on the event's date, manual fixes.
  */
-function MoneyTimeline({ data }: { data: PublicMemberPage }) {
+function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt: (id: string) => void }) {
   const items: TimelineItem[] = [];
   const pb = data.paybox;
   const pbLast = pb ? pb.meta.last_date.replace(" ", "T") : "";
@@ -148,9 +90,11 @@ function MoneyTimeline({ data }: { data: PublicMemberPage }) {
       items.push({ at: e.created_at, amount: amt, title: "תיקון ידני", detail: e.note || undefined, kind: "fix" });
     }
   }
+  const today = new Date().toISOString().slice(0, 10);
   for (const ev of data.events) {
     const mine = Number(ev.my_amount) || 0;
-    if (!mine) continue;
+    const past = (ev.event_date || "").slice(0, 10) < today;
+    if (!mine && !(ev.attending && past)) continue;
     const cost = eventCost(ev);
     items.push({
       at: ev.event_date.replace(" ", "T"),
@@ -158,6 +102,8 @@ function MoneyTimeline({ data }: { data: PublicMemberPage }) {
       title: ev.description?.trim() || "מפגש",
       detail: `${ev.participants} משתתפים${cost > 0 ? ` · עלות כוללת ${cost.toFixed(2)} ₪` : ""}`,
       kind: "out",
+      receipts: ev.receipts,
+      pending: !mine,
     });
   }
   items.sort((a, b) => b.at.localeCompare(a.at));
@@ -176,7 +122,7 @@ function MoneyTimeline({ data }: { data: PublicMemberPage }) {
             {showMonth && (
               <div className="border-b bg-muted/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground first:rounded-t-2xl">{month}</div>
             )}
-            <div className="flex items-center justify-between gap-3 border-b px-3 py-2.5 last:border-b-0">
+            <div className={`flex items-center justify-between gap-3 px-3 py-2.5 ${it.receipts && it.receipts.length > 0 ? "" : "border-b last:border-b-0"}`}>
               <div className="flex min-w-0 flex-1 items-center gap-2.5 text-right">
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${
@@ -193,14 +139,34 @@ function MoneyTimeline({ data }: { data: PublicMemberPage }) {
                   </div>
                 </div>
               </div>
-              <span
-                dir="ltr"
-                className={`shrink-0 font-bold tabular-nums ${it.amount > 0 ? "text-emerald-700" : it.amount < 0 ? "text-red-600" : ""}`}
-              >
-                {it.amount > 0 ? "+" : it.amount < 0 ? "−" : ""}
-                {Math.abs(it.amount).toFixed(2)} ₪
-              </span>
+              {it.pending ? (
+                <span className="shrink-0 text-xs text-muted-foreground">עוד לא חושב</span>
+              ) : (
+                <span
+                  dir="ltr"
+                  className={`shrink-0 font-bold tabular-nums ${it.amount > 0 ? "text-emerald-700" : it.amount < 0 ? "text-red-600" : ""}`}
+                >
+                  {it.amount > 0 ? "+" : it.amount < 0 ? "−" : ""}
+                  {Math.abs(it.amount).toFixed(2)} ₪
+                </span>
+              )}
             </div>
+            {it.receipts && it.receipts.length > 0 && (
+              <div className="-mt-1 flex flex-wrap gap-1.5 border-b px-3 pb-2.5 pr-[52px]">
+                {it.receipts.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => onReceipt(r.id)}
+                    className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground hover:bg-accent/70"
+                  >
+                    <ReceiptText className="h-3 w-3" />
+                    {r.label || "קבלה"}
+                    {r.amount ? <span dir="ltr" className="tabular-nums"> · {Number(r.amount).toFixed(0)} ₪</span> : null}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -247,9 +213,6 @@ const BBQMemberPage = () => {
   const upcoming = (data?.events || [])
     .filter((e) => (e.event_date || "").slice(0, 10) >= today)
     .sort((a, b) => a.event_date.localeCompare(b.event_date));
-  const mine = (data?.events || [])
-    .filter((e) => (e.attending || e.my_amount != null) && (e.event_date || "").slice(0, 10) < today)
-    .sort((a, b) => b.event_date.localeCompare(a.event_date));
 
   if (error) {
     return (
@@ -421,19 +384,7 @@ const BBQMemberPage = () => {
               (רק עדכנה את היתרה), ולכן ההפקדות הישנות מופיעות כסכום אחד. מעכשיו כל הפקדה נרשמת כאן עם התאריך והסכום.
             </p>
           )}
-          <MoneyTimeline data={data} />
-        </Section>
-
-        <Section title="המפגשים שהשתתפתי בהם" icon={<Flame className="h-5 w-5" />}>
-          {mine.length === 0 ? (
-            <p className="text-sm text-muted-foreground">עדיין אין מפגשים.</p>
-          ) : (
-            <ul className="divide-y">
-              {mine.map((e) => (
-                <EventRow key={e.id} e={e} onReceipt={setReceipt} />
-              ))}
-            </ul>
-          )}
+          <MoneyTimeline data={data} onReceipt={setReceipt} />
         </Section>
 
         {data.transfers.length > 0 && (
