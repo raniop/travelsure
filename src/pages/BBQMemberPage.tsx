@@ -346,9 +346,10 @@ const BBQMemberPage = () => {
             }
             const showSettled = Math.abs(settled) >= 0.01;
             const box = (label: string, value: string, tone: string) => (
-              <div className={`flex h-full flex-col justify-between gap-1 rounded-xl p-3 ${tone}`}>
+              <div className={`flex h-full flex-col gap-1 rounded-xl p-3 ${tone}`}>
                 <div className="text-xs leading-snug text-muted-foreground">{label}</div>
-                <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">
+                {/* mt-auto, not justify-between: a site-wide RTL rule turns .flex.justify-between into row-reverse */}
+                <div dir="ltr" className="mt-auto whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">
                   {value}
                 </div>
               </div>
