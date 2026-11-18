@@ -10,7 +10,7 @@ import { PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { useBbqTheme } from "@/lib/bbq/theme";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendarDays, CheckCircle2, ExternalLink, Flame, Lock, ReceiptText, Send, Users, Wallet } from "lucide-react";
+import { ArrowDownLeft, CalendarDays, CheckCircle2, ExternalLink, Flame, Lock, ReceiptText, Send, Users, Wallet } from "lucide-react";
 
 const TARGET_BALANCE = 500;
 
@@ -120,6 +120,91 @@ function EventRow({ e, onReceipt }: { e: PublicEvent; onReceipt: (id: string) =>
         </div>
       )}
     </li>
+  );
+}
+
+type TimelineItem = { at: string; amount: number; title: string; detail?: string; kind: "in" | "out" | "fix" };
+
+/**
+ * Deposits and charges in one list, by date: PayBox deposits (or deposits written in the app when
+ * there is no PayBox file, or after its last row), event charges on the event's date, manual fixes.
+ */
+function MoneyTimeline({ data }: { data: PublicMemberPage }) {
+  const items: TimelineItem[] = [];
+  const pb = data.paybox;
+  const pbLast = pb ? pb.meta.last_date.replace(" ", "T") : "";
+  if (pb) {
+    for (const d of pb.deposits) {
+      items.push({ at: d.date.replace(" ", "T"), amount: Number(d.amount) || 0, title: "הפקדה ב-PayBox", detail: d.note || undefined, kind: "in" });
+    }
+  }
+  for (const e of data.ledger) {
+    const amt = Number(e.amount) || 0;
+    if (e.type === "deposit" || e.type === "transfer") {
+      // With a PayBox file, app deposits are already in it, unless they came after its last row
+      if (pb && e.created_at.slice(0, 19) <= new Date(pbLast).toISOString().slice(0, 19)) continue;
+      items.push({ at: e.created_at, amount: amt, title: e.type === "transfer" ? "העברה שאושרה" : "הפקדה", detail: e.note || undefined, kind: "in" });
+    } else if (e.type === "adjustment") {
+      items.push({ at: e.created_at, amount: amt, title: "תיקון ידני", detail: e.note || undefined, kind: "fix" });
+    }
+  }
+  for (const ev of data.events) {
+    const mine = Number(ev.my_amount) || 0;
+    if (!mine) continue;
+    const cost = eventCost(ev);
+    items.push({
+      at: ev.event_date.replace(" ", "T"),
+      amount: -mine,
+      title: ev.description?.trim() || "מפגש",
+      detail: `${ev.participants} משתתפים${cost > 0 ? ` · עלות כוללת ${cost.toFixed(2)} ₪` : ""}`,
+      kind: "out",
+    });
+  }
+  items.sort((a, b) => b.at.localeCompare(a.at));
+  if (items.length === 0) return <p className="text-sm text-muted-foreground">עדיין אין הפקדות או חיובים.</p>;
+
+  let lastMonth = "";
+  return (
+    <div className="rounded-2xl border bg-card/50">
+      {items.map((it, i) => {
+        const d = new Date(it.at);
+        const month = Number.isNaN(d.getTime()) ? "" : format(d, "MMMM yyyy", { locale: he });
+        const showMonth = month !== lastMonth;
+        lastMonth = month;
+        return (
+          <div key={`${it.at}-${i}`}>
+            {showMonth && (
+              <div className="border-b bg-muted/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground first:rounded-t-2xl">{month}</div>
+            )}
+            <div className="flex items-center justify-between gap-3 border-b px-3 py-2.5 last:border-b-0">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5 text-right">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${
+                    it.kind === "in" ? "bg-emerald-500" : it.kind === "out" ? "bg-red-500" : "bg-slate-400"
+                  }`}
+                >
+                  {it.kind === "in" ? <ArrowDownLeft className="h-4 w-4" /> : it.kind === "out" ? <Flame className="h-4 w-4" /> : <Wallet className="h-4 w-4" />}
+                </span>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{it.title}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {Number.isNaN(d.getTime()) ? "" : format(d, "EEEE, d/M", { locale: he })}
+                    {it.detail ? ` · ${it.detail}` : ""}
+                  </div>
+                </div>
+              </div>
+              <span
+                dir="ltr"
+                className={`shrink-0 font-bold tabular-nums ${it.amount > 0 ? "text-emerald-700" : it.amount < 0 ? "text-red-600" : ""}`}
+              >
+                {it.amount > 0 ? "+" : it.amount < 0 ? "−" : ""}
+                {Math.abs(it.amount).toFixed(2)} ₪
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -327,29 +412,6 @@ const BBQMemberPage = () => {
                       </>
                     )}
                   </div>
-                  <div>
-                    <div className="mb-1 text-sm font-semibold">
-                      ההפקדות שלי ב-PayBox ({list.length}) · סה״כ <span dir="ltr" className="tabular-nums">{money(Number(pb.total))}</span>
-                    </div>
-                    {list.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">לא נמצאו הפקדות מהמספר שלך בקובץ ה-PayBox.</p>
-                    ) : (
-                      <ul className="divide-y rounded-2xl border bg-card/50">
-                        {list.map((d, i) => (
-                          <li key={`${d.date}-${i}`} className="flex items-center justify-between gap-3 px-3 py-2">
-                            <div className="min-w-0 flex-1 text-right">
-                              <div className="text-sm">{shortDay(d.date.replace(" ", "T"))}</div>
-                              {d.note && <div className="truncate text-xs text-muted-foreground">{d.note}</div>}
-                            </div>
-                            <span dir="ltr" className="font-bold tabular-nums text-emerald-700">+{Number(d.amount).toFixed(2)} ₪</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      מתוך קובץ הקבוצה ב-PayBox (עודכן {shortDay(pb.meta.imported_at)}, תנועות עד {shortDay(pb.meta.last_date.replace(" ", "T"))}).
-                    </p>
-                  </div>
                 </div>
               );
             })()
@@ -359,7 +421,7 @@ const BBQMemberPage = () => {
               (רק עדכנה את היתרה), ולכן ההפקדות הישנות מופיעות כסכום אחד. מעכשיו כל הפקדה נרשמת כאן עם התאריך והסכום.
             </p>
           )}
-          {data.ledger.length > 0 && <LedgerList entries={data.ledger} events={events} />}
+          <MoneyTimeline data={data} />
         </Section>
 
         <Section title="המפגשים שהשתתפתי בהם" icon={<Flame className="h-5 w-5" />}>
