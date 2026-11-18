@@ -6,6 +6,7 @@ import { apiClient, type PublicEvent, type PublicMemberPage } from "@/integratio
 import { LedgerList, TrustNote } from "@/components/bbq/MemberStatement";
 import { ReportTransferDialog, TransferStatusBadge } from "@/components/bbq/Transfers";
 import { PAYBOX_GROUP_LINK } from "@/lib/bbq/payboxMessages";
+import { PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { useBbqTheme } from "@/lib/bbq/theme";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -277,8 +278,10 @@ const BBQMemberPage = () => {
             return (
               <div className="mb-3 grid grid-cols-3 gap-2">
                 <div className="rounded-xl bg-emerald-500/10 p-3">
-                  <div className="text-xs text-muted-foreground">הפקדתי עד היום</div>
-                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-emerald-700">{money(totalIn)}</div>
+                  <div className="text-xs text-muted-foreground">{data.paybox ? "הפקדתי ב-PayBox" : "הפקדתי עד היום"}</div>
+                  <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg text-emerald-700">
+                    {money(data.paybox ? Number(data.paybox.total) : totalIn)}
+                  </div>
                 </div>
                 <div className="rounded-xl bg-red-500/10 p-3">
                   <div className="text-xs text-muted-foreground">חויבתי על מפגשים</div>
@@ -294,30 +297,40 @@ const BBQMemberPage = () => {
           {data.paybox ? (
             (() => {
               const pb = data.paybox;
-              const myCharges = (data.events || []).reduce((sum, e) => sum + (Number(e.my_amount) || 0), 0);
-              const inApp = Math.round((balance + myCharges) * 100) / 100;
-              const gap = Math.round((Number(pb.total) - inApp) * 100) / 100;
-              const matches = Math.abs(gap) < 0.01;
               const list = [...pb.deposits].sort((a, b) => b.date.localeCompare(a.date));
+              const pbSince = pb.deposits.filter((d) => d.date > PAYBOX_BASELINE_LOCAL).reduce((s, d) => s + (Number(d.amount) || 0), 0);
+              const appSince = data.ledger
+                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC)
+                .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+              const sinceOk = Math.abs(pbSince - appSince) < 0.01;
               return (
                 <div className="mb-4 space-y-3">
-                  <div className={`rounded-2xl p-3 text-sm ${matches ? "bg-emerald-500/10 text-emerald-900" : "bg-amber-500/10 text-amber-900"}`}>
-                    {matches ? (
+                  <div className={`rounded-2xl p-3 text-sm ${sinceOk ? "bg-emerald-500/10 text-emerald-900" : "bg-amber-500/10 text-amber-900"}`}>
+                    {sinceOk ? (
                       <>
                         <CheckCircle2 className="ml-1 inline h-4 w-4" />
-                        תואם בדיוק ל-PayBox: לפי קבוצת ה-PayBox הפקדת <span dir="ltr" className="font-bold tabular-nums">{money(Number(pb.total))}</span> — בדיוק כמו באפליקציה.
+                        הקופה נבדקה מול PayBox ב-18/11/2026 ותאמה. מאז כל הפקדה שלך נרשמת כאן ונבדקת מול PayBox
+                        {pbSince > 0 ? (
+                          <>
+                            {" "}
+                            — עד עכשיו <span dir="ltr" className="font-bold tabular-nums">{money(pbSince)}</span>, הכל נרשם.
+                          </>
+                        ) : (
+                          "."
+                        )}
                       </>
                     ) : (
                       <>
-                        לפי PayBox הפקדת <span dir="ltr" className="font-bold tabular-nums">{money(Number(pb.total))}</span>, ובאפליקציה{" "}
-                        <span dir="ltr" className="font-bold tabular-nums">{money(inApp)}</span> (פער{" "}
-                        <span dir="ltr" className="tabular-nums">{money(gap)}</span>). לרוב זו הפקדה שעוד לא נרשמה, תשלום על אורח או העברה
-                        שהוחזרה — מנהל הקבוצה רואה את אותה השוואה ויסדר.
+                        מאז 18/11/2026 הפקדת ב-PayBox <span dir="ltr" className="font-bold tabular-nums">{money(pbSince)}</span>, ונרשם
+                        באפליקציה <span dir="ltr" className="font-bold tabular-nums">{money(appSince)}</span>. מנהל הקבוצה רואה את אותה
+                        השוואה ויעדכן.
                       </>
                     )}
                   </div>
                   <div>
-                    <div className="mb-1 text-sm font-semibold">ההפקדות שלי ב-PayBox ({list.length})</div>
+                    <div className="mb-1 text-sm font-semibold">
+                      ההפקדות שלי ב-PayBox ({list.length}) · סה״כ <span dir="ltr" className="tabular-nums">{money(Number(pb.total))}</span>
+                    </div>
                     {list.length === 0 ? (
                       <p className="text-sm text-muted-foreground">לא נמצאו הפקדות מהמספר שלך בקובץ ה-PayBox.</p>
                     ) : (

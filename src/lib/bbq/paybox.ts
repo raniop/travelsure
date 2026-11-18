@@ -77,3 +77,11 @@ export function parsePayboxCsv(text: string): PayboxRow[] {
   if (rows.length === 0) throw new Error("לא נמצאו תנועות בקובץ");
   return rows;
 }
+
+/**
+ * Comparison starts here. History before it was settled on 18/11/2026 (the cash matched PayBox;
+ * per-member differences were money passed through members for the group), so only what happens
+ * from this point is compared: PayBox deposits vs the deposits/transfers written to the ledger.
+ */
+export const PAYBOX_BASELINE_LOCAL = "2026-11-18 12:30:00"; // PayBox times are Israel time
+export const PAYBOX_BASELINE_UTC = "2026-11-18T10:30:00Z";

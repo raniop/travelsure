@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { apiClient, type PayboxMeta, type PayboxStoredRow } from "@/integrations/api/client";
-import { localPhone, parsePayboxCsv } from "@/lib/bbq/paybox";
+import { apiClient, type LedgerEntry, type PayboxMeta, type PayboxStoredRow } from "@/integrations/api/client";
+import { localPhone, parsePayboxCsv, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,8 @@ import { CheckCircle2, FileUp, Scale } from "lucide-react";
 type MemberMoney = { id: string; name: string; phone: string; balance: number; charges: number };
 
 const money = (n: number) => `${n < 0 ? "−" : ""}${Math.abs(n).toFixed(2)} ₪`;
+
+
 const close = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 /**
@@ -21,11 +23,17 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
   const [rows, setRows] = useState<PayboxStoredRow[]>([]);
   const [members, setMembers] = useState<MemberMoney[]>([]);
   const [uncalculated, setUncalculated] = useState<{ date: string; cost: number }[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
 
   const loadApp = useCallback(async () => {
-    const [ms, events] = await Promise.all([apiClient.getMembers(groupId), apiClient.getEvents(groupId)]);
+    const [ms, events, led] = await Promise.all([
+      apiClient.getMembers(groupId),
+      apiClient.getEvents(groupId),
+      apiClient.getLedger(groupId).catch(() => [] as LedgerEntry[]),
+    ]);
+    setLedger(led);
     const charges: Record<string, number> = {};
     const missing: { date: string; cost: number }[] = [];
     const now = new Date();
@@ -75,27 +83,31 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
   };
 
   const report = useMemo(() => {
-    const byPhone: Record<string, number> = {};
+    const sincePb: Record<string, number> = {};
     let inSum = 0;
     let outSum = 0;
     for (const r of rows) {
       if (r.kind === "in") {
         inSum += r.amount;
-        byPhone[r.phone] = (byPhone[r.phone] || 0) + r.amount;
+        if (r.date > PAYBOX_BASELINE_LOCAL) sincePb[r.phone] = (sincePb[r.phone] || 0) + r.amount;
       } else outSum += r.amount;
     }
-    const known = new Set(members.map((m) => m.phone));
-    const unmatched = Object.entries(byPhone).filter(([p]) => !known.has(p));
+    const sinceApp: Record<string, number> = {};
+    for (const e of ledger) {
+      if ((e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC) {
+        sinceApp[e.member_id] = (sinceApp[e.member_id] || 0) + (Number(e.amount) || 0);
+      }
+    }
     const lines = members
       .map((m) => {
-        const app = Math.round((m.balance + m.charges) * 100) / 100;
-        const pb = Math.round((byPhone[m.phone] || 0) * 100) / 100;
+        const app = Math.round((sinceApp[m.id] || 0) * 100) / 100;
+        const pb = Math.round((sincePb[m.phone] || 0) * 100) / 100;
         return { ...m, app, pb, gap: Math.round((pb - app) * 100) / 100 };
       })
       .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
     const appTotal = members.reduce((s, m) => s + m.balance, 0);
-    return { lines, unmatched, inSum, outSum, cash: inSum + outSum, appTotal };
-  }, [rows, members]);
+    return { lines, inSum, outSum, cash: inSum + outSum, appTotal };
+  }, [rows, members, ledger]);
 
   const matched = report.lines.filter((l) => close(l.gap, 0)).length;
 
@@ -155,7 +167,7 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
 
             <div>
               <div className="mb-2 text-sm font-medium">
-                {matched} מתוך {report.lines.length} חברים תואמים בדיוק ל-PayBox
+                הפקדות מאז 18/11/2026: {matched} מתוך {report.lines.length} חברים תואמים ל-PayBox
               </div>
               <ul className="divide-y rounded-2xl border bg-card/50">
                 {report.lines.map((l) => (
@@ -163,7 +175,7 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
                     <div className="min-w-0 flex-1 text-right">
                       <div className="truncate font-medium">{l.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        PayBox <span dir="ltr" className="tabular-nums">{money(l.pb)}</span> · באפליקציה{" "}
+                        PayBox <span dir="ltr" className="tabular-nums">{money(l.pb)}</span> · נרשם באפליקציה{" "}
                         <span dir="ltr" className="tabular-nums">{money(l.app)}</span>
                       </div>
                     </div>
@@ -182,16 +194,12 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
                 ))}
               </ul>
               <p className="mt-2 text-xs text-muted-foreground">
-                «באפליקציה» = יתרה + כל החיובים על אירועים. פער חיובי = ב-PayBox הופקד יותר (למשל הפקדה שעוד לא נרשמה, תשלום על אורח,
-                או העברה שהוחזרה).
+                ההיסטוריה עד 18/11/2026 סוגרה: הקופה תאמה ל-PayBox. מכאן נבדקת כל הפקדה: מה שנכנס ל-PayBox מול מה שנרשם באפליקציה
+                (הפקדה או «העברתי» שאושר). פער = הפקדה שעוד לא נרשמה או נרשמה בסכום אחר.
               </p>
             </div>
 
-            {report.unmatched.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                הפקדות ממספרים שאינם חברים בקבוצה: {report.unmatched.map(([, sum]) => money(sum)).join(", ")}.
-              </p>
-            )}
+
           </>
         )}
       </CardContent>
