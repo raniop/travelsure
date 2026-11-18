@@ -189,9 +189,9 @@ const GroupsDashboard = ({ userId, userPhone, userName, userProfileImage, onSele
   }
 
   return (
-    <div className="min-h-screen bg-background pb-8" dir="rtl" style={{ direction: "rtl" }}>
+    <div className="min-h-screen bg-background pb-8 text-right" dir="rtl" style={{ direction: "rtl" }}>
       {/* Header */}
-      <header className="mb-6 bg-secondary px-4 pb-7 pt-7 text-secondary-foreground md:px-8">
+      <header className="bbq-glass-bar sticky top-0 z-30 mb-6 px-4 pb-4 pt-5 md:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             {userProfileImage ? (
@@ -202,11 +202,11 @@ const GroupsDashboard = ({ userId, userPhone, userName, userProfileImage, onSele
               </div>
             )}
             <div className="min-w-0">
-              <p className="text-sm opacity-70">הקבוצות שלי</p>
+              <p className="text-sm text-muted-foreground">הקבוצות שלי</p>
               <h1 className="truncate text-2xl font-extrabold md:text-3xl">שלום, {userName}</h1>
             </div>
           </div>
-          <Button size="sm" onClick={onLogout} className="shrink-0 border border-white/20 bg-white/10 text-secondary-foreground hover:bg-white/20">
+          <Button size="sm" onClick={onLogout} variant="secondary" className="shrink-0 rounded-full">
             <LogOut className="ml-1.5 h-4 w-4" />
             התנתק
           </Button>

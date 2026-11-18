@@ -356,37 +356,94 @@
 }
 
 /* ------------------------------------------------------------------------------------------------
- * BBQ app theme (only while /bbq or /bbq/me is open: the class sits on <html> so dialogs, which
- * render outside the app root, get it too). Warm cream + charcoal with an ember accent.
+ * BBQ app theme — Apple-style glass. Only while /bbq or /bbq/me is open: the class sits on <html>
+ * so dialogs, which render outside the app root, get it too. A soft color field behind frosted,
+ * translucent surfaces; iOS blue for actions, iOS green/red for money in/out; system font.
  * ---------------------------------------------------------------------------------------------- */
 html.bbq-theme {
-  --background: 36 38% 96%;
-  --foreground: 24 18% 13%;
+  --background: 240 20% 97%;
+  --foreground: 240 10% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 24 18% 13%;
+  --card-foreground: 240 10% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 24 18% 13%;
-  --primary: 17 80% 47%;
+  --popover-foreground: 240 10% 10%;
+  --primary: 211 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 24 14% 17%;
-  --secondary-foreground: 36 38% 96%;
-  --accent: 28 70% 93%;
-  --accent-foreground: 17 75% 32%;
-  --muted: 32 26% 92%;
-  --muted-foreground: 24 9% 40%;
-  --border: 30 20% 86%;
-  --input: 30 20% 82%;
-  --ring: 17 80% 47%;
-  --radius: 1rem;
+  --secondary: 240 6% 92%;
+  --secondary-foreground: 240 10% 12%;
+  --accent: 211 100% 95%;
+  --accent-foreground: 211 100% 38%;
+  --muted: 240 6% 93%;
+  --muted-foreground: 240 4% 44%;
+  --destructive: 3 100% 59%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 6% 88%;
+  --input: 240 6% 84%;
+  --ring: 211 100% 50%;
+  --radius: 1.25rem;
+  --glass: 0 0% 100%;
 }
 html.bbq-theme body {
-  background: hsl(var(--background));
-  font-family: "Heebo", system-ui, sans-serif;
+  background-color: #eef0f7;
+  background-image:
+    radial-gradient(at 12% 8%, hsla(211, 100%, 82%, 0.55) 0, transparent 42%),
+    radial-gradient(at 88% 4%, hsla(265, 95%, 86%, 0.5) 0, transparent 40%),
+    radial-gradient(at 78% 78%, hsla(175, 75%, 82%, 0.45) 0, transparent 45%),
+    radial-gradient(at 8% 92%, hsla(330, 95%, 90%, 0.45) 0, transparent 42%);
+  background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Hebrew", "Heebo", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 html.bbq-theme h1,
 html.bbq-theme h2,
 html.bbq-theme h3,
 html.bbq-theme .bbq-display {
-  font-family: "Rubik", "Heebo", system-ui, sans-serif;
-  letter-spacing: -0.01em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Hebrew", "Heebo", system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
+html.bbq-theme .bbq-display { font-weight: 700; letter-spacing: -0.035em; }
+
+/* Page roots let the color field show through */
+html.bbq-theme .min-h-screen.bg-background { background-color: transparent; }
+
+/* Frosted surfaces: cards, bars, menus */
+html.bbq-theme .bg-card,
+html.bbq-theme .bbq-glass-bar,
+html.bbq-theme [role="dialog"],
+html.bbq-theme [role="alertdialog"],
+html.bbq-theme [role="menu"],
+html.bbq-theme [role="listbox"],
+html.bbq-theme [role="status"] {
+  background-color: hsl(var(--glass) / 0.62);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-color: hsl(0 0% 100% / 0.75);
+}
+html.bbq-theme .bg-card {
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.8), 0 10px 30px -12px hsl(230 30% 30% / 0.18);
+}
+html.bbq-theme [role="dialog"],
+html.bbq-theme [role="alertdialog"] {
+  background-color: hsl(var(--glass) / 0.8);
+  border-radius: 1.5rem;
+  box-shadow: 0 30px 80px -20px hsl(230 30% 20% / 0.35);
+}
+html.bbq-theme .bbq-glass-bar {
+  background-color: hsl(var(--glass) / 0.55);
+  border-bottom: 1px solid hsl(0 0% 100% / 0.7);
+}
+/* Dialog backdrop: light veil instead of black */
+html.bbq-theme .bg-black\/80 { background-color: hsl(230 25% 20% / 0.25); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+
+/* Inputs: light filled fields */
+html.bbq-theme input:not([type="checkbox"]):not([type="radio"]),
+html.bbq-theme textarea,
+html.bbq-theme button[role="combobox"] {
+  background-color: hsl(0 0% 100% / 0.75);
+  border-color: hsl(240 6% 84% / 0.9);
+}
+/* Soft fills read as iOS grouped fills */
+html.bbq-theme .bg-muted { background-color: hsl(240 6% 50% / 0.08); }
+html.bbq-theme .bg-muted\/40 { background-color: hsl(240 6% 50% / 0.05); }
+/* The site root centers text (App.css); the BBQ app is Hebrew and reads from the right */
+html.bbq-theme #root { text-align: right; }

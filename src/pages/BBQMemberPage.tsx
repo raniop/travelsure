@@ -69,7 +69,7 @@ function EventRow({ e, onReceipt }: { e: PublicEvent; onReceipt: (id: string) =>
   return (
     <li className="py-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 text-right">
           <div className="font-semibold">{e.description?.trim() || "מפגש"}</div>
           <div className="text-sm text-muted-foreground">{dayOf(e.event_date)}</div>
           <div className="mt-1 text-xs text-muted-foreground">
@@ -195,18 +195,18 @@ const BBQMemberPage = () => {
   const pendingTransfers = data.transfers.filter((t) => t.status === "pending");
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background pb-16 text-foreground">
-      <header className="bg-secondary px-4 pb-24 pt-8 text-secondary-foreground">
+    <div dir="rtl" className="min-h-screen bg-background pb-16 text-right text-foreground">
+      <header className="px-4 pb-24 pt-8">
         <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm opacity-80">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Flame className="h-4 w-4 text-primary" />
               {data.group.name}
             </div>
             <h1 className="mt-1 truncate text-2xl font-extrabold sm:text-3xl">שלום {name}</h1>
           </div>
           {data.group.group_image ? (
-            <img src={data.group.group_image} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/20" />
+            <img src={data.group.group_image} alt="" className="h-14 w-14 shrink-0 rounded-2xl object-cover shadow-md ring-2 ring-white/70" />
           ) : null}
         </div>
       </header>
@@ -255,7 +255,7 @@ const BBQMemberPage = () => {
             <ul className="divide-y">
               {upcoming.slice(0, 2).map((e) => (
                 <li key={e.id} className="flex items-center justify-between gap-3 py-2">
-                  <div>
+                  <div className="text-right">
                     <div className="font-semibold">{e.description?.trim() || "מפגש"}</div>
                     <div className="text-sm text-muted-foreground">{dayOf(e.event_date)}</div>
                   </div>
@@ -293,7 +293,7 @@ const BBQMemberPage = () => {
             <ul className="divide-y">
               {data.transfers.slice(0, 8).map((t) => (
                 <li key={t.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div>
+                  <div className="text-right">
                     <div dir="ltr" className="text-right font-semibold tabular-nums">{money(Number(t.amount))}</div>
                     <div className="text-xs text-muted-foreground">{shortDay(t.created_at)}{t.note ? ` · ${t.note}` : ""}</div>
                     {t.status === "rejected" && t.reject_reason && <div className="text-xs text-red-600">סיבה: {t.reject_reason}</div>}

@@ -592,10 +592,10 @@ const BBQManager = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background text-right" dir="rtl">
       {group && <InstallPrompt />}
-      <header className="bg-secondary text-secondary-foreground">
-        <div className="container mx-auto flex items-center justify-between gap-3 px-4 pb-7 pt-6">
+      <header className="bbq-glass-bar sticky top-0 z-30">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 pb-4 pt-4">
           <div className="flex min-w-0 items-center gap-3">
             {group.group_image ? (
               <img src={group.group_image} alt={group.name} className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/15" />
@@ -605,12 +605,12 @@ const BBQManager = () => {
               </div>
             )}
             <div className="min-w-0">
-              <div className="flex items-center gap-1 text-xs opacity-70">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Flame className="h-3.5 w-3.5 text-primary" />
                 {user.isAdmin ? "את/ה מנהל/ת הקבוצה" : "הקבוצה שלי"}
               </div>
               <h1 className="truncate text-2xl font-extrabold md:text-3xl">{group.name}</h1>
-              {group.description && <p className="truncate text-sm opacity-75">{group.description}</p>}
+              {group.description && <p className="truncate text-sm text-muted-foreground">{group.description}</p>}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -618,16 +618,16 @@ const BBQManager = () => {
               {user.profile_image ? (
                 <img src={user.profile_image} alt={user.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-white/15" />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-semibold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="text-sm opacity-85">{user.name}</div>
+              <div className="text-sm text-muted-foreground">{user.name}</div>
             </div>
             <Button
               size="sm"
               onClick={handleBackToDashboard}
-              className="border border-white/20 bg-white/10 text-secondary-foreground hover:bg-white/20"
+              variant="secondary" className="rounded-full"
             >
               כל הקבוצות
             </Button>

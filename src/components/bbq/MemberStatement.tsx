@@ -97,7 +97,7 @@ function EntryRow({ entry, events, memberName }: { entry: LedgerEntry; events: M
   const isOpening = entry.type === "opening";
   return (
     <li className="flex items-start justify-between gap-3 py-3">
-      <div className="min-w-0 text-right">
+      <div className="min-w-0 flex-1 text-right">
         <div className="font-medium text-foreground">
           {memberName ? `${memberName} · ` : ""}
           {title}
