@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Lock, User } from "lucide-react";
-import { apiClient } from "@/integrations/api/client";
+import { apiClient, ApiError, type AuthResult } from "@/integrations/api/client";
 
 interface LoginDialogProps {
   open: boolean;
@@ -59,110 +59,47 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
 
     setLoading(true);
     try {
-      // Clean phone number
       const cleanPhone = phone.replace(/[^\d]/g, "");
-      
-      // Generate user ID from phone
-      const userId = `user_${cleanPhone}`;
-      
-      // Check if user exists in server
-      let existingUser = await apiClient.getUserByPhone(cleanPhone);
-      
-      if (isRegistering) {
-        // Register new user
-        if (existingUser) {
-          toast({
-            title: "משתמש כבר קיים",
-            description: "המשתמש כבר רשום. אנא התחבר במקום",
-            variant: "destructive"
-          });
+
+      // The server checks the password and returns a session token; the browser never sees passwords.
+      let result: AuthResult;
+      try {
+        result = isRegistering
+          ? await apiClient.register(fullName.trim(), cleanPhone, password)
+          : await apiClient.login(cleanPhone, password);
+      } catch (err) {
+        const code = err instanceof ApiError ? err.code : "";
+        if (code === "user_exists") {
+          toast({ title: "משתמש כבר קיים", description: "המשתמש כבר רשום. אנא התחבר במקום", variant: "destructive" });
           setIsRegistering(false);
-          setLoading(false);
           return;
         }
-        
-        const newUser = {
-          id: userId,
-          name: fullName.trim(), // Use full name from registration
-          phone: cleanPhone,
-          password: password, // Store password (not encrypted, but OK for this use case)
-          created_at: new Date().toISOString()
-        };
-        
-        // Save to server
-        try {
-          existingUser = await apiClient.createUser(newUser);
-          
-          if (!existingUser || existingUser.error) {
-            throw new Error(existingUser?.error || "שגיאה ביצירת המשתמש");
-          }
-          
-          toast({
-            title: "הצלחה!",
-            description: "נרשמת בהצלחה"
-          });
-        } catch (createError: any) {
-          console.error("Error creating user:", createError);
-          throw new Error(createError.message || "לא הצלחנו ליצור משתמש. נסה שוב מאוחר יותר.");
-        }
-      } else {
-        // Login
-        if (!existingUser) {
-          toast({
-            title: "משתמש לא נמצא",
-            description: "המשתמש לא רשום. אנא הירשם תחילה",
-            variant: "destructive"
-          });
+        if (code === "user_not_found") {
+          toast({ title: "משתמש לא נמצא", description: "המשתמש לא רשום. אנא הירשם תחילה", variant: "destructive" });
           setIsRegistering(true);
-          setLoading(false);
           return;
         }
-        
-        // Verify password
-        console.log('Login attempt:', {
-          phone: cleanPhone,
-          enteredPassword: password,
-          storedPassword: existingUser.password,
-          passwordMatch: existingUser.password === password,
-          userData: existingUser
-        });
-        
-        // If user has no password, allow setting it (for users registered before password was added)
-        if (!existingUser.password) {
-          // Update user with password
-          try {
-            const updatedUser = await apiClient.updateUser(existingUser.id, {
-              ...existingUser,
-              password: password
-            });
-            existingUser = updatedUser;
-            toast({
-              title: "סיסמה עודכנה",
-              description: "סיסמה נקבעה בהצלחה. מתחבר..."
-            });
-          } catch (error: any) {
-            toast({
-              title: "שגיאה",
-              description: "לא הצלחנו לעדכן את הסיסמה. נסה שוב או פנה למנהל",
-              variant: "destructive"
-            });
-            setLoading(false);
-            return;
-          }
-        } else if (existingUser.password !== password) {
-          toast({
-            title: "סיסמה שגויה",
-            description: "הסיסמה שהזנת לא נכונה",
-            variant: "destructive"
-          });
-          setLoading(false);
+        if (code === "wrong_password") {
+          toast({ title: "סיסמה שגויה", description: "הסיסמה שהזנת לא נכונה", variant: "destructive" });
           return;
         }
+        if (code === "too_many_attempts") {
+          toast({ title: "יותר מדי ניסיונות", description: "נסו שוב בעוד כמה דקות", variant: "destructive" });
+          return;
+        }
+        throw err;
       }
-      
+
+      const existingUser = result.user;
+      if (isRegistering) {
+        toast({ title: "הצלחה!", description: "נרשמת בהצלחה" });
+      } else if (result.password_set) {
+        toast({ title: "סיסמה עודכנה", description: "סיסמה נקבעה בהצלחה. מתחבר..." });
+      }
+
       // Check if user is admin (owner of the group)
-      const isAdmin = groupOwnerId === userId;
-      
+      const isAdmin = groupOwnerId === existingUser.id;
+
       // Save current user to localStorage (for quick access, but data is on server)
       localStorage.setItem('bbq_current_user', JSON.stringify({
         id: existingUser.id,
@@ -170,15 +107,15 @@ const LoginDialog = ({ open, onOpenChange, onLogin, groupOwnerId }: LoginDialogP
         phone: existingUser.phone,
         profile_image: existingUser.profile_image || null
       }));
-      
+
       onLogin({
         id: existingUser.id,
         name: existingUser.name,
         phone: existingUser.phone,
         isAdmin,
-        profile_image: existingUser.profile_image
+        profile_image: existingUser.profile_image || undefined
       });
-      
+
       onOpenChange(false);
       setPhone("");
       setPassword("");

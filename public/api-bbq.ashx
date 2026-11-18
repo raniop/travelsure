@@ -1,20 +1,457 @@
 <%@ WebHandler Language="C#" Class="BBQHandler" %>
+<%@ Assembly Name="System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" %>
 
 using System;
 using System.Web;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 
 public class BBQHandler : IHttpHandler
 {
+    // ---------------------------------------------------------------------------------------------
+    // Security layer: sign-in is checked here on the server, passwords are stored hashed and never
+    // returned, every request needs a session token, and entity/id cannot point outside App_Data.
+    // ---------------------------------------------------------------------------------------------
+    private const string TokenHeader = "X-BBQ-Token";
+    private const int SessionDays = 180;
+    private const int HashIterations = 20000;
+    private static readonly HashSet<string> AllowedEntities = new HashSet<string>(new string[] {
+        "groups", "events", "members", "payments", "polls", "attendees", "guests", "users", "group_invitations"
+    });
+    private static readonly Regex SafeId = new Regex("^[A-Za-z0-9_\\-]{1,100}$");
+    private static readonly Regex TokenFormat = new Regex("^[a-f0-9]{64}$");
+    private static readonly ConcurrentDictionary<string, int[]> FailedLogins = new ConcurrentDictionary<string, int[]>();
+
+    private static JavaScriptSerializer Json()
+    {
+        JavaScriptSerializer s = new JavaScriptSerializer();
+        s.MaxJsonLength = int.MaxValue;
+        return s;
+    }
+
+    private static void WriteJson(HttpContext context, int status, object value)
+    {
+        context.Response.StatusCode = status;
+        context.Response.ContentType = "application/json; charset=utf-8";
+        context.Response.Write(Json().Serialize(value));
+    }
+
+    private static Dictionary<string, object> ParseObject(string json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        if (json.Length > 0 && json[0] == (char)0xFEFF) json = json.Substring(1);
+        try { return Json().Deserialize<Dictionary<string, object>>(json); }
+        catch { return null; }
+    }
+
+    private static string Str(Dictionary<string, object> d, string key)
+    {
+        object v;
+        if (d == null || !d.TryGetValue(key, out v) || v == null) return "";
+        return Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string Digits(string s)
+    {
+        return Regex.Replace(s ?? "", "[^0-9]", "");
+    }
+
+    /** A copy of the user without any secret fields. */
+    private static Dictionary<string, object> PublicUser(Dictionary<string, object> user)
+    {
+        Dictionary<string, object> copy = new Dictionary<string, object>(user);
+        copy.Remove("password");
+        copy.Remove("password_hash");
+        return copy;
+    }
+
+    private static string HashPassword(string password)
+    {
+        byte[] salt = new byte[16];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) rng.GetBytes(salt);
+        using (Rfc2898DeriveBytes kdf = new Rfc2898DeriveBytes(password, salt, HashIterations))
+        {
+            return "pbkdf2$" + HashIterations + "$" + Convert.ToBase64String(salt) + "$" + Convert.ToBase64String(kdf.GetBytes(32));
+        }
+    }
+
+    private static bool VerifyPassword(string password, string stored)
+    {
+        try
+        {
+            string[] parts = (stored ?? "").Split('$');
+            if (parts.Length != 4 || parts[0] != "pbkdf2") return false;
+            int iterations = int.Parse(parts[1]);
+            byte[] salt = Convert.FromBase64String(parts[2]);
+            byte[] expected = Convert.FromBase64String(parts[3]);
+            using (Rfc2898DeriveBytes kdf = new Rfc2898DeriveBytes(password, salt, iterations))
+            {
+                return FixedTimeEquals(kdf.GetBytes(expected.Length), expected);
+            }
+        }
+        catch { return false; }
+    }
+
+    private static bool FixedTimeEquals(byte[] a, byte[] b)
+    {
+        if (a.Length != b.Length) return false;
+        int diff = 0;
+        for (int i = 0; i < a.Length; i++) diff |= a[i] ^ b[i];
+        return diff == 0;
+    }
+
+    private static bool FixedTimeEquals(string a, string b)
+    {
+        return FixedTimeEquals(Encoding.UTF8.GetBytes(a ?? ""), Encoding.UTF8.GetBytes(b ?? ""));
+    }
+
+    private string UserFolder(string dataFolder) { return Path.Combine(dataFolder, "users"); }
+
+    private List<Dictionary<string, object>> LoadAllUsers(string dataFolder)
+    {
+        List<Dictionary<string, object>> users = new List<Dictionary<string, object>>();
+        string folder = UserFolder(dataFolder);
+        if (!Directory.Exists(folder)) return users;
+        foreach (string file in Directory.GetFiles(folder, "*.json"))
+        {
+            Dictionary<string, object> u = ParseObject(File.ReadAllText(file, Encoding.UTF8));
+            if (u == null) continue;
+            if (Str(u, "id") == "") u["id"] = Path.GetFileNameWithoutExtension(file);
+            u["__file"] = Path.GetFileNameWithoutExtension(file);
+            users.Add(u);
+        }
+        return users;
+    }
+
+    private Dictionary<string, object> FindUserByPhone(string dataFolder, string phone)
+    {
+        foreach (Dictionary<string, object> u in LoadAllUsers(dataFolder))
+        {
+            if (Digits(Str(u, "phone")) == phone) return u;
+        }
+        return null;
+    }
+
+    private void SaveUser(string dataFolder, Dictionary<string, object> user)
+    {
+        string fileId = Str(user, "__file");
+        if (fileId == "") fileId = Str(user, "id");
+        Dictionary<string, object> toSave = new Dictionary<string, object>(user);
+        toSave.Remove("__file");
+        SaveEntityJson("users", fileId, Json().Serialize(toSave), dataFolder);
+    }
+
+    private Dictionary<string, object> StripInternal(Dictionary<string, object> user)
+    {
+        Dictionary<string, object> pub = PublicUser(user);
+        pub.Remove("__file");
+        return pub;
+    }
+
+    private string CreateSession(string dataFolder, string userId)
+    {
+        byte[] bytes = new byte[32];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) rng.GetBytes(bytes);
+        string token = BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+        string folder = Path.Combine(dataFolder, "sessions");
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        Dictionary<string, object> session = new Dictionary<string, object>();
+        session["user_id"] = userId;
+        session["created_at"] = DateTime.UtcNow.ToString("o");
+        session["expires_at"] = DateTime.UtcNow.AddDays(SessionDays).ToString("o");
+        File.WriteAllText(Path.Combine(folder, token + ".json"), Json().Serialize(session), Encoding.UTF8);
+        return token;
+    }
+
+    /** Returns the signed-in user id for the request token, or null. */
+    /**
+     * The token comes in the header, or in ?auth= (IIS answers OPTIONS itself without CORS headers,
+     * so the app sends preflight-free "simple" requests and cannot use a custom header cross-origin).
+     */
+    private static string RequestToken(HttpContext context)
+    {
+        string token = context.Request.Headers[TokenHeader];
+        if (string.IsNullOrEmpty(token)) token = context.Request.QueryString["auth"];
+        return (token ?? "").Trim().ToLowerInvariant();
+    }
+
+    private string SessionUserId(HttpContext context, string dataFolder)
+    {
+        string token = RequestToken(context);
+        if (!TokenFormat.IsMatch(token)) return null;
+        string path = Path.Combine(Path.Combine(dataFolder, "sessions"), token + ".json");
+        if (!File.Exists(path)) return null;
+        Dictionary<string, object> session = ParseObject(File.ReadAllText(path, Encoding.UTF8));
+        if (session == null) return null;
+        DateTime expires;
+        if (!DateTime.TryParse(Str(session, "expires_at"), null, System.Globalization.DateTimeStyles.RoundtripKind, out expires)
+            || expires.ToUniversalTime() < DateTime.UtcNow)
+        {
+            try { File.Delete(path); } catch { }
+            return null;
+        }
+        string userId = Str(session, "user_id");
+        if (userId == "" || !SafeId.IsMatch(userId)) return null;
+        if (!File.Exists(Path.Combine(UserFolder(dataFolder), userId + ".json"))) return null;
+        return userId;
+    }
+
+    private static bool TooManyFailures(string phone)
+    {
+        int[] state;
+        if (!FailedLogins.TryGetValue(phone, out state)) return false;
+        // state[0] = failures, state[1] = minute stamp of the last failure
+        int nowMinute = (int)(DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute % int.MaxValue);
+        if (nowMinute - state[1] > 10) { FailedLogins.TryRemove(phone, out state); return false; }
+        return state[0] >= 8;
+    }
+
+    private static void NoteFailure(string phone)
+    {
+        int nowMinute = (int)(DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute % int.MaxValue);
+        FailedLogins.AddOrUpdate(phone, new int[] { 1, nowMinute }, (k, s) => new int[] { s[0] + 1, nowMinute });
+    }
+
+    private static string ReadBody(HttpContext context)
+    {
+        using (StreamReader reader = new StreamReader(context.Request.InputStream, Encoding.UTF8))
+        {
+            return reader.ReadToEnd();
+        }
+    }
+
+    private void HandleLogin(HttpContext context, string dataFolder)
+    {
+        Dictionary<string, object> body = ParseObject(ReadBody(context));
+        string phone = Digits(Str(body, "phone"));
+        string password = Str(body, "password");
+        if (phone.Length < 9 || password == "")
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "missing_fields" } });
+            return;
+        }
+        if (TooManyFailures(phone))
+        {
+            WriteJson(context, 429, new Dictionary<string, object> { { "error", "too_many_attempts" } });
+            return;
+        }
+        Dictionary<string, object> user = FindUserByPhone(dataFolder, phone);
+        if (user == null)
+        {
+            WriteJson(context, 404, new Dictionary<string, object> { { "error", "user_not_found" } });
+            return;
+        }
+
+        bool ok = false;
+        bool passwordSet = false;
+        string hash = Str(user, "password_hash");
+        string legacy = Str(user, "password");
+        if (hash != "")
+        {
+            ok = VerifyPassword(password, hash);
+        }
+        else if (legacy != "")
+        {
+            ok = FixedTimeEquals(password, legacy);
+        }
+        else
+        {
+            // Users registered before passwords existed set theirs on first sign-in (same as before).
+            ok = true;
+            passwordSet = true;
+        }
+
+        if (!ok)
+        {
+            NoteFailure(phone);
+            WriteJson(context, 401, new Dictionary<string, object> { { "error", "wrong_password" } });
+            return;
+        }
+
+        if (hash == "")
+        {
+            user["password_hash"] = HashPassword(password);
+            user.Remove("password");
+            SaveUser(dataFolder, user);
+        }
+        int[] ignored;
+        FailedLogins.TryRemove(phone, out ignored);
+
+        string userId = Str(user, "__file");
+        WriteJson(context, 200, new Dictionary<string, object> {
+            { "token", CreateSession(dataFolder, userId) },
+            { "user", StripInternal(user) },
+            { "password_set", passwordSet }
+        });
+    }
+
+    private void HandleRegister(HttpContext context, string dataFolder)
+    {
+        Dictionary<string, object> body = ParseObject(ReadBody(context));
+        string phone = Digits(Str(body, "phone"));
+        string password = Str(body, "password");
+        string name = Str(body, "name").Trim();
+        if (phone.Length < 9 || password == "" || name == "")
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "missing_fields" } });
+            return;
+        }
+        string userId = "user_" + phone;
+        if (FindUserByPhone(dataFolder, phone) != null || File.Exists(Path.Combine(UserFolder(dataFolder), userId + ".json")))
+        {
+            WriteJson(context, 409, new Dictionary<string, object> { { "error", "user_exists" } });
+            return;
+        }
+        Dictionary<string, object> user = new Dictionary<string, object>();
+        user["id"] = userId;
+        user["name"] = name;
+        user["phone"] = phone;
+        user["password_hash"] = HashPassword(password);
+        user["created_at"] = DateTime.UtcNow.ToString("o");
+        SaveUser(dataFolder, user);
+        WriteJson(context, 200, new Dictionary<string, object> {
+            { "token", CreateSession(dataFolder, userId) },
+            { "user", StripInternal(user) }
+        });
+    }
+
+    private void HandleLogout(HttpContext context, string dataFolder)
+    {
+        string token = RequestToken(context);
+        if (TokenFormat.IsMatch(token))
+        {
+            string path = Path.Combine(Path.Combine(dataFolder, "sessions"), token + ".json");
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
+        WriteJson(context, 200, new Dictionary<string, object> { { "success", true } });
+    }
+
+    /** All reads/writes of users go through here: secrets never leave, and only you can change you. */
+    private void HandleUsers(HttpContext context, string action, string id, string sessionUserId, string dataFolder)
+    {
+        string method = context.Request.HttpMethod;
+        bool isUpdate = method == "PUT" || (method == "POST" && action == "update");
+        bool isDelete = method == "DELETE" || (method == "POST" && action == "delete");
+
+        if (method == "GET")
+        {
+            if (id != "")
+            {
+                Dictionary<string, object> one = ParseObject(LoadEntityJson("users", id, dataFolder));
+                if (one == null) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "Not found" } }); return; }
+                WriteJson(context, 200, PublicUser(one));
+                return;
+            }
+            List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+            foreach (Dictionary<string, object> u in LoadAllUsers(dataFolder)) list.Add(StripInternal(u));
+            WriteJson(context, 200, list);
+            return;
+        }
+
+        if (isUpdate)
+        {
+            if (id == "" || id != sessionUserId)
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+                return;
+            }
+            Dictionary<string, object> existing = ParseObject(LoadEntityJson("users", id, dataFolder));
+            Dictionary<string, object> body = ParseObject(ReadBody(context));
+            if (existing == null || body == null)
+            {
+                WriteJson(context, existing == null ? 404 : 400, new Dictionary<string, object> { { "error", existing == null ? "Not found" : "Invalid body" } });
+                return;
+            }
+            foreach (KeyValuePair<string, object> kv in body)
+            {
+                if (kv.Key == "id" || kv.Key == "phone" || kv.Key == "password" || kv.Key == "password_hash"
+                    || kv.Key == "created_at" || kv.Key == "isAdmin" || kv.Key == "__file") continue;
+                existing[kv.Key] = kv.Value;
+            }
+            string newPassword = Str(body, "password");
+            if (newPassword != "")
+            {
+                existing["password_hash"] = HashPassword(newPassword);
+                existing.Remove("password");
+            }
+            existing["id"] = id;
+            existing["__file"] = id;
+            SaveUser(dataFolder, existing);
+            WriteJson(context, 200, StripInternal(existing));
+            return;
+        }
+
+        if (isDelete)
+        {
+            if (id == "" || id != sessionUserId)
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+                return;
+            }
+            HandleDelete(context, "users", dataFolder);
+            return;
+        }
+
+        // New users are created through action=register only.
+        WriteJson(context, 400, new Dictionary<string, object> { { "error", "use_register" } });
+    }
+
+    /** Returns true when the request was handled (or rejected) by the security layer. */
+    private bool HandleSecurity(HttpContext context, string dataFolder)
+    {
+        string entity = (context.Request.QueryString["entity"] ?? "").ToLowerInvariant();
+        string action = context.Request.QueryString["action"] ?? "";
+        string id = context.Request.QueryString["id"] ?? "";
+
+        if (action == "login" && context.Request.HttpMethod == "POST") { HandleLogin(context, dataFolder); return true; }
+        if (action == "register" && context.Request.HttpMethod == "POST") { HandleRegister(context, dataFolder); return true; }
+        if (action == "logout") { HandleLogout(context, dataFolder); return true; }
+        if (action == "webhook")
+        {
+            // PayBox has no webhook for personal groups; this open endpoint let anyone mark payments as paid.
+            WriteJson(context, 410, new Dictionary<string, object> { { "error", "webhook_disabled" } });
+            return true;
+        }
+
+        if (!AllowedEntities.Contains(entity))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid entity" } });
+            return true;
+        }
+        if (id != "" && !SafeId.IsMatch(id))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid id" } });
+            return true;
+        }
+
+        string sessionUserId = SessionUserId(context, dataFolder);
+        if (sessionUserId == null)
+        {
+            WriteJson(context, 401, new Dictionary<string, object> { { "error", "auth_required" } });
+            return true;
+        }
+
+        if (entity == "users")
+        {
+            HandleUsers(context, action, id, sessionUserId, dataFolder);
+            return true;
+        }
+        return false;
+    }
+
     public void ProcessRequest(HttpContext context)
     {
+        context.Response.TrySkipIisCustomErrors = true;
         context.Response.ContentType = "application/json; charset=utf-8";
         context.Response.Charset = "utf-8";
         context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
         context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
+        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, " + TokenHeader);
 
         if (context.Request.HttpMethod == "OPTIONS")
         {
@@ -32,6 +469,8 @@ public class BBQHandler : IHttpHandler
             {
                 Directory.CreateDirectory(dataFolder);
             }
+
+                    if (HandleSecurity(context, dataFolder)) return;
 
                     string entity = context.Request.QueryString["entity"] ?? "";
                     string action = context.Request.QueryString["action"] ?? "";
@@ -72,8 +511,7 @@ public class BBQHandler : IHttpHandler
                 context.Response.ContentType = "application/json; charset=utf-8";
                 string errorMsg = HttpUtility.JavaScriptStringEncode(ex.Message);
                 string errorType = HttpUtility.JavaScriptStringEncode(ex.GetType().ToString());
-                string errorStack = HttpUtility.JavaScriptStringEncode(ex.StackTrace ?? "");
-                string errorDetails = "{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"type\":\"" + errorType + "\",\"stack\":\"" + errorStack + "\"}";
+                string errorDetails = "{\"error\":\"Internal server error\",\"details\":\"" + errorMsg + "\",\"type\":\"" + errorType + "\"}";
                 context.Response.Write(errorDetails);
             }
             catch

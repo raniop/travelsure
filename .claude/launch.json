@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 8080
+    },
+    {
+      "name": "bbq-local",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set VITE_API_BASE_URL=http://localhost:8099/api-bbq.ashx&& npx vite --port 8081 --strictPort"],
+      "port": 8081
     }
   ]
 }

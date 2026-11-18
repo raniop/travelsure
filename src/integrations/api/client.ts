@@ -9,20 +9,68 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+const TOKEN_KEY = 'bbq_token';
+export const BBQ_AUTH_EXPIRED_EVENT = 'bbq-auth-expired';
+
+export function getBbqToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setBbqToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // storage blocked: the session lasts until the page closes
+  }
+}
+
+/** Error from the server with its machine code (e.g. wrong_password, user_exists). */
+export class ApiError extends Error {
+  constructor(message: string, public code: string, public status: number) {
+    super(message);
+  }
+}
+
+export interface AuthResult {
+  token: string;
+  user: { id: string; name: string; phone: string; profile_image?: string | null; [key: string]: unknown };
+  password_set?: boolean;
+}
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${API_BASE_URL}?${endpoint}`;
-    
+    // The session token rides in the query string and bodies go as text/plain: IIS answers the
+    // CORS preflight itself without CORS headers, so only preflight-free requests reach the server.
+    const token = getBbqToken();
+    const url = `${API_BASE_URL}?${endpoint}${token ? `&auth=${encodeURIComponent(token)}` : ''}`;
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers: options.body ? { 'Content-Type': 'text/plain;charset=UTF-8' } : undefined,
     });
+
+    if (response.status === 401) {
+      const data = await response.json().catch(() => ({} as { error?: string }));
+      if (data?.error === 'auth_required') {
+        setBbqToken(null);
+        try {
+          localStorage.removeItem('bbq_current_user');
+        } catch {
+          // ignore
+        }
+        window.dispatchEvent(new Event(BBQ_AUTH_EXPIRED_EVENT));
+        throw new ApiError('צריך להתחבר מחדש', 'auth_required', 401);
+      }
+      throw new ApiError(data?.error || 'שגיאת הרשאה', data?.error || 'unauthorized', 401);
+    }
 
     if (!response.ok) {
       // Read response text once
@@ -60,7 +108,7 @@ class ApiClient {
       }
       
       const errorMessage = errorData?.error || errorData?.details || errorData?.message || text || `HTTP ${response.status}`;
-      throw new Error(errorMessage);
+      throw new ApiError(errorMessage, String(errorData?.error || ''), response.status);
     }
 
     // Check if response is actually JSON before parsing
@@ -236,6 +284,34 @@ class ApiClient {
     });
   }
 
+  // Sign-in (checked on the server; it returns a session token and the user without secrets)
+  async login(phone: string, password: string): Promise<AuthResult> {
+    const result = await this.request<AuthResult>('action=login', {
+      method: 'POST',
+      body: JSON.stringify({ phone, password }),
+    });
+    setBbqToken(result.token);
+    return result;
+  }
+
+  async register(name: string, phone: string, password: string): Promise<AuthResult> {
+    const result = await this.request<AuthResult>('action=register', {
+      method: 'POST',
+      body: JSON.stringify({ name, phone, password }),
+    });
+    setBbqToken(result.token);
+    return result;
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await this.request('action=logout', { method: 'POST', body: '{}' });
+    } catch {
+      // the local session is cleared anyway
+    }
+    setBbqToken(null);
+  }
+
   // Users
   async getUsers(): Promise<any[]> {
     return this.request('entity=users');
@@ -248,13 +324,6 @@ class ApiClient {
   async getUserByPhone(phone: string): Promise<any | null> {
     const users = await this.getUsers();
     return users.find((u: any) => u.phone === phone) || null;
-  }
-
-  async createUser(data: any): Promise<any> {
-    return this.request('entity=users', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
   }
 
   async updateUser(id: string, data: any): Promise<any> {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { apiClient } from "@/integrations/api/client";
+import { apiClient, getBbqToken, BBQ_AUTH_EXPIRED_EVENT } from "@/integrations/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -95,8 +95,12 @@ const BBQManager = () => {
   }, [searchParams, user, group, activeTab]);
 
   useEffect(() => {
-    // Check if user is logged in
-    const savedUser = localStorage.getItem('bbq_current_user');
+    // Check if user is logged in (a saved user without a server session token must sign in again)
+    let savedUser = localStorage.getItem('bbq_current_user');
+    if (savedUser && !getBbqToken()) {
+      localStorage.removeItem('bbq_current_user');
+      savedUser = null;
+    }
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
@@ -447,6 +451,7 @@ const BBQManager = () => {
   };
 
   const handleLogout = () => {
+    void apiClient.logout();
     localStorage.removeItem('bbq_current_user');
     localStorage.removeItem('bbq_group_id');
     localStorage.removeItem('bbq_current_group');
@@ -455,6 +460,21 @@ const BBQManager = () => {
     setShowDashboard(false);
     setShowLogin(true);
   };
+
+  // The server rejected the session (expired or signed out elsewhere): back to the sign-in screen
+  useEffect(() => {
+    const onExpired = () => {
+      localStorage.removeItem('bbq_group_id');
+      localStorage.removeItem('bbq_current_group');
+      setUser(null);
+      setGroup(null);
+      setShowDashboard(false);
+      setShowLogin(true);
+      toast({ title: "צריך להתחבר מחדש", description: "מטעמי אבטחה יש להתחבר שוב עם הטלפון והסיסמה" });
+    };
+    window.addEventListener(BBQ_AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(BBQ_AUTH_EXPIRED_EVENT, onExpired);
+  }, [toast]);
 
   // Show login dialog if no user
   if (!user && !loading) {
