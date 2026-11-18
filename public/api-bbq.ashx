@@ -424,7 +424,7 @@ public class BBQHandler : IHttpHandler
             return true;
         }
 
-        if (!AllowedEntities.Contains(entity) && action != "member_link")
+        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox")
         {
             WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid entity" } });
             return true;
@@ -450,6 +450,11 @@ public class BBQHandler : IHttpHandler
         if (action == "member_link")
         {
             HandleMemberLink(context, sessionUserId, dataFolder);
+            return true;
+        }
+        if (action == "paybox")
+        {
+            HandlePaybox(context, sessionUserId, dataFolder);
             return true;
         }
         if (entity == "transfers")
@@ -1071,12 +1076,145 @@ public class BBQHandler : IHttpHandler
         result["events"] = events;
         result["ledger"] = ledger;
         result["transfers"] = transfers;
+        result["paybox"] = PayboxForMember(dataFolder, groupId, member);
         result["group_totals"] = new Dictionary<string, object> {
             { "members", membersCount }, { "balances_sum", balancesSum },
             { "deposits", groupDeposits }, { "charges", groupCharges }
         };
         context.Response.Headers.Add("Cache-Control", "no-store");
         WriteJson(context, 200, result);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // PayBox history: the owner uploads the group's PayBox export; members see their own deposits.
+    // Stored as one file per group; each upload replaces it (the export always holds the full history).
+    // ---------------------------------------------------------------------------------------------
+    private static string PhoneLocal(string phone)
+    {
+        string d = Digits(phone);
+        if (d.StartsWith("972")) d = "0" + d.Substring(3);
+        return d;
+    }
+
+    private string PayboxPath(string dataFolder, string groupId)
+    {
+        string folder = Path.Combine(dataFolder, "paybox");
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        return Path.Combine(folder, groupId + ".json");
+    }
+
+    private List<Dictionary<string, object>> LoadPaybox(string dataFolder, string groupId)
+    {
+        List<Dictionary<string, object>> rows = new List<Dictionary<string, object>>();
+        string path = PayboxPath(dataFolder, groupId);
+        if (!File.Exists(path)) return rows;
+        Dictionary<string, object> doc = ParseObject(File.ReadAllText(path, Encoding.UTF8));
+        object list;
+        if (doc != null && doc.TryGetValue("rows", out list) && list is System.Collections.ArrayList)
+            foreach (object o in (System.Collections.ArrayList)list)
+                if (o is Dictionary<string, object>) rows.Add((Dictionary<string, object>)o);
+        return rows;
+    }
+
+    private Dictionary<string, object> PayboxMeta(string dataFolder, string groupId)
+    {
+        string path = PayboxPath(dataFolder, groupId);
+        if (!File.Exists(path)) return null;
+        Dictionary<string, object> doc = ParseObject(File.ReadAllText(path, Encoding.UTF8));
+        return doc == null ? null : Pick(doc, "imported_at", "imported_by_name", "count", "first_date", "last_date");
+    }
+
+    /** GET: the group's PayBox rows (owner) · POST: replace them with a new export (owner). */
+    private void HandlePaybox(HttpContext context, string sessionUserId, string dataFolder)
+    {
+        string groupId = context.Request.QueryString["group_id"] ?? "";
+        if (!SafeId.IsMatch(groupId) || !IsGroupOwner(groupId, sessionUserId, dataFolder))
+        {
+            WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+            return;
+        }
+        if (context.Request.HttpMethod == "GET")
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+            result["meta"] = PayboxMeta(dataFolder, groupId);
+            result["rows"] = LoadPaybox(dataFolder, groupId);
+            WriteJson(context, 200, result);
+            return;
+        }
+        Dictionary<string, object> body = ParseObject(ReadBody(context));
+        object rowsObj;
+        if (body == null || !body.TryGetValue("rows", out rowsObj) || !(rowsObj is System.Collections.ArrayList))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_rows" } });
+            return;
+        }
+        List<object> clean = new List<object>();
+        string first = "", last = "";
+        foreach (object o in (System.Collections.ArrayList)rowsObj)
+        {
+            Dictionary<string, object> r = o as Dictionary<string, object>;
+            if (r == null) continue;
+            string date = Str(r, "date").Trim();
+            if (!Regex.IsMatch(date, "^\\d{4}-\\d{2}-\\d{2}")) continue;
+            string kind = Str(r, "kind") == "out" ? "out" : "in";
+            string name = Str(r, "name").Trim();
+            string note = Str(r, "note").Trim();
+            Dictionary<string, object> row = new Dictionary<string, object>();
+            row["date"] = date.Length > 19 ? date.Substring(0, 19) : date;
+            row["kind"] = kind;
+            row["name"] = name.Length > 80 ? name.Substring(0, 80) : name;
+            row["phone"] = PhoneLocal(Str(r, "phone"));
+            row["amount"] = Num(r.ContainsKey("amount") ? r["amount"] : null);
+            row["note"] = note.Length > 200 ? note.Substring(0, 200) : note;
+            clean.Add(row);
+            if (first == "" || string.CompareOrdinal(row["date"].ToString(), first) < 0) first = row["date"].ToString();
+            if (last == "" || string.CompareOrdinal(row["date"].ToString(), last) > 0) last = row["date"].ToString();
+            if (clean.Count > 20000) break;
+        }
+        Dictionary<string, object> actor = LoadEntity("users", sessionUserId, dataFolder);
+        Dictionary<string, object> doc = new Dictionary<string, object>();
+        doc["group_id"] = groupId;
+        doc["imported_at"] = DateTime.UtcNow.ToString("o");
+        doc["imported_by"] = sessionUserId;
+        doc["imported_by_name"] = Str(actor, "name");
+        doc["count"] = clean.Count;
+        doc["first_date"] = first;
+        doc["last_date"] = last;
+        doc["rows"] = clean;
+        File.WriteAllText(PayboxPath(dataFolder, groupId), Json().Serialize(doc), Encoding.UTF8);
+        WriteJson(context, 200, PayboxMeta(dataFolder, groupId));
+    }
+
+    /** The member's own PayBox deposits (matched by phone), for the personal page. */
+    private Dictionary<string, object> PayboxForMember(string dataFolder, string groupId, Dictionary<string, object> member)
+    {
+        Dictionary<string, object> meta = PayboxMeta(dataFolder, groupId);
+        if (meta == null) return null;
+        string phone = PhoneLocal(Str(member, "phone"));
+        List<object> mine = new List<object>();
+        decimal total = 0m;
+        if (phone != "")
+        {
+            foreach (Dictionary<string, object> r in LoadPaybox(dataFolder, groupId))
+            {
+                if (Str(r, "kind") != "in" || Str(r, "phone") != phone) continue;
+                mine.Add(Pick(r, "date", "amount", "note"));
+                total += Num(r.ContainsKey("amount") ? r["amount"] : null);
+            }
+        }
+        decimal groupIn = 0m, groupOut = 0m;
+        foreach (Dictionary<string, object> r in LoadPaybox(dataFolder, groupId))
+        {
+            decimal a = Num(r.ContainsKey("amount") ? r["amount"] : null);
+            if (Str(r, "kind") == "in") groupIn += a; else groupOut += a;
+        }
+        Dictionary<string, object> result = new Dictionary<string, object>();
+        result["meta"] = meta;
+        result["deposits"] = mine;
+        result["total"] = total;
+        result["group_in"] = groupIn;
+        result["group_out"] = groupOut;
+        return result;
     }
 
     public void ProcessRequest(HttpContext context)

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/integrations/api/client";
 import { GroupLedgerCard, MemberStatementDialog } from "@/components/bbq/MemberStatement";
 import { ReportTransferDialog, TransfersCard } from "@/components/bbq/Transfers";
+import { PayboxReconcileCard } from "@/components/bbq/PayboxReconcile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -1075,6 +1076,8 @@ const PaymentsOverview = ({ groupId, groupName, userId, isAdmin = false }: Payme
           })()
         )}
       </div>
+
+      {isAdmin && <PayboxReconcileCard groupId={groupId} />}
 
       <GroupLedgerCard groupId={groupId} refreshKey={moneyRefresh} />
     </div>

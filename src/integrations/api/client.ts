@@ -97,7 +97,31 @@ export interface PublicEvent {
   receipts: Receipt[];
 }
 
+export interface PayboxMeta {
+  imported_at: string;
+  imported_by_name?: string;
+  count: number;
+  first_date: string;
+  last_date: string;
+}
+
+export interface PayboxStoredRow {
+  date: string;
+  kind: 'in' | 'out';
+  name: string;
+  phone: string;
+  amount: number;
+  note: string;
+}
+
 export interface PublicMemberPage {
+  paybox?: {
+    meta: PayboxMeta;
+    deposits: { date: string; amount: number; note?: string }[];
+    total: number;
+    group_in: number;
+    group_out: number;
+  } | null;
   group: { id: string; name: string; group_image?: string | null };
   member: { id: string; name: string; nickname?: string | null; balance?: number };
   events: PublicEvent[];
@@ -284,6 +308,18 @@ class ApiClient {
 
   async deleteReceipt(id: string): Promise<void> {
     await this.request(`entity=receipts&id=${encodeURIComponent(id)}&action=delete`, { method: 'POST', body: '{}' });
+  }
+
+  // PayBox export (owner only): replace the stored history / read it back for the comparison
+  async getPaybox(groupId: string): Promise<{ meta: PayboxMeta | null; rows: PayboxStoredRow[] }> {
+    return this.request(`action=paybox&group_id=${encodeURIComponent(groupId)}`);
+  }
+
+  async uploadPaybox(groupId: string, rows: PayboxStoredRow[]): Promise<PayboxMeta> {
+    return this.request(`action=paybox&group_id=${encodeURIComponent(groupId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ rows }),
+    });
   }
 
   // Personal read-only link per member (owner only)

@@ -9,7 +9,7 @@ import { PAYBOX_GROUP_LINK } from "@/lib/bbq/payboxMessages";
 import { useBbqTheme } from "@/lib/bbq/theme";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendarDays, ExternalLink, Flame, Lock, ReceiptText, Send, Users, Wallet } from "lucide-react";
+import { CalendarDays, CheckCircle2, ExternalLink, Flame, Lock, ReceiptText, Send, Users, Wallet } from "lucide-react";
 
 const TARGET_BALANCE = 500;
 
@@ -291,10 +291,61 @@ const BBQMemberPage = () => {
               </div>
             );
           })()}
-          <p className="mb-3 text-xs text-muted-foreground">
-            «הפקדתי עד היום» = מה שנשאר ביתרה + כל מה שחויב על מפגשים. עד 18/11/2026 המערכת לא שמרה כל הפקדה בנפרד
-            (רק עדכנה את היתרה), ולכן ההפקדות הישנות מופיעות כסכום אחד. מעכשיו כל הפקדה נרשמת כאן עם התאריך והסכום.
-          </p>
+          {data.paybox ? (
+            (() => {
+              const pb = data.paybox;
+              const myCharges = (data.events || []).reduce((sum, e) => sum + (Number(e.my_amount) || 0), 0);
+              const inApp = Math.round((balance + myCharges) * 100) / 100;
+              const gap = Math.round((Number(pb.total) - inApp) * 100) / 100;
+              const matches = Math.abs(gap) < 0.01;
+              const list = [...pb.deposits].sort((a, b) => b.date.localeCompare(a.date));
+              return (
+                <div className="mb-4 space-y-3">
+                  <div className={`rounded-2xl p-3 text-sm ${matches ? "bg-emerald-500/10 text-emerald-900" : "bg-amber-500/10 text-amber-900"}`}>
+                    {matches ? (
+                      <>
+                        <CheckCircle2 className="ml-1 inline h-4 w-4" />
+                        תואם בדיוק ל-PayBox: לפי קבוצת ה-PayBox הפקדת <span dir="ltr" className="font-bold tabular-nums">{money(Number(pb.total))}</span> — בדיוק כמו באפליקציה.
+                      </>
+                    ) : (
+                      <>
+                        לפי PayBox הפקדת <span dir="ltr" className="font-bold tabular-nums">{money(Number(pb.total))}</span>, ובאפליקציה{" "}
+                        <span dir="ltr" className="font-bold tabular-nums">{money(inApp)}</span> (פער{" "}
+                        <span dir="ltr" className="tabular-nums">{money(gap)}</span>). לרוב זו הפקדה שעוד לא נרשמה, תשלום על אורח או העברה
+                        שהוחזרה — מנהל הקבוצה רואה את אותה השוואה ויסדר.
+                      </>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1 text-sm font-semibold">ההפקדות שלי ב-PayBox ({list.length})</div>
+                    {list.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">לא נמצאו הפקדות מהמספר שלך בקובץ ה-PayBox.</p>
+                    ) : (
+                      <ul className="divide-y rounded-2xl border bg-card/50">
+                        {list.map((d, i) => (
+                          <li key={`${d.date}-${i}`} className="flex items-center justify-between gap-3 px-3 py-2">
+                            <div className="min-w-0 flex-1 text-right">
+                              <div className="text-sm">{shortDay(d.date.replace(" ", "T"))}</div>
+                              {d.note && <div className="truncate text-xs text-muted-foreground">{d.note}</div>}
+                            </div>
+                            <span dir="ltr" className="font-bold tabular-nums text-emerald-700">+{Number(d.amount).toFixed(2)} ₪</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      מתוך קובץ הקבוצה ב-PayBox (עודכן {shortDay(pb.meta.imported_at)}, תנועות עד {shortDay(pb.meta.last_date.replace(" ", "T"))}).
+                    </p>
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <p className="mb-3 text-xs text-muted-foreground">
+              «הפקדתי עד היום» = מה שנשאר ביתרה + כל מה שחויב על מפגשים. עד 18/11/2026 המערכת לא שמרה כל הפקדה בנפרד
+              (רק עדכנה את היתרה), ולכן ההפקדות הישנות מופיעות כסכום אחד. מעכשיו כל הפקדה נרשמת כאן עם התאריך והסכום.
+            </p>
+          )}
           {data.ledger.length > 0 && <LedgerList entries={data.ledger} events={events} />}
         </Section>
 
