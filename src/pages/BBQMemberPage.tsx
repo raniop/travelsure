@@ -346,8 +346,8 @@ const BBQMemberPage = () => {
             }
             const showSettled = Math.abs(settled) >= 0.01;
             const box = (label: string, value: string, tone: string) => (
-              <div className={`rounded-xl p-3 ${tone}`}>
-                <div className="text-xs text-muted-foreground">{label}</div>
+              <div className={`flex h-full flex-col justify-between gap-1 rounded-xl p-3 ${tone}`}>
+                <div className="text-xs leading-snug text-muted-foreground">{label}</div>
                 <div dir="ltr" className="whitespace-nowrap text-right text-base font-bold tabular-nums sm:text-lg">
                   {value}
                 </div>
