@@ -105,6 +105,14 @@ export interface PayboxMeta {
   last_date: string;
 }
 
+export interface PayboxNote {
+  id: string;
+  member_id?: string;
+  date: string;
+  amount: number;
+  note: string;
+}
+
 export interface PayboxStoredRow {
   date: string;
   kind: 'in' | 'out';
@@ -121,6 +129,7 @@ export interface PublicMemberPage {
     total: number;
     group_in: number;
     group_out: number;
+    notes?: PayboxNote[];
   } | null;
   group: { id: string; name: string; group_image?: string | null };
   member: { id: string; name: string; nickname?: string | null; balance?: number };
@@ -313,6 +322,21 @@ class ApiClient {
   // PayBox export (owner only): replace the stored history / read it back for the comparison
   async getPaybox(groupId: string): Promise<{ meta: PayboxMeta | null; rows: PayboxStoredRow[] }> {
     return this.request(`action=paybox&group_id=${encodeURIComponent(groupId)}`);
+  }
+
+  async getPayboxNotes(groupId: string): Promise<PayboxNote[]> {
+    return this.request(`action=paybox_notes&group_id=${encodeURIComponent(groupId)}`);
+  }
+
+  async addPayboxNote(groupId: string, note: { member_id: string; date: string; amount: number; note: string }): Promise<PayboxNote[]> {
+    return this.request(`action=paybox_notes&group_id=${encodeURIComponent(groupId)}`, { method: 'POST', body: JSON.stringify(note) });
+  }
+
+  async deletePayboxNote(groupId: string, id: string): Promise<PayboxNote[]> {
+    return this.request(`action=paybox_notes&group_id=${encodeURIComponent(groupId)}&op=delete&id=${encodeURIComponent(id)}`, {
+      method: 'POST',
+      body: '{}',
+    });
   }
 
   async uploadPaybox(groupId: string, rows: PayboxStoredRow[]): Promise<PayboxMeta> {

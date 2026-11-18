@@ -80,6 +80,9 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
       items.push({ at: d.date.replace(" ", "T"), amount: Number(d.amount) || 0, title: "הפקדה ב-PayBox", detail: d.note || undefined, kind: "in" });
     }
   }
+  for (const n of pb?.notes || []) {
+    items.push({ at: n.date.replace(" ", "T"), amount: Number(n.amount) || 0, title: "התחשבנות מול הקופה", detail: n.note, kind: "fix" });
+  }
   for (const e of data.ledger) {
     const amt = Number(e.amount) || 0;
     if (e.type === "deposit" || e.type === "transfer") {
@@ -133,7 +136,7 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
                 </span>
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">{it.title}</div>
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div className={`${it.kind === "fix" ? "whitespace-normal" : "truncate"} text-xs text-muted-foreground`}>
                     {Number.isNaN(d.getTime()) ? "" : format(d, "EEEE, d/M", { locale: he })}
                     {it.detail ? ` · ${it.detail}` : ""}
                   </div>

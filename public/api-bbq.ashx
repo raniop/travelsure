@@ -424,7 +424,7 @@ public class BBQHandler : IHttpHandler
             return true;
         }
 
-        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox")
+        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox" && action != "paybox_notes")
         {
             WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid entity" } });
             return true;
@@ -455,6 +455,11 @@ public class BBQHandler : IHttpHandler
         if (action == "paybox")
         {
             HandlePaybox(context, sessionUserId, dataFolder);
+            return true;
+        }
+        if (action == "paybox_notes")
+        {
+            HandlePayboxNotes(context, sessionUserId, dataFolder);
             return true;
         }
         if (entity == "transfers")
@@ -1124,6 +1129,84 @@ public class BBQHandler : IHttpHandler
         return doc == null ? null : Pick(doc, "imported_at", "imported_by_name", "count", "first_date", "last_date");
     }
 
+    // Settlement lines: the owner explains money that went through a member for the group (an
+    // overpayment that was returned, a guest paid from a member's deposit). Shown in the member's
+    // dated list so it adds up with PayBox; they do not change any balance.
+    private string NotesPath(string dataFolder, string groupId)
+    {
+        string folder = Path.Combine(dataFolder, "paybox");
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        return Path.Combine(folder, groupId + ".notes.json");
+    }
+
+    private List<Dictionary<string, object>> LoadNotes(string dataFolder, string groupId)
+    {
+        List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+        string path = NotesPath(dataFolder, groupId);
+        if (!File.Exists(path)) return list;
+        Dictionary<string, object> doc = ParseObject(File.ReadAllText(path, Encoding.UTF8));
+        object arr;
+        if (doc != null && doc.TryGetValue("notes", out arr) && arr is System.Collections.ArrayList)
+            foreach (object o in (System.Collections.ArrayList)arr)
+                if (o is Dictionary<string, object>) list.Add((Dictionary<string, object>)o);
+        return list;
+    }
+
+    private void SaveNotes(string dataFolder, string groupId, List<Dictionary<string, object>> notes)
+    {
+        Dictionary<string, object> doc = new Dictionary<string, object>();
+        doc["notes"] = notes;
+        File.WriteAllText(NotesPath(dataFolder, groupId), Json().Serialize(doc), Encoding.UTF8);
+    }
+
+    /** GET list · POST add {member_id, date, amount, note} · POST &op=delete&id= (owner only). */
+    private void HandlePayboxNotes(HttpContext context, string sessionUserId, string dataFolder)
+    {
+        string groupId = context.Request.QueryString["group_id"] ?? "";
+        if (!SafeId.IsMatch(groupId) || !IsGroupOwner(groupId, sessionUserId, dataFolder))
+        {
+            WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+            return;
+        }
+        List<Dictionary<string, object>> notes = LoadNotes(dataFolder, groupId);
+        if (context.Request.HttpMethod == "GET")
+        {
+            WriteJson(context, 200, notes);
+            return;
+        }
+        if ((context.Request.QueryString["op"] ?? "") == "delete")
+        {
+            string id = context.Request.QueryString["id"] ?? "";
+            notes.RemoveAll(x => Str(x, "id") == id);
+            SaveNotes(dataFolder, groupId, notes);
+            WriteJson(context, 200, notes);
+            return;
+        }
+        Dictionary<string, object> body = ParseObject(ReadBody(context)) ?? new Dictionary<string, object>();
+        string memberId = Str(body, "member_id");
+        Dictionary<string, object> member = LoadEntity("members", memberId, dataFolder);
+        string date = Str(body, "date").Trim();
+        string note = Str(body, "note").Trim();
+        decimal amount = Num(body.ContainsKey("amount") ? body["amount"] : null);
+        if (member == null || Str(member, "group_id") != groupId || !Regex.IsMatch(date, "^\\d{4}-\\d{2}-\\d{2}") || note == "" || amount == 0m)
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_note" } });
+            return;
+        }
+        Dictionary<string, object> actor = LoadEntity("users", sessionUserId, dataFolder);
+        Dictionary<string, object> n = new Dictionary<string, object>();
+        n["id"] = Guid.NewGuid().ToString();
+        n["member_id"] = memberId;
+        n["date"] = date.Length > 19 ? date.Substring(0, 19) : date;
+        n["amount"] = amount;
+        n["note"] = note.Length > 300 ? note.Substring(0, 300) : note;
+        n["by_name"] = Str(actor, "name");
+        n["at"] = DateTime.UtcNow.ToString("o");
+        notes.Add(n);
+        SaveNotes(dataFolder, groupId, notes);
+        WriteJson(context, 200, notes);
+    }
+
     /** GET: the group's PayBox rows (owner) · POST: replace them with a new export (owner). */
     private void HandlePaybox(HttpContext context, string sessionUserId, string dataFolder)
     {
@@ -1214,6 +1297,10 @@ public class BBQHandler : IHttpHandler
         result["total"] = total;
         result["group_in"] = groupIn;
         result["group_out"] = groupOut;
+        List<object> myNotes = new List<object>();
+        foreach (Dictionary<string, object> nt in LoadNotes(dataFolder, groupId))
+            if (Str(nt, "member_id") == Str(member, "id")) myNotes.Add(Pick(nt, "id", "date", "amount", "note"));
+        result["notes"] = myNotes;
         return result;
     }
 

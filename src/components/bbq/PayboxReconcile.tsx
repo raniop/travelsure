@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { apiClient, type LedgerEntry, type PayboxMeta, type PayboxStoredRow } from "@/integrations/api/client";
+import { apiClient, type LedgerEntry, type PayboxMeta, type PayboxNote, type PayboxStoredRow } from "@/integrations/api/client";
 import { localPhone, parsePayboxCsv, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, FileUp, Scale } from "lucide-react";
+import { CheckCircle2, FileUp, Plus, Scale, Trash2 } from "lucide-react";
 
 type MemberMoney = { id: string; name: string; phone: string; balance: number; charges: number };
 
@@ -24,6 +25,8 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
   const [members, setMembers] = useState<MemberMoney[]>([]);
   const [uncalculated, setUncalculated] = useState<{ date: string; cost: number }[]>([]);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [notes, setNotes] = useState<PayboxNote[]>([]);
+  const [draft, setDraft] = useState({ member_id: "", date: "", amount: "", note: "" });
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
 
@@ -60,6 +63,7 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
     const r = await apiClient.getPaybox(groupId).catch(() => ({ meta: null, rows: [] }));
     setMeta(r.meta);
     setRows(r.rows || []);
+    setNotes(await apiClient.getPayboxNotes(groupId).catch(() => []));
   }, [groupId]);
 
   useEffect(() => {
@@ -199,7 +203,87 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
               </p>
             </div>
 
-
+            {/* Settlement lines: shown in the member's dated list, never change a balance */}
+            <div className="space-y-2 rounded-2xl border bg-card/50 p-3">
+              <div className="text-sm font-medium">שורות התחשבנות מול הקופה</div>
+              <p className="text-xs text-muted-foreground">
+                לכסף שעבר דרך חבר בשביל הקבוצה (עודף שהוחזר, אורח ששולם מההפקדה, כסף שחזר באותו יום). השורה מופיעה ברשימה האישית
+                של החבר עם ההסבר, כדי שהרשימה תתחבר ל-PayBox. היתרה לא משתנה.
+              </p>
+              {notes.length > 0 && (
+                <ul className="divide-y">
+                  {[...notes].sort((a, b) => a.date.localeCompare(b.date)).map((n) => (
+                    <li key={n.id} className="flex items-start justify-between gap-2 py-2">
+                      <div className="min-w-0 flex-1 text-right text-sm">
+                        <span className="font-medium">{members.find((m) => m.id === n.member_id)?.name || "חבר"}</span> ·{" "}
+                        {n.date.slice(0, 10)} ·{" "}
+                        <span dir="ltr" className="tabular-nums">{money(Number(n.amount))}</span>
+                        <div className="text-xs text-muted-foreground">{n.note}</div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-muted-foreground hover:text-red-600"
+                        onClick={async () => {
+                          if (!confirm("למחוק את השורה?")) return;
+                          setNotes(await apiClient.deletePayboxNote(groupId, n.id));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="grid gap-2 sm:grid-cols-[1fr_9rem_7rem]">
+                <select
+                  className="h-9 rounded-md border bg-background px-2 text-sm"
+                  value={draft.member_id}
+                  onChange={(e) => setDraft({ ...draft, member_id: e.target.value })}
+                >
+                  <option value="">בחירת חבר</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                <Input type="date" className="h-9" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  dir="ltr"
+                  placeholder="−600"
+                  className="h-9 text-left"
+                  value={draft.amount}
+                  onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                />
+              </div>
+              <Input placeholder="ההסבר שהחבר יראה" value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} maxLength={300} />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!draft.member_id || !draft.date || !parseFloat(draft.amount) || !draft.note.trim()}
+                onClick={async () => {
+                  try {
+                    setNotes(
+                      await apiClient.addPayboxNote(groupId, {
+                        member_id: draft.member_id,
+                        date: draft.date,
+                        amount: parseFloat(draft.amount),
+                        note: draft.note.trim(),
+                      }),
+                    );
+                    setDraft({ member_id: draft.member_id, date: "", amount: "", note: "" });
+                  } catch (e) {
+                    toast({ title: "לא נשמר", description: (e as Error).message, variant: "destructive" });
+                  }
+                }}
+              >
+                <Plus className="ml-1 h-4 w-4" />
+                הוספת שורה
+              </Button>
+            </div>
           </>
         )}
       </CardContent>
