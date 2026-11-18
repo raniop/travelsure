@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { apiClient, type LedgerEntry, type PayboxMeta, type PayboxNote, type PayboxStoredRow } from "@/integrations/api/client";
-import { localPhone, parsePayboxCsv, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
+import { isNettedDeposit, localPhone, parsePayboxCsv, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +98,7 @@ export function PayboxReconcileCard({ groupId }: { groupId: string }) {
     }
     const sinceApp: Record<string, number> = {};
     for (const e of ledger) {
-      if ((e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC) {
+      if ((e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC && !isNettedDeposit(e.note)) {
         sinceApp[e.member_id] = (sinceApp[e.member_id] || 0) + (Number(e.amount) || 0);
       }
     }

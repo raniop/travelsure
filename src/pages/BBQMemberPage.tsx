@@ -6,7 +6,7 @@ import { apiClient, type PublicEvent, type PublicMemberPage } from "@/integratio
 import { LedgerList, TrustNote } from "@/components/bbq/MemberStatement";
 import { ReportTransferDialog, TransferStatusBadge } from "@/components/bbq/Transfers";
 import { PAYBOX_GROUP_LINK } from "@/lib/bbq/payboxMessages";
-import { PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
+import { isNettedDeposit, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { useBbqTheme } from "@/lib/bbq/theme";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -87,8 +87,15 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
     const amt = Number(e.amount) || 0;
     if (e.type === "deposit" || e.type === "transfer") {
       // With a PayBox file, app deposits are already in it, unless they came after its last row
-      if (pb && e.created_at.slice(0, 19) <= new Date(pbLast).toISOString().slice(0, 19)) continue;
-      items.push({ at: e.created_at, amount: amt, title: e.type === "transfer" ? "העברה שאושרה" : "הפקדה", detail: e.note || undefined, kind: "in" });
+      const netted = isNettedDeposit(e.note);
+      if (pb && !netted && e.created_at.slice(0, 19) <= new Date(pbLast).toISOString().slice(0, 19)) continue;
+      items.push({
+        at: e.created_at,
+        amount: amt,
+        title: netted ? "הפקדה בקיזוז" : e.type === "transfer" ? "העברה שאושרה" : "הפקדה",
+        detail: e.note || undefined,
+        kind: "in",
+      });
     } else if (e.type === "adjustment") {
       items.push({ at: e.created_at, amount: amt, title: "תיקון ידני", detail: e.note || undefined, kind: "fix" });
     }
@@ -334,7 +341,7 @@ const BBQMemberPage = () => {
             if (pb) {
               const pbLastIso = new Date(pb.meta.last_date.replace(" ", "T")).toISOString().slice(0, 19);
               const afterFile = data.ledger
-                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at.slice(0, 19) > pbLastIso)
+                .filter((e) => (e.type === "deposit" || e.type === "transfer") && (e.created_at.slice(0, 19) > pbLastIso || isNettedDeposit(e.note)))
                 .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
               const fixes = data.ledger.filter((e) => e.type === "adjustment").reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
               const deposited = Number(pb.total) + afterFile;
@@ -394,7 +401,7 @@ const BBQMemberPage = () => {
               const list = [...pb.deposits].sort((a, b) => b.date.localeCompare(a.date));
               const pbSince = pb.deposits.filter((d) => d.date > PAYBOX_BASELINE_LOCAL).reduce((s, d) => s + (Number(d.amount) || 0), 0);
               const appSince = data.ledger
-                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC)
+                .filter((e) => (e.type === "deposit" || e.type === "transfer") && e.created_at >= PAYBOX_BASELINE_UTC && !isNettedDeposit(e.note))
                 .reduce((s, e) => s + (Number(e.amount) || 0), 0);
               const sinceOk = Math.abs(pbSince - appSince) < 0.01;
               return (

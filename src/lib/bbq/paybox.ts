@@ -85,3 +85,9 @@ export function parsePayboxCsv(text: string): PayboxRow[] {
  */
 export const PAYBOX_BASELINE_LOCAL = "2026-11-18 12:30:00"; // PayBox times are Israel time
 export const PAYBOX_BASELINE_UTC = "2026-11-18T10:30:00Z";
+
+/**
+ * A deposit that was netted against money the group owed the member (e.g. the butcher bill) never
+ * passes through PayBox. The owner marks it by starting the deposit note with "קיזוז".
+ */
+export const isNettedDeposit = (note?: string | null) => (note || "").trim().startsWith("קיזוז");

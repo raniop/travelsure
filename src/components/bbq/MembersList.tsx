@@ -930,7 +930,7 @@ const UpdateBalanceDialog = ({ member, groupId, groupName, onBalanceUpdated, chi
                     id="deposit-note"
                     value={depositNote}
                     onChange={(e) => setDepositNote(e.target.value)}
-                    placeholder="למשל: PayBox 12/11"
+                    placeholder="למשל: PayBox 12/11 · בקיזוז: «קיזוז: מהחזר הקצבייה…»"
                     maxLength={120}
                   />
                 </div>
