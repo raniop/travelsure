@@ -10,6 +10,8 @@ export {
   isValidEmail,
   normalizeDateInput,
   toEnglishOnly,
+  toLatinName,
+  isLatinName,
 } from "@/lib/foreigners/formDefaults";
 
 const todayDdMmYyyy = () => {

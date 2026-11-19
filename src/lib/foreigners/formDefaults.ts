@@ -138,6 +138,10 @@ export const containsHebrew = (value: string) => /[\u0590-\u05FF]/.test(value);
 /** Keep Latin letters, digits, and common punctuation — strip Hebrew characters. */
 export const toEnglishOnly = (value: string) => value.replace(/[\u0590-\u05FF]+/g, "");
 
+/** Names are always in English, whatever the form language: Latin letters, spaces, - ' . only. */
+export const toLatinName = (value: string) => value.replace(/[^A-Za-z\s'.-]+/g, "").replace(/\s{2,}/g, " ");
+export const isLatinName = (value: string) => /^[A-Za-z][A-Za-z\s'.-]*$/.test(value.trim());
+
 /**
  * Card number: 8–19 digits. No checksum, so Amex (15), Diners (14) and short Israeli
  * Isracard numbers (8–9) are all accepted; the agency checks the card when charging.

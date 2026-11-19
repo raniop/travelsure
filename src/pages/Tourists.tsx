@@ -23,6 +23,8 @@ import {
   isValidEmail,
   periodDays,
   toEnglishOnly,
+  toLatinName,
+  isLatinName,
   travelerLabel,
   travelerName,
   visibleHealthQuestions,
@@ -254,6 +256,7 @@ const Tourists = () => {
       const k = (f: string) => `${t.role}.${f}`;
       for (const f of ["firstName", "lastName", "passportNo", "passportCountry", "citizenship"] as const) {
         if (!t[f].trim()) next[k(f)] = "שדה חובה";
+        else if ((f === "firstName" || f === "lastName") && !isLatinName(t[f])) next[k(f)] = "שם באנגלית בלבד (A–Z)";
         else if (containsHebrew(t[f])) next[k(f)] = "יש להזין באנגלית בלבד";
       }
       if (!isValidDateDdMmYyyy(t.birthDate)) next[k("birthDate")] = "תאריך בפורמט DD/MM/YYYY";
@@ -321,9 +324,11 @@ const Tourists = () => {
     if (!form.declarationsAccepted) next.declarationsAccepted = "חובה לאשר את ההצהרות";
     if (hasChildren && !form.authorizedForChildren) next.authorizedForChildren = "שדה חובה";
     if (!form.signatureName.trim()) next.signatureName = "שדה חובה";
+    else if (!isLatinName(form.signatureName)) next.signatureName = "שם באנגלית בלבד (A–Z)";
     if (!isValidDateDdMmYyyy(form.signatureDate)) next.signatureDate = "תאריך בפורמט DD/MM/YYYY";
     if (!form.payerId.trim()) next.payerId = "שדה חובה";
     if (!form.cardholderName.trim()) next.cardholderName = "שדה חובה";
+    else if (!isLatinName(form.cardholderName)) next.cardholderName = "שם באנגלית בלבד (A–Z)";
     if (!form.cardNumber.trim()) next.cardNumber = "שדה חובה";
     else if (!isValidCardNumber(form.cardNumber)) next.cardNumber = "מספר כרטיס לא תקין";
     if (!form.cardExp.trim()) next.cardExp = "שדה חובה";
@@ -409,6 +414,21 @@ const Tourists = () => {
     />
   );
 
+  /** Every name on this form is in English, whatever the form language. */
+  const nameProps = (name: "hostLastName" | "signatureName" | "cardholderName", placeholder?: string) => ({
+    value: String(form[name] ?? ""),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const cleaned = toLatinName(e.target.value);
+      setField(name, cleaned as never);
+      if (cleaned !== e.target.value.replace(/\s{2,}/g, " ")) setErrors((prev) => ({ ...prev, [name]: "שם באנגלית בלבד (A–Z)" }));
+    },
+    placeholder,
+    lang: "en",
+    autoCapitalize: "words",
+    className: `${fieldCls} text-left ${errors[name] ? "border-destructive" : ""}`,
+    style: { direction: "ltr" as const, textAlign: "left" as const },
+  });
+
   const textProps = (name: keyof TouristsForm, opts?: { placeholder?: string; type?: string }) => ({
     value: String(form[name] ?? ""),
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setField(name, e.target.value as never),
@@ -424,7 +444,12 @@ const Tourists = () => {
       <Input
         value={t[key]}
         onChange={(e) => {
-          const cleaned = key === "visitPurpose" ? e.target.value : toEnglishOnly(e.target.value);
+          const cleaned =
+            key === "visitPurpose"
+              ? e.target.value
+              : key === "firstName" || key === "lastName"
+                ? toLatinName(e.target.value)
+                : toEnglishOnly(e.target.value);
           setTraveler(t.role, { [key]: cleaned });
           if (cleaned !== e.target.value) setErrors((prev) => ({ ...prev, [errKey]: "יש להזין באנגלית בלבד" }));
         }}
@@ -690,8 +715,8 @@ const Tourists = () => {
                   <Field label="יישוב" required error={errors.town}>
                     <Input {...textProps("town", { placeholder: "תל אביב" })} />
                   </Field>
-                  <Field label="שם המשפחה המארחת">
-                    <Input {...textProps("hostLastName")} />
+                  <Field label="שם המשפחה המארחת" error={errors.hostLastName} hint="English only">
+                    <Input {...nameProps("hostLastName", "e.g. Cohen")} />
                   </Field>
                   <Field label="טלפון נייד" required error={errors.mobile}>
                     <Input {...textProps("mobile", { type: "tel" })} />
@@ -851,8 +876,8 @@ const Tourists = () => {
                 )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="שם מלא לחתימה" required error={errors.signatureName}>
-                    <Input {...textProps("signatureName", { placeholder: "כתבו את שמכם המלא" })} />
+                  <Field label="שם מלא לחתימה" required error={errors.signatureName} hint="English only">
+                    <Input {...nameProps("signatureName", "Full name in English")} />
                   </Field>
                   <Field label="תאריך" required error={errors.signatureDate}>
                     {dateInput(form.signatureDate, (v) => setField("signatureDate", v), errors.signatureDate)}
@@ -873,8 +898,8 @@ const Tourists = () => {
                     </Field>
                   )}
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="שם בעל הכרטיס" required error={errors.cardholderName}>
-                      <Input {...textProps("cardholderName")} />
+                    <Field label="שם בעל הכרטיס" required error={errors.cardholderName} hint="English only">
+                      <Input {...nameProps("cardholderName", "Name on card")} />
                     </Field>
                     <Field label="ת.ז. / דרכון של המשלם" required error={errors.payerId}>
                       <Input {...textProps("payerId")} />
