@@ -139,7 +139,7 @@ export const containsHebrew = (value: string) => /[\u0590-\u05FF]/.test(value);
 export const toEnglishOnly = (value: string) => value.replace(/[\u0590-\u05FF]+/g, "");
 
 /** Names are always in English, whatever the form language: Latin letters, spaces, - ' . only. */
-export const toLatinName = (value: string) => value.replace(/[^A-Za-z\s'.-]+/g, "").replace(/\s{2,}/g, " ");
+export const toLatinName = (value: string) => value.replace(/[^A-Za-z\s'.-]+/g, "").replace(/\s{2,}/g, " ").replace(/^\s+/, "");
 export const isLatinName = (value: string) => /^[A-Za-z][A-Za-z\s'.-]*$/.test(value.trim());
 
 /**
