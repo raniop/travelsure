@@ -267,7 +267,7 @@ export async function submitClaimRequest(
       ok: true as const,
       claimNumber: resolvedNumber,
       warning: sentWithoutAttachments
-        ? "התביעה נשלחה, אך המסמכים לא צורפו בגלל גודלם. שלחו אותם במייל ל־ophir@ophirins.co.il עם מספר התביעה."
+        ? "התביעה נשלחה, אך המסמכים לא צורפו בגלל גודלם. שלחו אותם במייל ל־ophir@ophirins.co.il עם מספר הפוליסה."
         : undefined,
     };
   }
