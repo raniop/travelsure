@@ -357,6 +357,15 @@ class ApiClient {
     return this.request(`action=member_link&member_id=${encodeURIComponent(memberId)}`, { method: 'POST', body: '{}' });
   }
 
+  // One group link: the member signs in with their phone and an SMS code, and gets their page key
+  async otpStart(groupId: string, phone: string): Promise<{ sent: boolean; to: string }> {
+    return this.request('action=otp_start', { method: 'POST', body: JSON.stringify({ group_id: groupId, phone }) });
+  }
+
+  async otpVerify(groupId: string, phone: string, code: string): Promise<{ key: string }> {
+    return this.request('action=otp_verify', { method: 'POST', body: JSON.stringify({ group_id: groupId, phone, code }) });
+  }
+
   // The personal page itself (no sign-in: the key in the link is the access)
   async getPublicPage(key: string): Promise<PublicMemberPage> {
     return this.request(`action=public&key=${encodeURIComponent(key)}`);

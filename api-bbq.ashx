@@ -1,9 +1,10 @@
-<%@ WebHandler Language="C#" Class="BBQHandler" %>
+﻿<%@ WebHandler Language="C#" Class="BBQHandler" %>
 <%@ Assembly Name="System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" %>
 
 using System;
 using System.Web;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -421,6 +422,11 @@ public class BBQHandler : IHttpHandler
         if (action == "public" || action == "public_receipt" || action == "public_transfer")
         {
             HandlePublic(context, dataFolder);
+            return true;
+        }
+        if (action == "otp_start" || action == "otp_verify")
+        {
+            HandleOtp(context, action, dataFolder);
             return true;
         }
 
@@ -1337,6 +1343,175 @@ public class BBQHandler : IHttpHandler
             if (Str(nt, "member_id") == Str(member, "id")) myNotes.Add(Pick(nt, "id", "date", "amount", "note"));
         result["notes"] = myNotes;
         return result;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // One group link: a member types their phone, gets an SMS code, and lands on their personal page.
+    // The SMS gateway URL lives only on the server (App_Data/bbq/sms.json), never in the code.
+    // ---------------------------------------------------------------------------------------------
+    private static readonly Regex OtpCode = new Regex("^\\d{6}$");
+
+    private string OtpPath(string dataFolder, string groupId, string phone)
+    {
+        string folder = Path.Combine(dataFolder, "otp");
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        return Path.Combine(folder, groupId + "_" + phone + ".json");
+    }
+
+    private Dictionary<string, object> MemberByPhone(string groupId, string phone, string dataFolder)
+    {
+        foreach (Dictionary<string, object> m in LoadAll("members", dataFolder))
+            if (Str(m, "group_id") == groupId && PhoneLocal(Str(m, "phone")) == phone) return m;
+        return null;
+    }
+
+    /** Existing personal link key of the member, or a new one (same keys as the owner's "קישור"). */
+    private string KeyForMember(Dictionary<string, object> member, string dataFolder)
+    {
+        string memberId = Str(member, "id");
+        string folder = Path.Combine(dataFolder, "member_keys");
+        if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        foreach (string file in Directory.GetFiles(folder, "*.json"))
+        {
+            Dictionary<string, object> k = ParseObject(File.ReadAllText(file, Encoding.UTF8));
+            if (k != null && Str(k, "member_id") == memberId) return Path.GetFileNameWithoutExtension(file);
+        }
+        string key = RandomHex(24);
+        Dictionary<string, object> rec = new Dictionary<string, object>();
+        rec["member_id"] = memberId;
+        rec["group_id"] = Str(member, "group_id");
+        rec["created_by"] = "sms";
+        rec["created_at"] = DateTime.UtcNow.ToString("o");
+        File.WriteAllText(Path.Combine(folder, key + ".json"), Json().Serialize(rec), Encoding.UTF8);
+        return key;
+    }
+
+    private bool SendSms(string dataFolder, string phone, string message)
+    {
+        string cfgPath = Path.Combine(dataFolder, "sms.json");
+        if (!File.Exists(cfgPath)) return false;
+        Dictionary<string, object> cfg = ParseObject(File.ReadAllText(cfgPath, Encoding.UTF8));
+        string template = Str(cfg, "url");
+        if (template == "") return false;
+        string url = template.Replace("{mobile}", Uri.EscapeDataString(phone)).Replace("{message}", Uri.EscapeDataString(message));
+        try
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "GET";
+            request.Timeout = 10000;
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                return (int)response.StatusCode >= 200 && (int)response.StatusCode < 300;
+            }
+        }
+        catch { return false; }
+    }
+
+    private static string MaskPhone(string phone)
+    {
+        return phone.Length >= 4 ? new string('*', Math.Max(0, phone.Length - 4)) + phone.Substring(phone.Length - 4) : phone;
+    }
+
+    /** POST action=otp_start {group_id, phone} · POST action=otp_verify {group_id, phone, code} → {key}. */
+    private void HandleOtp(HttpContext context, string action, string dataFolder)
+    {
+        if (context.Request.HttpMethod != "POST") { WriteJson(context, 405, new Dictionary<string, object> { { "error", "Method not allowed" } }); return; }
+        Dictionary<string, object> body = ParseObject(ReadBody(context)) ?? new Dictionary<string, object>();
+        string groupId = Str(body, "group_id");
+        string phone = PhoneLocal(Str(body, "phone"));
+        if (!SafeId.IsMatch(groupId) || phone.Length < 9 || phone.Length > 12)
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_phone" } });
+            return;
+        }
+        Dictionary<string, object> group = LoadEntity("groups", groupId, dataFolder);
+        Dictionary<string, object> member = group == null ? null : MemberByPhone(groupId, phone, dataFolder);
+        string path = OtpPath(dataFolder, groupId, phone);
+        Dictionary<string, object> state = File.Exists(path) ? ParseObject(File.ReadAllText(path, Encoding.UTF8)) : null;
+
+        if (action == "otp_start")
+        {
+            if (member == null)
+            {
+                WriteJson(context, 404, new Dictionary<string, object> { { "error", "not_a_member" } });
+                return;
+            }
+            // At most 3 codes per phone in 15 minutes
+            int sent = 0;
+            DateTime windowStart;
+            if (state != null && DateTime.TryParse(Str(state, "window_start"), null, System.Globalization.DateTimeStyles.RoundtripKind, out windowStart)
+                && DateTime.UtcNow - windowStart.ToUniversalTime() < TimeSpan.FromMinutes(15))
+            {
+                int.TryParse(Str(state, "sent"), out sent);
+            }
+            else windowStart = DateTime.UtcNow;
+            if (sent >= 3)
+            {
+                WriteJson(context, 429, new Dictionary<string, object> { { "error", "too_many_codes" } });
+                return;
+            }
+            byte[] rnd = new byte[4];
+            using (RandomNumberGenerator rng0 = RandomNumberGenerator.Create()) rng0.GetBytes(rnd);
+            string code = (BitConverter.ToUInt32(rnd, 0) % 1000000).ToString("D6");
+            byte[] salt = new byte[16];
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) rng.GetBytes(salt);
+            string codeHash;
+            using (Rfc2898DeriveBytes kdf = new Rfc2898DeriveBytes(code, salt, 1000))
+                codeHash = Convert.ToBase64String(salt) + "$" + Convert.ToBase64String(kdf.GetBytes(24));
+            string groupName = Str(group, "name");
+            string message = "קוד הכניסה שלך לקופה" + (groupName != "" ? " של " + groupName : "") + ": " + code + " (בתוקף 10 דקות)";
+            if (!SendSms(dataFolder, phone, message))
+            {
+                WriteJson(context, 502, new Dictionary<string, object> { { "error", "sms_failed" } });
+                return;
+            }
+            Dictionary<string, object> st = new Dictionary<string, object>();
+            st["code_hash"] = codeHash;
+            st["expires_at"] = DateTime.UtcNow.AddMinutes(10).ToString("o");
+            st["attempts"] = 0;
+            st["sent"] = sent + 1;
+            st["window_start"] = windowStart.ToUniversalTime().ToString("o");
+            File.WriteAllText(path, Json().Serialize(st), Encoding.UTF8);
+            WriteJson(context, 200, new Dictionary<string, object> { { "sent", true }, { "to", MaskPhone(phone) } });
+            return;
+        }
+
+        // otp_verify
+        string given = Str(body, "code").Trim();
+        if (member == null || state == null || !OtpCode.IsMatch(given))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "wrong_code" } });
+            return;
+        }
+        DateTime expires;
+        int attempts;
+        int.TryParse(Str(state, "attempts"), out attempts);
+        if (!DateTime.TryParse(Str(state, "expires_at"), null, System.Globalization.DateTimeStyles.RoundtripKind, out expires)
+            || expires.ToUniversalTime() < DateTime.UtcNow || attempts >= 5 || Str(state, "code_hash") == "")
+        {
+            WriteJson(context, 410, new Dictionary<string, object> { { "error", "code_expired" } });
+            return;
+        }
+        string[] parts = Str(state, "code_hash").Split('$');
+        bool ok = false;
+        try
+        {
+            byte[] salt = Convert.FromBase64String(parts[0]);
+            byte[] expected = Convert.FromBase64String(parts[1]);
+            using (Rfc2898DeriveBytes kdf = new Rfc2898DeriveBytes(given, salt, 1000))
+                ok = FixedTimeEquals(kdf.GetBytes(expected.Length), expected);
+        }
+        catch { ok = false; }
+        if (!ok)
+        {
+            state["attempts"] = attempts + 1;
+            File.WriteAllText(path, Json().Serialize(state), Encoding.UTF8);
+            WriteJson(context, 401, new Dictionary<string, object> { { "error", "wrong_code" } });
+            return;
+        }
+        state["code_hash"] = "";
+        File.WriteAllText(path, Json().Serialize(state), Encoding.UTF8);
+        WriteJson(context, 200, new Dictionary<string, object> { { "key", KeyForMember(member, dataFolder) } });
     }
 
     public void ProcessRequest(HttpContext context)

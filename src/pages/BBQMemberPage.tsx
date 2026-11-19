@@ -9,6 +9,7 @@ import { PAYBOX_GROUP_LINK } from "@/lib/bbq/payboxMessages";
 import { isNettedDeposit, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { useBbqTheme } from "@/lib/bbq/theme";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowDownLeft, CalendarDays, CheckCircle2, ExternalLink, Flame, Lock, ReceiptText, Send, Users, Wallet } from "lucide-react";
 
@@ -184,6 +185,137 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
   );
 }
 
+const savedKeyFor = (groupId: string) => {
+  try {
+    return localStorage.getItem(`bbq_member_key_${groupId}`) || "";
+  } catch {
+    return "";
+  }
+};
+
+const saveKeyFor = (groupId: string, key: string | null) => {
+  try {
+    if (key) localStorage.setItem(`bbq_member_key_${groupId}`, key);
+    else localStorage.removeItem(`bbq_member_key_${groupId}`);
+  } catch {
+    // private mode: they will sign in again next time
+  }
+};
+
+/** Group link sign-in: phone → SMS code → the member's own page. */
+function PhoneLogin({ groupId, onKey }: { groupId: string; onKey: (key: string) => void }) {
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [sentTo, setSentTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const start = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await apiClient.otpStart(groupId, phone);
+      setSentTo(r.to);
+    } catch (e) {
+      const m = (e as Error).message;
+      setError(
+        m === "not_a_member"
+          ? "המספר הזה לא רשום בקבוצה. בדקו את המספר או פנו למנהל הקבוצה."
+          : m === "too_many_codes"
+            ? "נשלחו כבר כמה קודים. נסו שוב בעוד רבע שעה."
+            : m === "invalid_phone"
+              ? "מספר טלפון לא תקין"
+              : "לא הצלחנו לשלוח SMS. נסו שוב בעוד רגע.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verify = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await apiClient.otpVerify(groupId, phone, code.trim());
+      onKey(r.key);
+    } catch (e) {
+      const m = (e as Error).message;
+      setError(m === "code_expired" ? "הקוד פג תוקף. בקשו קוד חדש." : "הקוד לא נכון. נסו שוב.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-background p-4 text-right">
+      <div className="w-full max-w-sm space-y-4 rounded-3xl border bg-card p-6 shadow-lg">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Flame className="h-4 w-4 text-primary" />
+            הקופה של הקבוצה
+          </div>
+          <h1 className="text-2xl font-extrabold">כניסה לדף שלי</h1>
+          <p className="text-sm text-muted-foreground">
+            {sentTo ? `שלחנו SMS עם קוד למספר שמסתיים ב-${sentTo.slice(-4)}.` : "הקלידו את מספר הטלפון שלכם — נשלח אליו קוד ב-SMS."}
+          </p>
+        </div>
+        {!sentTo ? (
+          <>
+            <Input
+              type="tel"
+              inputMode="tel"
+              dir="ltr"
+              className="h-12 text-left text-lg"
+              placeholder="05X-XXXXXXX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && phone.replace(/\D/g, "").length >= 9 && !busy && start()}
+              autoFocus
+            />
+            <Button className="h-12 w-full text-base" disabled={busy || phone.replace(/\D/g, "").length < 9} onClick={start}>
+              {busy ? "שולח..." : "שליחת קוד"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              dir="ltr"
+              maxLength={6}
+              className="h-12 text-center text-2xl tracking-[0.4em]"
+              placeholder="······"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => e.key === "Enter" && code.length === 6 && !busy && verify()}
+              autoFocus
+            />
+            <Button className="h-12 w-full text-base" disabled={busy || code.length !== 6} onClick={verify}>
+              {busy ? "בודק..." : "כניסה"}
+            </Button>
+            <button
+              type="button"
+              className="w-full text-center text-sm text-muted-foreground underline"
+              onClick={() => {
+                setSentTo("");
+                setCode("");
+                setError("");
+              }}
+            >
+              מספר אחר / שליחת קוד חדש
+            </button>
+          </>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Lock className="h-3 w-3" />
+          רק בעל הטלפון יכול להיכנס. הטלפון יזכור אתכם לפעם הבאה.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The member's personal page (travelsure.co.il/bbq/me?k=...): no sign-in, read-only, everything
  * that is theirs — balance, every movement, the events they paid for with receipts, their reports.
@@ -191,14 +323,16 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
 const BBQMemberPage = () => {
   useBbqTheme();
   const [params] = useSearchParams();
-  const key = params.get("k") || "";
+  // Personal link (?k=) or the one group link (?g=) with phone + SMS code; the key is remembered
+  const groupId = params.get("g") || "";
+  const [key, setKey] = useState(params.get("k") || (groupId ? savedKeyFor(groupId) : ""));
   const [data, setData] = useState<PublicMemberPage | null>(null);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState("");
 
   const load = useCallback(() => {
     if (!key) {
-      setError("הקישור לא שלם");
+      if (!groupId) setError("הקישור לא שלם");
       return;
     }
     apiClient
@@ -207,8 +341,16 @@ const BBQMemberPage = () => {
         setData(d);
         setError("");
       })
-      .catch((e: Error) => setError(e.message === "link_not_found" ? "הקישור לא פעיל. בקשו קישור חדש ממנהל הקבוצה." : "לא הצלחנו לטעון. נסו לרענן."));
-  }, [key]);
+      .catch((e: Error) => {
+        if (e.message === "link_not_found" && groupId) {
+          // A remembered key that was replaced: sign in again with the phone
+          saveKeyFor(groupId, null);
+          setKey("");
+          return;
+        }
+        setError(e.message === "link_not_found" ? "הקישור לא פעיל. בקשו קישור חדש ממנהל הקבוצה." : "לא הצלחנו לטעון. נסו לרענן.");
+      });
+  }, [key, groupId]);
 
   useEffect(() => {
     load();
@@ -223,6 +365,18 @@ const BBQMemberPage = () => {
   const upcoming = (data?.events || [])
     .filter((e) => (e.event_date || "").slice(0, 10) >= today)
     .sort((a, b) => a.event_date.localeCompare(b.event_date));
+
+  if (!key && groupId) {
+    return (
+      <PhoneLogin
+        groupId={groupId}
+        onKey={(k) => {
+          saveKeyFor(groupId, k);
+          setKey(k);
+        }}
+      />
+    );
+  }
 
   if (error) {
     return (

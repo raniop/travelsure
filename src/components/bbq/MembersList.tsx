@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, User, Mail, Trash2, Wallet, MessageCircle, Users, LogOut, ReceiptText, Link2 } from "lucide-react";
 import { MemberLinkDialog } from "@/components/bbq/MemberLinkDialog";
+import { GroupLinkDialog } from "@/components/bbq/GroupLinkDialog";
 import { MemberStatementDialog } from "@/components/bbq/MemberStatement";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -456,12 +457,20 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
           חברים
         </h2>
         {isAdmin && (
-          <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
-            <Button className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 ml-2" />
-              הוסף חבר
-            </Button>
-          </AddMemberDialog>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <GroupLinkDialog groupId={groupId}>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Link2 className="w-4 h-4 ml-2" />
+                קישור לקבוצה
+              </Button>
+            </GroupLinkDialog>
+            <AddMemberDialog groupId={groupId} onMemberAdded={loadMembers}>
+              <Button className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 ml-2" />
+                הוסף חבר
+              </Button>
+            </AddMemberDialog>
+          </div>
         )}
       </div>
 
