@@ -57,6 +57,12 @@ if (patchAssets(claimIndex)) {
   console.log(`sync-bbq-assets: updated dist/claim/index.html -> ${jsPath}, ${cssPath}`);
 }
 
+// Group cash-box share pages (WhatsApp preview for /kupa and /kupa/<group>): same React app
+for (const rel of [["kupa", "index.html"], ["kupa", "jordan", "index.html"]]) {
+  const file = join(process.cwd(), "dist", ...rel);
+  if (patchAssets(file)) console.log(`sync-bbq-assets: updated dist/${rel.join("/")} -> ${jsPath}, ${cssPath}`);
+}
+
 // Keep public/ in sync with dist/ so IIS/static hosts that serve public/ load the same hashed bundles as dist/
 const distAssets = join(process.cwd(), "dist", "assets");
 const publicDir = join(process.cwd(), "public");
