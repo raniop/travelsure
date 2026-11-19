@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
+import { groupIdForSlug } from "@/lib/bbq/groupLinks";
 import { format } from "date-fns";
 import { he } from "date-fns/locale/he";
 import { apiClient, type PublicEvent, type PublicMemberPage } from "@/integrations/api/client";
@@ -324,7 +325,9 @@ const BBQMemberPage = () => {
   useBbqTheme();
   const [params] = useSearchParams();
   // Personal link (?k=) or the one group link (?g=) with phone + SMS code; the key is remembered
-  const groupId = params.get("g") || "";
+  const { slug } = useParams();
+  const onKupa = useLocation().pathname.startsWith("/kupa");
+  const groupId = params.get("g") || (onKupa ? groupIdForSlug(slug) : "");
   const [key, setKey] = useState(params.get("k") || (groupId ? savedKeyFor(groupId) : ""));
   const [data, setData] = useState<PublicMemberPage | null>(null);
   const [error, setError] = useState("");

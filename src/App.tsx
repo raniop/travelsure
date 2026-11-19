@@ -38,7 +38,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const isBBQPage = location.pathname === "/bbq" || location.pathname === "/bbq/me" || location.pathname === "/on-the-fire";
+  const isBBQPage = location.pathname === "/bbq" || location.pathname === "/bbq/me" || location.pathname.startsWith("/kupa") || location.pathname === "/on-the-fire";
   
   return (
     <>
@@ -77,6 +77,8 @@ const AppContent = () => {
         <Route path="/on-the-fire" element={<BBQManager />} />
         <Route path="/bbq" element={<BBQManager />} />
         <Route path="/bbq/me" element={<BBQMemberPage />} />
+        <Route path="/kupa" element={<BBQMemberPage />} />
+        <Route path="/kupa/:slug" element={<BBQMemberPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -12,7 +12,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Copy, MessageCircle } from "lucide-react";
 
-export const groupLinkFor = (groupId: string) => `https://travelsure.co.il/bbq/me?g=${encodeURIComponent(groupId)}`;
+import { shortGroupLink } from "@/lib/bbq/groupLinks";
+
+export const groupLinkFor = (groupId: string) => shortGroupLink(groupId);
 
 const defaultMessage = (url: string) =>
   [
