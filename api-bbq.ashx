@@ -1386,10 +1386,13 @@ public class BBQHandler : IHttpHandler
         return key;
     }
 
+    private string smsDetail = "";
+
     private bool SendSms(string dataFolder, string phone, string message)
     {
+        smsDetail = "";
         string cfgPath = Path.Combine(dataFolder, "sms.json");
-        if (!File.Exists(cfgPath)) return false;
+        if (!File.Exists(cfgPath)) { smsDetail = "no_config"; return false; }
         Dictionary<string, object> cfg = ParseObject(File.ReadAllText(cfgPath, Encoding.UTF8));
         string template = Str(cfg, "url");
         if (template == "") return false;
@@ -1400,11 +1403,21 @@ public class BBQHandler : IHttpHandler
             request.Method = "GET";
             request.Timeout = 10000;
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
             {
-                return (int)response.StatusCode >= 200 && (int)response.StatusCode < 300;
+                string text = reader.ReadToEnd();
+                smsDetail = ((int)response.StatusCode) + " " + (text.Length > 200 ? text.Substring(0, 200) : text);
+                return (int)response.StatusCode >= 200 && (int)response.StatusCode < 300 && !text.Contains("\"isSuccess\":false");
             }
         }
-        catch { return false; }
+        catch (WebException ex)
+        {
+            string body = "";
+            try { if (ex.Response != null) using (StreamReader r = new StreamReader(ex.Response.GetResponseStream())) body = r.ReadToEnd(); } catch { }
+            smsDetail = ex.Status + " " + (body.Length > 200 ? body.Substring(0, 200) : body);
+            return false;
+        }
+        catch (Exception ex) { smsDetail = ex.GetType().Name; return false; }
     }
 
     private static string MaskPhone(string phone)
@@ -1458,11 +1471,12 @@ public class BBQHandler : IHttpHandler
             string codeHash;
             using (Rfc2898DeriveBytes kdf = new Rfc2898DeriveBytes(code, salt, 1000))
                 codeHash = Convert.ToBase64String(salt) + "$" + Convert.ToBase64String(kdf.GetBytes(24));
-            string groupName = Str(group, "name");
-            string message = "קוד הכניסה שלך לקופה" + (groupName != "" ? " של " + groupName : "") + ": " + code + " (בתוקף 10 דקות)";
+            // The company SMS gateway accepts from outside only a short code text: one number (the code),
+            // at most 70 characters, no dot / slash / @ — so no group name and no "10 minutes" here.
+            string message = "קוד הכניסה שלך לקופה: " + code;
             if (!SendSms(dataFolder, phone, message))
             {
-                WriteJson(context, 502, new Dictionary<string, object> { { "error", "sms_failed" } });
+                WriteJson(context, 502, new Dictionary<string, object> { { "error", "sms_failed" }, { "detail", smsDetail } });
                 return;
             }
             Dictionary<string, object> st = new Dictionary<string, object>();
