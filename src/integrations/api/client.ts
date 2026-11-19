@@ -36,7 +36,7 @@ export class ApiError extends Error {
   }
 }
 
-export type LedgerType = 'opening' | 'deposit' | 'charge' | 'refund' | 'adjustment' | 'transfer';
+export type LedgerType = 'opening' | 'deposit' | 'charge' | 'refund' | 'adjustment' | 'transfer' | 'prize';
 
 export interface LedgerHint {
   type: Exclude<LedgerType, 'opening'>;
@@ -124,6 +124,40 @@ export interface PayboxStoredRow {
   note: string;
 }
 
+/** Monthly attendance prize ("אלוף ההתמדה") */
+export interface StreakPrize {
+  id: string;
+  month: string;
+  month_label: string;
+  winner_id: string;
+  winner_name: string;
+  candidates: { id: string; name: string }[];
+  best: number;
+  events: number;
+  share: number;
+  total: number;
+  /** "" until the winner chose: credit to the balance, or a gift bought from the cash box */
+  choice: '' | 'credit' | 'gift';
+  gift_note?: string;
+  created_at?: string;
+}
+
+export interface StreakTable {
+  month: string;
+  month_label: string;
+  /** Events of the month that already took place */
+  events: number;
+  rows: { id: string; name: string; nickname?: string; count: number }[];
+  best: number;
+  leaders: string[];
+  share: number;
+  prize_total: number;
+  min_events: number;
+  is_current: boolean;
+  prize: StreakPrize | null;
+  hall?: StreakPrize[];
+}
+
 export interface PublicMemberPage {
   paybox?: {
     meta: PayboxMeta;
@@ -139,6 +173,7 @@ export interface PublicMemberPage {
   ledger: LedgerEntry[];
   transfers: TransferRequest[];
   group_totals: { members: number; balances_sum: number; deposits: number; charges: number };
+  streak?: StreakTable & { previous: StreakTable; hall: StreakPrize[] };
 }
 
 export interface AuthResult {
@@ -364,6 +399,24 @@ class ApiClient {
 
   async otpVerify(groupId: string, phone: string, code: string): Promise<{ key: string }> {
     return this.request('action=otp_verify', { method: 'POST', body: JSON.stringify({ group_id: groupId, phone, code }) });
+  }
+
+  /** The month's attendance table (current month when omitted), its prize and the hall of fame. */
+  async getStreak(groupId: string, month?: string): Promise<StreakTable> {
+    return this.request(`action=streak&group_id=${encodeURIComponent(groupId)}${month ? `&month=${month}` : ''}`);
+  }
+
+  /** Owner, after the month ended: the server picks the winner (raffle on a tie) and charges the shares. */
+  async closeStreak(groupId: string, month: string): Promise<StreakPrize> {
+    return this.request(`action=streak_close&group_id=${encodeURIComponent(groupId)}&month=${month}`, { method: 'POST', body: '{}' });
+  }
+
+  /** Owner: what the winner chose — credit to the balance or a gift from the cash box. */
+  async chooseStreakPrize(groupId: string, month: string, choice: 'credit' | 'gift', giftNote = ''): Promise<StreakPrize> {
+    return this.request(`action=streak_choice&group_id=${encodeURIComponent(groupId)}&month=${month}`, {
+      method: 'POST',
+      body: JSON.stringify({ choice, gift_note: giftNote }),
+    });
   }
 
   // The personal page itself (no sign-in: the key in the link is the access)

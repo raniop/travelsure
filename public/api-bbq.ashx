@@ -430,7 +430,8 @@ public class BBQHandler : IHttpHandler
             return true;
         }
 
-        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox" && action != "paybox_notes" && action != "ledger_note")
+        bool streakAction = action == "streak" || action == "streak_close" || action == "streak_choice";
+        if (!AllowedEntities.Contains(entity) && action != "member_link" && action != "paybox" && action != "paybox_notes" && action != "ledger_note" && !streakAction)
         {
             WriteJson(context, 400, new Dictionary<string, object> { { "error", "Invalid entity" } });
             return true;
@@ -473,6 +474,11 @@ public class BBQHandler : IHttpHandler
             HandleLedgerNote(context, sessionUserId, dataFolder);
             return true;
         }
+        if (streakAction)
+        {
+            HandleStreak(context, action, sessionUserId, dataFolder);
+            return true;
+        }
         if (entity == "transfers")
         {
             HandleTransfers(context, action, id, sessionUserId, dataFolder);
@@ -503,7 +509,7 @@ public class BBQHandler : IHttpHandler
     // Only the group owner can change a balance; the app cannot write, edit or delete entries.
     // ---------------------------------------------------------------------------------------------
     private static readonly HashSet<string> LedgerTypes = new HashSet<string>(new string[] {
-        "deposit", "charge", "refund", "adjustment", "transfer"
+        "deposit", "charge", "refund", "adjustment", "transfer", "prize"
     });
 
     private static decimal Num(object v)
@@ -679,6 +685,225 @@ public class BBQHandler : IHttpHandler
         entry["note_added_by_name"] = Str(actor, "name");
         SaveEntityJson("ledger", id, Json().Serialize(entry), dataFolder);
         WriteJson(context, 200, entry);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Monthly attendance prize ("אלוף ההתמדה"): who came to the most events in a month. A tie is
+    // decided by a raffle drawn here on the server (once; the result is stored and cannot be redrawn).
+    // Every member, the winner too, pays the same share; the winner takes it as credit or as a gift.
+    // ---------------------------------------------------------------------------------------------
+    private const decimal PrizeShare = 10m;
+    private const int PrizeMinEvents = 2;
+    private static readonly Regex MonthFormat = new Regex("^20[0-9]{2}-(0[1-9]|1[0-2])$");
+    private static readonly string[] HebrewMonths = new string[] {
+        "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"
+    };
+
+    private static DateTime IsraelNow()
+    {
+        try { return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Israel Standard Time"); }
+        catch { return DateTime.UtcNow.AddHours(2); }
+    }
+
+    private static string MonthLabel(string month)
+    {
+        int m = int.Parse(month.Substring(5, 2));
+        return HebrewMonths[m - 1] + " " + month.Substring(0, 4);
+    }
+
+    private static int RandomIndex(int n)
+    {
+        byte[] b = new byte[4];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) rng.GetBytes(b);
+        return (int)(BitConverter.ToUInt32(b, 0) % (uint)n);
+    }
+
+    private List<Dictionary<string, object>> GroupMembers(string groupId, string dataFolder)
+    {
+        List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
+        foreach (Dictionary<string, object> m in LoadAll("members", dataFolder))
+            if (Str(m, "group_id") == groupId) list.Add(m);
+        return list;
+    }
+
+    /** The month's table: events that already took place, and how many of them each member came to. */
+    private Dictionary<string, object> BuildStreak(string groupId, string month, string dataFolder)
+    {
+        string now = IsraelNow().ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        HashSet<string> monthEvents = new HashSet<string>();
+        foreach (Dictionary<string, object> e in LoadAll("events", dataFolder))
+        {
+            if (Str(e, "group_id") != groupId) continue;
+            string date = Str(e, "event_date").Replace("T", " ");
+            if (!date.StartsWith(month)) continue;
+            if (string.CompareOrdinal(date.Length > 16 ? date.Substring(0, 16) : date, now) > 0) continue;
+            monthEvents.Add(Str(e, "id"));
+        }
+        List<Dictionary<string, object>> members = GroupMembers(groupId, dataFolder);
+        Dictionary<string, int> count = new Dictionary<string, int>();
+        foreach (Dictionary<string, object> m in members) count[Str(m, "id")] = 0;
+        HashSet<string> seen = new HashSet<string>();
+        foreach (Dictionary<string, object> a in LoadAll("attendees", dataFolder))
+        {
+            string ev = Str(a, "event_id");
+            string mid = Str(a, "member_id");
+            if (!monthEvents.Contains(ev) || !count.ContainsKey(mid) || Str(a, "attended") == "False") continue;
+            if (!seen.Add(ev + "|" + mid)) continue;
+            count[mid]++;
+        }
+        List<Dictionary<string, object>> rows = new List<Dictionary<string, object>>();
+        int best = 0;
+        foreach (Dictionary<string, object> m in members)
+        {
+            int c = count[Str(m, "id")];
+            if (c > best) best = c;
+            Dictionary<string, object> r = Pick(m, "id", "name", "nickname");
+            r["count"] = c;
+            rows.Add(r);
+        }
+        rows.Sort((x, y) => {
+            int byCount = ((int)y["count"]).CompareTo((int)x["count"]);
+            return byCount != 0 ? byCount : string.CompareOrdinal(Str(x, "name"), Str(y, "name"));
+        });
+        List<string> leaders = new List<string>();
+        if (best > 0) foreach (Dictionary<string, object> r in rows) if ((int)r["count"] == best) leaders.Add(Str(r, "id"));
+
+        Dictionary<string, object> result = new Dictionary<string, object>();
+        result["month"] = month;
+        result["month_label"] = MonthLabel(month);
+        result["events"] = monthEvents.Count;
+        result["rows"] = rows;
+        result["best"] = best;
+        result["leaders"] = leaders;
+        result["share"] = PrizeShare;
+        result["prize_total"] = PrizeShare * members.Count;
+        result["min_events"] = PrizeMinEvents;
+        result["is_current"] = month == IsraelNow().ToString("yyyy-MM");
+        result["prize"] = LoadEntity("prizes", groupId + "_" + month, dataFolder);
+        return result;
+    }
+
+    private List<object> PrizeHall(string groupId, string dataFolder)
+    {
+        List<Dictionary<string, object>> mine = new List<Dictionary<string, object>>();
+        foreach (Dictionary<string, object> p in LoadAll("prizes", dataFolder))
+            if (Str(p, "group_id") == groupId) mine.Add(p);
+        mine.Sort((a, b) => string.CompareOrdinal(Str(b, "month"), Str(a, "month")));
+        List<object> hall = new List<object>();
+        foreach (Dictionary<string, object> p in mine)
+            hall.Add(Pick(p, "month", "month_label", "winner_id", "winner_name", "best", "events", "candidates", "choice", "gift_note", "total"));
+        return hall;
+    }
+
+    /** Sets a member's balance and writes its ledger line. */
+    private void ChangeBalance(string dataFolder, Dictionary<string, object> member, decimal delta, string type, string note, string actorId)
+    {
+        string id = Str(member, "id");
+        decimal oldBalance = Num(member.ContainsKey("balance") ? member["balance"] : null);
+        decimal newBalance = oldBalance + delta;
+        AppendBalanceChange(dataFolder, id, Str(member, "group_id"), oldBalance, newBalance, type, note, "", actorId);
+        member["balance"] = newBalance;
+        member["updated_at"] = DateTime.UtcNow.ToString("o");
+        SaveEntityJson("members", id, Json().Serialize(member), dataFolder);
+    }
+
+    /**
+     * GET action=streak&group_id&month=YYYY-MM: the month's table, its prize and the hall of fame.
+     * POST action=streak_close: (owner, after the month ended) picks the winner and charges the shares.
+     * POST action=streak_choice {choice: credit|gift, gift_note}: (owner) records what the winner chose.
+     */
+    private void HandleStreak(HttpContext context, string action, string sessionUserId, string dataFolder)
+    {
+        string groupId = context.Request.QueryString["group_id"] ?? "";
+        string month = context.Request.QueryString["month"] ?? "";
+        if (month == "") month = IsraelNow().ToString("yyyy-MM");
+        if (!SafeId.IsMatch(groupId) || !MonthFormat.IsMatch(month))
+        {
+            WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_request" } });
+            return;
+        }
+        if (action == "streak")
+        {
+            if (!CanSeeGroup(groupId, sessionUserId, dataFolder))
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+                return;
+            }
+            Dictionary<string, object> table = BuildStreak(groupId, month, dataFolder);
+            table["hall"] = PrizeHall(groupId, dataFolder);
+            context.Response.Headers.Add("Cache-Control", "no-store");
+            WriteJson(context, 200, table);
+            return;
+        }
+        if (context.Request.HttpMethod != "POST" || !IsGroupOwner(groupId, sessionUserId, dataFolder))
+        {
+            WriteJson(context, 403, new Dictionary<string, object> { { "error", "forbidden" } });
+            return;
+        }
+        string prizeId = groupId + "_" + month;
+        Dictionary<string, object> prize = LoadEntity("prizes", prizeId, dataFolder);
+        Dictionary<string, object> actor = LoadEntity("users", sessionUserId, dataFolder);
+
+        if (action == "streak_close")
+        {
+            if (prize != null) { WriteJson(context, 409, new Dictionary<string, object> { { "error", "already_closed" }, { "prize", prize } }); return; }
+            if (string.CompareOrdinal(month, IsraelNow().ToString("yyyy-MM")) >= 0) { WriteJson(context, 400, new Dictionary<string, object> { { "error", "month_not_over" } }); return; }
+            Dictionary<string, object> table = BuildStreak(groupId, month, dataFolder);
+            List<string> leaders = (List<string>)table["leaders"];
+            if ((int)table["events"] < PrizeMinEvents) { WriteJson(context, 400, new Dictionary<string, object> { { "error", "not_enough_events" } }); return; }
+            if (leaders.Count == 0) { WriteJson(context, 400, new Dictionary<string, object> { { "error", "no_attendance" } }); return; }
+
+            List<Dictionary<string, object>> members = GroupMembers(groupId, dataFolder);
+            Dictionary<string, Dictionary<string, object>> byId = new Dictionary<string, Dictionary<string, object>>();
+            foreach (Dictionary<string, object> m in members) byId[Str(m, "id")] = m;
+            string winnerId = leaders[RandomIndex(leaders.Count)];
+            string winnerName = Str(byId[winnerId], "name");
+            List<object> candidates = new List<object>();
+            foreach (string id in leaders) candidates.Add(new Dictionary<string, object> { { "id", id }, { "name", Str(byId[id], "name") } });
+
+            string label = MonthLabel(month);
+            foreach (Dictionary<string, object> m in members)
+                ChangeBalance(dataFolder, m, -PrizeShare, "prize", "חלקך בפרס ההתמדה — " + label + " (זוכה: " + winnerName + ")", sessionUserId);
+
+            prize = new Dictionary<string, object>();
+            prize["id"] = prizeId;
+            prize["group_id"] = groupId;
+            prize["month"] = month;
+            prize["month_label"] = label;
+            prize["winner_id"] = winnerId;
+            prize["winner_name"] = winnerName;
+            prize["candidates"] = candidates;
+            prize["best"] = table["best"];
+            prize["events"] = table["events"];
+            prize["share"] = PrizeShare;
+            prize["total"] = PrizeShare * members.Count;
+            prize["choice"] = "";
+            prize["created_at"] = DateTime.UtcNow.ToString("o");
+            prize["created_by_name"] = Str(actor, "name");
+            SaveEntityJson("prizes", prizeId, Json().Serialize(prize), dataFolder);
+            WriteJson(context, 200, prize);
+            return;
+        }
+
+        // streak_choice
+        if (prize == null) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "not_closed" } }); return; }
+        if (Str(prize, "choice") != "") { WriteJson(context, 409, new Dictionary<string, object> { { "error", "already_chosen" } }); return; }
+        Dictionary<string, object> body = ParseObject(ReadBody(context)) ?? new Dictionary<string, object>();
+        string choice = Str(body, "choice");
+        if (choice != "credit" && choice != "gift") { WriteJson(context, 400, new Dictionary<string, object> { { "error", "invalid_choice" } }); return; }
+        string giftNote = Str(body, "gift_note").Trim();
+        if (giftNote.Length > 120) giftNote = giftNote.Substring(0, 120);
+        if (choice == "credit")
+        {
+            Dictionary<string, object> winner = LoadEntity("members", Str(prize, "winner_id"), dataFolder);
+            if (winner == null) { WriteJson(context, 404, new Dictionary<string, object> { { "error", "member_not_found" } }); return; }
+            ChangeBalance(dataFolder, winner, Num(prize["total"]), "prize", "זכייה בפרס ההתמדה — " + Str(prize, "month_label"), sessionUserId);
+        }
+        prize["choice"] = choice;
+        prize["gift_note"] = giftNote;
+        prize["chosen_at"] = DateTime.UtcNow.ToString("o");
+        SaveEntityJson("prizes", prizeId, Json().Serialize(prize), dataFolder);
+        WriteJson(context, 200, prize);
     }
 
     private void HandleLedger(HttpContext context, string sessionUserId, string dataFolder)
@@ -1123,6 +1348,10 @@ public class BBQHandler : IHttpHandler
         result["ledger"] = ledger;
         result["transfers"] = transfers;
         result["paybox"] = PayboxForMember(dataFolder, groupId, member);
+        Dictionary<string, object> streak = BuildStreak(groupId, IsraelNow().ToString("yyyy-MM"), dataFolder);
+        streak["previous"] = BuildStreak(groupId, IsraelNow().AddMonths(-1).ToString("yyyy-MM"), dataFolder);
+        streak["hall"] = PrizeHall(groupId, dataFolder);
+        result["streak"] = streak;
         result["group_totals"] = new Dictionary<string, object> {
             { "members", membersCount }, { "balances_sum", balancesSum },
             { "deposits", groupDeposits }, { "charges", groupCharges }

@@ -21,6 +21,7 @@ import GroupsDashboard from "@/components/bbq/GroupsDashboard";
 import PollsList from "@/components/bbq/PollsList";
 import { usePWAConfig } from "@/hooks/usePWAConfig";
 import { useBbqTheme } from "@/lib/bbq/theme";
+import { StreakManagerCard } from "@/components/bbq/Streak";
 
 interface Group {
   id: string;
@@ -852,6 +853,11 @@ const BBQManager = () => {
           </TabsContent>
 
           <TabsContent value="members" className="space-y-4 pb-20 md:pb-4">
+            <StreakManagerCard
+              groupId={group.id}
+              isOwner={group.owner_id === user.id}
+              onChanged={() => setMembersRefreshTrigger((t) => t + 1)}
+            />
             <MembersList 
               groupId={group.id}
               groupName={group.name}

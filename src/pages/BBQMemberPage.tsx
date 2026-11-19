@@ -9,6 +9,7 @@ import { ReportTransferDialog, TransferStatusBadge } from "@/components/bbq/Tran
 import { PAYBOX_GROUP_LINK } from "@/lib/bbq/payboxMessages";
 import { isNettedDeposit, PAYBOX_BASELINE_LOCAL, PAYBOX_BASELINE_UTC } from "@/lib/bbq/paybox";
 import { useBbqTheme } from "@/lib/bbq/theme";
+import { StreakMemberSection } from "@/components/bbq/Streak";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -100,6 +101,14 @@ function MoneyTimeline({ data, onReceipt }: { data: PublicMemberPage; onReceipt:
       });
     } else if (e.type === "adjustment") {
       items.push({ at: e.created_at, amount: amt, title: "תיקון ידני", detail: e.note || e.note_added || undefined, kind: "fix" });
+    } else if (e.type === "prize") {
+      items.push({
+        at: e.created_at,
+        amount: amt,
+        title: amt > 0 ? "🏆 זכייה בפרס ההתמדה" : "השתתפות בפרס ההתמדה",
+        detail: e.note || e.note_added || undefined,
+        kind: amt > 0 ? "in" : "fix",
+      });
     }
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -484,12 +493,20 @@ const BBQMemberPage = () => {
           </Section>
         )}
 
+        {data.streak && (
+          <Section title="אלוף ההתמדה" icon={<span aria-hidden="true">🏆</span>}>
+            <StreakMemberSection streak={data.streak} memberId={data.member.id} />
+          </Section>
+        )}
+
         <Section title="ההפקדות והחיובים שלי" icon={<Wallet className="h-5 w-5" />}>
           {(() => {
             // Before 18/11/2026 the app overwrote the balance on each deposit and kept no record of it,
             // so single old deposits cannot be listed. Their total is exact: what is left + what was charged.
             const myCharges = (data.events || []).reduce((sum, e) => sum + (Number(e.my_amount) || 0), 0);
-            const totalIn = balance + myCharges;
+            // Attendance prize lines (shares paid, prize won): their own box, not deposits
+            const prizes = data.ledger.filter((e) => e.type === "prize").reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            const totalIn = balance + myCharges - prizes;
             // With a PayBox file: what they really put in (PayBox + app deposits after the file) and the
             // settlement lines, exactly as in the list below. Used only when it adds up to the balance.
             const pb = data.paybox;
@@ -503,12 +520,14 @@ const BBQMemberPage = () => {
               const fixes = data.ledger.filter((e) => e.type === "adjustment").reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
               const deposited = Number(pb.total) + afterFile;
               const lines = (pb.notes || []).reduce((sum, n) => sum + (Number(n.amount) || 0), 0) + fixes;
-              if (Math.abs(deposited + lines - myCharges - balance) < 0.01) {
+              if (Math.abs(deposited + lines + prizes - myCharges - balance) < 0.01) {
                 shownIn = deposited;
                 settled = lines;
               }
             }
             const showSettled = Math.abs(settled) >= 0.01;
+            const showPrizes = Math.abs(prizes) >= 0.01;
+            const boxCount = 3 + (showSettled ? 1 : 0) + (showPrizes ? 1 : 0);
             const box = (label: string, value: string, tone: string) => (
               <div className={`flex h-full flex-col gap-1 rounded-xl p-3 ${tone}`}>
                 <div className="text-xs leading-snug text-muted-foreground">{label}</div>
@@ -521,9 +540,10 @@ const BBQMemberPage = () => {
             const settleLines = showSettled ? [...(pb?.notes || [])].sort((x, y) => x.date.localeCompare(y.date)) : [];
             return (
               <div className="mb-3">
-              <div className={`grid gap-2 ${showSettled ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+              <div className={`grid gap-2 ${boxCount === 3 ? "grid-cols-3" : boxCount === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-5"}`}>
                 {box("הפקדתי עד היום", money(shownIn), "bg-emerald-500/10 text-emerald-700")}
                 {showSettled && box("התחשבנויות מול הקופה", `${settled < 0 ? "−" : "+"}${Math.abs(settled).toFixed(2)} ₪`, "bg-slate-500/10 text-slate-700")}
+                {showPrizes && box("פרס ההתמדה", `${prizes < 0 ? "−" : "+"}${Math.abs(prizes).toFixed(2)} ₪`, "bg-amber-500/10 text-amber-700")}
                 {box("חויבתי על מפגשים", `−${myCharges.toFixed(2)} ₪`, "bg-red-500/10 text-red-600")}
                 {box("נשאר ביתרה", money(balance), "bg-muted text-foreground")}
               </div>

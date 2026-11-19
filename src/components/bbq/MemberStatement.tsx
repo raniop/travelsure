@@ -52,6 +52,8 @@ function describeLedgerEntry(entry: LedgerEntry, events: Map<string, EventInfo>)
       return { title: "חיוב על אירוע", detail: ev };
     case "refund":
       return { title: "החזר חיוב", detail: [ev, (entry.note || entry.note_added)].filter(Boolean).join(" · ") };
+    case "prize":
+      return { title: Number(entry.amount) > 0 ? "זכייה בפרס ההתמדה" : "השתתפות בפרס ההתמדה", detail: (entry.note || entry.note_added) || "" };
     default:
       return { title: "תיקון ידני", detail: (entry.note || entry.note_added) || "" };
   }
@@ -229,7 +231,7 @@ export function GroupLedgerCard({ groupId, refreshKey = 0 }: { groupId: string; 
       const a = Number(e.amount) || 0;
       if (e.type === "deposit" || e.type === "transfer") deposits += a;
       else if (e.type === "charge" || e.type === "refund") charges += a;
-      else if (e.type === "adjustment") fixes += a;
+      else if (e.type === "adjustment" || e.type === "prize") fixes += a;
     }
     return { deposits, charges: -charges, fixes };
   }, [entries]);
