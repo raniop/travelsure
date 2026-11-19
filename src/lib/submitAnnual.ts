@@ -54,6 +54,7 @@ const buildSummary = (form: AnnualForm) => {
       ["נייד", form.mobile],
       ["טלפון", form.phone],
       ["דוא״ל", form.email],
+      ...(form.agentEmail?.trim() ? ([["מייל סוכן", form.agentEmail.trim()]] as Pair[]) : []),
     ] as Pair[],
     health,
     coverage: [

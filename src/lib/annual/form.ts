@@ -44,6 +44,8 @@ export type AnnualForm = {
   phone: string;
   mobile: string;
   email: string;
+  /** Optional: the agent who sent the request (nothing is sent to them; it tells us who referred it) */
+  agentEmail: string;
   health: AnnualHealth;
   // Coverage
   laptopModel: string;
@@ -116,6 +118,7 @@ export const createInitialAnnualForm = (): AnnualForm => ({
   phone: "",
   mobile: "",
   email: "",
+  agentEmail: "",
   health: { q1: "", q2: "", q21: [], q22: "", q3: "", q31: "", q4: "", q4Details: "", q5: "" },
   laptopModel: "",
   phoneModel: "",

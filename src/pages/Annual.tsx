@@ -206,6 +206,7 @@ const Annual = () => {
     if (!form.city.trim()) next.city = "שדה חובה";
     if (!form.mobile.trim()) next.mobile = "שדה חובה";
     if (!isValidEmail(form.email)) next.email = "אימייל לא תקין";
+    if (form.agentEmail?.trim() && !isValidEmail(form.agentEmail)) next.agentEmail = "אימייל לא תקין";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -515,6 +516,12 @@ const Annual = () => {
                     <Field label="דוא״ל להודעות אישיות ודיוורים" required error={errors.email}>
                       <Input {...textProps("email", { type: "email", ltr: true, placeholder: "name@email.com" })} />
                     </Field>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Field label="מייל סוכן (לא חובה)" error={errors.agentEmail}>
+                      <Input {...textProps("agentEmail", { type: "email", ltr: true, placeholder: "agent@email.com" })} />
+                    </Field>
+                    <p className="mt-1 text-xs text-muted-foreground">לסוכן שממלא את הטופס עבור הלקוח — רק כדי שנדע מי שלח את הבקשה. לא נשלח אליו דבר.</p>
                   </div>
                 </div>
               </div>
