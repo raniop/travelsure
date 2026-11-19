@@ -23,15 +23,16 @@ export const previousMonth = () => {
   return monthKey(new Date(d.getFullYear(), d.getMonth() - 1, 1));
 };
 
-const displayName = (r: { name: string; nickname?: string }) => r.nickname?.trim() || r.name.split(" ")[0] || r.name;
+const displayName = (r: { name: string }) => r.name.trim().split(/\s+/)[0] || r.name;
 
 type Photos = Record<string, string | undefined>;
 
 function Avatar({ name, src, size = 40, crown = false }: { name: string; src?: string; size?: number; crown?: boolean }) {
+  const [broken, setBroken] = useState(false);
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
-      {src ? (
-        <img src={src} alt={name} className="h-full w-full rounded-full object-cover ring-2 ring-white" />
+      {src && !broken ? (
+        <img src={src} alt={name} onError={() => setBroken(true)} className="h-full w-full rounded-full object-cover ring-2 ring-white" />
       ) : (
         <span className="flex h-full w-full items-center justify-center rounded-full bg-primary/15 font-bold text-primary" style={{ fontSize: size * 0.4 }}>
           {name.trim().charAt(0)}
@@ -74,6 +75,85 @@ export function StreakBoard({ table, photos = {}, highlightId, limit }: { table:
         );
       })}
     </ol>
+  );
+}
+
+/** Days left in the month (today included), for the current month only. */
+const daysLeft = (month: string) => {
+  const now = new Date();
+  if (monthKey(now) !== month) return 0;
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return last - now.getDate() + 1;
+};
+
+const TIER_STYLE = [
+  { block: "h-20 bg-amber-200/80 text-amber-900 dark:bg-amber-500/40 dark:text-amber-50", size: 56 },
+  { block: "h-14 bg-slate-200/80 text-slate-800 dark:bg-slate-500/40 dark:text-slate-50", size: 46 },
+  { block: "h-9 bg-orange-200/70 text-orange-900 dark:bg-orange-500/30 dark:text-orange-50", size: 42 },
+];
+
+/**
+ * The race as a podium: 1st in the middle with a crown, 2nd and 3rd beside it. A tier holds everyone
+ * on that count (a tie shows stacked photos). The full table opens below it.
+ */
+export function StreakPodium({ table, photos = {}, highlightId }: { table: StreakTable; photos?: Photos; highlightId?: string }) {
+  const [showAll, setShowAll] = useState(false);
+  const counts = [...new Set(table.rows.map((r) => r.count).filter((c) => c > 0))].sort((a, b) => b - a).slice(0, 3);
+  const tiers = counts.map((c) => table.rows.filter((r) => r.count === c));
+  const left = daysLeft(table.month);
+  const tie = table.leaders.length > 1;
+  // Visual order right to left (RTL row): 3rd, 1st, 2nd
+  const order = [2, 0, 1].filter((i) => i < tiers.length);
+  return (
+    <div className="space-y-3">
+      <div className="flex !flex-row items-center justify-between text-xs text-muted-foreground">
+        <span>{table.events} מפגשים עד עכשיו</span>
+        {left > 0 && <span>נשארו {left} ימים</span>}
+      </div>
+      {tiers.length > 0 && (
+        <div className="flex items-end justify-center gap-2 pt-4">
+          {order.map((i) => {
+            const people = tiers[i];
+            const st = TIER_STYLE[i];
+            const label = people.length <= 3 ? people.map(displayName).join(" · ") : `${people.length} חברים`;
+            return (
+              <div key={i} className="flex w-[31%] max-w-[150px] flex-col items-center">
+                {i === 0 && (
+                  <span aria-hidden="true" className="mb-0.5 text-2xl leading-none">
+                    👑
+                  </span>
+                )}
+                <div className="flex justify-center -space-x-3 space-x-reverse">
+                  {people.slice(0, 4).map((r) => (
+                    <span key={r.id} className={r.id === highlightId ? "rounded-full ring-2 ring-primary" : ""}>
+                      <Avatar name={r.name} src={photos[r.id]} size={people.length > 1 ? Math.round(st.size * 0.78) : st.size} />
+                    </span>
+                  ))}
+                  {people.length > 4 && (
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-xs font-bold ring-2 ring-white">+{people.length - 4}</span>
+                  )}
+                </div>
+                <div className={`mt-1 w-full truncate !text-center text-xs ${i === 0 ? "font-bold" : ""}`}>{label}</div>
+                <div className={`mt-1 flex w-full items-center justify-center rounded-t-xl text-sm font-extrabold tabular-nums ${st.block}`}>
+                  <span dir="ltr">
+                    {counts[i]}/{table.events}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {tie && (
+        <p className="!text-center text-xs text-muted-foreground">
+          {table.leaders.length} בתיקו במקום הראשון · {table.is_current ? "אם זה יישאר ככה — גלגל מזל" : "הזוכה נקבע בגלגל"}
+        </p>
+      )}
+      <button type="button" className="w-full !text-center text-sm font-medium text-primary" onClick={() => setShowAll((v) => !v)}>
+        {showAll ? "הסתרת הטבלה" : "כל הטבלה"}
+      </button>
+      {showAll && <StreakBoard table={table} photos={photos} highlightId={highlightId} />}
+    </div>
   );
 }
 
@@ -175,9 +255,19 @@ export function StreakManagerCard({ groupId, isOwner, onChanged }: { groupId: st
         apiClient.getStreak(groupId, previousMonth()),
         apiClient.getMembers(groupId).catch(() => []),
       ]);
+      // Profile photos live on the users (matched by phone), as in the members list
+      const users = (await apiClient.getUsers().catch(() => [])) as Array<{ phone?: string; profile_image?: string }>;
+      const photoByPhone = new Map(users.filter((u) => u.phone && u.profile_image).map((u) => [String(u.phone).replace(/\D/g, ""), u.profile_image]));
       setCurrent(c);
       setPrevious(p);
-      setPhotos(Object.fromEntries((members as Array<{ id: string; profile_image?: string }>).map((m) => [m.id, m.profile_image || undefined])));
+      setPhotos(
+        Object.fromEntries(
+          (members as Array<{ id: string; phone?: string; profile_image?: string }>).map((m) => [
+            m.id,
+            m.profile_image || photoByPhone.get(String(m.phone || "").replace(/\D/g, "")) || undefined,
+          ]),
+        ),
+      );
     } catch {
       setCurrent(null);
     }
@@ -302,20 +392,17 @@ export function StreakManagerCard({ groupId, isOwner, onChanged }: { groupId: st
       )}
 
       <div>
-        <div className="mb-1.5 flex !flex-row items-center justify-between text-sm">
-          <span className="font-semibold">{current.month_label}</span>
-          <span className="text-muted-foreground">{current.events} מפגשים עד עכשיו</span>
-        </div>
+        <div className="mb-1 text-sm font-semibold">המרוץ של {current.month_label}</div>
         {current.events === 0 ? (
           <p className="text-sm text-muted-foreground">עוד לא היו מפגשים החודש.</p>
         ) : (
           <>
             {leadersNow.length > 0 && (
-              <p className="mb-2 text-sm">
-                🔥 כרגע בהובלה: <span className="font-semibold">{leadersNow.map(displayName).join(", ")}</span> ({current.best}/{current.events})
+              <p className="text-sm">
+                🔥 כרגע בהובלה: <span className="font-semibold">{leadersNow.map(displayName).join(", ")}</span>
               </p>
             )}
-            <StreakBoard table={current} photos={photos} />
+            <StreakPodium table={current} photos={photos} />
           </>
         )}
         <p className="mt-2 text-xs text-muted-foreground">
@@ -410,7 +497,7 @@ export function StreakMemberSection({ streak, memberId }: { streak: NonNullable<
               🔥 כרגע בהובלה: <span className="font-semibold">{leaders.map(displayName).join(", ")}</span>
             </p>
           )}
-          <StreakBoard table={streak} highlightId={memberId} />
+          <StreakPodium table={streak} highlightId={memberId} />
         </>
       ) : (
         <p className="text-sm text-muted-foreground">עוד לא היו מפגשים ב{streak.month_label}.</p>
