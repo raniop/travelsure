@@ -29,7 +29,7 @@ import {
   travelerName,
   visibleHealthQuestions,
 } from "@/lib/tourists/formDefaults";
-import { MEDICAL_CARE_QUESTION, type TouristHealthQuestion } from "@/lib/tourists/healthQuestions";
+import { MEDICAL_CARE_QUESTION, conditionsNeedingDocs, type TouristHealthQuestion } from "@/lib/tourists/healthQuestions";
 import {
   TOURIST_ROLES,
   type Traveler,
@@ -231,6 +231,8 @@ const Tourists = () => {
   };
 
   const anyHealthYes = questions.some((q) => Object.values(form.health[q.id]?.answers || {}).includes("yes"));
+  // Harel asks for a medical document only for the conditions on its list (not for every "yes")
+  const docsNeededFor = conditionsNeedingDocs(form.health, questions);
   const medicalCareYes = Object.values(form.health.q0?.answers || {}).includes("yes");
 
   /* ---------- riders ---------- */
@@ -303,7 +305,7 @@ const Tourists = () => {
       }
     }
     if (medicalCareYes) next["q.q0"] = "אם אחת ממטרות ההגעה היא טיפול רפואי, הראל לא יכולה לקבל את הבקשה";
-    if (anyHealthYes && files.length === 0) next.files = "כשעניתם כן — יש לצרף מסמך רפואי עדכני";
+    if (docsNeededFor.length > 0 && files.length === 0) next.files = `על ${docsNeededFor.join(", ")} — יש לצרף מסמך רפואי עדכני`;
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -753,7 +755,7 @@ const Tourists = () => {
                   <div>
                     <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">הצהרת בריאות</h2>
                     <p className="mt-1 text-[14px] font-medium text-[#46557A]">
-                      Health Statement — {form.travelers.length > 1 ? "לכל מבוטח בנפרד. " : ""}תשובת ״כן״ מחייבת פירוט ומסמך רפואי. הפוליסה אינה מכסה מצב רפואי קודם.
+                      Health Statement — {form.travelers.length > 1 ? "לכל מבוטח בנפרד. " : ""}תשובת ״כן״ מחייבת פירוט. במחלות מסוימות יש לצרף גם מסמך רפואי. הפוליסה אינה מכסה מצב רפואי קודם.
                     </p>
                   </div>
                   <Button type="button" variant="outline" className="h-12 rounded-[18px] border-[3px] border-[#000144] bg-white px-5 text-[16px] font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white" onClick={markAllHealthNo}>
@@ -768,8 +770,18 @@ const Tourists = () => {
                 {questions.filter((q) => q.no >= 20).map(renderQuestion)}
 
                 <div className="rounded-[20px] border-2 border-dashed border-[#D5DAE3] bg-[#F3F5F8] p-4">
-                  <p className="mb-2 text-[16px] font-bold text-[#000144]">צירוף מסמכים רפואיים</p>
-                  <p className="mb-3 text-[14px] font-medium text-[#46557A]">אם עניתם כן באחת השאלות — צרפו תעודה עדכנית מהרופא המטפל, תוצאות בדיקות וכו׳.</p>
+                  <p className="mb-2 text-[16px] font-bold text-[#000144]">
+                    צירוף מסמכים רפואיים {docsNeededFor.length > 0 ? <span className="text-rose-600">· חובה</span> : <span className="font-medium text-[#46557A]">· לא חובה</span>}
+                  </p>
+                  {docsNeededFor.length > 0 ? (
+                    <p className="mb-3 text-[14px] font-medium text-rose-700">
+                      סימנתם: {docsNeededFor.join(", ")}. בהצהרה כזו הראל מבקשת מסמך רפואי עדכני מהרופא המטפל לפני הנפקת הביטוח — צרפו אותו כאן.
+                    </p>
+                  ) : (
+                    <p className="mb-3 text-[14px] font-medium text-[#46557A]">
+                      אפשר לצרף תעודה מהרופא או תוצאות בדיקות אם יש. במחלות מסוימות (למשל מחלות מערכת העצבים, אי ספיקת לב או כליות, COPD) הצירוף יהיה חובה.
+                    </p>
+                  )}
                   <label className="inline-flex min-h-[48px] cursor-pointer items-center gap-2 rounded-[14px] border-[3px] border-[#000144] bg-white px-5 py-2.5 text-[16px] font-extrabold text-[#000144] transition-colors hover:bg-[#000144] hover:text-white">
                     <FileUp className="h-4 w-4" />
                     בחירת קבצים
@@ -1002,6 +1014,7 @@ const Tourists = () => {
                   </p>
                   <p>
                     <strong>הצהרת בריאות:</strong> {anyHealthYes ? "יש תשובות ״כן״ — מצורף פירוט" : "לא לכל השאלות"}
+                    {docsNeededFor.length > 0 ? ` · מסמך רפואי נדרש (${docsNeededFor.join(", ")})` : ""}
                   </p>
                   <p>
                     <strong>קבצים:</strong> {files.length ? `${files.length} קבצים` : "ללא"}

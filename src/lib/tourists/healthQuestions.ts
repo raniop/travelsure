@@ -379,3 +379,37 @@ export const TOURIST_HEALTH_QUESTIONS: TouristHealthQuestion[] = [
     needsDetails: true,
   },
 ];
+
+/**
+ * Harel (health team, tourists): if an insured declares one of these, issuing stops until an
+ * up-to-date medical document arrives. Codes from Harel's list: nervous system 1433/670, MS 459,
+ * ALS 690, dementia 358, memory 5399, Parkinson 840, epilepsy 120, heart failure 40, COPD 640,
+ * renal failure 34, stroke 913/1369, hydrocephalus 5276, brain tumors 1003, brain aneurysm 1047.
+ * Conditions without their own box on the form (hydrocephalus, brain tumors, aneurysm) fall under
+ * "another problem with the nervous system".
+ */
+export const DOCS_REQUIRED_OPTIONS: Record<string, string[]> = {
+  q1: ["stroke", "epilepsy", "ms", "muscular", "parkinson", "alzheimer", "memory", "other"],
+  q4: ["failure"],
+  q7: ["copd"],
+  q11: ["failure"],
+};
+
+/** Labels of the declared conditions that require a medical document (empty when none). */
+export function conditionsNeedingDocs(
+  health: Record<string, { answers: Partial<Record<string, string>>; selected: string[] } | undefined>,
+  questions: TouristHealthQuestion[],
+): string[] {
+  const out: string[] = [];
+  for (const q of questions) {
+    const need = DOCS_REQUIRED_OPTIONS[q.id];
+    const ans = health[q.id];
+    if (!need || !ans || !Object.values(ans.answers || {}).includes("yes")) continue;
+    for (const id of ans.selected || []) {
+      if (!need.includes(id)) continue;
+      const opt = q.options.find((o) => o.id === id);
+      if (opt) out.push(opt.he);
+    }
+  }
+  return out;
+}
