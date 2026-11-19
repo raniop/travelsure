@@ -72,7 +72,6 @@ const fileToBase64 = (file: File): Promise<string> =>
 
 const buildClaimMessage = (payload: Record<string, unknown>, files: File[], claimNumber: string) => {
   const rows: Array<[string, string]> = [
-    ["מספר תביעה באופיר", claimNumber],
     ["סוג תביעה", String(payload.claimTypeLabel || "")],
     ["שם", String(payload.fullName || "")],
     ["ת.ז.", String(payload.idNumber || "")],
@@ -253,7 +252,7 @@ export async function submitClaimRequest(
     await Promise.all(
       STAFF_NOTIFY.map((staffEmail) =>
         tryInvoke({
-          name: `תביעה ${resolvedNumber} — ${String(fullPayload.fullName || "")}`.trim(),
+          name: `תביעה — ${String(fullPayload.fullName || "")} · פוליסה ${String(fullPayload.policyNumber || "")}`.trim(),
           email: staffEmail,
           phone: String(fullPayload.mobile || fullPayload.phone || ""),
           message: fanoutMessage,
@@ -276,7 +275,7 @@ export async function submitClaimRequest(
   const staffOk = await Promise.all(
     STAFF_NOTIFY.map((staffEmail) =>
       tryInvoke({
-        name: `תביעה ${resolvedNumber} — ${String(fullPayload.fullName || "")}`.trim(),
+        name: `תביעה — ${String(fullPayload.fullName || "")} · פוליסה ${String(fullPayload.policyNumber || "")}`.trim(),
         email: staffEmail,
         phone: String(fullPayload.mobile || fullPayload.phone || ""),
         message: staffMessage,
@@ -293,7 +292,7 @@ export async function submitClaimRequest(
   }
 
   const body = new FormData();
-  body.append("payload", JSON.stringify({ ...fullPayload, claimNumber: resolvedNumber }));
+  body.append("payload", JSON.stringify(fullPayload));
   filesToSend.forEach((file) => body.append("files[]", file));
 
   let lastError = primary.error || "claim submit failed";

@@ -30,7 +30,6 @@ interface ContactEmailRequest {
 }
 
 const CLAIM_FIELD_LABELS: Record<string, string> = {
-  claimNumber: "מספר תביעה באופיר",
   claimTypeLabel: "סוג תביעה",
   baggageSubtypeLabel: "סוג תביעת מטען",
   fullName: "שם מלא",
@@ -334,7 +333,13 @@ function buildClaimStaffHtml(
   claimNumber: string,
   attachmentNames: string[],
 ): string {
-  const rows = buildPayloadRows({ ...claim, claimNumber });
+  // No internal Ophir number in the email: the claim is identified by policy number and ID.
+  void claimNumber;
+  const { claimNumber: _internal, ...visible } = claim;
+  void _internal;
+  const rows = buildPayloadRows(visible);
+  const headPolicy = String(claim.policyNumber || "").trim();
+  const headId = String(claim.idNumber || "").trim();
   const files =
     attachmentNames.length > 0
       ? `<ul style="margin:0;padding:0 18px 0 0;color:#111827;">${attachmentNames
@@ -349,8 +354,8 @@ function buildClaimStaffHtml(
     <div style="background:linear-gradient(135deg,#0f766e,#0d9488);padding:22px 24px;color:#fff;">
       <div style="font-size:13px;opacity:.9;">TravelSure · אופיר ושות׳ סוכנות לביטוח</div>
       <h1 style="margin:8px 0 0;font-size:24px;">תביעת ביטוח נסיעות חדשה</h1>
-      <p style="margin:8px 0 0;font-size:18px;letter-spacing:0.5px;">מספר תביעה באופיר: <strong>${esc(claimNumber)}</strong></p>
-      <p style="margin:6px 0 0;font-size:12px;opacity:.9;">מספר מעקב פנימי אצל אופיר ושות׳ — לא מספר תביעה בהראל</p>
+      ${headPolicy ? `<p style="margin:8px 0 0;font-size:18px;letter-spacing:0.5px;">מספר פוליסה: <strong>${esc(headPolicy)}</strong></p>` : ""}
+      ${headId ? `<p style="margin:4px 0 0;font-size:15px;">תעודת זהות: <strong>${esc(headId)}</strong></p>` : ""}
     </div>
     <div style="padding:22px 24px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;margin:0 0 18px;">
@@ -564,7 +569,7 @@ const handler = async (req: Request): Promise<Response> => {
       const staffSubjectParts = [
         "תביעת ביטוח נסיעות חדשה",
         claimTypeLabel ? `סוג: ${claimTypeLabel}` : "",
-        `מס׳ פניה באופיר ${claimNumber}`,
+        String(claim.idNumber || "").trim() ? `ת״ז ${String(claim.idNumber).trim()}` : "",
         claimantName ? `מגיש: ${claimantName}` : "",
         policyNumber ? `פוליסה ${policyNumber}` : "",
       ].filter(Boolean);
