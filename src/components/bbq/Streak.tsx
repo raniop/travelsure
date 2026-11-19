@@ -13,6 +13,9 @@ import { shortGroupLink } from "@/lib/bbq/groupLinks";
  * share (the winner too), and the winner takes it as credit or as a gift bought from the cash box.
  */
 
+/** The prize started with November 2026: earlier months are never closed (no shares charged for them). */
+const FIRST_PRIZE_MONTH = "2026-11";
+
 const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 export const currentMonth = () => monthKey(new Date());
 export const previousMonth = () => {
@@ -187,7 +190,7 @@ export function StreakManagerCard({ groupId, isOwner, onChanged }: { groupId: st
   const hall = current?.hall || [];
   const prev = previous;
   const prevPrize = drawn || prev?.prize || null;
-  const canClose = isOwner && prev && !prev.prize && prev.events >= prev.min_events && prev.leaders.length > 0;
+  const canClose = isOwner && prev && prev.month >= FIRST_PRIZE_MONTH && !prev.prize && prev.events >= prev.min_events && prev.leaders.length > 0;
   const wheelNames = useMemo(
     () => (prev ? prev.rows.filter((r) => prev.leaders.includes(r.id)).map(displayName) : []),
     [prev],
