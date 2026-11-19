@@ -137,8 +137,8 @@ const Tourists = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [step]);
   const [form, setForm] = useState<TouristsForm>(() => createInitialTouristsForm());
-  // Language of Harel's form: the Hebrew speaker's choice, otherwise English
-  const harelLang: TouristsForm["formLanguage"] = rtl ? form.formLanguage : "en";
+  // Language of Harel's form: the Hebrew speaker's choice, otherwise the interface language (Harel has English and Russian forms)
+  const harelLang: TouristsForm["formLanguage"] = rtl ? form.formLanguage : uiLang;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -650,7 +650,7 @@ const Tourists = () => {
                     </li>
                   ))}
                 </ol>
-                {/* Only a Hebrew speaker chooses; in English or Russian Harel's form is filled in English */}
+                {/* Only a Hebrew speaker chooses; in English or Russian Harel's form is in that language */}
                 {rtl && (
                   <div className="rounded-[20px] bg-[#F3F5F8] p-4 text-start">
                     <p className="mb-2 text-[15px] font-bold text-[#000144]">{tr("באיזו שפה למלא את טופס ההצעה של הראל?")}</p>
@@ -1096,7 +1096,7 @@ const Tourists = () => {
                     {days && days > 90 && form.installments === "2" ? tr(" · 2 תשלומים") : ""}
                   </p>
                   <p>
-                    <strong>{tr("טופס הראל:")}</strong> {tr(harelLang === "en" ? "באנגלית" : "בעברית")}
+                    <strong>{tr("טופס הראל:")}</strong> {tr(harelLang === "en" ? "באנגלית" : harelLang === "ru" ? "ברוסית" : "בעברית")}
                   </p>
                 </div>
                 <p className="text-[14px] font-medium text-[#46557A]">{tr("בלחיצה על ״שלח בקשה״ הפרטים יישלחו מסודרים לצוות אופיר ושות׳ להמשך טיפול מול הראל.")}</p>

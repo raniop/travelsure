@@ -425,6 +425,7 @@ const T: Record<string, [string, string]> = {
   "טופס הראל:": ["Harel's form:", "Форма «Харель»:"],
   "באנגלית": ["In English", "На английском"],
   "בעברית": ["In Hebrew", "На иврите"],
+  "ברוסית": ["In Russian", "На русском"],
   "בלחיצה על ״שלח בקשה״ הפרטים יישלחו מסודרים לצוות אופיר ושות׳ להמשך טיפול מול הראל.": [
     "When you press “Send application”, the details are sent to the Ophir & Co. team, who continue with Harel.",
     "После нажатия «Отправить заявку» данные поступят команде «Офир и Ко.», которая продолжит оформление с «Харель».",

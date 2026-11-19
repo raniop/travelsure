@@ -47,3 +47,26 @@ export const OPTION_BOXES_HE: OptionBoxes = {
     q18: { apnea: [1, 526.1, 654.8], polyp: [1, 420, 654.8], sinusitis: [1, 369.5, 654.8], throat: [1, 526.1, 665.8], vocal: [1, 450.2, 665.8], adenoid: [1, 369.3, 665.8], concha: [1, 526.1, 676.8], snoring: [1, 443.8, 676.8], septum: [1, 407, 676.8], hearing: [1, 526.1, 687.8], neuroma: [1, 441.5, 687.8], eardrum: [1, 526.1, 698.8], tinnitus: [1, 457.2, 698.8], other: [1, 423.2, 698.8] },
     q20: { cannabis: [2, 526.1, 64.7], other: [2, 526.1, 75.7] },
   };
+
+// Russian form (47550.52, 11/2025): Part A boxes in the same order as the English form; no box for "other" in question 16
+export const OPTION_BOXES_RU: OptionBoxes = {
+    q1: { stroke: [1, 61.0, 180.5], epilepsy: [1, 116.1, 180.5], ms: [1, 183.2, 180.5], muscular: [1, 61.0, 190.1], headaches: [1, 61.0, 209.3], migraine: [1, 148.5, 209.3], dizziness: [1, 205.7, 209.3], balance: [1, 144.6, 218.9], fainting: [1, 186.9, 228.5], parkinson: [1, 61.0, 238.1], alzheimer: [1, 175.3, 238.1], retardation: [1, 61.0, 247.7], autism: [1, 189.9, 247.7], down: [1, 247.2, 247.7], cp: [1, 61.0, 266.9], polio: [1, 190.8, 266.9], gaucher: [1, 61.0, 276.5], numbness: [1, 147.9, 276.5], adhd: [1, 61.0, 286.1], memory: [1, 61.0, 295.7], other: [1, 61.0, 314.9] },
+    q2: { hiv: [1, 61.0, 340.1], lupus: [1, 61.0, 352.5] },
+    q3: { cataract: [1, 61.0, 376.7], retina: [1, 125.9, 376.7], cornea: [1, 61.0, 389.2], glaucoma: [1, 185.4, 389.2], inflammation: [1, 61.0, 401.6], strabismus: [1, 156.3, 401.6], blindness: [1, 227.6, 401.6], other: [1, 61.0, 414.0] },
+    q4: { arrhythmia: [1, 61.0, 438.2], defects: [1, 61.0, 450.6], failure: [1, 61.0, 463.1], attack: [1, 61.0, 475.5], congenital: [1, 61.0, 487.9], catheter: [1, 61.0, 500.4], valves: [1, 61.0, 512.8], other: [1, 61.0, 525.3] },
+    q5: { varicose: [1, 61.0, 549.4], carotid: [1, 61.0, 561.9], clotting: [1, 61.0, 574.3], anemia: [1, 61.0, 586.7], blood: [1, 61.0, 599.2], dvt: [1, 61.0, 611.6], pvd: [1, 61.0, 624.0] },
+    q6: { thyroid: [1, 61.0, 657.8], lymph: [1, 61.0, 670.3], salivary: [1, 61.0, 682.7], sweat: [1, 61.0, 695.1], pituitary: [1, 61.0, 707.6], diabetes: [1, 61.0, 720.0], hypertension: [1, 61.0, 732.4], lipids: [1, 61.0, 744.9], other: [1, 61.0, 757.3] },
+    q7: { asthma: [2, 61.0, 77.2], tbPast: [2, 100.4, 77.2], tbActive: [2, 61.0, 90.0], copd: [2, 61.0, 102.8], hayfever: [2, 61.0, 115.7], infections: [2, 61.0, 128.5], pneumothorax: [2, 61.0, 151.3], cf: [2, 61.0, 164.2], other: [2, 61.0, 177.0] },
+    q8: { ulcer: [2, 61.0, 201.6], heartburn: [2, 61.0, 214.4], crohn: [2, 61.0, 227.3], colitis: [2, 61.0, 240.1], reflux: [2, 61.0, 252.9], hemorrhoids: [2, 61.0, 265.8], fissure: [2, 61.0, 278.6], blockage: [2, 61.0, 291.4], pancreas: [2, 61.0, 304.3], esophagus: [2, 61.0, 317.1], gallbladder: [2, 61.0, 329.9], gallstones: [2, 61.0, 342.8], other: [2, 61.0, 355.6] },
+    q9: { hepBCD: [2, 61.0, 390.2], hepA: [2, 61.0, 403.0], fatty: [2, 61.0, 415.9], cirrhosis: [2, 61.0, 428.7], other: [2, 61.0, 441.5] },
+    q10: { diaphragm: [2, 61.0, 466.1], umbilicus: [2, 61.0, 479.0], rightInguinal: [2, 61.0, 491.8], leftInguinal: [2, 61.0, 504.6], scar: [2, 61.0, 517.5], abdominal: [2, 61.0, 530.3] },
+    q11: { infections: [2, 61.0, 554.9], cysts: [2, 61.0, 577.7], defects: [2, 136.2, 577.7], failure: [2, 61.0, 590.5], other: [2, 61.0, 603.4] },
+    q12: { arthritis: [2, 61.0, 628.0], gout: [2, 110.9, 628.0], back: [2, 166.4, 628.0], knees: [2, 272.7, 628.0], hip: [2, 61.0, 640.8], shoulders: [2, 108.0, 640.8], joints: [2, 154.2, 640.8], osteoporosis: [2, 61.0, 653.6], other: [2, 61.0, 666.5] },
+    q13: { skinTumors: [3, 61.0, 77.2], nevus: [3, 61.0, 90.0], psoriasis: [3, 61.0, 102.8], std: [3, 61.0, 115.7], syphilis: [3, 61.0, 128.5], otherSkin: [3, 61.0, 141.3], otherSex: [3, 61.0, 154.2] },
+    q14: { activeYes: [3, 61.0, 208.4], activeNo: [3, 93.0, 208.4] },
+    q15: { breastCyst: [3, 61.0, 233.0], augmentation: [3, 61.0, 245.9], fibrocystic: [3, 61.0, 258.7], uterineCyst: [3, 61.0, 271.5], fibroids: [3, 61.0, 284.4], endometriosis: [3, 61.0, 297.2], bleeding: [3, 61.0, 310.0], cervical: [3, 61.0, 322.9], ovarianCyst: [3, 61.0, 335.7], polycystic: [3, 61.0, 348.5], tubesCyst: [3, 61.0, 361.4], miscarriages: [3, 61.0, 384.2], ectopic: [3, 61.0, 397.0], caesarean: [3, 61.0, 409.9], pregnant: [3, 61.0, 422.7], other: [3, 61.0, 435.5] },
+    q16: { prostate: [3, 61.0, 470.1], varicocele: [3, 61.0, 483.0], hydrocele: [3, 61.0, 495.8] },
+    q17: { depression: [3, 61.0, 543.2], anxiety: [3, 61.0, 556.1], other: [3, 61.0, 568.9] },
+    q18: { apnea: [3, 61.0, 593.5], polyp: [3, 61.0, 606.3], sinusitis: [3, 61.0, 619.1], throat: [3, 61.0, 632.0], vocal: [3, 61.0, 644.8], adenoid: [3, 61.0, 657.6], concha: [3, 61.0, 670.5], snoring: [3, 61.0, 683.3], septum: [3, 61.0, 696.1], hearing: [3, 61.0, 709.0], neuroma: [3, 61.0, 721.8], eardrum: [3, 61.0, 734.7], tinnitus: [3, 61.0, 747.5], other: [3, 61.0, 760.3] },
+    q20: { cannabis: [4, 60.6, 87.9], other: [4, 60.6, 100.7] },
+  };

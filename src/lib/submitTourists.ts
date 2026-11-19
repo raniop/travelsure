@@ -8,6 +8,7 @@ import {
   yn,
 } from "@/lib/tourists/formDefaults";
 import type { TouristRole, TouristsForm } from "@/lib/tourists/types";
+import { makeTr } from "@/lib/tourists/i18n";
 
 const STAFF_NOTIFY = ["rani@ophirins.co.il", "eli@ophirins.co.il", "ophir@ophirins.co.il"] as const;
 
@@ -39,18 +40,20 @@ const roleNames = (form: TouristsForm, roles: TouristRole[]) =>
  */
 export const buildHealthSummary = (form: TouristsForm) => {
   const en = form.formLanguage === "en";
+  // The Russian form gets the Russian names of the questions and options
+  const ru = form.formLanguage === "ru" ? makeTr("ru") : null;
   const lines: string[] = [];
   for (const t of form.travelers) {
     const parts: string[] = [];
     for (const q of [MEDICAL_CARE_QUESTION, ...TOURIST_HEALTH_QUESTIONS]) {
       const ans = form.health[q.id];
       if (ans?.answers[t.role] !== "yes" || !appliesTo(q.id, t)) continue;
-      const options = q.options.filter((o) => ans.selected.includes(o.id)).map((o) => (en ? o.en.replace(/\*$/, "") : o.he));
+      const options = q.options.filter((o) => ans.selected.includes(o.id)).map((o) => (ru ? ru(o.he) : en ? o.en.replace(/\*$/, "") : o.he));
       const text = [options.join(", "), ans.details.trim()].filter(Boolean).join(" — ");
-      parts.push(`${q.no}. ${text || (en ? q.en : q.he)}`);
+      parts.push(`${q.no}. ${text || (ru ? ru(q.he) : en ? q.en : q.he)}`);
     }
     if (parts.length) {
-      const role = en ? ROLE_LABELS[t.role].en : ROLE_LABELS[t.role].he;
+      const role = ru ? ru(ROLE_LABELS[t.role].he) : en ? ROLE_LABELS[t.role].en : ROLE_LABELS[t.role].he;
       lines.push(`${role} (${travelerName(t)}): ${parts.join(". ")}`);
     }
   }
@@ -80,7 +83,7 @@ const buildReadable = (form: TouristsForm) => {
     ["דוא״ל", form.email],
     ["מסמכים בדואר ישראל", form.documentsByPost ? "כן" : "לא"],
     ["ספק שירות", PROVIDER_LABELS[form.provider] || form.provider],
-    ["שפת הטופס", form.formLanguage === "en" ? "אנגלית" : "עברית"],
+    ["שפת הטופס", form.formLanguage === "en" ? "אנגלית" : form.formLanguage === "ru" ? "רוסית" : "עברית"],
   ];
 
   const health: Pair[] = [];

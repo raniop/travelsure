@@ -7,8 +7,8 @@
 import { PDFDocument, PDFFont, PDFPage, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import * as fontkitModule from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 const fontkit = ("default" in fontkitModule ? fontkitModule.default : fontkitModule) as typeof fontkitModule;
-import { decodeBase64, HEEBO_FONT_BASE64, TOUR_CARE_EN_BASE64, TOUR_CARE_HE_BASE64 } from "./embeddedAssets.ts";
-import { OPTION_BOXES_EN, OPTION_BOXES_HE, type OptionBoxes } from "./optionBoxes.ts";
+import { decodeBase64, HEEBO_FONT_BASE64, RUBIK_FONT_BASE64, TOUR_CARE_EN_BASE64, TOUR_CARE_HE_BASE64, TOUR_CARE_RU_BASE64 } from "./embeddedAssets.ts";
+import { OPTION_BOXES_EN, OPTION_BOXES_HE, OPTION_BOXES_RU, type OptionBoxes } from "./optionBoxes.ts";
 
 const INK = rgb(0.05, 0.18, 0.42);
 const PAGE_H = 841.89;
@@ -93,7 +93,9 @@ type Layout = {
   /** Gender boxes [male x, female x] per insured, at genderTop */
   genderBoxes: Array<[number, number]>;
   genderTop: number;
-  address: { street: At; houseNo: At; apartmentNo: At; town: At; maxWidth: number };
+  /** When the female box is on its own line under the male one (Russian form) */
+  genderTopFemale?: number;
+  address: { street: At; houseNo: At; apartmentNo: At; town: At; maxWidth: number; widths?: Record<"street" | "houseNo" | "apartmentNo" | "town", number> };
   mobile: At;
   host: At;
   email: { at: At; atSign?: number; maxWidth: number };
@@ -101,6 +103,8 @@ type Layout = {
   /** Health statement: yes/no column centres per insured, row baseline per question */
   yesX: number[];
   noX: number[];
+  /** Pages whose yes/no columns sit elsewhere (Russian form, part B) */
+  yesNoByPage?: Record<number, { yesX: number[]; noX: number[] }>;
   questionRows: Record<string, [number, number]>;
   /** Boxes printed next to a question itself (Hebrew form, 20 and 21) */
   questionBoxes?: Record<string, At>;
@@ -286,7 +290,88 @@ const HE: Layout = {
   },
 };
 
-const LAYOUTS: Record<string, Layout> = { en: EN, he: HE };
+// Russian form 47550.52 (11/2025), 8 pages: section A on page 1, health on pages 2-5, riders on 6, payment on 8
+const RU: Layout = {
+  rtl: false,
+  pages: 8,
+  agentName: [0, 467, 137.4],
+  agentNo: [0, 478, 155.9],
+  byPost: [0, 40, 222.5],
+  period: { top: 211.2, from: [422.5, 448.7, 474.9], to: [501.1, 527.4, 553.6] },
+  colLeft: [159, 248, 328.5, 409, 489.5],
+  colWidth: 74,
+  rows: { passportNo: 366.8, passportCountry: 384.5, firstName: 404, lastName: 419.3, birthDate: 434.6, entryDate: 477, citizenship: 496.2, visitPurpose: 511.4 },
+  tablePage: 0,
+  genderBoxes: [[158.8, 158.8], [248, 248], [328.4, 328.4], [408.9, 408.9], [489.3, 489.3]],
+  genderTop: 441.4,
+  genderTopFemale: 452.4,
+  address: {
+    street: [0, 190, 526.7],
+    houseNo: [0, 305, 526.7],
+    apartmentNo: [0, 406, 526.7],
+    town: [0, 520, 526.7],
+    maxWidth: 52,
+    widths: { street: 52, houseNo: 19, apartmentNo: 78, town: 45 },
+  },
+  mobile: [0, 159, 541.9],
+  host: [0, 159, 559.5],
+  email: { at: [0, 252, 583.5], maxWidth: 305 },
+  provider: { harel: [0, 44.8, 626.2], maccabi: [0, 228.9, 626.2], clalit: [0, 378.2, 626.2] },
+  yesX: [338.7, 408.8, 451.5, 493.8, 536.1],
+  noX: [378.7, 430, 472.7, 515, 557.2],
+  yesNoByPage: { 4: { yesX: [333.2, 398.9, 439.8, 484, 531], noX: [370.4, 418.9, 461.5, 507.3, 555.3] } },
+  questionRows: {
+    q0: [1, 124],
+    q1: [1, 187.4], q2: [1, 347.9], q3: [1, 373], q4: [1, 434.5], q5: [1, 545.8], q6: [1, 654.1],
+    q7: [2, 73.1], q8: [2, 197.5], q9: [2, 386.1], q10: [2, 462], q11: [2, 550.8], q12: [2, 623.9],
+    q13: [3, 73.1], q14: [3, 174.7], q15: [3, 228.9], q16: [3, 466], q17: [3, 529.1], q18: [3, 589.4], q19: [3, 780.8],
+    q20: [4, 70], q21: [4, 121.2], q22: [4, 144], q23: [4, 255.4], q24: [4, 309.7], q25: [4, 353.9],
+  },
+  questionBoxes: { q20: [4, 60.6, 62.2], q21: [4, 60.6, 113.5] },
+  options: OPTION_BOXES_RU,
+  details: { page: 4, left: 30, right: 565, top: 432, bottom: 474 },
+  signTables: [
+    { page: 4, rows: [690.5, 713.2, 735.9, 758.5, 781.2], date: 185, name: 274, passport: 377, signature: 481 },
+    { page: 7, rows: [68.9, 91.6, 114.3, 137, 159.7], date: 185, name: 266, passport: 374, signature: 484 },
+  ],
+  authorizedYes: [6, 394.5, 273.3],
+  authorizedNo: [6, 426.4, 273.3],
+  marketingBox: [6, 70, 578.3],
+  agentDeclDate: [7, 72, 332.5],
+  agentDeclName: [7, 239, 332.5],
+  riders: {
+    page: 5,
+    colX: [182, 249.2, 297.1, 343.5, 389.9],
+    rows: { airTransport: 88.8, accidents: 152.8, extremeSports: 255.4, medicalManager: 340, onlineConsult: 374.6 },
+    extremeFrom: { top: 201, day: 430, month: 459, year: 488 },
+    extremeTo: { top: 216.7, day: 442, month: 470, year: 500 },
+  },
+  payment: {
+    page: 7,
+    applicantFirst: [7, 217, 411],
+    applicantLast: [7, 46, 411],
+    applicantPassport: [7, 407, 411],
+    payerIdComb: { top: 448.5, ticks: [40.6, 71.5, 102.4, 133.3, 164.1, 195, 225.8, 256.7, 287.5, 318.4] },
+    cardholder: [7, 324, 447.5],
+    cardComb: { top: 503, ticks: [318.4, 333.9, 349.3, 364.8, 380.3, 395.7, 411.2, 426.7, 442.1, 457.6, 473, 488.5, 504, 519.4, 534.9, 550.4, 565.8] },
+    cvvComb: { top: 503, ticks: [40.6, 71.5, 102.4, 139.6] },
+    expMonth: [7, 172, 487],
+    expYear: [7, 262, 487],
+    installmentBoxes: { "1": [7, 406.5, 538.6], "2": [7, 434.7, 538.6] },
+    zip: [7, 46, 569],
+    city: [7, 167, 569],
+    street: [7, 321, 569],
+    phone: [7, 370, 593],
+    email: [7, 46, 593],
+    emailAtSign: 191,
+    signDate: [7, 50, 692],
+    signName: [7, 150, 692],
+    signature: [7, 380, 692],
+  },
+};
+
+const LAYOUTS: Record<string, Layout> = { en: EN, he: HE, ru: RU };
+const TEMPLATES: Record<string, string> = { en: TOUR_CARE_EN_BASE64, he: TOUR_CARE_HE_BASE64, ru: TOUR_CARE_RU_BASE64 };
 
 /* ---------------- text helpers ---------------- */
 
@@ -463,14 +548,14 @@ function fill(pages: PDFPage[], font: PDFFont, L: Layout, data: TouristsPdfInput
     cell("visitPurpose", t.visitPurpose);
     const [male, female] = L.genderBoxes[i];
     if (s(t.gender) === "male") markBox(tp, font, male, L.genderTop);
-    if (s(t.gender) === "female") markBox(tp, font, female, L.genderTop);
+    if (s(t.gender) === "female") markBox(tp, font, female, L.genderTopFemale ?? L.genderTop);
   });
 
   const a = L.address;
-  put(a.street, data.street, 8.5, a.maxWidth);
-  put(a.houseNo, data.houseNo, 8.5, a.maxWidth);
-  put(a.apartmentNo, data.apartmentNo, 8.5, a.maxWidth);
-  put(a.town, data.town, 8.5, L.rtl ? a.maxWidth + 60 : 165);
+  put(a.street, data.street, 8.5, a.widths?.street ?? a.maxWidth);
+  put(a.houseNo, data.houseNo, 8.5, a.widths?.houseNo ?? a.maxWidth);
+  put(a.apartmentNo, data.apartmentNo, 8.5, a.widths?.apartmentNo ?? a.maxWidth);
+  put(a.town, data.town, 8.5, a.widths?.town ?? (L.rtl ? a.maxWidth + 60 : 165));
   put(L.mobile, data.mobile, 9, 300);
   put(L.host, data.hostLastName, 9, 300);
   const email = s(data.email);
@@ -491,15 +576,16 @@ function fill(pages: PDFPage[], font: PDFFont, L: Layout, data: TouristsPdfInput
   for (const [qid, [pageIndex, top]] of Object.entries(L.questionRows)) {
     const answer = health[qid];
     const page = pages[pageIndex];
+    const { yesX, noX } = L.yesNoByPage?.[pageIndex] ?? L;
     let anyYes = false;
     ROLES.forEach((role, i) => {
       if (!byRole.has(role)) return;
       const v = answer?.answers?.[role];
       if (isYes(v)) {
         anyYes = true;
-        markAt(page, font, L.yesX[i], top);
+        markAt(page, font, yesX[i], top);
       } else if (isNo(v) || v === undefined || v === "") {
-        markAt(page, font, L.noX[i], top);
+        markAt(page, font, noX[i], top);
       }
     });
     if (!anyYes) continue;
@@ -671,17 +757,20 @@ export async function buildTouristsPdfBase64(
   input: TouristsPdfInput,
 ): Promise<{ filename: string; content: string; type: string } | null> {
   try {
-    const lang = s(input.formLanguage) === "en" ? "en" : "he";
+    const requested = s(input.formLanguage);
+    const lang = requested === "en" || requested === "ru" ? requested : "he";
     const L = LAYOUTS[lang];
-    const template = decodeBase64(lang === "en" ? TOUR_CARE_EN_BASE64 : TOUR_CARE_HE_BASE64);
+    const template = decodeBase64(TEMPLATES[lang]);
     const doc = await PDFDocument.load(template);
     doc.registerFontkit(fontkit);
+    // Heebo has no Cyrillic: the Russian form is written with Rubik (Latin, Cyrillic and Hebrew)
+    const fontBase64 = lang === "ru" ? RUBIK_FONT_BASE64 : HEEBO_FONT_BASE64;
     let font: PDFFont;
     try {
-      font = await doc.embedFont(decodeBase64(HEEBO_FONT_BASE64), { subset: true });
+      font = await doc.embedFont(decodeBase64(fontBase64), { subset: true });
     } catch (err) {
       console.error("Font subset failed, embedding full font:", err);
-      font = await doc.embedFont(decodeBase64(HEEBO_FONT_BASE64));
+      font = await doc.embedFont(decodeBase64(fontBase64));
     }
     const pages = doc.getPages();
     if (pages.length < L.pages) throw new Error(`Expected ${L.pages} pages, got ${pages.length}`);

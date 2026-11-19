@@ -2,7 +2,7 @@ export type YesNo = "" | "yes" | "no";
 export type Gender = "" | "male" | "female";
 export type TouristProvider = "" | "harel" | "maccabi" | "clalit";
 /** Language of the official Harel form that gets filled (more can be added with a template + layout). */
-export type FormLanguage = "he" | "en";
+export type FormLanguage = "he" | "en" | "ru";
 export type TouristRole = "main" | "spouse" | "child1" | "child2" | "child3";
 export type TouristStep = "intro" | "travelers" | "stay" | "health" | "riders" | "payment" | "review" | "sending" | "success";
 

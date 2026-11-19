@@ -72,7 +72,8 @@ serve(async (req) => {
       .map((f: Record<string, unknown>) => String(f.filename || f.name || ""))
       .filter(Boolean)
       .join(", ");
-    const lang = String(formData.formLanguage || "he") === "en" ? "אנגלית" : "עברית";
+    const formLang = String(formData.formLanguage || "he");
+    const lang = formLang === "en" ? "אנגלית" : formLang === "ru" ? "רוסית" : "עברית";
 
     const html = `
       <div dir="rtl" style="font-family:Arial,sans-serif;max-width:760px;margin:0 auto;color:#0f172a;">
