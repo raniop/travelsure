@@ -452,7 +452,7 @@ const MembersList = ({ groupId, groupName, isAdmin = false, userId, userPhone, o
 
   return (
     <div className="space-y-6 pb-20 md:pb-6 w-full" dir="rtl" style={{ direction: "rtl", textAlign: "right" }}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8" dir="rtl" style={{ direction: "rtl" }}>
+      <div className="flex flex-col sm:!flex-row sm:items-center sm:justify-between gap-4 mb-8" dir="rtl" style={{ direction: "rtl" }}>
         <h2 className="text-2xl font-bold text-foreground text-right">
           חברים
         </h2>
