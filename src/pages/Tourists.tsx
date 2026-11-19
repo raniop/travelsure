@@ -25,7 +25,6 @@ import {
   toEnglishOnly,
   toLatinName,
   isLatinName,
-  travelerLabel,
   travelerName,
   visibleHealthQuestions,
 } from "@/lib/tourists/formDefaults";
@@ -40,7 +39,8 @@ import {
   type YesNo,
 } from "@/lib/tourists/types";
 import { submitTouristsApplication } from "@/lib/submitTourists";
-import { ArrowLeft, ArrowRight, Check, FileUp, Loader2, Plane, Plus, Send, ShieldCheck, Trash2, X } from "lucide-react";
+import { TrContext, UI_LANGS, makeTr, useTr, type UiLang } from "@/lib/tourists/i18n";
+import { ArrowLeft, ArrowRight, Check, FileUp, Globe, Loader2, Plane, Plus, Send, ShieldCheck, Trash2, X } from "lucide-react";
 
 // Agency look, same as /foreigners: white 14px fields, navy text, green focus
 const fieldCls =
@@ -76,19 +76,24 @@ const RIDERS: Array<{ key: keyof Omit<TouristRiders, "extremeFrom" | "extremeTo"
   { key: "onlineConsult", he: "ייעוץ רפואי בשיחת וידאו", en: "Online medical consultation" },
 ];
 
-const Field = ({ label, required, error, children, hint }: { label: string; required?: boolean; error?: string; children: ReactNode; hint?: string }) => (
-  <div className="text-right">
-    <label className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-[#46557A]">
-      {label}
-      {required && <span className="text-rose-500">*</span>}
-    </label>
-    {children}
-    {hint && <p className="mt-1 text-[12px] font-medium text-[#8A94AD]">{hint}</p>}
-    {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-  </div>
-);
+const Field = ({ label, required, error, children, hint }: { label: string; required?: boolean; error?: string; children: ReactNode; hint?: string }) => {
+  const tr = useTr();
+  return (
+    <div className="text-start">
+      <label className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-[#46557A]">
+        {tr(label)}
+        {required && <span className="text-rose-500">*</span>}
+      </label>
+      {children}
+      {hint && <p className="mt-1 text-[12px] font-medium text-[#8A94AD]">{tr(hint)}</p>}
+      {error && <p className="mt-1 text-xs text-rose-600">{tr(error)}</p>}
+    </div>
+  );
+};
 
-const YesNoToggle = ({ value, onChange, name, compact }: { value: YesNo | undefined; onChange: (v: YesNo) => void; name: string; compact?: boolean }) => (
+const YesNoToggle = ({ value, onChange, name, compact }: { value: YesNo | undefined; onChange: (v: YesNo) => void; name: string; compact?: boolean }) => {
+  const tr = useTr();
+  return (
   <div className={`flex gap-2 ${compact ? "w-[176px] shrink-0" : ""}`} role="group" aria-label={name}>
     {[
       { v: "no" as const, label: "לא / No" },
@@ -103,14 +108,29 @@ const YesNoToggle = ({ value, onChange, name, compact }: { value: YesNo | undefi
           value === opt.v ? "border-[#000144] bg-[#000144] text-white" : "border-[#D5DAE3] bg-white text-[#33405F] hover:border-[#000144]/40"
         }`}
       >
-        {opt.label}
+        {tr(opt.label)}
       </button>
     ))}
   </div>
-);
+  );
+};
 
 const Tourists = () => {
   const { toast } = useToast();
+  // Interface language (the Harel form language and the staff email are separate)
+  const [uiLang, setUiLangState] = useState<UiLang>(() => {
+    try {
+      const v = localStorage.getItem("tourists_ui_lang");
+      return v === "en" || v === "ru" ? v : "he";
+    } catch {
+      return "he";
+    }
+  });
+  const tr = useMemo(() => makeTr(uiLang), [uiLang]);
+  const rtl = uiLang === "he";
+  const dirStyle = { direction: rtl ? ("rtl" as const) : ("ltr" as const), textAlign: rtl ? ("right" as const) : ("left" as const) };
+  const NextArrow = rtl ? ArrowLeft : ArrowRight;
+  const BackArrow = rtl ? ArrowRight : ArrowLeft;
   const [step, setStep] = useState<TouristStep>("intro");
   // Every step opens at the top of the page (after it renders, so the new content is in place)
   useEffect(() => {
@@ -143,6 +163,23 @@ const Tourists = () => {
   const setField = <K extends keyof TouristsForm>(name: K, value: TouristsForm[K]) => {
     setForm((prev) => ({ ...prev, [name]: value }));
     clearError(name as string);
+  };
+
+  const setUiLang = (lang: UiLang) => {
+    setUiLangState(lang);
+    // Harel's form has Hebrew and English only: English for an English or Russian speaker
+    setField("formLanguage", lang === "he" ? "he" : "en");
+    try {
+      localStorage.setItem("tourists_ui_lang", lang);
+    } catch {
+      // private mode: the language just isn't remembered
+    }
+  };
+
+  const roleLabel = (t: Traveler) => {
+    const role = tr(ROLE_LABELS[t.role].he);
+    const name = travelerName(t);
+    return name ? `${role} · ${name}` : role;
   };
 
   /* ---------- travelers ---------- */
@@ -227,12 +264,13 @@ const Tourists = () => {
       return { ...prev, health };
     });
     setErrors({});
-    toast({ title: "סומן הכל כ־לא", description: "אפשר לעבור על השאלות ולשנות אם צריך." });
+    toast({ title: tr("סומן הכל כ־לא"), description: tr("אפשר לעבור על השאלות ולשנות אם צריך.") });
   };
 
   const anyHealthYes = questions.some((q) => Object.values(form.health[q.id]?.answers || {}).includes("yes"));
   // Harel asks for a medical document only for the conditions on its list (not for every "yes")
   const docsNeededFor = conditionsNeedingDocs(form.health, questions);
+  const docsList = docsNeededFor.map((c) => tr(c)).join(", ");
   const medicalCareYes = Object.values(form.health.q0?.answers || {}).includes("yes");
 
   /* ---------- riders ---------- */
@@ -305,7 +343,7 @@ const Tourists = () => {
       }
     }
     if (medicalCareYes) next["q.q0"] = "אם אחת ממטרות ההגעה היא טיפול רפואי, הראל לא יכולה לקבל את הבקשה";
-    if (docsNeededFor.length > 0 && files.length === 0) next.files = `על ${docsNeededFor.join(", ")} — יש לצרף מסמך רפואי עדכני`;
+    if (docsNeededFor.length > 0 && files.length === 0) next.files = tr("על {list} — יש לצרף מסמך רפואי עדכני", { list: docsList });
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -352,7 +390,7 @@ const Tourists = () => {
       payment: validatePayment,
     };
     if (validators[step] && !validators[step]!()) {
-      toast({ title: "יש להשלים את השדות המסומנים", variant: "destructive" });
+      toast({ title: tr("יש להשלים את השדות המסומנים"), variant: "destructive" });
       return;
     }
     if (step === "stay") {
@@ -388,11 +426,11 @@ const Tourists = () => {
     try {
       await submitTouristsApplication(form, files);
       setStep("success");
-      toast({ title: "הבקשה נשלחה בהצלחה", description: "נחזור אליכם בהקדם." });
+      toast({ title: tr("הבקשה נשלחה בהצלחה"), description: tr("נחזור אליכם בהקדם.") });
     } catch (err) {
       console.error(err);
       setStep("review");
-      toast({ title: "שגיאה בשליחה", description: "אנא נסו שוב או התקשרו אלינו.", variant: "destructive" });
+      toast({ title: tr("שגיאה בשליחה"), description: tr("אנא נסו שוב או התקשרו אלינו."), variant: "destructive" });
     } finally {
       setIsSending(false);
     }
@@ -411,8 +449,8 @@ const Tourists = () => {
       inputMode="numeric"
       maxLength={10}
       placeholder="DD/MM/YYYY"
-      className={`${fieldCls} text-right ${error ? "border-destructive" : ""}`}
-      style={{ direction: "rtl", textAlign: "right" }}
+      className={`${fieldCls} ${error ? "border-destructive" : ""}`}
+      style={dirStyle}
     />
   );
 
@@ -436,8 +474,8 @@ const Tourists = () => {
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setField(name, e.target.value as never),
     placeholder: opts?.placeholder,
     type: opts?.type || "text",
-    className: `${fieldCls} text-right ${errors[name as string] ? "border-destructive" : ""}`,
-    style: { direction: "rtl" as const, textAlign: "right" as const },
+    className: `${fieldCls} ${errors[name as string] ? "border-destructive" : ""}`,
+    style: dirStyle,
   });
 
   const englishInput = (t: Traveler, key: "firstName" | "lastName" | "passportNo" | "passportCountry" | "citizenship" | "visitPurpose", placeholder: string, caps = "words") => {
@@ -476,14 +514,18 @@ const Tourists = () => {
       <div key={q.id} className={`${cardCls} ${err ? "border-rose-300" : ""}`}>
         <p className="text-[16px] font-bold text-[#000144]">
           {q.no > 0 && <span className="text-[#46557A]">{q.no}. </span>}
-          {q.he}
+          {tr(q.he)}
         </p>
-        <p className="mt-0.5 text-[13px] font-medium text-[#46557A]">{q.en}</p>
+        {rtl && <p className="mt-0.5 text-[13px] font-medium text-[#46557A]">{q.en}</p>}
         {/* What the question covers, so short titles like "For men" are clear before answering */}
         {!anyYes && q.options.length > 0 && q.id !== "q14" && (
           <div className="mt-2 space-y-0.5 text-[12.5px] leading-[1.45] text-[#6B7894]">
-            <p>כולל: {q.options.map((o) => o.he).join(" · ")}</p>
-            <p dir="ltr" className="text-left">Includes: {q.options.map((o) => o.en.replace(/\*$/, "")).join(" · ")}</p>
+            <p>{tr("כולל: {list}", { list: q.options.map((o) => tr(o.he)).join(" · ") })}</p>
+            {rtl && (
+              <p dir="ltr" className="text-left">
+                Includes: {q.options.map((o) => o.en.replace(/\*$/, "")).join(" · ")}
+              </p>
+            )}
           </div>
         )}
         {people.length === 1 ? (
@@ -494,7 +536,7 @@ const Tourists = () => {
           <div className="mt-3 space-y-2">
             {people.map((t) => (
               <div key={t.role} className="flex !flex-row items-center justify-between gap-3">
-                <span className="min-w-0 truncate text-[14px] font-semibold text-[#33405F]">{travelerLabel(t)}</span>
+                <span className="min-w-0 truncate text-[14px] font-semibold text-[#33405F]">{roleLabel(t)}</span>
                 <YesNoToggle compact name={`${q.id}-${t.role}`} value={ans.answers[t.role]} onChange={(v) => setAnswer(q.id, t.role, v)} />
               </div>
             ))}
@@ -506,15 +548,15 @@ const Tourists = () => {
               <div className="flex flex-wrap gap-2">
                 {q.options.map((opt) => (
                   <button key={opt.id} type="button" aria-pressed={ans.selected.includes(opt.id)} onClick={() => toggleOption(q.id, opt.id)} className={chipCls(ans.selected.includes(opt.id))}>
-                    {opt.he}
+                    {tr(opt.he)}
                   </button>
                 ))}
               </div>
             )}
             <Textarea
-              className={`${textareaCls} text-right`}
-              style={{ direction: "rtl" }}
-              placeholder={people.length > 1 ? "פירוט: למי, מה האבחנה, מתי ואיך מטופל" : "פירוט: מה האבחנה, מתי ואיך מטופל"}
+              className={textareaCls}
+              style={dirStyle}
+              placeholder={tr(people.length > 1 ? "פירוט: למי, מה האבחנה, מתי ואיך מטופל" : "פירוט: מה האבחנה, מתי ואיך מטופל")}
               value={ans.details}
               onChange={(e) => setDetails(q.id, e.target.value)}
             />
@@ -522,10 +564,10 @@ const Tourists = () => {
         )}
         {q.id === "q0" && medicalCareYes && (
           <p className="mt-3 rounded-[12px] bg-rose-50 px-3 py-2 text-[14px] font-semibold text-rose-700">
-            אם אחת ממטרות ההגעה לישראל היא קבלת טיפול רפואי, הראל לא יכולה לקבל את הבקשה לביטוח.
+            {tr("אם אחת ממטרות ההגעה לישראל היא קבלת טיפול רפואי, הראל לא יכולה לקבל את הבקשה לביטוח.")}
           </p>
         )}
-        {err && !(q.id === "q0" && medicalCareYes) && <p className="mt-2 text-xs text-rose-600">{err}</p>}
+        {err && !(q.id === "q0" && medicalCareYes) && <p className="mt-2 text-xs text-rose-600">{tr(err)}</p>}
       </div>
     );
   };
@@ -533,26 +575,44 @@ const Tourists = () => {
   /* ---------- render ---------- */
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F3F5F8] font-rubik text-[#000144]" dir="rtl">
+    <TrContext.Provider value={tr}>
+    <div className={`flex min-h-screen flex-col bg-[#F3F5F8] font-rubik text-[#000144] ${rtl ? "" : "ui-ltr"}`} dir={rtl ? "rtl" : "ltr"} lang={uiLang}>
       <section className="relative z-20 overflow-x-clip bg-[#000144] text-white">
         <div aria-hidden="true" className="absolute left-[-120px] top-[-160px] h-[360px] w-[360px] rounded-full bg-[#0C1060]" />
-        <div className="relative mx-auto max-w-[1200px] px-4 pt-5 sm:px-6">
+        <div className="relative mx-auto max-w-[1200px] px-4 pt-5 text-right sm:px-6" dir="rtl">
           <AgencyHeader minimal />
         </div>
         <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3 px-4 pb-8 pt-8 sm:px-6">
-          <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-black leading-[1.02] tracking-[-0.01em]">ביטוח תיירים בישראל</h1>
+          <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-black leading-[1.02] tracking-[-0.01em]">{tr("ביטוח תיירים בישראל")}</h1>
           <p className="m-0 max-w-[640px] text-[18px] font-medium text-[#E3EAFF]">
-            הצעת ביטוח בריאות + הצהרת בריאות — תהליך דיגיטלי קצר במקום מילוי PDF וסריקה
+            {tr("הצעת ביטוח בריאות + הצהרת בריאות — תהליך דיגיטלי קצר במקום מילוי PDF וסריקה")}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-[15px] font-bold text-white">
             <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#00A247] px-4 py-1.5">
               <ShieldCheck className="h-4 w-4 text-[#00A247]" />
-              הראל · Tour &amp; Care
+              {tr("הראל · Tour & Care")}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#00A247] px-4 py-1.5">
               <Plane className="h-4 w-4 text-[#00A247]" />
-              לתיירים ולתושבים חוזרים
+              {tr("לתיירים ולתושבים חוזרים")}
             </span>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label={tr("שפת הטופס")}>
+            <Globe className="h-5 w-5 text-[#E3EAFF]" aria-hidden="true" />
+            {UI_LANGS.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                lang={l.id}
+                aria-pressed={uiLang === l.id}
+                onClick={() => setUiLang(l.id)}
+                className={`min-h-[40px] rounded-full border-2 px-4 text-[15px] font-bold transition ${
+                  uiLang === l.id ? "border-white bg-white text-[#000144]" : "border-white/30 text-white hover:border-white/70"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -561,7 +621,7 @@ const Tourists = () => {
         {step !== "intro" && step !== "success" && (
           <div className="mb-5">
             <div className="mb-2 flex justify-between text-[13px] font-bold text-[#46557A]">
-              <span>{progressSteps[Math.min(progressIndex, progressSteps.length - 1)]?.label}</span>
+              <span>{progressSteps[Math.min(progressIndex, progressSteps.length - 1)]?.label && tr(progressSteps[Math.min(progressIndex, progressSteps.length - 1)].label)}</span>
               <span>
                 {Math.min(progressIndex + 1, progressSteps.length)} / {progressSteps.length}
               </span>
@@ -576,7 +636,7 @@ const Tourists = () => {
           <div className="p-5 sm:p-7">
             {step === "intro" && (
               <div className="mx-auto max-w-md space-y-5 text-center">
-                <h2 className="text-[26px] font-black text-[#000144]">איך זה עובד?</h2>
+                <h2 className="text-[26px] font-black text-[#000144]">{tr("איך זה עובד?")}</h2>
                 <ol className="mx-auto max-w-sm space-y-3 text-[16px] font-medium text-[#33405F]">
                   {[
                     "ממלאים את פרטי המבוטחים — עד 5 בבקשה אחת",
@@ -584,14 +644,14 @@ const Tourists = () => {
                     "הצהרת בריאות (אפשר לסמן הכל כ־לא בלחיצה) והרחבות",
                     "פרטי תשלום — ושולחים. אנחנו מקבלים את הטופס של הראל ממולא",
                   ].map((text, i) => (
-                    <li key={text} className="flex items-center justify-center gap-3 text-right">
+                    <li key={text} className="flex items-center justify-center gap-3 text-start">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#000144] text-sm font-bold text-white">{i + 1}</span>
-                      <span className="flex-1">{text}</span>
+                      <span className="flex-1">{tr(text)}</span>
                     </li>
                   ))}
                 </ol>
-                <div className="rounded-[20px] bg-[#F3F5F8] p-4 text-right">
-                  <p className="mb-2 text-[15px] font-bold text-[#000144]">באיזו שפה למלא את טופס ההצעה של הראל?</p>
+                <div className="rounded-[20px] bg-[#F3F5F8] p-4 text-start">
+                  <p className="mb-2 text-[15px] font-bold text-[#000144]">{tr("באיזו שפה למלא את טופס ההצעה של הראל?")}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {FORM_LANGUAGES.map((l) => (
                       <button key={l.id} type="button" aria-pressed={form.formLanguage === l.id} onClick={() => setField("formLanguage", l.id)} className={choiceCls(form.formLanguage === l.id)}>
@@ -601,8 +661,8 @@ const Tourists = () => {
                   </div>
                 </div>
                 <Button type="button" onClick={goNext} className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]">
-                  מתחילים
-                  <ArrowLeft className="h-5 w-5" />
+                  {tr("מתחילים")}
+                  <NextArrow className="h-5 w-5" />
                 </Button>
               </div>
             )}
@@ -610,8 +670,8 @@ const Tourists = () => {
             {step === "travelers" && (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">המבוטחים</h2>
-                  <p className="mt-1 text-[14px] font-medium text-[#46557A]">עד גיל 80 · פרטים כפי שמופיעים בדרכון, באנגלית בלבד</p>
+                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">{tr("המבוטחים")}</h2>
+                  <p className="mt-1 text-[14px] font-medium text-[#46557A]">{tr("עד גיל 80 · פרטים כפי שמופיעים בדרכון, באנגלית בלבד")}</p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -624,7 +684,8 @@ const Tourists = () => {
                 </div>
                 {days && (
                   <p className="rounded-[14px] bg-[#E6F6EC] px-4 py-2.5 text-[14px] font-bold text-[#000144]">
-                    {days} ימי ביטוח{days > 90 ? " · אפשר לשלם ב־2 תשלומים" : ""}
+                    {tr("{n} ימי ביטוח", { n: days })}
+                    {days > 90 ? tr(" · אפשר לשלם ב־2 תשלומים") : ""}
                   </p>
                 )}
 
@@ -632,12 +693,13 @@ const Tourists = () => {
                   <div key={t.role} className={`${cardCls} space-y-4`}>
                     <div className="flex !flex-row items-center justify-between gap-3">
                       <h3 className="text-[19px] font-black text-[#000144]">
-                        {ROLE_LABELS[t.role].he} <span className="text-[14px] font-semibold text-[#46557A]">/ {ROLE_LABELS[t.role].en}</span>
+                        {tr(ROLE_LABELS[t.role].he)}
+                        {rtl && <span className="text-[14px] font-semibold text-[#46557A]"> / {ROLE_LABELS[t.role].en}</span>}
                       </h3>
                       {t.role !== "main" && (
                         <button type="button" onClick={() => removeTraveler(t.role)} className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[14px] font-bold text-[#46557A] hover:bg-[#F3F5F8]">
                           <X className="h-4 w-4" />
-                          הסרה
+                          {tr("הסרה")}
                         </button>
                       )}
                     </div>
@@ -667,7 +729,7 @@ const Tourists = () => {
                             { v: "female" as const, label: "נקבה / Female" },
                           ].map((opt) => (
                             <button key={opt.v} type="button" aria-pressed={t.gender === opt.v} onClick={() => setTraveler(t.role, { gender: opt.v })} className={`flex-1 ${choiceCls(t.gender === opt.v)}`}>
-                              {opt.label}
+                              {tr(opt.label)}
                             </button>
                           ))}
                         </div>
@@ -688,13 +750,13 @@ const Tourists = () => {
                   {!form.travelers.some((t) => t.role === "spouse") && (
                     <button type="button" onClick={() => addTraveler("spouse")} className="inline-flex min-h-[48px] items-center gap-2 rounded-[14px] border-[3px] border-[#000144] bg-white px-5 text-[16px] font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white">
                       <Plus className="h-4 w-4" />
-                      הוספת בן/בת זוג
+                      {tr("הוספת בן/בת זוג")}
                     </button>
                   )}
                   {form.travelers.filter((t) => t.role.startsWith("child")).length < 3 && (
                     <button type="button" onClick={() => addTraveler("child")} className="inline-flex min-h-[48px] items-center gap-2 rounded-[14px] border-[3px] border-[#000144] bg-white px-5 text-[16px] font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white">
                       <Plus className="h-4 w-4" />
-                      הוספת ילד/ה
+                      {tr("הוספת ילד/ה")}
                     </button>
                   )}
                 </div>
@@ -703,10 +765,10 @@ const Tourists = () => {
 
             {step === "stay" && (
               <div className="space-y-4">
-                <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">שהייה בישראל ופרטי קשר</h2>
+                <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">{tr("שהייה בישראל ופרטי קשר")}</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="רחוב" required error={errors.street}>
-                    <Input {...textProps("street", { placeholder: "שם הרחוב" })} />
+                    <Input {...textProps("street", { placeholder: tr("שם הרחוב") })} />
                   </Field>
                   <Field label="מס׳ בית" required error={errors.houseNo}>
                     <Input {...textProps("houseNo", { placeholder: "12" })} />
@@ -715,7 +777,7 @@ const Tourists = () => {
                     <Input {...textProps("apartmentNo", { placeholder: "3" })} />
                   </Field>
                   <Field label="יישוב" required error={errors.town}>
-                    <Input {...textProps("town", { placeholder: "תל אביב" })} />
+                    <Input {...textProps("town", { placeholder: tr("תל אביב") })} />
                   </Field>
                   <Field label="שם המשפחה המארחת" error={errors.hostLastName} hint="English only">
                     <Input {...nameProps("hostLastName", "e.g. Cohen")} />
@@ -733,7 +795,7 @@ const Tourists = () => {
                   <div className="grid gap-2 sm:grid-cols-3">
                     {(Object.keys(PROVIDER_LABELS) as Array<TouristsForm["provider"]>).map((key) => (
                       <button key={key} type="button" aria-pressed={form.provider === key} onClick={() => setField("provider", key)} className={choiceCls(form.provider === key)}>
-                        {PROVIDER_LABELS[key]}
+                        {tr(PROVIDER_LABELS[key])}
                       </button>
                     ))}
                   </div>
@@ -744,7 +806,7 @@ const Tourists = () => {
                     onCheckedChange={(v) => setField("documentsByPost", Boolean(v))}
                     className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                   />
-                  <span>לשלוח את מסמכי הפוליסה גם בדואר ישראל (ברירת המחדל: לנייד ולדוא״ל)</span>
+                  <span>{tr("לשלוח את מסמכי הפוליסה גם בדואר ישראל (ברירת המחדל: לנייד ולדוא״ל)")}</span>
                 </label>
               </div>
             )}
@@ -753,38 +815,41 @@ const Tourists = () => {
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">הצהרת בריאות</h2>
+                    <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">{tr("הצהרת בריאות")}</h2>
                     <p className="mt-1 text-[14px] font-medium text-[#46557A]">
-                      Health Statement — {form.travelers.length > 1 ? "לכל מבוטח בנפרד. " : ""}תשובת ״כן״ מחייבת פירוט. במחלות מסוימות יש לצרף גם מסמך רפואי. הפוליסה אינה מכסה מצב רפואי קודם.
+                      {rtl ? "Health Statement — " : ""}
+                      {form.travelers.length > 1 ? tr("לכל מבוטח בנפרד. ") : ""}
+                      {tr("תשובת ״כן״ מחייבת פירוט. במחלות מסוימות יש לצרף גם מסמך רפואי. הפוליסה אינה מכסה מצב רפואי קודם.")}
                     </p>
                   </div>
                   <Button type="button" variant="outline" className="h-12 rounded-[18px] border-[3px] border-[#000144] bg-white px-5 text-[16px] font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white" onClick={markAllHealthNo}>
-                    סמן הכל כ־לא
+                    {tr("סמן הכל כ־לא")}
                   </Button>
                 </div>
 
                 {renderQuestion(MEDICAL_CARE_QUESTION)}
-                <h3 className="pt-2 text-[19px] font-black text-[#000144]">האם אובחנה מחלה, תופעה או הפרעה באחד מהנושאים:</h3>
+                <h3 className="pt-2 text-[19px] font-black text-[#000144]">{tr("האם אובחנה מחלה, תופעה או הפרעה באחד מהנושאים:")}</h3>
                 {questions.filter((q) => q.no <= 19).map(renderQuestion)}
-                <h3 className="pt-2 text-[19px] font-black text-[#000144]">שאלות כלליות</h3>
+                <h3 className="pt-2 text-[19px] font-black text-[#000144]">{tr("שאלות כלליות")}</h3>
                 {questions.filter((q) => q.no >= 20).map(renderQuestion)}
 
                 <div className="rounded-[20px] border-2 border-dashed border-[#D5DAE3] bg-[#F3F5F8] p-4">
                   <p className="mb-2 text-[16px] font-bold text-[#000144]">
-                    צירוף מסמכים רפואיים {docsNeededFor.length > 0 ? <span className="text-rose-600">· חובה</span> : <span className="font-medium text-[#46557A]">· לא חובה</span>}
+                    {tr("צירוף מסמכים רפואיים")}{" "}
+                    {docsNeededFor.length > 0 ? <span className="text-rose-600">{tr("· חובה")}</span> : <span className="font-medium text-[#46557A]">{tr("· לא חובה")}</span>}
                   </p>
                   {docsNeededFor.length > 0 ? (
                     <p className="mb-3 text-[14px] font-medium text-rose-700">
-                      סימנתם: {docsNeededFor.join(", ")}. בהצהרה כזו הראל מבקשת מסמך רפואי עדכני מהרופא המטפל לפני הנפקת הביטוח — צרפו אותו כאן.
+                      {tr("סימנתם: {list}. בהצהרה כזו הראל מבקשת מסמך רפואי עדכני מהרופא המטפל לפני הנפקת הביטוח — צרפו אותו כאן.", { list: docsList })}
                     </p>
                   ) : (
                     <p className="mb-3 text-[14px] font-medium text-[#46557A]">
-                      אפשר לצרף תעודה מהרופא או תוצאות בדיקות אם יש. במחלות מסוימות (למשל מחלות מערכת העצבים, אי ספיקת לב או כליות, COPD) הצירוף יהיה חובה.
+                      {tr("אפשר לצרף תעודה מהרופא או תוצאות בדיקות אם יש. במחלות מסוימות (למשל מחלות מערכת העצבים, אי ספיקת לב או כליות, COPD) הצירוף יהיה חובה.")}
                     </p>
                   )}
                   <label className="inline-flex min-h-[48px] cursor-pointer items-center gap-2 rounded-[14px] border-[3px] border-[#000144] bg-white px-5 py-2.5 text-[16px] font-extrabold text-[#000144] transition-colors hover:bg-[#000144] hover:text-white">
                     <FileUp className="h-4 w-4" />
-                    בחירת קבצים
+                    {tr("בחירת קבצים")}
                     <input
                       type="file"
                       className="hidden"
@@ -805,14 +870,14 @@ const Tourists = () => {
                       {files.map((f, i) => (
                         <li key={`${f.name}-${i}`} className="flex !flex-row items-center justify-between rounded-[12px] border-2 border-[#E3E7EE] bg-white px-3 py-2 text-[14px] font-medium text-[#33405F]">
                           <span className="truncate">{f.name}</span>
-                          <button type="button" aria-label={`הסרת ${f.name}`} onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                          <button type="button" aria-label={tr("הסרת {name}", { name: f.name })} onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}>
                             <Trash2 className="h-4 w-4 text-[#46557A]" />
                           </button>
                         </li>
                       ))}
                     </ul>
                   )}
-                  {errors.files && <p className="mt-2 text-xs text-rose-600">{errors.files}</p>}
+                  {errors.files && <p className="mt-2 text-xs text-rose-600">{tr(errors.files)}</p>}
                 </div>
               </div>
             )}
@@ -820,32 +885,34 @@ const Tourists = () => {
             {step === "riders" && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">הרחבות וכתבי שירות</h2>
-                  <p className="mt-1 text-[14px] font-medium text-[#46557A]">לא חובה · בתוספת דמי ביטוח · מסמנים למי מהמבוטחים להוסיף</p>
+                  <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">{tr("הרחבות וכתבי שירות")}</h2>
+                  <p className="mt-1 text-[14px] font-medium text-[#46557A]">{tr("לא חובה · בתוספת דמי ביטוח · מסמנים למי מהמבוטחים להוסיף")}</p>
                 </div>
                 {RIDERS.map((rider) => {
                   const eligible = form.travelers.filter((t) => rider.key !== "accidents" || accidentsAllowed(t));
                   return (
                     <div key={rider.key} className={cardCls}>
-                      <p className="text-[16px] font-bold text-[#000144]">{rider.he}</p>
-                      <p className="mt-0.5 text-[13px] font-medium text-[#46557A]">
-                        {rider.en}
-                        {rider.note ? ` · ${rider.note}` : ""}
-                      </p>
+                      <p className="text-[16px] font-bold text-[#000144]">{tr(rider.he)}</p>
+                      {(rtl || rider.note) && (
+                        <p className="mt-0.5 text-[13px] font-medium text-[#46557A]">
+                          {rtl ? rider.en : ""}
+                          {rider.note ? `${rtl ? " · " : ""}${tr(rider.note)}` : ""}
+                        </p>
+                      )}
                       {eligible.length ? (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {eligible.map((t) => {
                             const on = form.riders[rider.key].includes(t.role);
                             return (
                               <button key={t.role} type="button" aria-pressed={on} onClick={() => toggleRider(rider.key, t.role)} className={chipCls(on)}>
-                                {on && <Check className="-mt-0.5 ml-1 inline h-4 w-4" />}
-                                {travelerLabel(t)}
+                                {on && <Check className="-mt-0.5 me-1 inline h-4 w-4" />}
+                                {roleLabel(t)}
                               </button>
                             );
                           })}
                         </div>
                       ) : (
-                        <p className="mt-3 text-[14px] font-medium text-[#8A94AD]">לא זמין למבוטחים בבקשה זו</p>
+                        <p className="mt-3 text-[14px] font-medium text-[#8A94AD]">{tr("לא זמין למבוטחים בבקשה זו")}</p>
                       )}
                       {rider.key === "extremeSports" && form.riders.extremeSports.length > 0 && (
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -865,20 +932,22 @@ const Tourists = () => {
 
             {step === "payment" && (
               <div className="space-y-4">
-                <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">הצהרות ותשלום</h2>
+                <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">{tr("הצהרות ותשלום")}</h2>
 
                 <div className={`${cardCls} text-[15px]`}>
-                  <label className="flex items-start gap-3 text-right">
+                  <label className="flex items-start gap-3 text-start">
                     <Checkbox
                       checked={form.declarationsAccepted}
                       onCheckedChange={(v) => setField("declarationsAccepted", Boolean(v))}
                       className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                     />
                     <span className="font-medium text-[#33405F]">
-                      אני מאשר/ת את הצהרות המועמד לביטוח בטופס של הראל: כל התשובות נכונות ומלאות ונמסרו מרצוני החופשי; קיבלתי מידע מהותי על הביטוח; ויתור על סודיות רפואית לטובת הראל; הסמכת סוכן הביטוח לטפל בהליך ההצטרפות בשמי; וידוע לי שהפוליסה אינה מכסה מצב רפואי קודם ושיש תקופת אכשרה של 48 שעות.
+                      {tr(
+                        "אני מאשר/ת את הצהרות המועמד לביטוח בטופס של הראל: כל התשובות נכונות ומלאות ונמסרו מרצוני החופשי; קיבלתי מידע מהותי על הביטוח; ויתור על סודיות רפואית לטובת הראל; הסמכת סוכן הביטוח לטפל בהליך ההצטרפות בשמי; וידוע לי שהפוליסה אינה מכסה מצב רפואי קודם ושיש תקופת אכשרה של 48 שעות.",
+                      )}
                     </span>
                   </label>
-                  {errors.declarationsAccepted && <p className="mt-2 text-xs text-rose-600">{errors.declarationsAccepted}</p>}
+                  {errors.declarationsAccepted && <p className="mt-2 text-xs text-rose-600">{tr(errors.declarationsAccepted)}</p>}
                 </div>
 
                 {hasChildren && (
@@ -897,13 +966,13 @@ const Tourists = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-[19px] font-black text-[#000144]">פרטי המשלם / כרטיס אשראי</h3>
+                  <h3 className="text-[19px] font-black text-[#000144]">{tr("פרטי המשלם / כרטיס אשראי")}</h3>
                   {days && days > 90 && (
                     <Field label="מספר תשלומים">
                       <div className="grid grid-cols-2 gap-2">
                         {(["1", "2"] as const).map((n) => (
                           <button key={n} type="button" aria-pressed={form.installments === n} onClick={() => setField("installments", n)} className={choiceCls(form.installments === n)}>
-                            {n === "1" ? "תשלום אחד" : "2 תשלומים"}
+                            {tr(n === "1" ? "תשלום אחד" : "2 תשלומים")}
                           </button>
                         ))}
                       </div>
@@ -985,59 +1054,59 @@ const Tourists = () => {
                       onCheckedChange={(v) => setField("paymentConsent", Boolean(v))}
                       className="mt-0.5 h-5 w-5 rounded-[6px] border-2 border-[#000144] data-[state=checked]:bg-[#000144] data-[state=checked]:text-white"
                     />
-                    <span>אני מאשר/ת חיוב הכרטיס עבור כל המבוטחים בפוליסה, בהתאם לתנאי הפוליסה.</span>
+                    <span>{tr("אני מאשר/ת חיוב הכרטיס עבור כל המבוטחים בפוליסה, בהתאם לתנאי הפוליסה.")}</span>
                   </label>
-                  {errors.paymentConsent && <p className="text-xs text-rose-600">{errors.paymentConsent}</p>}
+                  {errors.paymentConsent && <p className="text-xs text-rose-600">{tr(errors.paymentConsent)}</p>}
                 </div>
 
                 <Field label="הערות נוספות">
-                  <Textarea className={`${textareaCls} text-right`} style={{ direction: "rtl" }} value={form.notes} onChange={(e) => setField("notes", e.target.value)} placeholder="כל דבר שחשוב שנדע..." />
+                  <Textarea className={textareaCls} style={dirStyle} value={form.notes} onChange={(e) => setField("notes", e.target.value)} placeholder={tr("כל דבר שחשוב שנדע...")} />
                 </Field>
               </div>
             )}
 
             {step === "review" && (
-              <div className="space-y-4 text-right">
-                <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">סיכום לפני שליחה</h2>
+              <div className="space-y-4 text-start">
+                <h2 className="text-[24px] font-black leading-[1.1] text-[#000144]">{tr("סיכום לפני שליחה")}</h2>
                 <div className="space-y-3 rounded-[20px] bg-[#F3F5F8] p-5 text-[16px] text-[#33405F]">
                   {form.travelers.map((t) => (
                     <p key={t.role}>
-                      <strong>{ROLE_LABELS[t.role].he}:</strong> {travelerName(t)} · דרכון {t.passportNo}
+                      <strong>{tr(ROLE_LABELS[t.role].he)}:</strong> {travelerName(t)} · {tr("דרכון")} {t.passportNo}
                     </p>
                   ))}
                   <p>
-                    <strong>תקופה:</strong> {form.insuranceFrom} – {form.insuranceTo}
-                    {days ? ` (${days} ימים)` : ""}
+                    <strong>{tr("תקופה:")}</strong> {form.insuranceFrom} – {form.insuranceTo}
+                    {days ? tr(" ({n} ימים)", { n: days }) : ""}
                   </p>
                   <p>
-                    <strong>ספק:</strong> {PROVIDER_LABELS[form.provider] || form.provider}
+                    <strong>{tr("ספק:")}</strong> {tr(PROVIDER_LABELS[form.provider] || form.provider)}
                   </p>
                   <p>
-                    <strong>הצהרת בריאות:</strong> {anyHealthYes ? "יש תשובות ״כן״ — מצורף פירוט" : "לא לכל השאלות"}
-                    {docsNeededFor.length > 0 ? ` · מסמך רפואי נדרש (${docsNeededFor.join(", ")})` : ""}
+                    <strong>{tr("הצהרת בריאות:")}</strong> {tr(anyHealthYes ? "יש תשובות ״כן״ — מצורף פירוט" : "לא לכל השאלות")}
+                    {docsNeededFor.length > 0 ? tr(" · מסמך רפואי נדרש ({list})", { list: docsList }) : ""}
                   </p>
                   <p>
-                    <strong>קבצים:</strong> {files.length ? `${files.length} קבצים` : "ללא"}
+                    <strong>{tr("קבצים:")}</strong> {files.length ? tr("{n} קבצים", { n: files.length }) : tr("ללא")}
                   </p>
                   <p>
-                    <strong>תשלום:</strong> כרטיס על שם {form.cardholderName}
-                    {days && days > 90 && form.installments === "2" ? " · 2 תשלומים" : ""}
+                    <strong>{tr("תשלום:")}</strong> {tr("כרטיס על שם {name}", { name: form.cardholderName })}
+                    {days && days > 90 && form.installments === "2" ? tr(" · 2 תשלומים") : ""}
                   </p>
                   <p>
-                    <strong>טופס הראל:</strong> {form.formLanguage === "en" ? "באנגלית" : "בעברית"}
+                    <strong>{tr("טופס הראל:")}</strong> {tr(form.formLanguage === "en" ? "באנגלית" : "בעברית")}
                   </p>
                 </div>
-                <p className="text-[14px] font-medium text-[#46557A]">בלחיצה על ״שלח בקשה״ הפרטים יישלחו מסודרים לצוות אופיר ושות׳ להמשך טיפול מול הראל.</p>
+                <p className="text-[14px] font-medium text-[#46557A]">{tr("בלחיצה על ״שלח בקשה״ הפרטים יישלחו מסודרים לצוות אופיר ושות׳ להמשך טיפול מול הראל.")}</p>
                 <Button type="button" onClick={handleSubmit} disabled={isSending} className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]">
                   {isSending ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      שולח...
+                      {tr("שולח...")}
                     </>
                   ) : (
                     <>
                       <Send className="h-5 w-5" />
-                      שלח בקשה
+                      {tr("שלח בקשה")}
                     </>
                   )}
                 </Button>
@@ -1047,7 +1116,7 @@ const Tourists = () => {
             {step === "sending" && (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
                 <Loader2 className="h-10 w-10 animate-spin text-[#00A247]" />
-                <p className="text-[18px] font-bold text-[#000144]">שולחים את הבקשה...</p>
+                <p className="text-[18px] font-bold text-[#000144]">{tr("שולחים את הבקשה...")}</p>
               </div>
             )}
 
@@ -1056,8 +1125,8 @@ const Tourists = () => {
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#00A247] text-[#000144]">
                   <Check className="h-8 w-8" />
                 </div>
-                <h2 className="text-[28px] font-black text-[#000144]">הבקשה נשלחה בהצלחה</h2>
-                <p className="text-[17px] font-medium text-[#33405F]">קיבלנו את הבקשה עבור {travelerName(form.travelers[0])}. נחזור אליכם בהקדם להמשך הטיפול.</p>
+                <h2 className="text-[28px] font-black text-[#000144]">{tr("הבקשה נשלחה בהצלחה")}</h2>
+                <p className="text-[17px] font-medium text-[#33405F]">{tr("קיבלנו את הבקשה עבור {name}. נחזור אליכם בהקדם להמשך הטיפול.", { name: travelerName(form.travelers[0]) })}</p>
                 <Button
                   type="button"
                   variant="outline"
@@ -1069,30 +1138,33 @@ const Tourists = () => {
                     setStep("intro");
                   }}
                 >
-                  הגשת בקשה נוספת
+                  {tr("הגשת בקשה נוספת")}
                 </Button>
               </div>
             )}
 
             {step !== "intro" && step !== "success" && step !== "sending" && step !== "review" && (
-              <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:items-center" style={{ direction: "ltr" }}>
+              // "Continue" sits on the reading-forward side: left in Hebrew, right in English/Russian
+              <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:items-center" style={{ direction: rtl ? "ltr" : "rtl" }}>
                 <Button
                   type="button"
+                  dir={rtl ? "rtl" : "ltr"}
                   onClick={goNext}
                   disabled={step === "health" && medicalCareYes}
-                  className="h-14 w-full rounded-[18px] bg-[#00A247] text-[18px] font-extrabold text-[#000144] hover:bg-[#008C3D] sm:mr-auto sm:w-auto sm:min-w-[200px]"
+                  className={`h-14 w-full rounded-[18px] bg-[#00A247] text-[18px] font-extrabold text-[#000144] hover:bg-[#008C3D] sm:w-auto sm:min-w-[200px] ${rtl ? "sm:mr-auto" : "sm:ml-auto"}`}
                 >
-                  המשך
-                  <ArrowLeft className="h-4 w-4" />
+                  {tr("המשך")}
+                  <NextArrow className="h-4 w-4" />
                 </Button>
                 <Button
                   type="button"
+                  dir={rtl ? "rtl" : "ltr"}
                   variant="outline"
                   className="h-14 w-full rounded-[18px] border-[3px] border-[#000144] bg-white text-[18px] font-extrabold text-[#000144] hover:bg-[#000144] hover:text-white sm:w-auto"
                   onClick={goBack}
                 >
-                  <ArrowRight className="h-4 w-4" />
-                  חזרה
+                  <BackArrow className="h-4 w-4" />
+                  {tr("חזרה")}
                 </Button>
               </div>
             )}
@@ -1100,7 +1172,7 @@ const Tourists = () => {
             {step === "review" && (
               <div className="mt-3">
                 <Button type="button" variant="ghost" className="h-12 w-full rounded-[18px] text-[16px] font-bold text-[#000144] hover:bg-[#F3F5F8] hover:text-[#000144]" onClick={goBack}>
-                  חזרה לעריכה
+                  {tr("חזרה לעריכה")}
                 </Button>
               </div>
             )}
@@ -1108,12 +1180,15 @@ const Tourists = () => {
         </div>
 
         <p className="mt-6 text-center text-[13px] font-medium text-[#46557A]">
-          בכפוף להצהרת הבריאות ולהצעת הביטוח של הראל · TravelSure / אופיר ושות׳ סוכנות לביטוח
+          {tr("בכפוף להצהרת הבריאות ולהצעת הביטוח של הראל · TravelSure / אופיר ושות׳ סוכנות לביטוח")}
         </p>
       </main>
 
-      <AgencyFooter />
+      <div dir="rtl" className="text-right">
+        <AgencyFooter />
+      </div>
     </div>
+    </TrContext.Provider>
   );
 };
 

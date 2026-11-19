@@ -130,6 +130,16 @@
   [dir="rtl"] .flex.justify-between {
     flex-direction: row-reverse;
   }
+
+  /* A left-to-right page inside the Hebrew site (the tourists form in English/Russian) */
+  [dir].ui-ltr,
+  .ui-ltr h1, .ui-ltr h2, .ui-ltr h3, .ui-ltr h4, .ui-ltr h5, .ui-ltr h6 {
+    text-align: left;
+  }
+
+  .ui-ltr .flex.justify-between {
+    flex-direction: row;
+  }
 }
 
 @layer utilities {
