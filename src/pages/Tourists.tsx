@@ -137,6 +137,8 @@ const Tourists = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [step]);
   const [form, setForm] = useState<TouristsForm>(() => createInitialTouristsForm());
+  // Language of Harel's form: the Hebrew speaker's choice, otherwise English
+  const harelLang: TouristsForm["formLanguage"] = rtl ? form.formLanguage : "en";
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -167,8 +169,6 @@ const Tourists = () => {
 
   const setUiLang = (lang: UiLang) => {
     setUiLangState(lang);
-    // Harel's form has Hebrew and English only: English for an English or Russian speaker
-    setField("formLanguage", lang === "he" ? "he" : "en");
     try {
       localStorage.setItem("tourists_ui_lang", lang);
     } catch {
@@ -424,7 +424,7 @@ const Tourists = () => {
     setIsSending(true);
     setStep("sending");
     try {
-      await submitTouristsApplication(form, files);
+      await submitTouristsApplication({ ...form, formLanguage: harelLang }, files);
       setStep("success");
       toast({ title: tr("הבקשה נשלחה בהצלחה"), description: tr("נחזור אליכם בהקדם.") });
     } catch (err) {
@@ -650,16 +650,19 @@ const Tourists = () => {
                     </li>
                   ))}
                 </ol>
-                <div className="rounded-[20px] bg-[#F3F5F8] p-4 text-start">
-                  <p className="mb-2 text-[15px] font-bold text-[#000144]">{tr("באיזו שפה למלא את טופס ההצעה של הראל?")}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {FORM_LANGUAGES.map((l) => (
-                      <button key={l.id} type="button" aria-pressed={form.formLanguage === l.id} onClick={() => setField("formLanguage", l.id)} className={choiceCls(form.formLanguage === l.id)}>
-                        {l.label}
-                      </button>
-                    ))}
+                {/* Only a Hebrew speaker chooses; in English or Russian Harel's form is filled in English */}
+                {rtl && (
+                  <div className="rounded-[20px] bg-[#F3F5F8] p-4 text-start">
+                    <p className="mb-2 text-[15px] font-bold text-[#000144]">{tr("באיזו שפה למלא את טופס ההצעה של הראל?")}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {FORM_LANGUAGES.map((l) => (
+                        <button key={l.id} type="button" aria-pressed={form.formLanguage === l.id} onClick={() => setField("formLanguage", l.id)} className={choiceCls(form.formLanguage === l.id)}>
+                          {l.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 <Button type="button" onClick={goNext} className="h-14 w-full rounded-[18px] bg-[#00A247] text-[19px] font-extrabold text-[#000144] hover:bg-[#008C3D]">
                   {tr("מתחילים")}
                   <NextArrow className="h-5 w-5" />
@@ -1093,7 +1096,7 @@ const Tourists = () => {
                     {days && days > 90 && form.installments === "2" ? tr(" · 2 תשלומים") : ""}
                   </p>
                   <p>
-                    <strong>{tr("טופס הראל:")}</strong> {tr(form.formLanguage === "en" ? "באנגלית" : "בעברית")}
+                    <strong>{tr("טופס הראל:")}</strong> {tr(harelLang === "en" ? "באנגלית" : "בעברית")}
                   </p>
                 </div>
                 <p className="text-[14px] font-medium text-[#46557A]">{tr("בלחיצה על ״שלח בקשה״ הפרטים יישלחו מסודרים לצוות אופיר ושות׳ להמשך טיפול מול הראל.")}</p>
