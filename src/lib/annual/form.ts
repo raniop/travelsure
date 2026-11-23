@@ -102,7 +102,7 @@ export const ageOn = (birthDate: string, on: Date) => {
 };
 
 export const createInitialAnnualForm = (): AnnualForm => ({
-  plan: "extended",
+  plan: "basic",
   periodFrom: "",
   idNumber: "",
   firstName: "",

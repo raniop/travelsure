@@ -85,6 +85,18 @@ const PLAN_ROWS: Array<{ label: string; basic: boolean | "extra"; extended: bool
   { label: "ביטול השתתפות עצמית לרכב שכור", basic: "extra", extended: true },
 ];
 
+/** Annual premium per insured in USD, by age (Rani 2026-11-23) */
+const PLAN_PRICES: Record<AnnualPlan, Array<{ ages: string; usd: number }>> = {
+  basic: [
+    { ages: "עד גיל 65 (כולל)", usd: 398 },
+    { ages: "גיל 66 עד 75", usd: 599 },
+  ],
+  extended: [
+    { ages: "עד גיל 65 (כולל)", usd: 598 },
+    { ages: "גיל 66 עד 75", usd: 799 },
+  ],
+};
+
 const Field = ({ label, required, error, children, hint }: { label: string; required?: boolean; error?: string; children: ReactNode; hint?: string }) => (
   <div className="text-right">
     <label className="mb-1.5 flex items-center gap-1 text-sm font-semibold text-[#46557A]">
@@ -407,6 +419,15 @@ const Annual = () => {
                       <span className="flex items-center justify-between gap-2">
                         <span className="text-[19px] font-black text-[#000144]">{PLAN_LABELS[plan]}</span>
                         {form.plan === plan && <Check className="h-5 w-5 text-[#00A247]" />}
+                      </span>
+                      <span className="mt-3 grid grid-cols-2 gap-2">
+                        {PLAN_PRICES[plan].map((p) => (
+                          <span key={p.ages} className="rounded-[14px] border border-[#E3E7EE] bg-white px-3 py-2 text-center">
+                            <span className="block text-[12px] font-semibold text-[#46557A]">{p.ages}</span>
+                            <span className="block text-[22px] font-black leading-tight text-[#000144]" dir="ltr">${p.usd}</span>
+                            <span className="block text-[11px] font-medium text-[#46557A]">לשנה</span>
+                          </span>
+                        ))}
                       </span>
                       <ul className="mt-3 space-y-1.5">
                         {PLAN_ROWS.map((r) => {
