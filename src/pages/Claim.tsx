@@ -763,9 +763,7 @@ const Claim = () => {
       next.country = "שדה חובה";
     }
     if (!formData.details.trim()) next.details = "שדה חובה";
-    if (!formData.bankName.trim()) next.bankName = "שדה חובה";
-    if (!formData.branchNumber.trim()) next.branchNumber = "שדה חובה";
-    if (!formData.accountNumber.trim()) next.accountNumber = "שדה חובה";
+    // Bank details are optional: the customer can give them later
     if (!formData.declaration) next.declaration = "יש לאשר את ההצהרה";
 
     if (claimType === "medical" || claimType === "trip_cancel") {
@@ -1925,7 +1923,7 @@ const Claim = () => {
               <section className="space-y-4">
                 <h3 className="border-b-2 border-[#E3E7EE] pb-2.5 text-[19px] font-black text-[#000144]">אופן תשלום (העברה בנקאית)</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="בנק" required error={errors.bankName}>
+                  <Field label="בנק" error={errors.bankName}>
                     <select
                       className={claimField}
                       value={formData.bankCode}
@@ -1939,10 +1937,10 @@ const Claim = () => {
                       ))}
                     </select>
                   </Field>
-                  <Field label="מספר חשבון" required error={errors.accountNumber}>
+                  <Field label="מספר חשבון" error={errors.accountNumber}>
                     <Input className={claimField} value={formData.accountNumber} onChange={(e) => setField("accountNumber", e.target.value)} />
                   </Field>
-                  <Field label="סניף (חיפוש לפי שם / מספר / עיר)" required error={errors.branchNumber} className="sm:col-span-2">
+                  <Field label="סניף (חיפוש לפי שם / מספר / עיר)" error={errors.branchNumber} className="sm:col-span-2">
                     <div className="relative">
                       <Input
                         className={claimField}
